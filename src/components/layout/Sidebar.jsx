@@ -4,7 +4,7 @@ import Chip from '../atoms/Chip';
 import SLabel from '../atoms/SLabel';
 import HDivider from '../atoms/HDivider';
 
-export default function Sidebar({ sidebarMode, setSidebarMode, activeFunnelStage, viewMode, selectedItem, isSearching, setActiveFunnelStage, setViewMode, setSelectedItem, setSearch, setSelectedAccount, selectedAccount, allItems, accounts, contacts, stageCounts }) {
+export default function Sidebar({ sidebarMode, setSidebarMode, activeFunnelStage, viewMode, selectedItem, isSearching, setActiveFunnelStage, setViewMode, setSelectedItem, setSearch, setSelectedAccount, selectedAccount, allItems, accounts, contacts, stageCounts, unreadInboxCount }) {
   const [accountSort, setAccountSort] = useState('az');
 
   // Track recently visited accounts in localStorage
@@ -48,6 +48,12 @@ export default function Sidebar({ sidebarMode, setSidebarMode, activeFunnelStage
             <div style={{ fontSize:14, flexShrink:0 }}>👤</div>
             <div style={{ flex:1, fontSize:13 }}>Contacts</div>
             <div style={{ fontSize:11, background:"#F1EFE8", color:"#888780", padding:"1px 7px", borderRadius:10, border:"0.5px solid #D3D1C7" }}>{contactsCount}</div>
+          </div>
+          <div onClick={() => setSidebarMode("inbox")}
+            style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 14px", cursor:"pointer", background:"transparent" }}>
+            <div style={{ fontSize:14, flexShrink:0 }}>{"\uD83D\uDCE5"}</div>
+            <div style={{ flex:1, fontSize:13 }}>Inbox</div>
+            {unreadInboxCount > 0 && <div style={{ fontSize:11, background:"#378ADD", color:"#fff", padding:"1px 7px", borderRadius:10 }}>{unreadInboxCount}</div>}
           </div>
           <div onClick={() => setSidebarMode("playbooks")}
             style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 14px", cursor:"pointer", background:"transparent" }}>
@@ -100,6 +106,12 @@ export default function Sidebar({ sidebarMode, setSidebarMode, activeFunnelStage
             <div style={{ flex:1, fontSize:13, fontWeight:500 }}>Contacts</div>
             <div style={{ fontSize:11, background:"#059669", color:"#fff", padding:"1px 7px", borderRadius:10 }}>{contactsCount}</div>
           </div>
+          <div onClick={() => setSidebarMode("inbox")}
+            style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 14px", cursor:"pointer", background:"transparent" }}>
+            <div style={{ fontSize:14, flexShrink:0 }}>{"\uD83D\uDCE5"}</div>
+            <div style={{ flex:1, fontSize:13 }}>Inbox</div>
+            {unreadInboxCount > 0 && <div style={{ fontSize:11, background:"#378ADD", color:"#fff", padding:"1px 7px", borderRadius:10 }}>{unreadInboxCount}</div>}
+          </div>
           <div onClick={() => setSidebarMode("playbooks")}
             style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 14px", cursor:"pointer", background:"transparent" }}>
             <div style={{ fontSize:14, flexShrink:0 }}>{"\uD83D\uDCCB"}</div>
@@ -133,6 +145,12 @@ export default function Sidebar({ sidebarMode, setSidebarMode, activeFunnelStage
             <div style={{ fontSize:14, flexShrink:0 }}>👤</div>
             <div style={{ flex:1, fontSize:13 }}>Contacts</div>
             <div style={{ fontSize:11, background:"#F1EFE8", color:"#888780", padding:"1px 7px", borderRadius:10, border:"0.5px solid #D3D1C7" }}>{contactsCount}</div>
+          </div>
+          <div onClick={() => setSidebarMode("inbox")}
+            style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 14px", cursor:"pointer", background:"transparent" }}>
+            <div style={{ fontSize:14, flexShrink:0 }}>{"\uD83D\uDCE5"}</div>
+            <div style={{ flex:1, fontSize:13 }}>Inbox</div>
+            {unreadInboxCount > 0 && <div style={{ fontSize:11, background:"#378ADD", color:"#fff", padding:"1px 7px", borderRadius:10 }}>{unreadInboxCount}</div>}
           </div>
           <div onClick={() => setSidebarMode("playbooks")}
             style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 14px", cursor:"pointer", background:"transparent" }}>
@@ -192,9 +210,55 @@ export default function Sidebar({ sidebarMode, setSidebarMode, activeFunnelStage
             <div style={{ flex:1, fontSize:13 }}>Contacts</div>
             <div style={{ fontSize:11, background:"#F1EFE8", color:"#888780", padding:"1px 7px", borderRadius:10, border:"0.5px solid #D3D1C7" }}>{contactsCount}</div>
           </div>
+          <div onClick={() => setSidebarMode("inbox")}
+            style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 14px", cursor:"pointer", background:"transparent" }}>
+            <div style={{ fontSize:14, flexShrink:0 }}>{"\uD83D\uDCE5"}</div>
+            <div style={{ flex:1, fontSize:13 }}>Inbox</div>
+            {unreadInboxCount > 0 && <div style={{ fontSize:11, background:"#378ADD", color:"#fff", padding:"1px 7px", borderRadius:10 }}>{unreadInboxCount}</div>}
+          </div>
           <div style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 14px", cursor:"pointer", background:"#F1EFE8" }}>
             <div style={{ fontSize:14, flexShrink:0 }}>{"\uD83D\uDCCB"}</div>
             <div style={{ flex:1, fontSize:13, fontWeight:500 }}>Playbooks</div>
+          </div>
+          <HDivider />
+          <SLabel>Pipeline stages</SLabel>
+          {FUNNEL_STAGES.map(s => {
+            const stC = sc(s.key);
+            return (
+              <div key={s.key} onClick={() => { setSidebarMode("funnel"); setActiveFunnelStage(s.key); setViewMode("list"); setSelectedItem(null); setSearch(""); }}
+                style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 14px", cursor:"pointer", background:"transparent" }}>
+                <div style={{ width:8, height:8, borderRadius:"50%", background:stC.dot, flexShrink:0 }} />
+                <div style={{ flex:1, fontSize:13 }}>{s.label}</div>
+                <div style={{ fontSize:11, background:"#F1EFE8", color:"#888780", padding:"1px 7px", borderRadius:10, border:"0.5px solid #D3D1C7" }}>{stageCounts[s.key]||0}</div>
+              </div>
+            );
+          })}
+        </>
+      )}
+      {sidebarMode==="inbox" && (
+        <>
+          <SLabel>Directory</SLabel>
+          <div onClick={() => setSidebarMode("accounts")}
+            style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 14px", cursor:"pointer", background:"transparent" }}>
+            <div style={{ fontSize:14, flexShrink:0 }}>{"\uD83C\uDFE2"}</div>
+            <div style={{ flex:1, fontSize:13 }}>Companies</div>
+            <div style={{ fontSize:11, background:"#F1EFE8", color:"#888780", padding:"1px 7px", borderRadius:10, border:"0.5px solid #D3D1C7" }}>{companiesCount}</div>
+          </div>
+          <div onClick={() => setSidebarMode("contacts")}
+            style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 14px", cursor:"pointer", background:"transparent" }}>
+            <div style={{ fontSize:14, flexShrink:0 }}>{"\uD83D\uDC64"}</div>
+            <div style={{ flex:1, fontSize:13 }}>Contacts</div>
+            <div style={{ fontSize:11, background:"#F1EFE8", color:"#888780", padding:"1px 7px", borderRadius:10, border:"0.5px solid #D3D1C7" }}>{contactsCount}</div>
+          </div>
+          <div style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 14px", cursor:"pointer", background:"#F1EFE8" }}>
+            <div style={{ fontSize:14, flexShrink:0 }}>{"\uD83D\uDCE5"}</div>
+            <div style={{ flex:1, fontSize:13, fontWeight:500 }}>Inbox</div>
+            {unreadInboxCount > 0 && <div style={{ fontSize:11, background:"#378ADD", color:"#fff", padding:"1px 7px", borderRadius:10 }}>{unreadInboxCount}</div>}
+          </div>
+          <div onClick={() => setSidebarMode("playbooks")}
+            style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 14px", cursor:"pointer", background:"transparent" }}>
+            <div style={{ fontSize:14, flexShrink:0 }}>{"\uD83D\uDCCB"}</div>
+            <div style={{ flex:1, fontSize:13 }}>Playbooks</div>
           </div>
           <HDivider />
           <SLabel>Pipeline stages</SLabel>

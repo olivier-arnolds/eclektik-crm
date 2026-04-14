@@ -29,6 +29,9 @@ import ContactDetail from './components/contacts/ContactDetail';
 import PlaybooksList from './components/playbooks/PlaybooksList';
 import PlaybookDetail from './components/playbooks/PlaybookDetail';
 
+// Inbox
+import UnifiedInbox from './components/inbox/UnifiedInbox';
+
 export default function BDDashboard() {
   const { accounts, contacts, allItems, followUps, tasks, comms, calEvents, loading, refetch } = usePipelineData();
   const { logout, session, reconnectMicrosoft, hasGraphToken } = useAuth();
@@ -122,6 +125,8 @@ export default function BDDashboard() {
     mainContent = selectedPlaybook
       ? <PlaybookDetail playbook={selectedPlaybook} onBack={() => setSelectedPlaybook(null)} contacts={contacts} accounts={accounts} />
       : <PlaybooksList onSelectPlaybook={(pb) => setSelectedPlaybook(pb)} />;
+  } else if (sidebarMode==="inbox") {
+    mainContent = <UnifiedInbox contacts={contacts} accounts={accounts} onSwitchMode={setSidebarMode} />;
   } else if (sidebarMode==="contacts") {
     mainContent = selectedContact
       ? <ContactDetail contact={selectedContact} accounts={accounts} allItems={allItems} onBack={() => setSelectedContact(null)} refetch={refetch} />
@@ -176,9 +181,10 @@ export default function BDDashboard() {
           accounts={accounts}
           contacts={contacts}
           stageCounts={stageCounts}
+          unreadInboxCount={comms.filter(c => c.unread).length}
         />
         <div style={{ display:"flex", flexDirection:"column", minHeight:0, overflow:"hidden" }}>{mainContent}</div>
-        <RightPanel tab={rightTab} setTab={setRightTab} followUps={followUps} comms={comms} tasks={tasks} calEvents={calEvents} contacts={contacts} refetch={refetch} />
+        <RightPanel tab={rightTab} setTab={setRightTab} followUps={followUps} comms={comms} tasks={tasks} calEvents={calEvents} contacts={contacts} refetch={refetch} onOpenInbox={() => setSidebarMode('inbox')} />
       </div>
     </div>
   );

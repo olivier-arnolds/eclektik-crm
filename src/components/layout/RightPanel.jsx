@@ -5,7 +5,7 @@ import { getCalendarEvents, createCalendarEvent } from '../../lib/graph';
 import Chip from '../atoms/Chip';
 import Btn from '../atoms/Btn';
 
-export default function RightPanel({ tab, setTab, followUps, comms, tasks, calEvents, contacts, refetch }) {
+export default function RightPanel({ tab, setTab, followUps, comms, tasks, calEvents, contacts, refetch, onOpenInbox }) {
   const pendingR = followUps.filter(r => r.status==="no-reply").length;
   const pendingT = tasks.filter(t => !t.done).length;
   const unreadC  = comms.filter(c => c.unread).length;
@@ -242,7 +242,7 @@ export default function RightPanel({ tab, setTab, followUps, comms, tasks, calEv
                 Email sync available per item
               </div>
             )}
-            {[...comms].sort((a,b) => (b.date||'').localeCompare(a.date||'')).map((m,i,arr) => (
+            {[...comms].sort((a,b) => (b.date||'').localeCompare(a.date||'')).slice(0, 10).map((m,i,arr) => (
               <div key={m.id} style={{ display:"flex", gap:10, padding:"9px 0", borderBottom:i<arr.length-1?"0.5px solid #D3D1C7":"none", cursor:"pointer" }}>
                 <div style={{ width:28, height:28, borderRadius:7, background:m.bg, color:m.tc, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:11 }}>{m.icon}</div>
                 <div style={{ flex:1, minWidth:0 }}>
@@ -253,6 +253,12 @@ export default function RightPanel({ tab, setTab, followUps, comms, tasks, calEv
                 {m.unread && <div style={{ width:5, height:5, borderRadius:"50%", background:"#378ADD", marginTop:6, flexShrink:0 }} />}
               </div>
             ))}
+            <div
+              onClick={onOpenInbox}
+              style={{ textAlign:"center", padding:"12px 0 4px", cursor:"pointer", fontSize:12, color:"#378ADD", fontWeight:500 }}
+            >
+              {"View all in Inbox \u2192"}
+            </div>
           </div>
         )}
         {tab==="tasks" && (
