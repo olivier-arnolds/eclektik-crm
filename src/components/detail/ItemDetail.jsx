@@ -1,0 +1,423 @@
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { sc, docIcon, fmt } from '../../lib/constants';
+import { updateRow, insertRow } from '../../hooks/useSupabase';
+import { getEmailsForContact, getCalendarEvents, createCalendarEvent } from '../../lib/graph';
+import ComposeEmail from '../forms/ComposeEmail';
+import Chip from '../atoms/Chip';
+import Avatar from '../atoms/Avatar';
+import Btn from '../atoms/Btn';
+import Empty from '../atoms/Empty';
+import SubBar from '../atoms/SubBar';
+import ProjectPlanTab from './ProjectPlanTab';
+import ItemRappelTab from './ItemRappelTab';
+import EditableField from './EditableField';
+
+export default function ItemDetail({ item, onBack, extraTimeline, addNote, noteText, setNoteText, accounts, contacts, followUps, comms, tasks, calEvents, refetch }) {
+  const getAcc = (id) => accounts.find(a => a.id === id);
+  const getCts = (ids) => contacts.filter(c => ids && ids.includes(c.id));
+  const rappelsFor = (id) => followUps.filter(r => r.itemIds.includes(id));
+  const commsFor = (id) => comms.filter(c => c.itemIds.includes(id)).sort((a,b) => (b.date||'').localeCompare(a.date||''));
+  const tasksFor = (id) => tasks.filter(t => t.itemIds.includes(id));
+  const calFor = (id) => {
+    const evs = calEvents.filter(e => e.itemIds.includes(id));
+    const groups = {};
+    evs.forEach(e => { if (!groups[e.dateLabel]) groups[e.dateLabel] = []; groups[e.dateLabel].push(e); });
+    return Object.entries(groups).sort((a,b) => a[0].localeCompare(b[0]));
+  };
+
+  const isProj = ['onboarding','active','inactive','past'].includes(item.funnelStage);
+  const itemTable = item.funnelStage === 'lead' ? 'leads' : 'opportunities';
+  const [tab, setTab] = useState(isProj ? "project plan" : "overview");
+  const acc = getAcc(item.accountId);
+  const isLD = !isProj;
+  const stC = sc(item.subStatus||item.funnelStage);
+  const partners = (item.partnerIds||[]).map(getAcc).filter(Boolean);
+  const funder = item.funderId ? getAcc(item.funderId) : null;
+  const timeline = [...(extraTimeline||[]), ...(item.timeline||[])];
+
+  const tabs = isProj
+    ? ["project plan","overview","follow-ups","comms","tasks","calendar","documents","timeline"]
+    : ["overview","follow-ups","comms","tasks","calendar","documents","timeline"];
+
+  const pendingR = rappelsFor(item.id).filter(r => r.status==="no-reply").length;
+
+  const [showCompose, setShowCompose] = useState(false);
+  const [composeEmail, setComposeEmail] = useState('');
+
+  const [showTaskForm, setShowTaskForm] = useState(false);
+  const [taskForm, setTaskForm] = useState({ title: '', due_date: '', description: '' });
+  const [savingTask, setSavingTask] = useState(false);
+
+  // Calendar Graph state
+  const [graphEvents, setGraphEvents] = useState([]);
+  const [graphCalLoading, setGraphCalLoading] = useState(false);
+  const [graphCalError, setGraphCalError] = useState(null);
+  const [showMeetingForm, setShowMeetingForm] = useState(false);
+  const contactEmailPrefill = getCts(item.contactIds).map(c => c.email).filter(Boolean).join(', ');
+  const [meetingForm, setMeetingForm] = useState({ subject: '', date: '', startTime: '09:00', endTime: '09:30', attendees: '', isOnline: true });
+  const [savingMeeting, setSavingMeeting] = useState(false);
+
+  useEffect(() => {
+    setMeetingForm(f => ({ ...f, attendees: contactEmailPrefill }));
+  }, [contactEmailPrefill]);
+
+  const fetchGraphCal = useCallback(async () => {
+    setGraphCalLoading(true);
+    setGraphCalError(null);
+    try {
+      const evs = await getCalendarEvents(30);
+      setGraphEvents(evs);
+    } catch (e) {
+      setGraphCalError(e.message);
+    }
+    setGraphCalLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (tab === 'calendar') fetchGraphCal();
+  }, [tab, fetchGraphCal]);
+
+  const handleCreateMeeting = async () => {
+    if (!meetingForm.subject.trim() || !meetingForm.date) return;
+    setSavingMeeting(true);
+    const startDT = meetingForm.date + 'T' + meetingForm.startTime + ':00';
+    const endDT = meetingForm.date + 'T' + meetingForm.endTime + ':00';
+    const emails = meetingForm.attendees.split(',').map(s => s.trim()).filter(Boolean);
+    const result = await createCalendarEvent({
+      subject: meetingForm.subject.trim(),
+      startTime: startDT,
+      endTime: endDT,
+      attendeeEmails: emails,
+      isOnline: meetingForm.isOnline,
+    });
+    if (result.success) {
+      await insertRow('calendar_events', {
+        title: meetingForm.subject.trim(),
+        start_at: startDT,
+        end_at: endDT,
+        location: meetingForm.isOnline ? 'Teams meeting' : '',
+        attendees: meetingForm.attendees,
+        opportunity_id: item.funnelStage !== 'lead' ? item.id : null,
+        lead_id: item.funnelStage === 'lead' ? item.id : null,
+        contact_id: item?.contactIds?.[0] || null,
+      });
+      setMeetingForm({ subject: '', date: '', startTime: '09:00', endTime: '09:30', attendees: contactEmailPrefill, isOnline: true });
+      setShowMeetingForm(false);
+      await fetchGraphCal();
+      refetch();
+    } else {
+      setGraphCalError(result.error);
+    }
+    setSavingMeeting(false);
+  };
+
+  const fmtCalTime = (dt) => {
+    if (!dt) return '';
+    const d = new Date(dt);
+    return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false });
+  };
+
+  const fmtDateLabel = (dateStr) => {
+    const d = new Date(dateStr + 'T00:00:00');
+    const today = new Date(); today.setHours(0,0,0,0);
+    const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
+    const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    if (d.getTime() === today.getTime()) return 'Today, ' + d.getDate() + ' ' + months[d.getMonth()];
+    if (d.getTime() === tomorrow.getTime()) return 'Tomorrow, ' + d.getDate() + ' ' + months[d.getMonth()];
+    return days[d.getDay()] + ' ' + d.getDate() + ' ' + months[d.getMonth()];
+  };
+
+  const groupedGraphEvents = useMemo(() => {
+    const groups = {};
+    graphEvents.forEach(ev => {
+      const dateKey = ev.startAt ? ev.startAt.slice(0, 10) : 'unknown';
+      if (!groups[dateKey]) groups[dateKey] = [];
+      groups[dateKey].push(ev);
+    });
+    return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b));
+  }, [graphEvents]);
+
+  const evColors = ['#378ADD','#1D9E75','#D85A30','#7C5CFC','#E24B4A','#DAA520'];
+
+  const handleToggleTask = async (t) => {
+    await updateRow('tasks', t.id, { status: t.done ? 'pending' : 'done' });
+    refetch();
+  };
+
+  const handleCreateTask = async () => {
+    if (!taskForm.title.trim()) return;
+    setSavingTask(true);
+    const row = {
+      title: taskForm.title.trim(),
+      status: 'pending',
+      due_date: taskForm.due_date || null,
+      description: taskForm.description.trim() || null,
+      contact_id: item?.contactIds?.[0] || null,
+      opportunity_id: item.funnelStage !== 'lead' ? item.id : null,
+      lead_id: item.funnelStage === 'lead' ? item.id : null,
+      owner: item.owner || null,
+    };
+    await insertRow('tasks', row);
+    setTaskForm({ title: '', due_date: '', description: '' });
+    setShowTaskForm(false);
+    setSavingTask(false);
+    refetch();
+  };
+
+  return (
+    <div style={{ display:"flex", flexDirection:"column", height:"100%" }}>
+      <div style={{ background:"#FFFFFF", borderBottom:"0.5px solid #D3D1C7", padding:"12px 18px 0", flexShrink:0 }}>
+        <button onClick={onBack} style={{ background:"none", border:"none", cursor:"pointer", fontSize:12, color:"#888780", fontFamily:"inherit", padding:0, marginBottom:10 }}>← back</button>
+        <div style={{ display:"flex", alignItems:"flex-start", gap:12, paddingBottom:12 }}>
+          <div style={{ width:44, height:44, borderRadius:10, background:stC.bg, color:stC.color, display:"flex", alignItems:"center", justifyContent:"center", fontSize:20, flexShrink:0 }}>
+            {item.funnelStage==="lead"?"◈":item.funnelStage==="opportunity"?"◉":"●"}
+          </div>
+          <div style={{ flex:1 }}>
+            <div style={{ fontSize:16, fontWeight:500 }}>{item.title}</div>
+            <div style={{ display:"flex", gap:5, marginTop:5, flexWrap:"wrap" }}>
+              <Chip>{acc?.flag} {acc?.name}</Chip>
+              <Chip bg={stC.bg} color={stC.color}>{item.funnelStage}</Chip>
+              {item.productLine && <Chip>{item.productLine}</Chip>}
+              <Chip>Owner: {item.owner}</Chip>
+              {funder && <Chip bg="#FAEEDA" color="#633806">ECIF {fmt(item.fundingAmount||0)}</Chip>}
+            </div>
+            {isLD && item.subStatus && <div style={{ marginTop:10 }}><SubBar current={item.subStatus} /></div>}
+          </div>
+          <div style={{ textAlign:"right", flexShrink:0 }}>
+            <div style={{ fontSize:22, fontWeight:500 }}>{fmt(item.value)}</div>
+            {isLD && <div style={{ fontSize:12, color:"#888780", marginTop:2 }}>{item.probability}% · closes {item.closeDate}</div>}
+            {item.startDate && <div style={{ fontSize:12, color:"#888780", marginTop:2 }}>{item.startDate}{item.endDate?` → ${item.endDate}`:""}</div>}
+          </div>
+        </div>
+        <div style={{ display:"flex", borderTop:"0.5px solid #D3D1C7", marginLeft:-18, marginRight:-18, paddingLeft:18, overflowX:"auto" }}>
+          {tabs.map(t => (
+            <button key={t} onClick={() => setTab(t)} style={{ padding:"8px 12px", fontSize:11, cursor:"pointer", background:"transparent", border:"none", borderBottom:tab===t?"2px solid #378ADD":"2px solid transparent", color:tab===t?"#2C2C2A":"#888780", fontWeight:tab===t?500:400, fontFamily:"inherit", textTransform:"capitalize", whiteSpace:"nowrap", flexShrink:0 }}>
+              {t}
+              {t==="follow-ups" && pendingR>0 && <span style={{ marginLeft:3, background:"#E24B4A", color:"#fff", fontSize:9, padding:"1px 4px", borderRadius:6 }}>{pendingR}</span>}
+              {t==="comms" && commsFor(item.id).filter(c=>c.unread).length>0 && <span style={{ marginLeft:3, background:"#378ADD", color:"#fff", fontSize:9, padding:"1px 4px", borderRadius:6 }}>{commsFor(item.id).filter(c=>c.unread).length}</span>}
+              {t==="tasks" && tasksFor(item.id).filter(t=>!t.done).length>0 && <span style={{ marginLeft:3, background:"#888780", color:"#fff", fontSize:9, padding:"1px 4px", borderRadius:6 }}>{tasksFor(item.id).filter(t=>!t.done).length}</span>}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ flex:1, overflowY:"auto", padding:"16px 18px" }}>
+        {tab==="project plan" && <ProjectPlanTab item={item} />}
+        {tab==="overview" && (
+          <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+            <div style={{ background:"#FFFFFF", borderRadius:8, border:"0.5px solid #D3D1C7", padding:"12px 14px" }}>
+              <div style={{ fontSize:10, fontWeight:500, color:"#888780", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:8 }}>Parties</div>
+              {[{ label:"Client", a:acc }, ...partners.map(p=>({ label:"Partner", a:p })), funder?{ label:item.funderLabel||"Funder", a:funder, funding:item.fundingAmount }:null].filter(Boolean).map((p,i) => (
+                <div key={i} style={{ display:"flex", alignItems:"center", gap:8, padding:"7px 0", borderBottom:"0.5px solid #F1EFE8" }}>
+                  <span style={{ fontSize:18 }}>{p.a?.flag}</span>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:12, fontWeight:500 }}>{p.a?.name}</div>
+                    <div style={{ fontSize:11, color:"#888780" }}>{p.label}</div>
+                  </div>
+                  {p.funding && <Chip bg="#FAEEDA" color="#633806" size={10}>€{(p.funding/1000).toFixed(0)}k ECIF</Chip>}
+                </div>
+              ))}
+            </div>
+            <div style={{ background:"#FFFFFF", borderRadius:8, border:"0.5px solid #D3D1C7", padding:"12px 14px" }}>
+              <div style={{ fontSize:10, fontWeight:500, color:"#888780", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:8 }}>Contacts</div>
+              {getCts(item.contactIds).map(c => (
+                <div key={c.id} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
+                  <Avatar initials={c.initials} bg={c.avatarBg} color={c.avatarColor} size={32} />
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:13, fontWeight:500 }}>{c.name}</div>
+                    <div style={{ fontSize:11, color:"#888780" }}>{c.role} · {getAcc(c.accountId)?.name}</div>
+                    <div style={{ fontSize:11, color:"#5F5E5A", marginTop:2 }}>
+                      <EditableField value={c.email || ""} field="email" table="contacts" rowId={c.id} type="text" displayValue={c.email || "Add email..."} refetch={refetch} updateRow={updateRow} />
+                    </div>
+                    <div style={{ fontSize:11, color:"#5F5E5A", marginTop:1 }}>
+                      <EditableField value={c.phone || ""} field="phone" table="contacts" rowId={c.id} type="text" displayValue={c.phone || "Add phone..."} refetch={refetch} updateRow={updateRow} />
+                    </div>
+                    {c.source && <div style={{ fontSize:10, color:"#378ADD", marginTop:2 }}>Source: {c.source}</div>}
+                  </div>
+                  <div style={{ display:"flex", gap:5 }}><Btn small onClick={() => { setComposeEmail(c.email || ''); setShowCompose(true); }}>✉</Btn><Btn small>◎</Btn></div>
+                </div>
+              ))}
+            </div>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8 }}>
+              <div style={{ background:"#FFFFFF", borderRadius:8, border:"0.5px solid #D3D1C7", padding:"10px 12px" }}>
+                <div style={{ fontSize:10, color:"#888780", textTransform:"uppercase", letterSpacing:"0.06em", fontWeight:500, marginBottom:4 }}>Value</div>
+                <div style={{ fontSize:14, fontWeight:500 }}>
+                  <EditableField value={item.value} field="value" table={itemTable} rowId={item.id} type="number" displayValue={fmt(item.value)} refetch={refetch} updateRow={updateRow} />
+                </div>
+              </div>
+              <div style={{ background:"#FFFFFF", borderRadius:8, border:"0.5px solid #D3D1C7", padding:"10px 12px" }}>
+                <div style={{ fontSize:10, color:"#888780", textTransform:"uppercase", letterSpacing:"0.06em", fontWeight:500, marginBottom:4 }}>{isLD ? "Probability" : "Owner"}</div>
+                <div style={{ fontSize:14, fontWeight:500 }}>
+                  {isLD
+                    ? <EditableField value={item.probability} field="probability" table={itemTable} rowId={item.id} type="number" suffix="%" refetch={refetch} updateRow={updateRow} />
+                    : <EditableField value={item.owner} field="owner" table={itemTable} rowId={item.id} options={["MVG","OA","YK"]} refetch={refetch} updateRow={updateRow} />
+                  }
+                </div>
+              </div>
+              <div style={{ background:"#FFFFFF", borderRadius:8, border:"0.5px solid #D3D1C7", padding:"10px 12px" }}>
+                <div style={{ fontSize:10, color:"#888780", textTransform:"uppercase", letterSpacing:"0.06em", fontWeight:500, marginBottom:4 }}>{isLD ? "Close date" : "Period"}</div>
+                <div style={{ fontSize:14, fontWeight:500 }}>
+                  {isLD
+                    ? <EditableField value={item.closeDate} field="close_date" table={itemTable} rowId={item.id} type="date" refetch={refetch} updateRow={updateRow} />
+                    : <EditableField value={item.startDate || ""} field="start_date" table={itemTable} rowId={item.id} type="date" displayValue={item.startDate || "—"} refetch={refetch} updateRow={updateRow} />
+                  }
+                </div>
+              </div>
+            </div>
+            <div style={{ background:"#FFFFFF", borderRadius:8, border:"0.5px solid #D3D1C7", padding:"12px 14px" }}>
+              <div style={{ fontSize:10, fontWeight:500, color:"#888780", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:6 }}>Notes</div>
+              <div style={{ fontSize:13, color:"#5F5E5A", lineHeight:1.6 }}>
+                <EditableField value={item.notes || ""} field="notes" table={itemTable} rowId={item.id} type="textarea" displayValue={item.notes || "Click to add notes..."} refetch={refetch} updateRow={updateRow} />
+              </div>
+            </div>
+          </div>
+        )}
+        {tab==="follow-ups" && <ItemRappelTab itemId={item.id} item={item} followUps={followUps} contacts={contacts} refetch={refetch} />}
+        {tab==="comms" && (
+          <div>
+            <button onClick={() => { const c = getCts(item.contactIds)[0]; setComposeEmail(c?.email || ''); setShowCompose(true); }} style={{ display:"flex", alignItems:"center", gap:6, width:"100%", padding:"7px 12px", borderRadius:7, border:"0.5px solid #B4B2A9", fontSize:12, cursor:"pointer", background:"#042C53", color:"#B5D4F4", fontFamily:"inherit", marginBottom:10, justifyContent:"center", fontWeight:500 }}>✉ Compose message</button>
+            {commsFor(item.id).length === 0 ? <Empty text="No communications for this item." /> :
+              commsFor(item.id).map((m,i) => (
+                <div key={m.id} style={{ display:"flex", gap:10, padding:"9px 0", borderBottom:i<commsFor(item.id).length-1?"0.5px solid #D3D1C7":"none", cursor:"pointer" }}>
+                  <div style={{ width:28, height:28, borderRadius:7, background:m.bg, color:m.tc, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:11 }}>{m.icon}</div>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontSize:12, fontWeight:500 }}>{m.from}</div>
+                    <div style={{ fontSize:11, color:"#888780", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{m.sub}</div>
+                    <div style={{ fontSize:10, color:"#888780", marginTop:1 }}>{m.time}</div>
+                  </div>
+                  {m.unread && <div style={{ width:5, height:5, borderRadius:"50%", background:"#378ADD", marginTop:6, flexShrink:0 }} />}
+                </div>
+              ))
+            }
+          </div>
+        )}
+        {tab==="tasks" && (
+          <div>
+            <button onClick={() => setShowTaskForm(f => !f)} style={{ display:"flex", alignItems:"center", gap:6, width:"100%", padding:"7px 12px", borderRadius:7, border:"0.5px solid #B4B2A9", fontSize:12, cursor:"pointer", background:"#042C53", color:"#B5D4F4", fontFamily:"inherit", marginBottom:10, justifyContent:"center", fontWeight:500 }}>+ Add task</button>
+            {showTaskForm && (
+              <div style={{ background:"#FFFFFF", borderRadius:9, border:"0.5px solid #378ADD", padding:"12px 14px", marginBottom:10, display:"flex", flexDirection:"column", gap:8 }}>
+                <input placeholder="Title *" value={taskForm.title} onChange={e => setTaskForm(f => ({ ...f, title: e.target.value }))} style={{ padding:"7px 10px", borderRadius:6, border:"0.5px solid #B4B2A9", fontSize:12, fontFamily:"inherit", outline:"none", background:"#F1EFE8" }} />
+                <input type="date" value={taskForm.due_date} onChange={e => setTaskForm(f => ({ ...f, due_date: e.target.value }))} style={{ padding:"7px 10px", borderRadius:6, border:"0.5px solid #B4B2A9", fontSize:12, fontFamily:"inherit", outline:"none", background:"#F1EFE8" }} />
+                <textarea placeholder="Description (optional)" value={taskForm.description} onChange={e => setTaskForm(f => ({ ...f, description: e.target.value }))} rows={2} style={{ padding:"7px 10px", borderRadius:6, border:"0.5px solid #B4B2A9", fontSize:12, fontFamily:"inherit", outline:"none", background:"#F1EFE8", resize:"vertical" }} />
+                <div style={{ display:"flex", gap:6, justifyContent:"flex-end" }}>
+                  <Btn small onClick={() => setShowTaskForm(false)}>Cancel</Btn>
+                  <Btn small primary onClick={handleCreateTask} disabled={savingTask}>{savingTask ? 'Saving...' : 'Create'}</Btn>
+                </div>
+              </div>
+            )}
+            {tasksFor(item.id).length === 0 ? <Empty text="No tasks for this item." /> :
+              tasksFor(item.id).map((t,i,arr) => (
+                <div key={t.id} style={{ display:"flex", gap:10, padding:"9px 0", borderBottom:i<arr.length-1?"0.5px solid #D3D1C7":"none", alignItems:"flex-start" }}>
+                  <div onClick={() => handleToggleTask(t)} style={{ width:16, height:16, borderRadius:4, border:`0.5px solid ${t.done?"#1D9E75":"#888780"}`, background:t.done?"#1D9E75":"transparent", flexShrink:0, marginTop:1, display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer" }}>
+                    {t.done && <span style={{ color:"#fff", fontSize:9, fontWeight:700 }}>✓</span>}
+                  </div>
+                  <div>
+                    <div style={{ fontSize:12, color:t.done?"#888780":"#2C2C2A", textDecoration:t.done?"line-through":"none" }}>{t.text}</div>
+                    <div style={{ fontSize:10, color:t.overdue?"#D85A30":"#888780", marginTop:2 }}>{t.due}</div>
+                  </div>
+                </div>
+              ))
+            }
+          </div>
+        )}
+        {tab==="calendar" && (
+          <div>
+            <button onClick={() => setShowMeetingForm(f => !f)} style={{ display:"flex", alignItems:"center", gap:6, width:"100%", padding:"7px 12px", borderRadius:7, border:"0.5px solid #B4B2A9", fontSize:12, cursor:"pointer", background:"#042C53", color:"#B5D4F4", fontFamily:"inherit", marginBottom:10, justifyContent:"center", fontWeight:500 }}>+ Schedule meeting</button>
+            {showMeetingForm && (
+              <div style={{ background:"#FFFFFF", borderRadius:9, border:"0.5px solid #378ADD", padding:"12px 14px", marginBottom:10, display:"flex", flexDirection:"column", gap:8 }}>
+                <input placeholder="Subject *" value={meetingForm.subject} onChange={e => setMeetingForm(f => ({ ...f, subject: e.target.value }))} style={{ padding:"7px 10px", borderRadius:6, border:"0.5px solid #B4B2A9", fontSize:12, fontFamily:"inherit", outline:"none", background:"#F1EFE8" }} />
+                <input type="date" value={meetingForm.date} onChange={e => setMeetingForm(f => ({ ...f, date: e.target.value }))} style={{ padding:"7px 10px", borderRadius:6, border:"0.5px solid #B4B2A9", fontSize:12, fontFamily:"inherit", outline:"none", background:"#F1EFE8" }} />
+                <div style={{ display:"flex", gap:8 }}>
+                  <input type="time" value={meetingForm.startTime} onChange={e => setMeetingForm(f => ({ ...f, startTime: e.target.value }))} style={{ flex:1, padding:"7px 10px", borderRadius:6, border:"0.5px solid #B4B2A9", fontSize:12, fontFamily:"inherit", outline:"none", background:"#F1EFE8" }} />
+                  <span style={{ alignSelf:"center", fontSize:12, color:"#888780" }}>-</span>
+                  <input type="time" value={meetingForm.endTime} onChange={e => setMeetingForm(f => ({ ...f, endTime: e.target.value }))} style={{ flex:1, padding:"7px 10px", borderRadius:6, border:"0.5px solid #B4B2A9", fontSize:12, fontFamily:"inherit", outline:"none", background:"#F1EFE8" }} />
+                </div>
+                <input placeholder="Attendees (emails, comma-separated)" value={meetingForm.attendees} onChange={e => setMeetingForm(f => ({ ...f, attendees: e.target.value }))} style={{ padding:"7px 10px", borderRadius:6, border:"0.5px solid #B4B2A9", fontSize:12, fontFamily:"inherit", outline:"none", background:"#F1EFE8" }} />
+                <label style={{ display:"flex", alignItems:"center", gap:6, fontSize:12, color:"#5F5E5A", cursor:"pointer" }}>
+                  <input type="checkbox" checked={meetingForm.isOnline} onChange={e => setMeetingForm(f => ({ ...f, isOnline: e.target.checked }))} />
+                  Online meeting (Teams)
+                </label>
+                {graphCalError && <div style={{ fontSize:11, color:"#E24B4A" }}>{graphCalError}</div>}
+                <div style={{ display:"flex", gap:6, justifyContent:"flex-end" }}>
+                  <Btn small onClick={() => setShowMeetingForm(false)}>Cancel</Btn>
+                  <Btn small primary onClick={handleCreateMeeting} disabled={savingMeeting}>{savingMeeting ? 'Creating...' : 'Create'}</Btn>
+                </div>
+              </div>
+            )}
+            {graphCalLoading && <div style={{ fontSize:12, color:"#888780", textAlign:"center", padding:16 }}>Loading calendar...</div>}
+            {!graphCalLoading && !localStorage.getItem('graph_token') && graphEvents.length === 0 && (
+              <div style={{ background:"#F1EFE8", borderRadius:7, padding:"10px 12px", fontSize:12, color:"#888780", textAlign:"center", marginBottom:10 }}>Log in again to load calendar</div>
+            )}
+            {!graphCalLoading && groupedGraphEvents.length === 0 && localStorage.getItem('graph_token') && (
+              <Empty text="No upcoming meetings found." />
+            )}
+            {groupedGraphEvents.map(([dateKey, evs]) => (
+              <div key={dateKey} style={{ marginBottom:14 }}>
+                <div style={{ fontSize:10, fontWeight:500, color:"#888780", textTransform:"uppercase", letterSpacing:"0.05em", marginBottom:6 }}>{fmtDateLabel(dateKey)}</div>
+                {evs.map((ev, idx) => (
+                  <div key={ev.id} style={{ display:"flex", gap:8, padding:"7px 10px", borderRadius:7, border:"0.5px solid #D3D1C7", marginBottom:5, cursor:"pointer" }}>
+                    <div style={{ width:3, borderRadius:2, background:evColors[idx % evColors.length], flexShrink:0, alignSelf:"stretch" }} />
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                        <div style={{ fontSize:12, fontWeight:500 }}>{ev.title}</div>
+                        {ev.isOnline && <span style={{ fontSize:9, background:"#E8F0FE", color:"#378ADD", padding:"1px 5px", borderRadius:4, fontWeight:500 }}>Teams</span>}
+                      </div>
+                      <div style={{ fontSize:11, color:"#888780" }}>{fmtCalTime(ev.startAt)} – {fmtCalTime(ev.endAt)}</div>
+                      {ev.attendees && <div style={{ fontSize:10, color:"#888780", marginTop:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{ev.attendees}</div>}
+                      {ev.location && !ev.isOnline && <div style={{ fontSize:10, color:"#888780", marginTop:1 }}>{ev.location}</div>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
+        {tab==="documents" && (
+          <div>
+            {(item.documents||[]).length > 0
+              ? (item.documents||[]).map((doc,i) => (
+                <div key={i} style={{ background:"#FFFFFF", borderRadius:8, border:"0.5px solid #D3D1C7", padding:"11px 14px", marginBottom:8, display:"flex", alignItems:"center", gap:10, cursor:"pointer" }}
+                  onMouseEnter={e => e.currentTarget.style.borderColor="#888780"}
+                  onMouseLeave={e => e.currentTarget.style.borderColor="#D3D1C7"}
+                >
+                  <div style={{ width:34, height:34, borderRadius:7, background:"#F1EFE8", display:"flex", alignItems:"center", justifyContent:"center", fontSize:15, flexShrink:0 }}>{docIcon[doc.type]||"📄"}</div>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:13, fontWeight:500 }}>{doc.name}</div>
+                    <div style={{ fontSize:11, color:"#888780", marginTop:2 }}>Added {doc.date}</div>
+                  </div>
+                  <span style={{ fontSize:11, color:"#888780" }}>↓</span>
+                </div>
+              ))
+              : <Empty text="No documents yet." />
+            }
+            <button style={{ display:"flex", alignItems:"center", gap:6, marginTop:4, padding:"8px 14px", borderRadius:7, border:"0.5px dashed #B4B2A9", fontSize:12, cursor:"pointer", background:"transparent", color:"#888780", fontFamily:"inherit", width:"100%" }}>+ Upload document</button>
+          </div>
+        )}
+        {tab==="timeline" && timeline.map((e,i) => (
+          <div key={i} style={{ display:"flex", gap:12, marginBottom:12, position:"relative" }}>
+            {i < timeline.length-1 && <div style={{ position:"absolute", left:9, top:22, bottom:-12, width:"0.5px", background:"#D3D1C7" }} />}
+            <div style={{ width:20, height:20, borderRadius:"50%", background:stC.bg, color:stC.color, border:`0.5px solid ${stC.border}`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:9, flexShrink:0, zIndex:1 }}>{e.icon}</div>
+            <div style={{ flex:1, background:"#FFFFFF", borderRadius:8, border:"0.5px solid #D3D1C7", padding:"9px 12px" }}>
+              <div style={{ display:"flex", justifyContent:"space-between", marginBottom:3 }}>
+                <div style={{ fontSize:12, fontWeight:500 }}>{e.type}</div>
+                <div style={{ fontSize:11, color:"#888780" }}>{e.time}</div>
+              </div>
+              <div style={{ fontSize:12, color:"#5F5E5A", lineHeight:1.5 }}>{e.text}</div>
+              <div style={{ fontSize:10, color:"#888780", marginTop:5 }}>→ {e.owner}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ display:"flex", gap:8, padding:"10px 18px", borderTop:"0.5px solid #D3D1C7", background:"#FFFFFF", flexShrink:0 }}>
+        <input value={noteText} onChange={e => setNoteText(e.target.value)} onKeyDown={e => e.key==="Enter" && addNote(item.id)}
+          placeholder="Log activity, note, or update..."
+          style={{ flex:1, padding:"7px 11px", borderRadius:7, border:"0.5px solid #B4B2A9", fontSize:12, background:"#F1EFE8", color:"#2C2C2A", fontFamily:"inherit", outline:"none" }} />
+        <Btn onClick={() => addNote(item.id)}>Log</Btn>
+        <Btn primary>Analyse</Btn>
+      </div>
+      <ComposeEmail open={showCompose} onClose={() => setShowCompose(false)} contactEmail={composeEmail} item={item} refetch={refetch} />
+    </div>
+  );
+}

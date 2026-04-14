@@ -6,15 +6,16 @@ import { getFlag, avatarColorFromName, getInitials } from '../lib/constants'
 function adaptCompany(row) {
   const ac = avatarColorFromName(row.name)
   return {
+    ...row,
     id: row.id,
     name: row.name || '',
     type: row.type || 'Klant',
     flag: getFlag(row.country),
-    city: row.address || '',
+    city: row.address || row.city || '',
     country: row.country || '',
     industry: row.industry || '',
     website: row.website || '',
-    size: row.employee_count || '',
+    size: row.size || '',
     since: row.created_at ? new Date(row.created_at).toLocaleDateString('en', { month: 'short', year: 'numeric' }) : '',
     avatarBg: ac.bg,
     avatarColor: ac.color,
@@ -26,6 +27,7 @@ function adaptContact(row, companies) {
   const ac = avatarColorFromName(row.full_name || `${row.first_name} ${row.last_name}`)
   const name = row.full_name || `${row.first_name || ''} ${row.last_name || ''}`.trim()
   return {
+    ...row,
     id: row.id,
     name,
     accountId: row.company_id,

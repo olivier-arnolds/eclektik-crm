@@ -13,7 +13,7 @@ function Root() {
         height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
         background: '#F1EFE8', fontFamily: "'DM Sans', sans-serif", color: '#888780'
       }}>
-        Laden...
+        Loading...
       </div>
     )
   }

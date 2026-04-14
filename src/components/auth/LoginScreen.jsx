@@ -19,10 +19,10 @@ export default function LoginScreen() {
           ECLECTIK BD
         </div>
         <div style={{ fontSize: 24, fontWeight: 600, marginBottom: 8 }}>
-          Welkom terug
+          Welcome back
         </div>
         <div style={{ fontSize: 13, color: '#6b6b80', marginBottom: 40, lineHeight: 1.6 }}>
-          Log in met je @eclectik.co Microsoft account om toegang te krijgen tot het BD Dashboard.
+          Log in with your @eclectik.co Microsoft account to access the BD Dashboard.
         </div>
 
         {error && (
@@ -48,11 +48,11 @@ export default function LoginScreen() {
             <rect x="1" y="11" width="9" height="9" fill="#00A4EF"/>
             <rect x="11" y="11" width="9" height="9" fill="#FFB900"/>
           </svg>
-          Login met Microsoft
+          Login with Microsoft
         </button>
 
         <div style={{ fontSize: 11, color: '#6b6b80', marginTop: 20 }}>
-          Alleen @eclectik.co accounts hebben toegang
+          Only @eclectik.co accounts have access
         </div>
       </div>
     </div>

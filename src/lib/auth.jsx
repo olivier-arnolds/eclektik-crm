@@ -31,7 +31,7 @@ export function AuthProvider({ children }) {
     const email = session.user?.email || ''
     if (!email.endsWith('@' + ALLOWED_DOMAIN)) {
       supabase.auth.signOut()
-      setError('Alleen @eclectik.co accounts hebben toegang.')
+      setError('Only @eclectik.co accounts have access.')
       setSession(null)
       return
     }
@@ -47,7 +47,7 @@ export function AuthProvider({ children }) {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'azure',
       options: {
-        scopes: 'email profile Mail.Read Mail.Send Calendars.Read',
+        scopes: 'email profile openid User.Read Mail.Read Mail.Send Calendars.Read',
         redirectTo: window.location.origin
       }
     })
@@ -60,8 +60,22 @@ export function AuthProvider({ children }) {
     setSession(null)
   }
 
+  async function reconnectMicrosoft() {
+    // Force a new OAuth flow to get a fresh provider_token (for Graph API)
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'azure',
+      options: {
+        scopes: 'email profile openid User.Read Mail.Read Mail.Send Calendars.Read',
+        redirectTo: window.location.origin
+      }
+    })
+    if (error) setError(error.message)
+  }
+
+  const hasGraphToken = !!localStorage.getItem('graph_token')
+
   return (
-    <AuthContext.Provider value={{ session, loading, error, login, logout }}>
+    <AuthContext.Provider value={{ session, loading, error, login, logout, reconnectMicrosoft, hasGraphToken }}>
       {children}
     </AuthContext.Provider>
   )
