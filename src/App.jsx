@@ -25,6 +25,10 @@ import AccountDetail from './components/accounts/AccountDetail';
 import ContactsList from './components/contacts/ContactsList';
 import ContactDetail from './components/contacts/ContactDetail';
 
+// Playbooks
+import PlaybooksList from './components/playbooks/PlaybooksList';
+import PlaybookDetail from './components/playbooks/PlaybookDetail';
+
 export default function BDDashboard() {
   const { accounts, contacts, allItems, followUps, tasks, comms, calEvents, loading, refetch } = usePipelineData();
   const { logout, session, reconnectMicrosoft, hasGraphToken } = useAuth();
@@ -35,6 +39,7 @@ export default function BDDashboard() {
   const [selectedItem,       setSelectedItem]       = useState(null);
   const [selectedAccount,    setSelectedAccount]    = useState(null);
   const [selectedContact,    setSelectedContact]    = useState(null);
+  const [selectedPlaybook,   setSelectedPlaybook]   = useState(null);
   const [rightTab,           setRightTab]           = useState("rappel");
   const [noteText,           setNoteText]           = useState("");
   const [extraTimeline,      setExtraTimeline]      = useState({});
@@ -113,6 +118,10 @@ export default function BDDashboard() {
     if (viewMode==="swimlane") mainContent = <SwimlaneView onSelectItem={setSelectedItem} search="" allItems={allItems} accounts={accounts} contacts={contacts} followUps={followUps} refetch={refetch} />;
     else if (viewMode==="timeline") mainContent = <TimelineView onSelectItem={setSelectedItem} allItems={allItems} accounts={accounts} />;
     else mainContent = <ListView stageKey={activeFunnelStage} onSelectItem={setSelectedItem} search="" allItems={allItems} accounts={accounts} contacts={contacts} followUps={followUps} refetch={refetch} />;
+  } else if (sidebarMode==="playbooks") {
+    mainContent = selectedPlaybook
+      ? <PlaybookDetail playbook={selectedPlaybook} onBack={() => setSelectedPlaybook(null)} contacts={contacts} accounts={accounts} />
+      : <PlaybooksList onSelectPlaybook={(pb) => setSelectedPlaybook(pb)} />;
   } else if (sidebarMode==="contacts") {
     mainContent = selectedContact
       ? <ContactDetail contact={selectedContact} accounts={accounts} allItems={allItems} onBack={() => setSelectedContact(null)} refetch={refetch} />

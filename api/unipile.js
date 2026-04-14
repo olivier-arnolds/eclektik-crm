@@ -259,7 +259,28 @@ export default async function handler(req, res) {
       return res.status(result.error ? 400 : 200).json(result);
     }
 
-    return res.status(400).json({ error: `Unknown action: ${action}. Available: start-chat, send-message, get-profile, list-accounts, search, get-posts, send-invite, search-people, get-comments, get-reactions, check-relation` });
+    // ── REGISTER WEBHOOK ──
+    if (action === 'register-webhook' && req.method === 'POST') {
+      const webhookUrl = 'https://crm.eclectik-insights.co/api/unipile-webhook';
+      const result = await unipileRequest('POST', '/webhooks', {
+        request_url: webhookUrl,
+        source: 'messaging',
+        format: 'json',
+        events: ['message_received'],
+        headers: [{ key: 'Content-Type', value: 'application/json' }],
+        enabled: true,
+        name: 'eclectik-crm',
+      });
+      return res.status(result.error ? 400 : 200).json(result);
+    }
+
+    // ── LIST WEBHOOKS ──
+    if (action === 'list-webhooks') {
+      const result = await unipileRequest('GET', '/webhooks');
+      return res.status(result.error ? 400 : 200).json(result);
+    }
+
+    return res.status(400).json({ error: `Unknown action: ${action}` });
 
   } catch (error) {
     console.error('Unipile proxy error:', error);

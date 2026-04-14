@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { typeColors, fmt } from '../../lib/constants';
 import { updateRow } from '../../hooks/useSupabase';
 import { supabase } from '../../supabase';
@@ -33,12 +33,21 @@ function FieldRow({ label, value, field, accountId, refetch, companyName, dropdo
   const [editValue, setEditValue] = useState(value || '');
   const [displayValue, setDisplayValue] = useState(value);
   const [saved, setSaved] = useState(false);
+  const savedRef = useRef(false);
+
+  // Sync displayValue with prop when it changes from outside (e.g. refetch)
+  // BUT skip if we just saved (to prevent the flash-back)
+  useEffect(() => {
+    if (savedRef.current) return;
+    setDisplayValue(value);
+  }, [value]);
 
   const save = async () => {
+    savedRef.current = true;
     setDisplayValue(editValue);
     setEditing(false);
     setSaved(true);
-    setTimeout(() => setSaved(false), 1500);
+    setTimeout(() => { setSaved(false); savedRef.current = false; }, 2000);
     await updateRow('companies', accountId, { [field]: editValue || null });
   };
 

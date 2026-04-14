@@ -49,6 +49,11 @@ export default function Sidebar({ sidebarMode, setSidebarMode, activeFunnelStage
             <div style={{ flex:1, fontSize:13 }}>Contacts</div>
             <div style={{ fontSize:11, background:"#F1EFE8", color:"#888780", padding:"1px 7px", borderRadius:10, border:"0.5px solid #D3D1C7" }}>{contactsCount}</div>
           </div>
+          <div onClick={() => setSidebarMode("playbooks")}
+            style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 14px", cursor:"pointer", background:"transparent" }}>
+            <div style={{ fontSize:14, flexShrink:0 }}>{"\uD83D\uDCCB"}</div>
+            <div style={{ flex:1, fontSize:13 }}>Playbooks</div>
+          </div>
           <HDivider />
           <SLabel>Pipeline stages</SLabel>
           {FUNNEL_STAGES.map(s => {
@@ -95,6 +100,11 @@ export default function Sidebar({ sidebarMode, setSidebarMode, activeFunnelStage
             <div style={{ flex:1, fontSize:13, fontWeight:500 }}>Contacts</div>
             <div style={{ fontSize:11, background:"#059669", color:"#fff", padding:"1px 7px", borderRadius:10 }}>{contactsCount}</div>
           </div>
+          <div onClick={() => setSidebarMode("playbooks")}
+            style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 14px", cursor:"pointer", background:"transparent" }}>
+            <div style={{ fontSize:14, flexShrink:0 }}>{"\uD83D\uDCCB"}</div>
+            <div style={{ flex:1, fontSize:13 }}>Playbooks</div>
+          </div>
           <HDivider />
           <SLabel>Pipeline stages</SLabel>
           {FUNNEL_STAGES.map(s => {
@@ -123,6 +133,11 @@ export default function Sidebar({ sidebarMode, setSidebarMode, activeFunnelStage
             <div style={{ fontSize:14, flexShrink:0 }}>👤</div>
             <div style={{ flex:1, fontSize:13 }}>Contacts</div>
             <div style={{ fontSize:11, background:"#F1EFE8", color:"#888780", padding:"1px 7px", borderRadius:10, border:"0.5px solid #D3D1C7" }}>{contactsCount}</div>
+          </div>
+          <div onClick={() => setSidebarMode("playbooks")}
+            style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 14px", cursor:"pointer", background:"transparent" }}>
+            <div style={{ fontSize:14, flexShrink:0 }}>{"\uD83D\uDCCB"}</div>
+            <div style={{ flex:1, fontSize:13 }}>Playbooks</div>
           </div>
           <HDivider />
           <SLabel>Pipeline stages</SLabel>
@@ -157,6 +172,40 @@ export default function Sidebar({ sidebarMode, setSidebarMode, activeFunnelStage
                   <div style={{ fontSize:12, fontWeight:500, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{acc.name}</div>
                 </div>
                 <Chip bg={tc.bg} color={tc.color} size={9}>{acc.type}</Chip>
+              </div>
+            );
+          })}
+        </>
+      )}
+      {sidebarMode==="playbooks" && (
+        <>
+          <SLabel>Directory</SLabel>
+          <div onClick={() => setSidebarMode("accounts")}
+            style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 14px", cursor:"pointer", background:"transparent" }}>
+            <div style={{ fontSize:14, flexShrink:0 }}>🏢</div>
+            <div style={{ flex:1, fontSize:13 }}>Companies</div>
+            <div style={{ fontSize:11, background:"#F1EFE8", color:"#888780", padding:"1px 7px", borderRadius:10, border:"0.5px solid #D3D1C7" }}>{companiesCount}</div>
+          </div>
+          <div onClick={() => setSidebarMode("contacts")}
+            style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 14px", cursor:"pointer", background:"transparent" }}>
+            <div style={{ fontSize:14, flexShrink:0 }}>👤</div>
+            <div style={{ flex:1, fontSize:13 }}>Contacts</div>
+            <div style={{ fontSize:11, background:"#F1EFE8", color:"#888780", padding:"1px 7px", borderRadius:10, border:"0.5px solid #D3D1C7" }}>{contactsCount}</div>
+          </div>
+          <div style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 14px", cursor:"pointer", background:"#F1EFE8" }}>
+            <div style={{ fontSize:14, flexShrink:0 }}>{"\uD83D\uDCCB"}</div>
+            <div style={{ flex:1, fontSize:13, fontWeight:500 }}>Playbooks</div>
+          </div>
+          <HDivider />
+          <SLabel>Pipeline stages</SLabel>
+          {FUNNEL_STAGES.map(s => {
+            const stC = sc(s.key);
+            return (
+              <div key={s.key} onClick={() => { setSidebarMode("funnel"); setActiveFunnelStage(s.key); setViewMode("list"); setSelectedItem(null); setSearch(""); }}
+                style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 14px", cursor:"pointer", background:"transparent" }}>
+                <div style={{ width:8, height:8, borderRadius:"50%", background:stC.dot, flexShrink:0 }} />
+                <div style={{ flex:1, fontSize:13 }}>{s.label}</div>
+                <div style={{ fontSize:11, background:"#F1EFE8", color:"#888780", padding:"1px 7px", borderRadius:10, border:"0.5px solid #D3D1C7" }}>{stageCounts[s.key]||0}</div>
               </div>
             );
           })}

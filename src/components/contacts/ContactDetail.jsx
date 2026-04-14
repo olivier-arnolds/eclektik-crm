@@ -82,6 +82,19 @@ export default function ContactDetail({ contact, accounts, allItems, onBack, ref
   const [expandedEmail, setExpandedEmail] = useState(null);
   const [showCompose, setShowCompose] = useState(false);
   const [showLinkedInCompose, setShowLinkedInCompose] = useState(false);
+  const [showEnrollPlaybook, setShowEnrollPlaybook] = useState(false);
+  const [availablePlaybooks, setAvailablePlaybooks] = useState(null);
+  const [enrolling, setEnrolling] = useState(null);
+  const [enrollResult, setEnrollResult] = useState(null);
+
+  useEffect(() => {
+    if (showEnrollPlaybook) {
+      supabase.from('playbooks').select('*, playbook_steps(id)').in('status', ['active', 'draft'])
+        .then(({ data }) => {
+          setAvailablePlaybooks((data || []).map(pb => ({ ...pb, step_count: pb.playbook_steps?.length || 0 })));
+        });
+    }
+  }, [showEnrollPlaybook]);
   const [composeForm, setComposeForm] = useState({ subject: '', body: '', cc: '' });
   const [sending, setSending] = useState(false);
   const [sendResult, setSendResult] = useState(null);
@@ -245,18 +258,22 @@ export default function ContactDetail({ contact, accounts, allItems, onBack, ref
   }, [selectedChat]);
 
   /* ── Edit helpers ──────────────────────────────────────────── */
+  const [localOverrides, setLocalOverrides] = useState({});
   const startEdit = (field, value) => { setEditing(field); setEditValue(value || ''); };
   const cancelEdit = () => { setEditing(null); setEditValue(''); };
   const saveField = async (field) => {
     let val = editValue;
     if (['intent_score', 'deal_value'].includes(field)) val = val === '' ? null : Number(val);
     if (field === 'li_connected') val = editValue === 'true' || editValue === true;
-    await updateRow('contacts', contact.id, { [field]: val });
+    // Optimistic update: store locally so display doesn't flash back
+    setLocalOverrides(prev => ({ ...prev, [field]: val }));
+    setEditing(null);
     setSaved(field);
     setTimeout(() => setSaved(null), 1500);
-    setEditing(null);
-    refetch();
+    await updateRow('contacts', contact.id, { [field]: val });
   };
+  // Helper to get display value: local override > contact prop
+  const getVal = (field, original) => field in localOverrides ? localOverrides[field] : original;
 
   const handleSendEmail = async () => {
     if (!composeForm.subject || !composeForm.body) return;
@@ -285,13 +302,13 @@ export default function ContactDetail({ contact, accounts, allItems, onBack, ref
     {
       label: 'Contact Info',
       fields: [
-        { label: 'Role', key: 'title', value: contact.role || '' },
+        { label: 'Role', key: 'title', value: getVal('title', contact.role || '') },
         { label: 'Company', key: '_company', value: acc?.name || '', readOnly: true },
-        { label: 'Email', key: 'email', value: contact.email },
-        { label: 'Phone', key: 'phone', value: contact.phone || '' },
-        { label: 'Mobile', key: 'mobile', value: contact.mobile || '' },
-        { label: 'LinkedIn', key: 'linkedin_url', value: contact.linkedin_url || '' },
-        { label: 'Country', key: 'country', value: contact.country || '' },
+        { label: 'Email', key: 'email', value: getVal('email', contact.email) },
+        { label: 'Phone', key: 'phone', value: getVal('phone', contact.phone || '') },
+        { label: 'Mobile', key: 'mobile', value: getVal('mobile', contact.mobile || '') },
+        { label: 'LinkedIn', key: 'linkedin_url', value: getVal('linkedin_url', contact.linkedin_url || '') },
+        { label: 'Country', key: 'country', value: getVal('country', contact.country || '') },
       ]
     },
   ];
@@ -528,6 +545,7 @@ export default function ContactDetail({ contact, accounts, allItems, onBack, ref
             <Btn small onClick={() => setShowCompose(true)}>&#9993; Email</Btn>
             <Btn small onClick={() => setShowLinkedInCompose(true)}>in Message</Btn>
             {contact.linkedin_url && <Btn small onClick={() => window.open(contact.linkedin_url, '_blank')}>in Profile</Btn>}
+            <Btn small onClick={() => setShowEnrollPlaybook(true)}>&#128203; Playbook</Btn>
           </div>
         </div>
         <div style={{ display: "flex", borderTop: "0.5px solid #D3D1C7", marginLeft: -18, marginRight: -18, paddingLeft: 18 }}>
@@ -832,6 +850,64 @@ export default function ContactDetail({ contact, accounts, allItems, onBack, ref
         )}
       </div>
       <LinkedInCompose open={showLinkedInCompose} onClose={() => setShowLinkedInCompose(false)} contactName={contact.name} linkedinUrl={contact.linkedin_url} />
+
+      {/* Enroll in Playbook modal */}
+      {showEnrollPlaybook && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.3)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:100 }} onClick={() => setShowEnrollPlaybook(false)}>
+          <div onClick={e => e.stopPropagation()} style={{ background:"#fff", borderRadius:12, padding:"24px 28px", width:420, maxHeight:"70vh", overflowY:"auto" }}>
+            <div style={{ fontSize:16, fontWeight:500, marginBottom:4 }}>Enroll {contact.name} in a Playbook</div>
+            <div style={{ fontSize:11, color:"#888780", marginBottom:16 }}>Select a playbook to start the outreach sequence</div>
+            {availablePlaybooks === null ? (
+              <div style={{ textAlign:"center", padding:20, color:"#888780", fontSize:12 }}>Loading playbooks...</div>
+            ) : availablePlaybooks.length === 0 ? (
+              <div style={{ textAlign:"center", padding:20, color:"#888780", fontSize:12 }}>No playbooks created yet. Go to Playbooks to create one first.</div>
+            ) : (
+              availablePlaybooks.map(pb => (
+                <div key={pb.id} style={{ background:"#FAFAF8", borderRadius:8, border:"0.5px solid #D3D1C7", padding:"12px 14px", marginBottom:6, display:"flex", alignItems:"center", gap:12, cursor:"pointer" }}
+                  onClick={async () => {
+                    setEnrolling(pb.id);
+                    setEnrollResult(null);
+                    const now = new Date();
+                    const { error } = await supabase.from('playbook_enrollments').insert({
+                      playbook_id: pb.id,
+                      contact_id: contact.id,
+                      current_step: 1,
+                      status: 'active',
+                      next_step_at: now.toISOString(),
+                    });
+                    if (!error) {
+                      setEnrollResult('enrolled');
+                      setTimeout(() => { setShowEnrollPlaybook(false); setEnrollResult(null); }, 1500);
+                    } else {
+                      setEnrollResult('error');
+                    }
+                    setEnrolling(null);
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.borderColor="#378ADD"}
+                  onMouseLeave={e => e.currentTarget.style.borderColor="#D3D1C7"}>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:13, fontWeight:500 }}>{pb.name}</div>
+                    <div style={{ fontSize:10, color:"#888780", marginTop:2 }}>
+                      {pb.step_count || '?'} steps · {pb.status} · Owner: {pb.owner || '—'}
+                    </div>
+                  </div>
+                  {enrolling === pb.id ? (
+                    <span style={{ fontSize:11, color:"#888780" }}>Enrolling...</span>
+                  ) : enrollResult === 'enrolled' ? (
+                    <span style={{ fontSize:11, color:"#1D9E75" }}>✓ Enrolled</span>
+                  ) : (
+                    <span style={{ fontSize:11, color:"#378ADD" }}>Enroll →</span>
+                  )}
+                </div>
+              ))
+            )}
+            {enrollResult === 'error' && <div style={{ fontSize:11, color:"#dc2626", marginTop:8 }}>Failed to enroll. Contact may already be in this playbook.</div>}
+            <div style={{ display:"flex", justifyContent:"flex-end", marginTop:12 }}>
+              <button onClick={() => setShowEnrollPlaybook(false)} style={{ padding:"6px 14px", borderRadius:6, border:"0.5px solid #D3D1C7", fontSize:11, cursor:"pointer", background:"#fff", color:"#888780", fontFamily:"inherit" }}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
