@@ -5,6 +5,54 @@ import { getCalendarEvents, createCalendarEvent } from '../../lib/graph';
 import Chip from '../atoms/Chip';
 import Btn from '../atoms/Btn';
 
+function DaySection({ label, hasItems, dayEvents, dayTasks, dayFollowUps, fmtCalTime, evColors, contacts }) {
+  const [collapsed, setCollapsed] = useState(false);
+  const isToday = label === 'Today';
+  return (
+    <div style={{ marginBottom:10 }}>
+      <div onClick={() => setCollapsed(c => !c)} style={{ display:"flex", alignItems:"center", gap:6, cursor:"pointer", padding:"4px 0", userSelect:"none" }}>
+        <span style={{ fontSize:9, color:"#888780", transition:"transform 0.15s", transform:collapsed?"rotate(-90deg)":"rotate(0deg)", display:"inline-block" }}>{"\u25BC"}</span>
+        <span style={{ fontSize:10, fontWeight:600, color:isToday?"#185FA5":"#888780", textTransform:"uppercase", letterSpacing:"0.05em" }}>{label}</span>
+        {hasItems && <span style={{ fontSize:9, color:"#888780", background:"#F1EFE8", padding:"1px 5px", borderRadius:6 }}>{dayEvents.length + dayTasks.length + dayFollowUps.length}</span>}
+      </div>
+      {!collapsed && (
+        <div style={{ paddingLeft:4 }}>
+          {!hasItems && <div style={{ fontSize:11, color:"#B4B2A9", padding:"4px 0 2px", fontStyle:"italic" }}>No events</div>}
+          {dayEvents.map((ev, idx) => (
+            <div key={ev.id} style={{ display:"flex", gap:8, padding:"6px 8px", borderRadius:7, border:"0.5px solid #D3D1C7", marginBottom:4 }}>
+              <div style={{ width:3, borderRadius:2, background:evColors[idx % evColors.length], flexShrink:0, alignSelf:"stretch" }} />
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:5 }}>
+                  <div style={{ fontSize:11, fontWeight:500 }}>{ev.title}</div>
+                  {ev.isOnline && <span style={{ fontSize:8, background:"#E8F0FE", color:"#378ADD", padding:"1px 4px", borderRadius:3, fontWeight:500 }}>Teams</span>}
+                </div>
+                <div style={{ fontSize:10, color:"#888780" }}>{fmtCalTime(ev.startAt)} - {fmtCalTime(ev.endAt)}</div>
+              </div>
+            </div>
+          ))}
+          {dayTasks.map(t => (
+            <div key={t.id} style={{ display:"flex", gap:6, padding:"5px 8px", borderRadius:6, background:"#FFFBEB", border:"0.5px solid #FDE68A", marginBottom:4, alignItems:"center" }}>
+              <span style={{ fontSize:10, flexShrink:0 }}>{"\u2713"}</span>
+              <div style={{ fontSize:11, flex:1, minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{t.text}</div>
+              <span style={{ fontSize:9, color:"#92400E", flexShrink:0 }}>Task</span>
+            </div>
+          ))}
+          {dayFollowUps.map(f => {
+            const contact = contacts.find(c => c.id === f.contactId);
+            return (
+              <div key={f.id} style={{ display:"flex", gap:6, padding:"5px 8px", borderRadius:6, background:"#FEF2F2", border:"0.5px solid #FECACA", marginBottom:4, alignItems:"center" }}>
+                <span style={{ fontSize:10, flexShrink:0 }}>{"\u23F0"}</span>
+                <div style={{ fontSize:11, flex:1, minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{contact?.name || f.subject}</div>
+                <span style={{ fontSize:9, color:"#991B1B", flexShrink:0 }}>Follow-up</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function RightPanel({ tab, setTab, followUps, comms, tasks, calEvents, contacts, refetch, onOpenInbox }) {
   const pendingR = followUps.filter(r => r.status==="no-reply").length;
   const pendingT = tasks.filter(t => !t.done).length;
@@ -292,7 +340,32 @@ export default function RightPanel({ tab, setTab, followUps, comms, tasks, calEv
             })}
           </div>
         )}
-        {tab==="calendar" && (
+        {tab==="calendar" && (() => {
+          // Build a combined day-by-day view: calendar events + tasks + follow-ups
+          const today = new Date(); today.setHours(0,0,0,0);
+          const daySlots = [];
+          for (let i = 0; i < 21; i++) {
+            const d = new Date(today); d.setDate(today.getDate() + i);
+            const key = d.toISOString().slice(0,10);
+            let label;
+            const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+            const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            if (i === 0) label = 'Today';
+            else if (i === 1) label = 'Tomorrow';
+            else label = days[d.getDay()] + ' ' + d.getDate() + ' ' + months[d.getMonth()];
+            daySlots.push({ key, label, date: d });
+          }
+          // Group graph events by date
+          const evsByDate = {};
+          graphEvents.forEach(ev => { const dk = ev.startAt ? ev.startAt.slice(0,10) : ''; if (dk) { if (!evsByDate[dk]) evsByDate[dk]=[]; evsByDate[dk].push(ev); }});
+          // Group tasks by due date
+          const tasksByDate = {};
+          tasks.forEach(t => { if (t.dueDate && !t.done) { const dk = t.dueDate.slice(0,10); if (!tasksByDate[dk]) tasksByDate[dk]=[]; tasksByDate[dk].push(t); }});
+          // Group follow-ups by due date
+          const fuByDate = {};
+          followUps.forEach(f => { if (f.sentDate && f.status==='no-reply') { const dk = f.sentDate.slice(0,10); if (!fuByDate[dk]) fuByDate[dk]=[]; fuByDate[dk].push(f); }});
+
+          return (
           <div style={{ padding:14 }}>
             <button onClick={() => setShowMeetingForm(f => !f)} style={{ display:"flex", alignItems:"center", gap:6, width:"100%", padding:"7px 12px", borderRadius:7, border:"0.5px solid #B4B2A9", fontSize:12, cursor:"pointer", background:"#042C53", color:"#B5D4F4", fontFamily:"inherit", marginBottom:10, justifyContent:"center", fontWeight:500 }}>+ Schedule meeting</button>
             {showMeetingForm && (
@@ -320,30 +393,18 @@ export default function RightPanel({ tab, setTab, followUps, comms, tasks, calEv
             {!graphCalLoading && !localStorage.getItem('graph_token') && graphEvents.length === 0 && (
               <div style={{ background:"#F1EFE8", borderRadius:7, padding:"10px 12px", fontSize:12, color:"#888780", textAlign:"center", marginBottom:10 }}>Log in again to load calendar</div>
             )}
-            {!graphCalLoading && groupedGraphEvents.length === 0 && localStorage.getItem('graph_token') && (
-              <div style={{ background:"#F1EFE8", borderRadius:7, padding:"10px 12px", fontSize:12, color:"#888780", textAlign:"center", marginBottom:10 }}>No upcoming meetings this week.</div>
-            )}
-            {groupedGraphEvents.map(([dateKey, evs]) => (
-              <div key={dateKey} style={{ marginBottom:14 }}>
-                <div style={{ fontSize:10, fontWeight:500, color:"#888780", textTransform:"uppercase", letterSpacing:"0.05em", marginBottom:6 }}>{fmtDateLabel(dateKey)}</div>
-                {evs.map((ev, idx) => (
-                  <div key={ev.id} style={{ display:"flex", gap:8, padding:"7px 10px", borderRadius:7, border:"0.5px solid #D3D1C7", marginBottom:5, cursor:"pointer" }}>
-                    <div style={{ width:3, borderRadius:2, background:evColors[idx % evColors.length], flexShrink:0, alignSelf:"stretch" }} />
-                    <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                        <div style={{ fontSize:12, fontWeight:500 }}>{ev.title}</div>
-                        {ev.isOnline && <span style={{ fontSize:9, background:"#E8F0FE", color:"#378ADD", padding:"1px 5px", borderRadius:4, fontWeight:500 }}>Teams</span>}
-                      </div>
-                      <div style={{ fontSize:11, color:"#888780" }}>{fmtCalTime(ev.startAt)} – {fmtCalTime(ev.endAt)}</div>
-                      {ev.attendees && <div style={{ fontSize:10, color:"#888780", marginTop:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{ev.attendees}</div>}
-                      {ev.location && !ev.isOnline && <div style={{ fontSize:10, color:"#888780", marginTop:1 }}>{ev.location}</div>}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ))}
+            {daySlots.map(slot => {
+              const dayEvents = evsByDate[slot.key] || [];
+              const dayTasks = tasksByDate[slot.key] || [];
+              const dayFollowUps = fuByDate[slot.key] || [];
+              const hasItems = dayEvents.length > 0 || dayTasks.length > 0 || dayFollowUps.length > 0;
+              return (
+                <DaySection key={slot.key} label={slot.label} hasItems={hasItems} dayEvents={dayEvents} dayTasks={dayTasks} dayFollowUps={dayFollowUps} fmtCalTime={fmtCalTime} evColors={evColors} contacts={contacts} />
+              );
+            })}
           </div>
-        )}
+          );
+        })()}
       </div>
     </div>
   );

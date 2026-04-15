@@ -57,6 +57,7 @@ export default function PlaybookDetail({ playbook: initialPlaybook, onBack, cont
   // Enroll contact
   const [showEnroll, setShowEnroll] = useState(false);
   const [contactSearch, setContactSearch] = useState('');
+  const [enrollStartDate, setEnrollStartDate] = useState('');
 
   // Settings
   const [showSettings, setShowSettings] = useState(false);
@@ -167,7 +168,8 @@ export default function PlaybookDetail({ playbook: initialPlaybook, onBack, cont
 
   // ── Enrollments ──
   const enrollContact = async (contact) => {
-    const nextStepAt = new Date();
+    const baseDate = enrollStartDate ? new Date(enrollStartDate + 'T09:00:00') : new Date();
+    const nextStepAt = new Date(baseDate);
     nextStepAt.setDate(nextStepAt.getDate() + (steps[0]?.delay_days || 0));
     await supabase.from('playbook_enrollments').insert({
       playbook_id: playbook.id,
@@ -179,6 +181,7 @@ export default function PlaybookDetail({ playbook: initialPlaybook, onBack, cont
     });
     setShowEnroll(false);
     setContactSearch('');
+    setEnrollStartDate('');
     fetchData();
   };
 
@@ -375,6 +378,12 @@ export default function PlaybookDetail({ playbook: initialPlaybook, onBack, cont
                   autoFocus
                   style={{ width: "100%", padding: "6px 10px", borderRadius: 6, border: "0.5px solid #D3D1C7", fontSize: 12, fontFamily: "inherit", boxSizing: "border-box", marginBottom: 8 }}
                 />
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                  <label style={{ fontSize: 11, color: "#888780", whiteSpace: "nowrap" }}>Start date (optional):</label>
+                  <input type="date" value={enrollStartDate} onChange={e => setEnrollStartDate(e.target.value)}
+                    style={{ padding: "4px 8px", borderRadius: 6, border: "0.5px solid #D3D1C7", fontSize: 11, fontFamily: "inherit", background: "#F1EFE8" }} />
+                  {enrollStartDate && <button onClick={() => setEnrollStartDate('')} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "#888780" }}>x</button>}
+                </div>
                 <div style={{ maxHeight: 200, overflowY: "auto" }}>
                   {filteredContacts.length === 0 ? (
                     <div style={{ fontSize: 12, color: "#888780", padding: 8 }}>No contacts found.</div>

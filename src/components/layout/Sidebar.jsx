@@ -4,7 +4,7 @@ import Chip from '../atoms/Chip';
 import SLabel from '../atoms/SLabel';
 import HDivider from '../atoms/HDivider';
 
-export default function Sidebar({ sidebarMode, setSidebarMode, activeFunnelStage, viewMode, selectedItem, isSearching, setActiveFunnelStage, setViewMode, setSelectedItem, setSearch, setSelectedAccount, selectedAccount, allItems, accounts, contacts, stageCounts, unreadInboxCount }) {
+export default function Sidebar({ sidebarMode, setSidebarMode, activeFunnelStage, viewMode, selectedItem, isSearching, setActiveFunnelStage, setViewMode, setSelectedItem, setSearch, setSelectedAccount, selectedAccount, allItems, accounts, contacts, stageCounts, unreadInboxCount, collapsed, setCollapsed }) {
   const [accountSort, setAccountSort] = useState('az');
 
   // Track recently visited accounts in localStorage
@@ -32,8 +32,53 @@ export default function Sidebar({ sidebarMode, setSidebarMode, activeFunnelStage
   const contactsCount = contacts?.length || 0;
   const companiesCount = accounts?.length || 0;
 
+  const toggleCollapse = () => {
+    const next = !collapsed;
+    setCollapsed(next);
+    localStorage.setItem('sidebar_collapsed', JSON.stringify(next));
+  };
+
+  // Icons for collapsed sidebar nav items
+  const navItems = [
+    { key: 'accounts', icon: '\uD83C\uDFE2', label: 'Companies', count: companiesCount },
+    { key: 'contacts', icon: '\uD83D\uDC64', label: 'Contacts', count: contactsCount },
+    { key: 'inbox', icon: '\uD83D\uDCE5', label: 'Inbox', badge: unreadInboxCount },
+    { key: 'playbooks', icon: '\uD83D\uDCCB', label: 'Playbooks' },
+  ];
+
+  if (collapsed) {
+    return (
+      <div style={{ background:"#FFFFFF", borderRight:"0.5px solid #D3D1C7", overflowY:"auto", width:50 }}>
+        <div style={{ display:"flex", justifyContent:"center", padding:"8px 0" }}>
+          <button onClick={toggleCollapse} style={{ background:"none", border:"none", cursor:"pointer", fontSize:14, color:"#888780", fontFamily:"inherit", padding:"4px 6px" }} title="Expand sidebar">{"\u00BB"}</button>
+        </div>
+        {navItems.map(n => (
+          <div key={n.key} onClick={() => setSidebarMode(n.key)} title={n.label}
+            style={{ display:"flex", alignItems:"center", justifyContent:"center", padding:"10px 0", cursor:"pointer", background:sidebarMode===n.key?"#F1EFE8":"transparent", position:"relative" }}>
+            <div style={{ fontSize:16 }}>{n.icon}</div>
+            {n.badge > 0 && <div style={{ position:"absolute", top:6, right:6, fontSize:8, background:"#378ADD", color:"#fff", padding:"1px 4px", borderRadius:6, minWidth:10, textAlign:"center" }}>{n.badge}</div>}
+          </div>
+        ))}
+        <div style={{ height:"0.5px", background:"#D3D1C7", margin:"4px 8px" }} />
+        {FUNNEL_STAGES.map(s => {
+          const stC = sc(s.key);
+          const isA = activeFunnelStage===s.key && sidebarMode==="funnel" && !selectedItem && !isSearching;
+          return (
+            <div key={s.key} onClick={() => { setSidebarMode("funnel"); setActiveFunnelStage(s.key); setViewMode("swimlane"); setSelectedItem(null); setSearch(""); }} title={s.label}
+              style={{ display:"flex", alignItems:"center", justifyContent:"center", padding:"10px 0", cursor:"pointer", background:isA?"#F1EFE8":"transparent" }}>
+              <div style={{ width:8, height:8, borderRadius:"50%", background:stC.dot }} />
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
   return (
     <div style={{ background:"#FFFFFF", borderRight:"0.5px solid #D3D1C7", overflowY:"auto" }}>
+      <div style={{ display:"flex", justifyContent:"flex-end", padding:"6px 8px 0" }}>
+        <button onClick={toggleCollapse} style={{ background:"none", border:"none", cursor:"pointer", fontSize:14, color:"#888780", fontFamily:"inherit", padding:"2px 6px" }} title="Collapse sidebar">{"\u00AB"}</button>
+      </div>
       {sidebarMode==="funnel" && (
         <>
           <SLabel>Directory</SLabel>
@@ -64,9 +109,9 @@ export default function Sidebar({ sidebarMode, setSidebarMode, activeFunnelStage
           <SLabel>Pipeline stages</SLabel>
           {FUNNEL_STAGES.map(s => {
             const stC = sc(s.key);
-            const isA = activeFunnelStage===s.key && viewMode==="list" && !selectedItem && !isSearching;
+            const isA = activeFunnelStage===s.key && !selectedItem && !isSearching;
             return (
-              <div key={s.key} onClick={() => { setActiveFunnelStage(s.key); setViewMode("list"); setSelectedItem(null); setSearch(""); }}
+              <div key={s.key} onClick={() => { setActiveFunnelStage(s.key); setViewMode("swimlane"); setSelectedItem(null); setSearch(""); }}
                 style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 14px", cursor:"pointer", background:isA?"#F1EFE8":"transparent" }}>
                 <div style={{ width:8, height:8, borderRadius:"50%", background:stC.dot, flexShrink:0 }} />
                 <div style={{ flex:1, fontSize:13 }}>{s.label}</div>
@@ -122,7 +167,7 @@ export default function Sidebar({ sidebarMode, setSidebarMode, activeFunnelStage
           {FUNNEL_STAGES.map(s => {
             const stC = sc(s.key);
             return (
-              <div key={s.key} onClick={() => { setSidebarMode("funnel"); setActiveFunnelStage(s.key); setViewMode("list"); setSelectedItem(null); setSearch(""); }}
+              <div key={s.key} onClick={() => { setSidebarMode("funnel"); setActiveFunnelStage(s.key); setViewMode("swimlane"); setSelectedItem(null); setSearch(""); }}
                 style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 14px", cursor:"pointer", background:"transparent" }}>
                 <div style={{ width:8, height:8, borderRadius:"50%", background:stC.dot, flexShrink:0 }} />
                 <div style={{ flex:1, fontSize:13 }}>{s.label}</div>
@@ -162,7 +207,7 @@ export default function Sidebar({ sidebarMode, setSidebarMode, activeFunnelStage
           {FUNNEL_STAGES.map(s => {
             const stC = sc(s.key);
             return (
-              <div key={s.key} onClick={() => { setSidebarMode("funnel"); setActiveFunnelStage(s.key); setViewMode("list"); setSelectedItem(null); setSearch(""); }}
+              <div key={s.key} onClick={() => { setSidebarMode("funnel"); setActiveFunnelStage(s.key); setViewMode("swimlane"); setSelectedItem(null); setSearch(""); }}
                 style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 14px", cursor:"pointer", background:"transparent" }}>
                 <div style={{ width:8, height:8, borderRadius:"50%", background:stC.dot, flexShrink:0 }} />
                 <div style={{ flex:1, fontSize:13 }}>{s.label}</div>
@@ -225,7 +270,7 @@ export default function Sidebar({ sidebarMode, setSidebarMode, activeFunnelStage
           {FUNNEL_STAGES.map(s => {
             const stC = sc(s.key);
             return (
-              <div key={s.key} onClick={() => { setSidebarMode("funnel"); setActiveFunnelStage(s.key); setViewMode("list"); setSelectedItem(null); setSearch(""); }}
+              <div key={s.key} onClick={() => { setSidebarMode("funnel"); setActiveFunnelStage(s.key); setViewMode("swimlane"); setSelectedItem(null); setSearch(""); }}
                 style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 14px", cursor:"pointer", background:"transparent" }}>
                 <div style={{ width:8, height:8, borderRadius:"50%", background:stC.dot, flexShrink:0 }} />
                 <div style={{ flex:1, fontSize:13 }}>{s.label}</div>
@@ -265,7 +310,7 @@ export default function Sidebar({ sidebarMode, setSidebarMode, activeFunnelStage
           {FUNNEL_STAGES.map(s => {
             const stC = sc(s.key);
             return (
-              <div key={s.key} onClick={() => { setSidebarMode("funnel"); setActiveFunnelStage(s.key); setViewMode("list"); setSelectedItem(null); setSearch(""); }}
+              <div key={s.key} onClick={() => { setSidebarMode("funnel"); setActiveFunnelStage(s.key); setViewMode("swimlane"); setSelectedItem(null); setSearch(""); }}
                 style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 14px", cursor:"pointer", background:"transparent" }}>
                 <div style={{ width:8, height:8, borderRadius:"50%", background:stC.dot, flexShrink:0 }} />
                 <div style={{ flex:1, fontSize:13 }}>{s.label}</div>

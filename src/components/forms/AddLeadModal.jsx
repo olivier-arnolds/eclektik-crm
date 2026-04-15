@@ -40,9 +40,11 @@ const btnBase = {
   border: 'none',
 };
 
+const LEAD_TYPES = ['Glint', 'People Science', 'AI Transformation', 'ROI', 'Technical', 'Other'];
+
 const EMPTY = {
   title: '', company_name: '', contact_name: '', email: '',
-  value: '', owner: 'MVG', probability: 20, close_date: '', notes: '',
+  value: '', owner: 'MVG', probability: 20, close_date: '', notes: '', product_line: '',
 };
 
 export default function AddLeadModal({ open, onClose, refetch, stageKey }) {
@@ -69,6 +71,7 @@ export default function AddLeadModal({ open, onClose, refetch, stageKey }) {
       notes: form.notes.trim(),
       sub_status: 'qualify',
       status: 'New',
+      product_line: form.product_line || null,
     };
     if (form.close_date) row.close_date = form.close_date;
 
@@ -114,6 +117,14 @@ export default function AddLeadModal({ open, onClose, refetch, stageKey }) {
           <div style={rowStyle}>
             <label style={labelStyle}>Email</label>
             <input style={inputStyle} type="email" value={form.email} onChange={set('email')} placeholder="email@example.com" />
+          </div>
+
+          <div style={rowStyle}>
+            <label style={labelStyle}>Type</label>
+            <select style={selectStyle} value={form.product_line} onChange={set('product_line')}>
+              <option value="">-- Select type --</option>
+              {LEAD_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
           </div>
 
           <div style={{ display: 'flex', gap: 12, ...rowStyle }}>

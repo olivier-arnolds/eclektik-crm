@@ -856,7 +856,11 @@ export default function ContactDetail({ contact, accounts, allItems, onBack, ref
         <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.3)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:100 }} onClick={() => setShowEnrollPlaybook(false)}>
           <div onClick={e => e.stopPropagation()} style={{ background:"#fff", borderRadius:12, padding:"24px 28px", width:420, maxHeight:"70vh", overflowY:"auto" }}>
             <div style={{ fontSize:16, fontWeight:500, marginBottom:4 }}>Enroll {contact.name} in a Playbook</div>
-            <div style={{ fontSize:11, color:"#888780", marginBottom:16 }}>Select a playbook to start the outreach sequence</div>
+            <div style={{ fontSize:11, color:"#888780", marginBottom:8 }}>Select a playbook to start the outreach sequence</div>
+            <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12, padding:"6px 10px", background:"#F1EFE8", borderRadius:6 }}>
+              <label style={{ fontSize:11, color:"#888780", whiteSpace:"nowrap" }}>Start date (optional):</label>
+              <input type="date" id="enroll-start-date" style={{ padding:"4px 8px", borderRadius:6, border:"0.5px solid #D3D1C7", fontSize:11, fontFamily:"inherit", background:"#fff" }} />
+            </div>
             {availablePlaybooks === null ? (
               <div style={{ textAlign:"center", padding:20, color:"#888780", fontSize:12 }}>Loading playbooks...</div>
             ) : availablePlaybooks.length === 0 ? (
@@ -867,7 +871,8 @@ export default function ContactDetail({ contact, accounts, allItems, onBack, ref
                   onClick={async () => {
                     setEnrolling(pb.id);
                     setEnrollResult(null);
-                    const now = new Date();
+                    const startDateVal = document.getElementById('enroll-start-date')?.value;
+                    const now = startDateVal ? new Date(startDateVal + 'T09:00:00') : new Date();
                     const { error } = await supabase.from('playbook_enrollments').insert({
                       playbook_id: pb.id,
                       contact_id: contact.id,

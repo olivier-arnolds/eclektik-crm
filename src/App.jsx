@@ -36,9 +36,10 @@ export default function BDDashboard() {
   const { accounts, contacts, allItems, followUps, tasks, comms, calEvents, loading, refetch } = usePipelineData();
   const { logout, session, reconnectMicrosoft, hasGraphToken } = useAuth();
 
+  const [sidebarCollapsed,   setSidebarCollapsed]   = useState(() => { try { return JSON.parse(localStorage.getItem('sidebar_collapsed')) || false; } catch { return false; } });
   const [sidebarMode,        setSidebarMode]        = useState("funnel");
   const [activeFunnelStage,  setActiveFunnelStage]  = useState("lead");
-  const [viewMode,           setViewMode]           = useState("list");
+  const [viewMode,           setViewMode]           = useState("swimlane");
   const [selectedItem,       setSelectedItem]       = useState(null);
   const [selectedAccount,    setSelectedAccount]    = useState(null);
   const [selectedContact,    setSelectedContact]    = useState(null);
@@ -163,7 +164,7 @@ export default function BDDashboard() {
         reconnectMicrosoft={reconnectMicrosoft}
         hasGraphToken={hasGraphToken}
       />
-      <div style={{ display:"grid", gridTemplateColumns:"200px 1fr 265px", flex:1, minHeight:0 }}>
+      <div style={{ display:"grid", gridTemplateColumns:sidebarCollapsed?"50px 1fr 265px":"200px 1fr 265px", flex:1, minHeight:0 }}>
         <Sidebar
           sidebarMode={sidebarMode}
           setSidebarMode={setSidebarMode}
@@ -182,6 +183,8 @@ export default function BDDashboard() {
           contacts={contacts}
           stageCounts={stageCounts}
           unreadInboxCount={comms.filter(c => c.unread).length}
+          collapsed={sidebarCollapsed}
+          setCollapsed={setSidebarCollapsed}
         />
         <div style={{ display:"flex", flexDirection:"column", minHeight:0, overflow:"hidden" }}>{mainContent}</div>
         <RightPanel tab={rightTab} setTab={setRightTab} followUps={followUps} comms={comms} tasks={tasks} calEvents={calEvents} contacts={contacts} refetch={refetch} onOpenInbox={() => setSidebarMode('inbox')} />

@@ -122,6 +122,7 @@ function adaptTask(row) {
     itemIds: [row.opportunity_id, row.lead_id].filter(Boolean),
     text: row.title || '',
     due: dueLabel,
+    dueDate: row.due_date || '',
     overdue: isOverdue,
     done: row.status === 'done',
   }
