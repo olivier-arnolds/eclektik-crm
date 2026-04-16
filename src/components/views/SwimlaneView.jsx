@@ -6,11 +6,16 @@ import ItemCard from '../cards/ItemCard';
 
 export default function SwimlaneView({ onSelectItem, search, allItems, accounts, contacts, followUps, refetch }) {
   const [dragOverCol, setDragOverCol] = useState(null);
+  const [productLineFilter, setProductLineFilter] = useState('All types');
   const getAcc = (id) => accounts.find(a => a.id === id);
+  const applyProductFilter = (arr) => productLineFilter === 'All types' ? arr : arr.filter(i => i.productLine === productLineFilter);
   const applySearch = (arr) => !search ? arr : arr.filter(i => i.title.toLowerCase().includes(search.toLowerCase()) || (getAcc(i.accountId)?.name||"").toLowerCase().includes(search.toLowerCase()));
+  const applyFilters = (arr) => applySearch(applyProductFilter(arr));
   const sorted = (arr) => [...arr].sort((a,b) => (b.sortDate||"").localeCompare(a.sortDate||""));
-  const activeItems = allItems.filter(i => ["lead","opportunity","onboarding","active"].includes(i.funnelStage));
+  const filteredItems = applyProductFilter(allItems);
+  const activeItems = filteredItems.filter(i => ["lead","opportunity","onboarding","active"].includes(i.funnelStage));
   const totalVal = activeItems.reduce((s,i)=>s+i.value,0);
+  const productLines = ['All types', 'Glint', 'People Science', 'AI Transformation', 'ROI', 'Technical', 'Other'];
 
   const handleDragStart = (e, item) => {
     const table = item.funnelStage === 'lead' ? 'leads' : 'opportunities';
@@ -60,19 +65,23 @@ export default function SwimlaneView({ onSelectItem, search, allItems, accounts,
     <div style={{ height:"100%", display:"flex", flexDirection:"column" }}>
       <div style={{ background:"#FFFFFF", borderBottom:"0.5px solid #D3D1C7", padding:"12px 18px", flexShrink:0, display:"flex", gap:10, alignItems:"center" }}>
         <div style={{ fontSize:14, fontWeight:500 }}>Pipeline swimlane</div>
-        <Chip>{applySearch(activeItems).length} items</Chip>
+        <Chip>{applyFilters(activeItems).length} items</Chip>
         <Chip bg="#FAEEDA" color="#633806">{fmt(totalVal)}</Chip>
+        <select value={productLineFilter} onChange={e => setProductLineFilter(e.target.value)}
+          style={{ padding:"4px 8px", borderRadius:6, border:"0.5px solid #B4B2A9", fontSize:11, fontFamily:"inherit", background:"#fff", color:productLineFilter === 'All types' ? "#888780" : "#2C2C2A", cursor:"pointer", outline:"none" }}>
+          {productLines.map(pl => <option key={pl} value={pl}>{pl}</option>)}
+        </select>
         {search && <Chip bg="#E6F1FB" color="#0C447C">filtering: "{search}"</Chip>}
         <div style={{ fontSize:11, color:"#888780", marginLeft:"auto" }}>newest on top</div>
       </div>
       <div style={{ flex:1, overflowX:"auto", overflowY:"hidden", display:"flex", padding:"12px 14px", gap:10 }}>
         {COLS.map(col => {
           const stC = sc(col.key);
-          const raw = col.subStatus
-            ? allItems.filter(i => col.funnelStages.includes(i.funnelStage) && i.subStatus===col.subStatus)
-            : allItems.filter(i => col.funnelStages.includes(i.funnelStage));
-          const colItems = applySearch(sorted(raw));
-          const colVal = raw.reduce((s,i)=>s+i.value,0);
+          const rawAll = col.subStatus
+            ? filteredItems.filter(i => col.funnelStages.includes(i.funnelStage) && i.subStatus===col.subStatus)
+            : filteredItems.filter(i => col.funnelStages.includes(i.funnelStage));
+          const colItems = applySearch(sorted(rawAll));
+          const colVal = rawAll.reduce((s,i)=>s+i.value,0);
           return (
             <div key={col.key} style={{ flexShrink:0, width:195, display:"flex", flexDirection:"column" }}
               onDragOver={(e) => handleDragOver(e, col.key)}

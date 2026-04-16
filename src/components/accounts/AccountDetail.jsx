@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { typeColors, fmt } from '../../lib/constants';
-import { updateRow } from '../../hooks/useSupabase';
+import { updateRow, insertRow } from '../../hooks/useSupabase';
 import { supabase } from '../../supabase';
 import { getMyTeams, getTeamChannels, getChannelMessages } from '../../lib/graph';
 import Chip from '../atoms/Chip';
@@ -489,6 +489,36 @@ export default function AccountDetail({ account, onBack, onSelectItem, onSelectC
     setLiPosts(data || []);
   };
 
+  // New Opportunity state
+  const [showNewOpp, setShowNewOpp] = useState(false);
+  const [newOppForm, setNewOppForm] = useState({ topic: '', contact_id: '', est_revenue: 0, probability: 50, close_date: '', product_line: '', owner: 'MVG' });
+  const [savingOpp, setSavingOpp] = useState(false);
+
+  const handleCreateOpportunity = async () => {
+    if (!newOppForm.topic.trim()) return;
+    setSavingOpp(true);
+    const selectedContact = accC.find(c => c.id === newOppForm.contact_id);
+    await insertRow('opportunities', {
+      topic: newOppForm.topic.trim(),
+      company_id: account.id,
+      company_name: account.name,
+      contact_id: newOppForm.contact_id || null,
+      contact_name: selectedContact?.name || null,
+      stage: 'opportunity',
+      sub_status: 'qualify',
+      status: 'Open',
+      est_revenue: newOppForm.est_revenue || 0,
+      probability: newOppForm.probability || 0,
+      est_close_date: newOppForm.close_date || null,
+      product_line: newOppForm.product_line || null,
+      owner: newOppForm.owner || null,
+    });
+    setNewOppForm({ topic: '', contact_id: '', est_revenue: 0, probability: 50, close_date: '', product_line: '', owner: 'MVG' });
+    setShowNewOpp(false);
+    setSavingOpp(false);
+    refetch();
+  };
+
   const tabs = [{key:"details",label:"Details"},{key:"leads",label:`Leads${accL.length?` (${accL.length})`:""}`},{key:"opps",label:`Opps${accO.length?` (${accO.length})`:""}`},{key:"projects",label:`Projects${accP.length?` (${accP.length})`:""}`},{key:"contacts",label:`Contacts${accC.length?` (${accC.length})`:""}`},{key:"linkedin",label:`LinkedIn${liPosts.length?` (${liPosts.length})`:""}`},{key:"insights",label:"Insights"},{key:"teams",label:"Teams"}];
 
   const fieldGroups = [
@@ -559,7 +589,68 @@ export default function AccountDetail({ account, onBack, onSelectItem, onSelectC
           </div>
         )}
         {tab==="leads"    && (accL.length===0?<Empty text="No leads."/>:accL.map(i=><ItemCard key={i.id} item={i} onClick={onSelectItem} accounts={accounts} contacts={contacts} followUps={followUps}/>))}
-        {tab==="opps"     && (accO.length===0?<Empty text="No opportunities."/>:accO.map(i=><ItemCard key={i.id} item={i} onClick={onSelectItem} accounts={accounts} contacts={contacts} followUps={followUps}/>))}
+        {tab==="opps" && (
+          <div>
+            <button onClick={() => setShowNewOpp(true)} style={{ display:"flex", alignItems:"center", gap:6, width:"100%", padding:"7px 12px", borderRadius:7, border:"0.5px solid #B4B2A9", fontSize:12, cursor:"pointer", background:"#042C53", color:"#B5D4F4", fontFamily:"inherit", marginBottom:10, justifyContent:"center", fontWeight:500 }}>+ New Opportunity</button>
+            {showNewOpp && (
+              <div style={{ background:"#FFFFFF", borderRadius:9, border:"0.5px solid #378ADD", padding:"14px 16px", marginBottom:12, display:"flex", flexDirection:"column", gap:10 }}>
+                <div style={{ fontSize:13, fontWeight:500, marginBottom:2 }}>New Opportunity for {account.name}</div>
+                <div>
+                  <label style={{ fontSize:11, color:"#888780", display:"block", marginBottom:3 }}>Topic / Title *</label>
+                  <input value={newOppForm.topic} onChange={e => setNewOppForm(f => ({ ...f, topic: e.target.value }))} placeholder="e.g. Glint engagement survey" style={{ width:"100%", padding:"7px 10px", borderRadius:6, border:"0.5px solid #B4B2A9", fontSize:12, fontFamily:"inherit", outline:"none", background:"#F1EFE8", boxSizing:"border-box" }} />
+                </div>
+                <div>
+                  <label style={{ fontSize:11, color:"#888780", display:"block", marginBottom:3 }}>Contact</label>
+                  <select value={newOppForm.contact_id} onChange={e => setNewOppForm(f => ({ ...f, contact_id: e.target.value }))} style={{ width:"100%", padding:"7px 10px", borderRadius:6, border:"0.5px solid #B4B2A9", fontSize:12, fontFamily:"inherit", outline:"none", background:"#F1EFE8", boxSizing:"border-box" }}>
+                    <option value="">Select contact...</option>
+                    {accC.map(c => <option key={c.id} value={c.id}>{c.name} - {c.role}</option>)}
+                  </select>
+                </div>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+                  <div>
+                    <label style={{ fontSize:11, color:"#888780", display:"block", marginBottom:3 }}>Estimated Revenue</label>
+                    <input type="number" value={newOppForm.est_revenue} onChange={e => setNewOppForm(f => ({ ...f, est_revenue: Number(e.target.value) }))} style={{ width:"100%", padding:"7px 10px", borderRadius:6, border:"0.5px solid #B4B2A9", fontSize:12, fontFamily:"inherit", outline:"none", background:"#F1EFE8", boxSizing:"border-box" }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize:11, color:"#888780", display:"block", marginBottom:3 }}>Probability (%)</label>
+                    <input type="number" min={0} max={100} value={newOppForm.probability} onChange={e => setNewOppForm(f => ({ ...f, probability: Number(e.target.value) }))} style={{ width:"100%", padding:"7px 10px", borderRadius:6, border:"0.5px solid #B4B2A9", fontSize:12, fontFamily:"inherit", outline:"none", background:"#F1EFE8", boxSizing:"border-box" }} />
+                  </div>
+                </div>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+                  <div>
+                    <label style={{ fontSize:11, color:"#888780", display:"block", marginBottom:3 }}>Close Date</label>
+                    <input type="date" value={newOppForm.close_date} onChange={e => setNewOppForm(f => ({ ...f, close_date: e.target.value }))} style={{ width:"100%", padding:"7px 10px", borderRadius:6, border:"0.5px solid #B4B2A9", fontSize:12, fontFamily:"inherit", outline:"none", background:"#F1EFE8", boxSizing:"border-box" }} />
+                  </div>
+                  <div>
+                    <label style={{ fontSize:11, color:"#888780", display:"block", marginBottom:3 }}>Product Line</label>
+                    <select value={newOppForm.product_line} onChange={e => setNewOppForm(f => ({ ...f, product_line: e.target.value }))} style={{ width:"100%", padding:"7px 10px", borderRadius:6, border:"0.5px solid #B4B2A9", fontSize:12, fontFamily:"inherit", outline:"none", background:"#F1EFE8", boxSizing:"border-box" }}>
+                      <option value="">Select...</option>
+                      <option value="Glint">Glint</option>
+                      <option value="People Science">People Science</option>
+                      <option value="AI Transformation">AI Transformation</option>
+                      <option value="ROI">ROI</option>
+                      <option value="Technical">Technical</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label style={{ fontSize:11, color:"#888780", display:"block", marginBottom:3 }}>Owner</label>
+                  <select value={newOppForm.owner} onChange={e => setNewOppForm(f => ({ ...f, owner: e.target.value }))} style={{ width:"100%", padding:"7px 10px", borderRadius:6, border:"0.5px solid #B4B2A9", fontSize:12, fontFamily:"inherit", outline:"none", background:"#F1EFE8", boxSizing:"border-box" }}>
+                    <option value="MVG">MVG</option>
+                    <option value="OA">OA</option>
+                    <option value="YK">YK</option>
+                  </select>
+                </div>
+                <div style={{ display:"flex", gap:6, justifyContent:"flex-end" }}>
+                  <button onClick={() => setShowNewOpp(false)} style={{ padding:"6px 14px", borderRadius:6, border:"0.5px solid #B4B2A9", background:"#F1EFE8", color:"#5F5E5A", fontSize:12, cursor:"pointer", fontFamily:"inherit" }}>Cancel</button>
+                  <button onClick={handleCreateOpportunity} disabled={savingOpp || !newOppForm.topic.trim()} style={{ padding:"6px 14px", borderRadius:6, border:"none", background:"#1D9E75", color:"#fff", fontSize:12, fontWeight:500, cursor:"pointer", fontFamily:"inherit", opacity:(savingOpp || !newOppForm.topic.trim())?0.6:1 }}>{savingOpp ? 'Creating...' : 'Create Opportunity'}</button>
+                </div>
+              </div>
+            )}
+            {accO.length === 0 && !showNewOpp ? <Empty text="No opportunities." /> : accO.map(i => <ItemCard key={i.id} item={i} onClick={onSelectItem} accounts={accounts} contacts={contacts} followUps={followUps} />)}
+          </div>
+        )}
         {tab==="projects" && (accP.length===0?<Empty text="No projects."/>:accP.map(i=><ItemCard key={i.id} item={i} onClick={onSelectItem} accounts={accounts} contacts={contacts} followUps={followUps}/>))}
         {tab==="contacts" && (
           <div>

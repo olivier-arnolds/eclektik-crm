@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { sc, docIcon, fmt } from '../../lib/constants';
 import { updateRow, insertRow } from '../../hooks/useSupabase';
-import { getEmailsForContact, getCalendarEvents, createCalendarEvent } from '../../lib/graph';
+import { supabase } from '../../supabase';
+import { graphGet, getEmailsForContact, getCalendarEvents, createCalendarEvent } from '../../lib/graph';
 import ComposeEmail from '../forms/ComposeEmail';
+import LinkedInCompose from '../forms/LinkedInCompose';
 import Chip from '../atoms/Chip';
 import Avatar from '../atoms/Avatar';
 import Btn from '../atoms/Btn';
@@ -36,8 +38,8 @@ export default function ItemDetail({ item, onBack, onSelectContact, extraTimelin
   const timeline = [...(extraTimeline||[]), ...(item.timeline||[])];
 
   const tabs = isProj
-    ? ["project plan","overview","follow-ups","comms","tasks","calendar","documents","timeline"]
-    : ["overview","follow-ups","comms","tasks","calendar","documents","timeline"];
+    ? ["project plan","overview","follow-ups","activity log","tasks","calendar","documents","timeline"]
+    : ["overview","follow-ups","activity log","tasks","calendar","documents","timeline"];
 
   const pendingR = rappelsFor(item.id).filter(r => r.status==="no-reply").length;
 
@@ -87,6 +89,128 @@ export default function ItemDetail({ item, onBack, onSelectContact, extraTimelin
 
   const [showCompose, setShowCompose] = useState(false);
   const [composeEmail, setComposeEmail] = useState('');
+
+  // Quick-action bar: LinkedIn compose
+  const [showLinkedInCompose, setShowLinkedInCompose] = useState(false);
+
+  // Playbook enrollment state
+  const [showEnrollPlaybook, setShowEnrollPlaybook] = useState(false);
+  const [availablePlaybooks, setAvailablePlaybooks] = useState(null);
+  const [enrolling, setEnrolling] = useState(null);
+  const [enrollResult, setEnrollResult] = useState(null);
+
+  useEffect(() => {
+    if (showEnrollPlaybook) {
+      supabase.from('playbooks').select('*, playbook_steps(id)').in('status', ['active', 'draft'])
+        .then(({ data }) => {
+          setAvailablePlaybooks((data || []).map(pb => ({ ...pb, step_count: pb.playbook_steps?.length || 0 })));
+        });
+    }
+  }, [showEnrollPlaybook]);
+
+  // Activity Log state (combined comms)
+  const [activityLogItems, setActivityLogItems] = useState([]);
+  const [activityLogLoading, setActivityLogLoading] = useState(false);
+  const [expandedActivity, setExpandedActivity] = useState(null);
+
+  const loadActivityLog = useCallback(async () => {
+    setActivityLogLoading(true);
+    const firstContact = getCts(item.contactIds)[0];
+    const results = [];
+
+    // 1. Emails from Microsoft Graph
+    if (firstContact?.email) {
+      try {
+        const emails = await getEmailsForContact(firstContact.email, 30);
+        (emails || []).forEach(e => {
+          const myEmail = e.fromAddress?.toLowerCase() || '';
+          const contactEmail = firstContact.email?.toLowerCase() || '';
+          const isOutbound = myEmail !== contactEmail;
+          results.push({
+            _type: 'email',
+            _icon: '\u2709',
+            _channel: 'Email',
+            _direction: isOutbound ? 'outbound' : 'inbound',
+            _from: e.from || e.fromAddress || '',
+            _subject: e.subject || '',
+            _preview: e.bodyPreview || '',
+            _body: e.bodyHtml || e.bodyPreview || '',
+            _date: e.date || '',
+            _id: 'email-' + e.id,
+          });
+        });
+      } catch (err) { /* skip */ }
+    }
+
+    // 2. LinkedIn messages from comms table
+    const linkedinComms = commsFor(item.id).filter(c => (c.channel || '').toLowerCase() === 'linkedin');
+    linkedinComms.forEach(c => {
+      results.push({
+        _type: 'linkedin',
+        _icon: 'in',
+        _channel: 'LinkedIn',
+        _direction: c.direction || 'outbound',
+        _from: c.from || '',
+        _subject: c.sub || '',
+        _preview: c.sub || '',
+        _body: c.body || c.sub || '',
+        _date: c.date || '',
+        _id: 'li-' + c.id,
+      });
+    });
+
+    // 3. Activity notes from Supabase
+    if (firstContact) {
+      try {
+        const { data: activities } = await supabase.from('activity')
+          .select('*')
+          .eq('contact_id', firstContact.id)
+          .order('created_at', { ascending: false })
+          .limit(30);
+        (activities || []).forEach(a => {
+          results.push({
+            _type: 'note',
+            _icon: '\uD83D\uDCDD',
+            _channel: 'Note',
+            _direction: 'outbound',
+            _from: a.owner || a.created_by || '',
+            _subject: a.type || 'Activity',
+            _preview: a.note || a.description || '',
+            _body: a.note || a.description || '',
+            _date: a.created_at || '',
+            _id: 'act-' + a.id,
+          });
+        });
+      } catch (err) { /* skip */ }
+    }
+
+    // 4. Other comms records linked to this item
+    const otherComms = commsFor(item.id).filter(c => (c.channel || '').toLowerCase() !== 'linkedin');
+    otherComms.forEach(c => {
+      const ch = (c.channel || '').toLowerCase();
+      results.push({
+        _type: ch === 'teams' ? 'teams' : ch === 'email' ? 'email' : 'other',
+        _icon: ch === 'teams' ? '\u25CE' : ch === 'email' ? '\u2709' : c.icon || '\u25CE',
+        _channel: c.channel || 'Other',
+        _direction: c.direction || 'outbound',
+        _from: c.from || '',
+        _subject: c.sub || '',
+        _preview: c.sub || '',
+        _body: c.body || c.sub || '',
+        _date: c.date || '',
+        _id: 'comm-' + c.id,
+      });
+    });
+
+    // Sort newest first
+    results.sort((a, b) => (b._date || '').localeCompare(a._date || ''));
+    setActivityLogItems(results);
+    setActivityLogLoading(false);
+  }, [item.id, item.contactIds, comms]);
+
+  useEffect(() => {
+    if (tab === 'activity log') loadActivityLog();
+  }, [tab, loadActivityLog]);
 
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [taskForm, setTaskForm] = useState({ title: '', due_date: '', description: '' });
@@ -240,12 +364,27 @@ export default function ItemDetail({ item, onBack, onSelectContact, extraTimelin
             {item.startDate && <div style={{ fontSize:12, color:"#888780", marginTop:2 }}>{item.startDate}{item.endDate?` → ${item.endDate}`:""}</div>}
           </div>
         </div>
+        {/* Quick-action bar */}
+        <div style={{ display:"flex", gap:8, padding:"8px 0 6px", borderTop:"0.5px solid #D3D1C7", marginLeft:-18, marginRight:-18, paddingLeft:18, paddingRight:18 }}>
+          <button onClick={() => { const c = getCts(item.contactIds)[0]; setComposeEmail(c?.email || ''); setShowCompose(true); }}
+            style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", gap:5, padding:"6px 10px", borderRadius:7, border:"0.5px solid #B4B2A9", fontSize:11, cursor:"pointer", background:"#042C53", color:"#B5D4F4", fontFamily:"inherit", fontWeight:500 }}>
+            &#9993; Send Email
+          </button>
+          <button onClick={() => setShowLinkedInCompose(true)}
+            style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", gap:5, padding:"6px 10px", borderRadius:7, border:"0.5px solid #0A66C2", fontSize:11, cursor:"pointer", background:"#fff", color:"#0A66C2", fontFamily:"inherit", fontWeight:500 }}>
+            in Send LinkedIn Message
+          </button>
+          <button onClick={() => setShowEnrollPlaybook(true)}
+            style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", gap:5, padding:"6px 10px", borderRadius:7, border:"0.5px solid #7C5CFC", fontSize:11, cursor:"pointer", background:"#fff", color:"#7C5CFC", fontFamily:"inherit", fontWeight:500 }}>
+            &#128203; Enroll in Playbook
+          </button>
+        </div>
         <div style={{ display:"flex", borderTop:"0.5px solid #D3D1C7", marginLeft:-18, marginRight:-18, paddingLeft:18, overflowX:"auto" }}>
           {tabs.map(t => (
             <button key={t} onClick={() => setTab(t)} style={{ padding:"8px 12px", fontSize:11, cursor:"pointer", background:"transparent", border:"none", borderBottom:tab===t?"2px solid #378ADD":"2px solid transparent", color:tab===t?"#2C2C2A":"#888780", fontWeight:tab===t?500:400, fontFamily:"inherit", textTransform:"capitalize", whiteSpace:"nowrap", flexShrink:0 }}>
               {t}
               {t==="follow-ups" && pendingR>0 && <span style={{ marginLeft:3, background:"#E24B4A", color:"#fff", fontSize:9, padding:"1px 4px", borderRadius:6 }}>{pendingR}</span>}
-              {t==="comms" && commsFor(item.id).filter(c=>c.unread).length>0 && <span style={{ marginLeft:3, background:"#378ADD", color:"#fff", fontSize:9, padding:"1px 4px", borderRadius:6 }}>{commsFor(item.id).filter(c=>c.unread).length}</span>}
+              {t==="activity log" && commsFor(item.id).filter(c=>c.unread).length>0 && <span style={{ marginLeft:3, background:"#378ADD", color:"#fff", fontSize:9, padding:"1px 4px", borderRadius:6 }}>{commsFor(item.id).filter(c=>c.unread).length}</span>}
               {t==="tasks" && tasksFor(item.id).filter(t=>!t.done).length>0 && <span style={{ marginLeft:3, background:"#888780", color:"#fff", fontSize:9, padding:"1px 4px", borderRadius:6 }}>{tasksFor(item.id).filter(t=>!t.done).length}</span>}
             </button>
           ))}
@@ -324,22 +463,48 @@ export default function ItemDetail({ item, onBack, onSelectContact, extraTimelin
           </div>
         )}
         {tab==="follow-ups" && <ItemRappelTab itemId={item.id} item={item} followUps={followUps} contacts={contacts} refetch={refetch} />}
-        {tab==="comms" && (
+        {tab==="activity log" && (
           <div>
-            <button onClick={() => { const c = getCts(item.contactIds)[0]; setComposeEmail(c?.email || ''); setShowCompose(true); }} style={{ display:"flex", alignItems:"center", gap:6, width:"100%", padding:"7px 12px", borderRadius:7, border:"0.5px solid #B4B2A9", fontSize:12, cursor:"pointer", background:"#042C53", color:"#B5D4F4", fontFamily:"inherit", marginBottom:10, justifyContent:"center", fontWeight:500 }}>✉ Compose message</button>
-            {commsFor(item.id).length === 0 ? <Empty text="No communications for this item." /> :
-              commsFor(item.id).map((m,i) => (
-                <div key={m.id} style={{ display:"flex", gap:10, padding:"9px 0", borderBottom:i<commsFor(item.id).length-1?"0.5px solid #D3D1C7":"none", cursor:"pointer" }}>
-                  <div style={{ width:28, height:28, borderRadius:7, background:m.bg, color:m.tc, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:11 }}>{m.icon}</div>
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontSize:12, fontWeight:500 }}>{m.from}</div>
-                    <div style={{ fontSize:11, color:"#888780", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{m.sub}</div>
-                    <div style={{ fontSize:10, color:"#888780", marginTop:1 }}>{m.time}</div>
+            <div style={{ display:"flex", gap:6, marginBottom:10 }}>
+              <button onClick={() => { const c = getCts(item.contactIds)[0]; setComposeEmail(c?.email || ''); setShowCompose(true); }} style={{ flex:1, display:"flex", alignItems:"center", gap:5, padding:"7px 12px", borderRadius:7, border:"0.5px solid #B4B2A9", fontSize:12, cursor:"pointer", background:"#042C53", color:"#B5D4F4", fontFamily:"inherit", justifyContent:"center", fontWeight:500 }}>&#9993; Compose</button>
+              <button onClick={() => setShowLinkedInCompose(true)} style={{ flex:1, display:"flex", alignItems:"center", gap:5, padding:"7px 12px", borderRadius:7, border:"0.5px solid #0A66C2", fontSize:12, cursor:"pointer", background:"#fff", color:"#0A66C2", fontFamily:"inherit", justifyContent:"center", fontWeight:500 }}>in LinkedIn</button>
+              <button onClick={loadActivityLog} style={{ padding:"7px 12px", borderRadius:7, border:"0.5px solid #B4B2A9", fontSize:12, cursor:"pointer", background:"#fff", color:"#888780", fontFamily:"inherit" }}>&#8635; Refresh</button>
+            </div>
+            {activityLogLoading ? (
+              <div style={{ textAlign:"center", padding:20, color:"#888780", fontSize:12 }}>Loading activity log...</div>
+            ) : activityLogItems.length === 0 ? (
+              <Empty text="No communications found. Try sending an email or LinkedIn message." />
+            ) : (
+              activityLogItems.map((a, i) => {
+                const channelColors = { Email: { bg: '#E6F1FB', color: '#0C447C' }, LinkedIn: { bg: '#E8F4E8', color: '#0A66C2' }, Note: { bg: '#FAEEDA', color: '#633806' }, Teams: { bg: '#EEEDFE', color: '#3C3489' } };
+                const cc = channelColors[a._channel] || { bg: '#F1EFE8', color: '#5F5E5A' };
+                const isExpanded = expandedActivity === a._id;
+                return (
+                  <div key={a._id} onClick={() => setExpandedActivity(isExpanded ? null : a._id)}
+                    style={{ padding:"9px 0", borderBottom: i < activityLogItems.length - 1 ? "0.5px solid #D3D1C7" : "none", cursor:"pointer" }}>
+                    <div style={{ display:"flex", gap:10, alignItems:"flex-start" }}>
+                      <div style={{ width:28, height:28, borderRadius:7, background:cc.bg, color:cc.color, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:11, fontWeight:600 }}>{a._icon}</div>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:2 }}>
+                          <span style={{ fontSize:10, padding:"1px 6px", borderRadius:8, background:cc.bg, color:cc.color, fontWeight:600 }}>{a._channel}</span>
+                          <span style={{ fontSize:10, color:"#888780" }}>{a._direction === 'outbound' ? '\u2197 outbound' : '\u2199 inbound'}</span>
+                          {a._from && <span style={{ fontSize:10, color:"#5F5E5A" }}>{a._from}</span>}
+                        </div>
+                        <div style={{ fontSize:12, fontWeight:500, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{a._subject || a._preview}</div>
+                        {!isExpanded && a._preview && a._preview !== a._subject && <div style={{ fontSize:11, color:"#888780", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{a._preview}</div>}
+                        <div style={{ fontSize:10, color:"#888780", marginTop:1 }}>{a._date ? new Date(a._date).toLocaleDateString('en', { day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) : ''}</div>
+                      </div>
+                    </div>
+                    {isExpanded && a._body && (
+                      <div style={{ marginTop:8, marginLeft:38, padding:"10px 12px", background:"#FAFAF8", borderRadius:7, border:"0.5px solid #D3D1C7", fontSize:12, color:"#2C2C2A", lineHeight:1.6, maxHeight:300, overflowY:"auto" }}
+                        dangerouslySetInnerHTML={a._type === 'email' ? { __html: a._body } : undefined}>
+                        {a._type !== 'email' ? a._body : undefined}
+                      </div>
+                    )}
                   </div>
-                  {m.unread && <div style={{ width:5, height:5, borderRadius:"50%", background:"#378ADD", marginTop:6, flexShrink:0 }} />}
-                </div>
-              ))
-            }
+                );
+              })
+            )}
           </div>
         )}
         {tab==="tasks" && (
@@ -468,6 +633,72 @@ export default function ItemDetail({ item, onBack, onSelectContact, extraTimelin
         <Btn primary>Analyse</Btn>
       </div>
       <ComposeEmail open={showCompose} onClose={() => setShowCompose(false)} contactEmail={composeEmail} item={item} refetch={refetch} />
+      <LinkedInCompose open={showLinkedInCompose} onClose={() => setShowLinkedInCompose(false)} contactName={getCts(item.contactIds)[0]?.name || ''} linkedinUrl={getCts(item.contactIds)[0]?.linkedin_url || ''} />
+
+      {/* Enroll in Playbook modal */}
+      {showEnrollPlaybook && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.3)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:100 }} onClick={() => setShowEnrollPlaybook(false)}>
+          <div onClick={e => e.stopPropagation()} style={{ background:"#fff", borderRadius:12, padding:"24px 28px", width:420, maxHeight:"70vh", overflowY:"auto" }}>
+            <div style={{ fontSize:16, fontWeight:500, marginBottom:4 }}>Enroll in a Playbook</div>
+            <div style={{ fontSize:11, color:"#888780", marginBottom:8 }}>Select a playbook to start the outreach sequence for the first contact</div>
+            <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12, padding:"6px 10px", background:"#F1EFE8", borderRadius:6 }}>
+              <label style={{ fontSize:11, color:"#888780", whiteSpace:"nowrap" }}>Start date (optional):</label>
+              <input type="date" id="enroll-start-date-item" style={{ padding:"4px 8px", borderRadius:6, border:"0.5px solid #D3D1C7", fontSize:11, fontFamily:"inherit", background:"#fff" }} />
+            </div>
+            {availablePlaybooks === null ? (
+              <div style={{ textAlign:"center", padding:20, color:"#888780", fontSize:12 }}>Loading playbooks...</div>
+            ) : availablePlaybooks.length === 0 ? (
+              <div style={{ textAlign:"center", padding:20, color:"#888780", fontSize:12 }}>No playbooks created yet. Go to Playbooks to create one first.</div>
+            ) : (
+              availablePlaybooks.map(pb => (
+                <div key={pb.id} style={{ background:"#FAFAF8", borderRadius:8, border:"0.5px solid #D3D1C7", padding:"12px 14px", marginBottom:6, display:"flex", alignItems:"center", gap:12, cursor:"pointer" }}
+                  onClick={async () => {
+                    const firstContactId = item.contactIds?.[0];
+                    if (!firstContactId) return;
+                    setEnrolling(pb.id);
+                    setEnrollResult(null);
+                    const startDateVal = document.getElementById('enroll-start-date-item')?.value;
+                    const now = startDateVal ? new Date(startDateVal + 'T09:00:00') : new Date();
+                    const { error } = await supabase.from('playbook_enrollments').insert({
+                      playbook_id: pb.id,
+                      contact_id: firstContactId,
+                      current_step: 1,
+                      status: 'active',
+                      next_step_at: now.toISOString(),
+                    });
+                    if (!error) {
+                      setEnrollResult('enrolled');
+                      setTimeout(() => { setShowEnrollPlaybook(false); setEnrollResult(null); }, 1500);
+                    } else {
+                      setEnrollResult('error');
+                    }
+                    setEnrolling(null);
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.borderColor="#378ADD"}
+                  onMouseLeave={e => e.currentTarget.style.borderColor="#D3D1C7"}>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:13, fontWeight:500 }}>{pb.name}</div>
+                    <div style={{ fontSize:10, color:"#888780", marginTop:2 }}>
+                      {pb.step_count || '?'} steps · {pb.status} · Owner: {pb.owner || '\u2014'}
+                    </div>
+                  </div>
+                  {enrolling === pb.id ? (
+                    <span style={{ fontSize:11, color:"#888780" }}>Enrolling...</span>
+                  ) : enrollResult === 'enrolled' ? (
+                    <span style={{ fontSize:11, color:"#1D9E75" }}>\u2713 Enrolled</span>
+                  ) : (
+                    <span style={{ fontSize:11, color:"#378ADD" }}>Enroll \u2192</span>
+                  )}
+                </div>
+              ))
+            )}
+            {enrollResult === 'error' && <div style={{ fontSize:11, color:"#dc2626", marginTop:8 }}>Failed to enroll. Contact may already be in this playbook.</div>}
+            <div style={{ display:"flex", justifyContent:"flex-end", marginTop:12 }}>
+              <button onClick={() => setShowEnrollPlaybook(false)} style={{ padding:"6px 14px", borderRadius:6, border:"0.5px solid #D3D1C7", fontSize:11, cursor:"pointer", background:"#fff", color:"#888780", fontFamily:"inherit" }}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Convert to Opportunity modal */}
       {showConvertModal && (
