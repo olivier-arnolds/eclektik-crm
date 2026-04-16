@@ -454,6 +454,12 @@ export default function ItemDetail({ item, onBack, onSelectContact, extraTimelin
                 </div>
               </div>
             </div>
+            <div style={{ background:"#FFFFFF", borderRadius:8, border:"0.5px solid #D3D1C7", padding:"12px 14px", marginBottom:10 }}>
+              <div style={{ fontSize:10, fontWeight:500, color:"#888780", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:6 }}>Type / Product Line</div>
+              <div style={{ fontSize:13 }}>
+                <EditableField value={item.productLine || ""} field="product_line" table={itemTable} rowId={item.id} type="select" options={["","Glint","People Science","AI Transformation","ROI","Technical","Other"]} displayValue={item.productLine || "Select type..."} refetch={refetch} updateRow={updateRow} />
+              </div>
+            </div>
             <div style={{ background:"#FFFFFF", borderRadius:8, border:"0.5px solid #D3D1C7", padding:"12px 14px" }}>
               <div style={{ fontSize:10, fontWeight:500, color:"#888780", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:6 }}>Notes</div>
               <div style={{ fontSize:13, color:"#5F5E5A", lineHeight:1.6 }}>

@@ -43,7 +43,7 @@ const btnBase = {
 const LEAD_TYPES = ['Glint', 'People Science', 'AI Transformation', 'ROI', 'Technical', 'Other'];
 
 const EMPTY = {
-  title: '', company_name: '', contact_name: '', email: '',
+  title: '', company_name: '', contact_name: '', email: '', linkedin_url: '',
   value: '', owner: 'MVG', probability: 20, close_date: '', notes: '', product_line: '',
 };
 
@@ -65,6 +65,8 @@ export default function AddLeadModal({ open, onClose, refetch, stageKey }) {
     const row = {
       topic: form.title.trim(),
       full_name: form.contact_name.trim() || form.title.trim(),
+      email: form.email.trim() || null,
+      linkedin_url: form.linkedin_url.trim() || null,
       owner: form.owner,
       est_revenue: Number(form.value) || 0,
       probability: Number(form.probability) || 0,
@@ -117,6 +119,11 @@ export default function AddLeadModal({ open, onClose, refetch, stageKey }) {
           <div style={rowStyle}>
             <label style={labelStyle}>Email</label>
             <input style={inputStyle} type="email" value={form.email} onChange={set('email')} placeholder="email@example.com" />
+          </div>
+
+          <div style={rowStyle}>
+            <label style={labelStyle}>LinkedIn URL</label>
+            <input style={inputStyle} type="url" value={form.linkedin_url} onChange={set('linkedin_url')} placeholder="https://linkedin.com/in/..." />
           </div>
 
           <div style={rowStyle}>

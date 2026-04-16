@@ -3,8 +3,10 @@ import { sc, COLS, fmt } from '../../lib/constants';
 import { updateRow } from '../../hooks/useSupabase';
 import Chip from '../atoms/Chip';
 import ItemCard from '../cards/ItemCard';
+import AddLeadModal from '../forms/AddLeadModal';
 
 export default function SwimlaneView({ onSelectItem, search, allItems, accounts, contacts, followUps, refetch }) {
+  const [showAddLead, setShowAddLead] = useState(false);
   const [dragOverCol, setDragOverCol] = useState(null);
   const [productLineFilter, setProductLineFilter] = useState('All types');
   const getAcc = (id) => accounts.find(a => a.id === id);
@@ -72,7 +74,7 @@ export default function SwimlaneView({ onSelectItem, search, allItems, accounts,
           {productLines.map(pl => <option key={pl} value={pl}>{pl}</option>)}
         </select>
         {search && <Chip bg="#E6F1FB" color="#0C447C">filtering: "{search}"</Chip>}
-        <div style={{ fontSize:11, color:"#888780", marginLeft:"auto" }}>newest on top</div>
+        <button onClick={() => setShowAddLead(true)} style={{ marginLeft:"auto", padding:"4px 12px", borderRadius:6, border:"none", fontSize:11, cursor:"pointer", background:"#042C53", color:"#B5D4F4", fontFamily:"inherit", fontWeight:500 }}>+ Add Lead</button>
       </div>
       <div style={{ flex:1, overflowX:"auto", overflowY:"hidden", display:"flex", padding:"12px 14px", gap:10 }}>
         {COLS.map(col => {
@@ -108,6 +110,7 @@ export default function SwimlaneView({ onSelectItem, search, allItems, accounts,
           );
         })}
       </div>
+      <AddLeadModal open={showAddLead} onClose={() => setShowAddLead(false)} refetch={refetch} stageKey="lead" />
     </div>
   );
 }
