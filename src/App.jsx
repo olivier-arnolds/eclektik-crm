@@ -187,7 +187,7 @@ export default function BDDashboard() {
           setCollapsed={setSidebarCollapsed}
         />
         <div style={{ display:"flex", flexDirection:"column", minHeight:0, overflow:"hidden" }}>{mainContent}</div>
-        <RightPanel tab={rightTab} setTab={setRightTab} followUps={followUps} comms={comms} tasks={tasks} calEvents={calEvents} contacts={contacts} refetch={refetch} onOpenInbox={() => setSidebarMode('inbox')} />
+        <RightPanel tab={rightTab} setTab={setRightTab} followUps={followUps} comms={comms} tasks={tasks} calEvents={calEvents} contacts={contacts} refetch={refetch} onOpenInbox={() => setSidebarMode('inbox')} selectedItem={selectedItem} />
       </div>
     </div>
   );

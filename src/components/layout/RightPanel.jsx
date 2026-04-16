@@ -53,10 +53,35 @@ function DaySection({ label, hasItems, dayEvents, dayTasks, dayFollowUps, fmtCal
   );
 }
 
-export default function RightPanel({ tab, setTab, followUps, comms, tasks, calEvents, contacts, refetch, onOpenInbox }) {
-  const pendingR = followUps.filter(r => r.status==="no-reply").length;
-  const pendingT = tasks.filter(t => !t.done).length;
-  const unreadC  = comms.filter(c => c.unread).length;
+export default function RightPanel({ tab, setTab, followUps, comms, tasks, calEvents, contacts, refetch, onOpenInbox, selectedItem }) {
+  const [contextMode, setContextMode] = useState(true);
+
+  // When selectedItem changes, auto-enable context mode
+  useEffect(() => {
+    if (selectedItem) setContextMode(true);
+  }, [selectedItem?.id]);
+
+  const isContextActive = !!selectedItem && contextMode;
+
+  // Filtered data based on context
+  const filteredFollowUps = useMemo(() => {
+    if (!isContextActive) return followUps;
+    return followUps.filter(r => r.itemIds && r.itemIds.includes(selectedItem.id));
+  }, [followUps, isContextActive, selectedItem?.id]);
+
+  const filteredTasks = useMemo(() => {
+    if (!isContextActive) return tasks;
+    return tasks.filter(t => t.itemIds && t.itemIds.includes(selectedItem.id));
+  }, [tasks, isContextActive, selectedItem?.id]);
+
+  const filteredComms = useMemo(() => {
+    if (!isContextActive) return comms;
+    return comms.filter(m => m.itemIds && m.itemIds.includes(selectedItem.id));
+  }, [comms, isContextActive, selectedItem?.id]);
+
+  const pendingR = filteredFollowUps.filter(r => r.status==="no-reply").length;
+  const pendingT = filteredTasks.filter(t => !t.done).length;
+  const unreadC  = filteredComms.filter(c => c.unread).length;
   const PTABS = [["rappel","Follow-ups"],["comms","Comms"],["tasks","Tasks"],["calendar","Calendar"]];
   const calGroups = useMemo(() => {
     const g = {};
@@ -172,16 +197,17 @@ export default function RightPanel({ tab, setTab, followUps, comms, tasks, calEv
   const handleCreateFollowUp = async () => {
     if (!followUpForm.title.trim()) return;
     setSavingFollowUp(true);
+    const isLead = selectedItem?.funnelStage === 'lead';
     await insertRow('follow_ups', {
       title: followUpForm.title.trim(),
       priority: followUpForm.priority,
       status: 'pending',
       due_date: followUpForm.due_date || null,
       description: followUpForm.description.trim() || null,
-      contact_id: null,
-      opportunity_id: null,
-      lead_id: null,
-      owner: null,
+      contact_id: isContextActive ? (selectedItem.contactIds?.[0] || null) : null,
+      opportunity_id: isContextActive && !isLead ? selectedItem.id : null,
+      lead_id: isContextActive && isLead ? selectedItem.id : null,
+      owner: isContextActive ? (selectedItem.owner || null) : null,
     });
     setFollowUpForm({ title: '', priority: 'schedule', due_date: new Date().toISOString().slice(0,10), description: '' });
     setShowFollowUpForm(false);
@@ -192,15 +218,16 @@ export default function RightPanel({ tab, setTab, followUps, comms, tasks, calEv
   const handleCreateTask = async () => {
     if (!taskForm.title.trim()) return;
     setSavingTask(true);
+    const isLeadT = selectedItem?.funnelStage === 'lead';
     await insertRow('tasks', {
       title: taskForm.title.trim(),
       status: 'pending',
       due_date: taskForm.due_date || null,
       description: taskForm.description.trim() || null,
-      contact_id: null,
-      opportunity_id: null,
-      lead_id: null,
-      owner: null,
+      contact_id: isContextActive ? (selectedItem.contactIds?.[0] || null) : null,
+      opportunity_id: isContextActive && !isLeadT ? selectedItem.id : null,
+      lead_id: isContextActive && isLeadT ? selectedItem.id : null,
+      owner: isContextActive ? (selectedItem.owner || null) : null,
     });
     setTaskForm({ title: '', due_date: '', description: '' });
     setShowTaskForm(false);
@@ -220,6 +247,19 @@ export default function RightPanel({ tab, setTab, followUps, comms, tasks, calEv
           </button>
         ))}
       </div>
+      {isContextActive && (
+        <div style={{ padding:"8px 14px", background:"#F0F7FF", borderBottom:"0.5px solid #B5D4F4", display:"flex", alignItems:"center", gap:8, flexShrink:0 }}>
+          <span style={{ fontSize:12 }}>{"\uD83D\uDCCC"}</span>
+          <span style={{ fontSize:11, fontWeight:500, color:"#185FA5", flex:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{selectedItem.title}</span>
+          <span onClick={() => setContextMode(false)} style={{ fontSize:10, color:"#378ADD", cursor:"pointer", whiteSpace:"nowrap", textDecoration:"underline" }}>Show all</span>
+        </div>
+      )}
+      {selectedItem && !contextMode && (
+        <div style={{ padding:"6px 14px", background:"#F1EFE8", borderBottom:"0.5px solid #D3D1C7", display:"flex", alignItems:"center", gap:8, flexShrink:0 }}>
+          <span style={{ fontSize:11, color:"#888780", flex:1 }}>Showing all pipeline</span>
+          <span onClick={() => setContextMode(true)} style={{ fontSize:10, color:"#378ADD", cursor:"pointer", whiteSpace:"nowrap", textDecoration:"underline" }}>Filter for {selectedItem.title}</span>
+        </div>
+      )}
       <div style={{ flex:1, overflowY:"auto" }}>
         {tab==="rappel" && (
           <div style={{ padding:14 }}>
@@ -241,8 +281,8 @@ export default function RightPanel({ tab, setTab, followUps, comms, tasks, calEv
                 </div>
               </div>
             )}
-            <div style={{ fontSize:11, color:"#888780", marginBottom:12 }}>All pending follow-ups across pipeline</div>
-            {followUps.filter(r => r.status==="no-reply").map(r => {
+            <div style={{ fontSize:11, color:"#888780", marginBottom:12 }}>{isContextActive ? `Follow-ups for this item` : 'All pending follow-ups across pipeline'}</div>
+            {filteredFollowUps.filter(r => r.status==="no-reply").map(r => {
               const contact = contacts.find(c => c.id===r.contactId);
               const pep = pepC[r.pepPriority]||pepC["schedule"];
               const isDone = rappelDone[r.id];
@@ -268,7 +308,7 @@ export default function RightPanel({ tab, setTab, followUps, comms, tasks, calEv
                 </div>
               );
             })}
-            {followUps.filter(r => r.status==="replied").map(r => {
+            {filteredFollowUps.filter(r => r.status==="replied").map(r => {
               const contact = contacts.find(c => c.id===r.contactId);
               return (
                 <div key={r.id} style={{ background:"#FFFFFF", borderRadius:9, border:"0.5px solid #5DCAA5", padding:"9px 12px", marginBottom:6 }}>
@@ -285,12 +325,12 @@ export default function RightPanel({ tab, setTab, followUps, comms, tasks, calEv
         {tab==="comms" && (
           <div style={{ padding:14 }}>
             <button style={{ display:"flex", alignItems:"center", gap:6, width:"100%", padding:"7px 12px", borderRadius:7, border:"0.5px solid #B4B2A9", fontSize:12, cursor:"pointer", background:"#042C53", color:"#B5D4F4", fontFamily:"inherit", marginBottom:10, justifyContent:"center", fontWeight:500 }}>✉ Compose message</button>
-            {comms.length === 0 && (
+            {filteredComms.length === 0 && (
               <div style={{ background:"#F1EFE8", borderRadius:7, padding:"10px 12px", fontSize:12, color:"#888780", textAlign:"center", marginBottom:10 }}>
-                Email sync available per item
+                {isContextActive ? 'No communications for this item' : 'Email sync available per item'}
               </div>
             )}
-            {[...comms].sort((a,b) => (b.date||'').localeCompare(a.date||'')).slice(0, 10).map((m,i,arr) => (
+            {[...filteredComms].sort((a,b) => (b.date||'').localeCompare(a.date||'')).slice(0, 10).map((m,i,arr) => (
               <div key={m.id} style={{ display:"flex", gap:10, padding:"9px 0", borderBottom:i<arr.length-1?"0.5px solid #D3D1C7":"none", cursor:"pointer" }}>
                 <div style={{ width:28, height:28, borderRadius:7, background:m.bg, color:m.tc, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, fontSize:11 }}>{m.icon}</div>
                 <div style={{ flex:1, minWidth:0 }}>
@@ -323,10 +363,10 @@ export default function RightPanel({ tab, setTab, followUps, comms, tasks, calEv
                 </div>
               </div>
             )}
-            {tasks.map((t,i) => {
+            {filteredTasks.map((t,i) => {
               const isDone = localTasksDone[t.id] !== undefined ? localTasksDone[t.id] : t.done;
               return (
-                <div key={t.id} style={{ display:"flex", gap:10, padding:"8px 0", borderBottom:i<tasks.length-1?"0.5px solid #D3D1C7":"none", alignItems:"flex-start" }}>
+                <div key={t.id} style={{ display:"flex", gap:10, padding:"8px 0", borderBottom:i<filteredTasks.length-1?"0.5px solid #D3D1C7":"none", alignItems:"flex-start" }}>
                   <div onClick={() => handleToggleTask(t)}
                     style={{ width:16, height:16, borderRadius:4, border:`0.5px solid ${isDone?"#1D9E75":"#888780"}`, background:isDone?"#1D9E75":"transparent", flexShrink:0, marginTop:1, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
                     {isDone && <span style={{ color:"#fff", fontSize:9, fontWeight:700 }}>✓</span>}
@@ -360,10 +400,10 @@ export default function RightPanel({ tab, setTab, followUps, comms, tasks, calEv
           graphEvents.forEach(ev => { const dk = ev.startAt ? ev.startAt.slice(0,10) : ''; if (dk) { if (!evsByDate[dk]) evsByDate[dk]=[]; evsByDate[dk].push(ev); }});
           // Group tasks by due date
           const tasksByDate = {};
-          tasks.forEach(t => { if (t.dueDate && !t.done) { const dk = t.dueDate.slice(0,10); if (!tasksByDate[dk]) tasksByDate[dk]=[]; tasksByDate[dk].push(t); }});
+          filteredTasks.forEach(t => { if (t.dueDate && !t.done) { const dk = t.dueDate.slice(0,10); if (!tasksByDate[dk]) tasksByDate[dk]=[]; tasksByDate[dk].push(t); }});
           // Group follow-ups by due date
           const fuByDate = {};
-          followUps.forEach(f => { if (f.sentDate && f.status==='no-reply') { const dk = f.sentDate.slice(0,10); if (!fuByDate[dk]) fuByDate[dk]=[]; fuByDate[dk].push(f); }});
+          filteredFollowUps.forEach(f => { if (f.sentDate && f.status==='no-reply') { const dk = f.sentDate.slice(0,10); if (!fuByDate[dk]) fuByDate[dk]=[]; fuByDate[dk].push(f); }});
 
           return (
           <div style={{ padding:14 }}>
