@@ -12,7 +12,7 @@ import ProjectPlanTab from './ProjectPlanTab';
 import ItemRappelTab from './ItemRappelTab';
 import EditableField from './EditableField';
 
-export default function ItemDetail({ item, onBack, extraTimeline, addNote, noteText, setNoteText, accounts, contacts, followUps, comms, tasks, calEvents, refetch }) {
+export default function ItemDetail({ item, onBack, onSelectContact, extraTimeline, addNote, noteText, setNoteText, accounts, contacts, followUps, comms, tasks, calEvents, refetch }) {
   const getAcc = (id) => accounts.find(a => a.id === id);
   const getCts = (ids) => contacts.filter(c => ids && ids.includes(c.id));
   const rappelsFor = (id) => followUps.filter(r => r.itemIds.includes(id));
@@ -40,6 +40,50 @@ export default function ItemDetail({ item, onBack, extraTimeline, addNote, noteT
     : ["overview","follow-ups","comms","tasks","calendar","documents","timeline"];
 
   const pendingR = rappelsFor(item.id).filter(r => r.status==="no-reply").length;
+
+  // Convert to Opportunity state
+  const [showConvertModal, setShowConvertModal] = useState(false);
+  const [convertForm, setConvertForm] = useState({ estRevenue: item.value || 0, probability: item.probability || 50, closeDate: item.closeDate || '', productLine: '' });
+  const [converting, setConverting] = useState(false);
+
+  // Disqualify state
+  const [showDisqualify, setShowDisqualify] = useState(false);
+  const [disqualifyReason, setDisqualifyReason] = useState('');
+  const [disqualifying, setDisqualifying] = useState(false);
+
+  const handleConvertToOpportunity = async () => {
+    setConverting(true);
+    const companyName = acc?.name || '';
+    const firstContactId = item.contactIds?.[0] || null;
+    await insertRow('opportunities', {
+      topic: item.title,
+      company_id: item.accountId,
+      company_name: companyName,
+      contact_id: firstContactId,
+      stage: 'opportunity',
+      sub_status: 'qualify',
+      status: 'Open',
+      est_revenue: convertForm.estRevenue || 0,
+      probability: convertForm.probability || 0,
+      est_close_date: convertForm.closeDate || null,
+      product_line: convertForm.productLine || null,
+      owner: item.owner || null,
+    });
+    await updateRow('leads', item.id, { status: 'Converted' });
+    await refetch();
+    setShowConvertModal(false);
+    setConverting(false);
+    onBack();
+  };
+
+  const handleDisqualify = async () => {
+    setDisqualifying(true);
+    await updateRow('leads', item.id, { status: 'Disqualified', sub_status: null, notes: (item.notes ? item.notes + '\n' : '') + 'Disqualified: ' + disqualifyReason });
+    await refetch();
+    setShowDisqualify(false);
+    setDisqualifying(false);
+    onBack();
+  };
 
   const [showCompose, setShowCompose] = useState(false);
   const [composeEmail, setComposeEmail] = useState('');
@@ -183,6 +227,12 @@ export default function ItemDetail({ item, onBack, extraTimeline, addNote, noteT
               {funder && <Chip bg="#FAEEDA" color="#633806">ECIF {fmt(item.fundingAmount||0)}</Chip>}
             </div>
             {isLD && item.subStatus && <div style={{ marginTop:10 }}><SubBar current={item.subStatus} /></div>}
+            {item.funnelStage === 'lead' && (
+              <div style={{ display:"flex", gap:6, marginTop:10 }}>
+                <button onClick={() => setShowConvertModal(true)} style={{ padding:"5px 12px", borderRadius:6, border:"none", background:"#1D9E75", color:"#fff", fontSize:11, fontWeight:500, cursor:"pointer", fontFamily:"inherit" }}>Convert to Opportunity</button>
+                <button onClick={() => setShowDisqualify(true)} style={{ padding:"5px 12px", borderRadius:6, border:"0.5px solid #B4B2A9", background:"#F1EFE8", color:"#888780", fontSize:11, fontWeight:500, cursor:"pointer", fontFamily:"inherit" }}>Disqualify</button>
+              </div>
+            )}
           </div>
           <div style={{ textAlign:"right", flexShrink:0 }}>
             <div style={{ fontSize:22, fontWeight:500 }}>{fmt(item.value)}</div>
@@ -225,7 +275,7 @@ export default function ItemDetail({ item, onBack, extraTimeline, addNote, noteT
                 <div key={c.id} style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
                   <Avatar initials={c.initials} bg={c.avatarBg} color={c.avatarColor} size={32} />
                   <div style={{ flex:1 }}>
-                    <div style={{ fontSize:13, fontWeight:500 }}>{c.name}</div>
+                    <div style={{ fontSize:13, fontWeight:500, color: onSelectContact ? "#378ADD" : undefined, cursor: onSelectContact ? "pointer" : undefined }} onClick={() => onSelectContact && onSelectContact(c)} onMouseEnter={e => { if (onSelectContact) e.currentTarget.style.textDecoration = 'underline'; }} onMouseLeave={e => { if (onSelectContact) e.currentTarget.style.textDecoration = 'none'; }}>{c.name}</div>
                     <div style={{ fontSize:11, color:"#888780" }}>{c.role} · {getAcc(c.accountId)?.name}</div>
                     <div style={{ fontSize:11, color:"#5F5E5A", marginTop:2 }}>
                       <EditableField value={c.email || ""} field="email" table="contacts" rowId={c.id} type="text" displayValue={c.email || "Add email..."} refetch={refetch} updateRow={updateRow} />
@@ -418,6 +468,62 @@ export default function ItemDetail({ item, onBack, extraTimeline, addNote, noteT
         <Btn primary>Analyse</Btn>
       </div>
       <ComposeEmail open={showCompose} onClose={() => setShowCompose(false)} contactEmail={composeEmail} item={item} refetch={refetch} />
+
+      {/* Convert to Opportunity modal */}
+      {showConvertModal && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.35)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:999 }} onClick={() => setShowConvertModal(false)}>
+          <div style={{ background:"#FFFFFF", borderRadius:12, padding:"20px 24px", width:400, maxWidth:"90vw", boxShadow:"0 8px 32px rgba(0,0,0,0.18)" }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize:16, fontWeight:600, marginBottom:16 }}>Convert to Opportunity</div>
+            <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+              <div>
+                <label style={{ fontSize:11, color:"#888780", display:"block", marginBottom:3 }}>Estimated Revenue</label>
+                <input type="number" value={convertForm.estRevenue} onChange={e => setConvertForm(f => ({ ...f, estRevenue: Number(e.target.value) }))} style={{ width:"100%", padding:"7px 10px", borderRadius:6, border:"0.5px solid #B4B2A9", fontSize:12, fontFamily:"inherit", outline:"none", background:"#F1EFE8", boxSizing:"border-box" }} />
+              </div>
+              <div>
+                <label style={{ fontSize:11, color:"#888780", display:"block", marginBottom:3 }}>Probability (%)</label>
+                <input type="number" min={0} max={100} value={convertForm.probability} onChange={e => setConvertForm(f => ({ ...f, probability: Number(e.target.value) }))} style={{ width:"100%", padding:"7px 10px", borderRadius:6, border:"0.5px solid #B4B2A9", fontSize:12, fontFamily:"inherit", outline:"none", background:"#F1EFE8", boxSizing:"border-box" }} />
+              </div>
+              <div>
+                <label style={{ fontSize:11, color:"#888780", display:"block", marginBottom:3 }}>Close Date</label>
+                <input type="date" value={convertForm.closeDate} onChange={e => setConvertForm(f => ({ ...f, closeDate: e.target.value }))} style={{ width:"100%", padding:"7px 10px", borderRadius:6, border:"0.5px solid #B4B2A9", fontSize:12, fontFamily:"inherit", outline:"none", background:"#F1EFE8", boxSizing:"border-box" }} />
+              </div>
+              <div>
+                <label style={{ fontSize:11, color:"#888780", display:"block", marginBottom:3 }}>Product Line</label>
+                <select value={convertForm.productLine} onChange={e => setConvertForm(f => ({ ...f, productLine: e.target.value }))} style={{ width:"100%", padding:"7px 10px", borderRadius:6, border:"0.5px solid #B4B2A9", fontSize:12, fontFamily:"inherit", outline:"none", background:"#F1EFE8", boxSizing:"border-box" }}>
+                  <option value="">Select...</option>
+                  <option value="Glint">Glint</option>
+                  <option value="People Science">People Science</option>
+                  <option value="AI Transformation">AI Transformation</option>
+                  <option value="ROI">ROI</option>
+                  <option value="Technical">Technical</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+            </div>
+            <div style={{ display:"flex", gap:8, justifyContent:"flex-end", marginTop:18 }}>
+              <button onClick={() => setShowConvertModal(false)} style={{ padding:"6px 14px", borderRadius:6, border:"0.5px solid #B4B2A9", background:"#F1EFE8", color:"#5F5E5A", fontSize:12, cursor:"pointer", fontFamily:"inherit" }}>Cancel</button>
+              <button onClick={handleConvertToOpportunity} disabled={converting} style={{ padding:"6px 14px", borderRadius:6, border:"none", background:"#1D9E75", color:"#fff", fontSize:12, fontWeight:500, cursor:"pointer", fontFamily:"inherit", opacity:converting?0.6:1 }}>{converting ? 'Converting...' : 'Convert'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Disqualify modal */}
+      {showDisqualify && (
+        <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.35)", display:"flex", alignItems:"center", justifyContent:"center", zIndex:999 }} onClick={() => setShowDisqualify(false)}>
+          <div style={{ background:"#FFFFFF", borderRadius:12, padding:"20px 24px", width:380, maxWidth:"90vw", boxShadow:"0 8px 32px rgba(0,0,0,0.18)" }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize:16, fontWeight:600, marginBottom:16 }}>Disqualify Lead</div>
+            <div>
+              <label style={{ fontSize:11, color:"#888780", display:"block", marginBottom:3 }}>Reason</label>
+              <textarea value={disqualifyReason} onChange={e => setDisqualifyReason(e.target.value)} rows={3} placeholder="Why is this lead being disqualified?" style={{ width:"100%", padding:"7px 10px", borderRadius:6, border:"0.5px solid #B4B2A9", fontSize:12, fontFamily:"inherit", outline:"none", background:"#F1EFE8", resize:"vertical", boxSizing:"border-box" }} />
+            </div>
+            <div style={{ display:"flex", gap:8, justifyContent:"flex-end", marginTop:18 }}>
+              <button onClick={() => setShowDisqualify(false)} style={{ padding:"6px 14px", borderRadius:6, border:"0.5px solid #B4B2A9", background:"#F1EFE8", color:"#5F5E5A", fontSize:12, cursor:"pointer", fontFamily:"inherit" }}>Cancel</button>
+              <button onClick={handleDisqualify} disabled={disqualifying || !disqualifyReason.trim()} style={{ padding:"6px 14px", borderRadius:6, border:"none", background:"#D85A30", color:"#fff", fontSize:12, fontWeight:500, cursor:"pointer", fontFamily:"inherit", opacity:(disqualifying || !disqualifyReason.trim())?0.6:1 }}>{disqualifying ? 'Saving...' : 'Disqualify'}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

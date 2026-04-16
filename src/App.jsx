@@ -115,7 +115,7 @@ export default function BDDashboard() {
 
   let mainContent;
   if (selectedItem) {
-    mainContent = <ItemDetail item={selectedItem} onBack={() => setSelectedItem(null)} extraTimeline={extraTimeline[selectedItem.id]} addNote={addNote} noteText={noteText} setNoteText={setNoteText} accounts={accounts} contacts={contacts} followUps={followUps} comms={comms} tasks={tasks} calEvents={calEvents} refetch={refetch} />;
+    mainContent = <ItemDetail item={selectedItem} onBack={() => setSelectedItem(null)} onSelectContact={(c) => { setSidebarMode('contacts'); setSelectedContact(c); setSelectedItem(null); }} extraTimeline={extraTimeline[selectedItem.id]} addNote={addNote} noteText={noteText} setNoteText={setNoteText} accounts={accounts} contacts={contacts} followUps={followUps} comms={comms} tasks={tasks} calEvents={calEvents} refetch={refetch} />;
   } else if (isSearching) {
     mainContent = <SearchResults results={searchResults} onSelectItem={setSelectedItem} onSelectAccount={handleSelectAccount} accounts={accounts} />;
   } else if (sidebarMode==="funnel") {
@@ -164,7 +164,7 @@ export default function BDDashboard() {
         reconnectMicrosoft={reconnectMicrosoft}
         hasGraphToken={hasGraphToken}
       />
-      <div style={{ display:"grid", gridTemplateColumns:sidebarCollapsed?"50px 1fr 265px":"200px 1fr 265px", flex:1, minHeight:0 }}>
+      <div style={{ display:"grid", gridTemplateColumns:sidebarCollapsed?"50px 1fr 380px":"200px 1fr 265px", flex:1, minHeight:0 }}>
         <Sidebar
           sidebarMode={sidebarMode}
           setSidebarMode={setSidebarMode}
