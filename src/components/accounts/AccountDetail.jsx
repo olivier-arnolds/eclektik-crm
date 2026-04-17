@@ -3,8 +3,8 @@ import { typeColors, fmt } from '../../lib/constants';
 import { updateRow, insertRow } from '../../hooks/useSupabase';
 import { useUnipileAccount } from '../../hooks/useUnipileAccount';
 import { useLinkedInPosts } from '../../hooks/useLinkedInPosts';
+import { useTeamsChannels } from '../../hooks/useTeamsChannels';
 import { supabase } from '../../supabase';
-import { getMyTeams, getTeamChannels, getChannelMessages } from '../../lib/graph';
 import Chip from '../atoms/Chip';
 import Avatar from '../atoms/Avatar';
 import Btn from '../atoms/Btn';
@@ -102,96 +102,16 @@ export default function AccountDetail({ account, onBack, onSelectItem, onSelectC
   const accO = allItems.filter(i => i.funnelStage==='opportunity' && (i.accountId===account.id||(i.partnerIds||[]).includes(account.id)));
   const accP = allItems.filter(i => ['onboarding','active','inactive','past'].includes(i.funnelStage) && (i.accountId===account.id||(i.partnerIds||[]).includes(account.id)));
 
-  // Teams state
-  const [teams, setTeams] = useState([]);
-  const [teamsLoading, setTeamsLoading] = useState(false);
-  const [teamsError, setTeamsError] = useState(null);
-  const [selectedTeam, setSelectedTeam] = useState(null);
-  const [channels, setChannels] = useState([]);
-  const [channelsLoading, setChannelsLoading] = useState(false);
-  const [selectedChannel, setSelectedChannel] = useState(null);
-  const [messages, setMessages] = useState([]);
-  const [messagesLoading, setMessagesLoading] = useState(false);
-
-  // Pinned channels state
-  const [pinnedChannels, setPinnedChannels] = useState([]);
-  const [pinnedLoading, setPinnedLoading] = useState(false);
-  const [showAddChannel, setShowAddChannel] = useState(false);
-  const [addStep, setAddStep] = useState('teams'); // 'teams' | 'channels'
-  const [viewingPinnedMessages, setViewingPinnedMessages] = useState(null); // pinned channel being viewed
-
-  const fetchPinnedChannels = async () => {
-    setPinnedLoading(true);
-    const { data } = await supabase.from('company_channels').select('*').eq('company_id', account.id).eq('pinned', true);
-    setPinnedChannels(data || []);
-    setPinnedLoading(false);
-  };
-
-  useEffect(() => {
-    if (tab === 'teams') {
-      fetchPinnedChannels();
-    }
-  }, [tab, account.id]);
-
-  const unpinChannel = async (channelRecord) => {
-    await supabase.from('company_channels').update({ pinned: false }).eq('id', channelRecord.id);
-    setPinnedChannels(prev => prev.filter(c => c.id !== channelRecord.id));
-  };
-
-  const startAddChannel = async () => {
-    setShowAddChannel(true);
-    setAddStep('teams');
-    setSelectedTeam(null);
-    setChannels([]);
-    setTeamsLoading(true);
-    setTeamsError(null);
-    const result = await getMyTeams();
-    if (result === null && !localStorage.getItem('graph_token')) {
-      setTeamsError('auth');
-    }
-    setTeams(result || []);
-    setTeamsLoading(false);
-  };
-
-  const selectTeamForAdd = async (team) => {
-    setSelectedTeam(team);
-    setAddStep('channels');
-    setChannelsLoading(true);
-    const result = await getTeamChannels(team.id);
-    setChannels(result || []);
-    setChannelsLoading(false);
-  };
-
-  const addChannelToCompany = async (channel) => {
-    await supabase.from('company_channels').insert({
-      company_id: account.id,
-      channel_id: channel.id,
-      channel_name: channel.displayName,
-      team_name: selectedTeam.displayName,
-      channel_type: 'teams',
-      pinned: true,
-    });
-    setShowAddChannel(false);
-    setSelectedTeam(null);
-    setChannels([]);
-    fetchPinnedChannels();
-  };
-
-  const viewPinnedMessages = async (pinnedChannel) => {
-    setViewingPinnedMessages(pinnedChannel);
-    setMessagesLoading(true);
-    // We need the team id to fetch messages; find the team or use a stored reference
-    // getChannelMessages needs (teamId, channelId) — fetch teams to find the right one
-    const allTeams = await getMyTeams();
-    const team = (allTeams || []).find(t => t.displayName === pinnedChannel.team_name);
-    if (team) {
-      const result = await getChannelMessages(team.id, pinnedChannel.channel_id, 20);
-      setMessages(result || []);
-    } else {
-      setMessages([]);
-    }
-    setMessagesLoading(false);
-  };
+  // Teams/channels — managed by useTeamsChannels
+  const {
+    teams, teamsLoading, teamsError,
+    selectedTeam, channels, channelsLoading,
+    messages, messagesLoading,
+    pinnedChannels, pinnedLoading,
+    showAddChannel, addStep, viewingPinnedMessages,
+    unpinChannel, startAddChannel, selectTeamForAdd, addChannelToCompany,
+    viewPinnedMessages, exitPinnedMessages, cancelAddChannel, backToTeams,
+  } = useTeamsChannels(account, { enabled: tab === 'teams' });
 
   // Insights state
   const [insights, setInsights] = useState([]);
@@ -904,7 +824,7 @@ export default function AccountDetail({ account, onBack, onSelectItem, onSelectC
             {viewingPinnedMessages ? (
               /* Messages view for a pinned channel */
               <div>
-                <button onClick={() => { setViewingPinnedMessages(null); setMessages([]); }}
+                <button onClick={exitPinnedMessages}
                   style={{ background:"none", border:"none", cursor:"pointer", fontSize:12, color:"#378ADD", fontFamily:"inherit", padding:0, marginBottom:12 }}>
                   ← Back to pinned channels
                 </button>
@@ -968,11 +888,11 @@ export default function AccountDetail({ account, onBack, onSelectItem, onSelectC
                       <div style={{ fontSize:12, fontWeight:500 }}>
                         {addStep === 'teams' ? 'Select a Team' : `Select a channel in ${selectedTeam?.displayName}`}
                       </div>
-                      <button onClick={() => { setShowAddChannel(false); setSelectedTeam(null); setChannels([]); }}
+                      <button onClick={cancelAddChannel}
                         style={{ background:"none", border:"none", cursor:"pointer", fontSize:11, color:"#888780", fontFamily:"inherit" }}>Cancel</button>
                     </div>
                     {addStep === 'channels' && (
-                      <button onClick={() => { setAddStep('teams'); setSelectedTeam(null); setChannels([]); }}
+                      <button onClick={backToTeams}
                         style={{ background:"none", border:"none", cursor:"pointer", fontSize:11, color:"#378ADD", fontFamily:"inherit", padding:0, marginBottom:8 }}>
                         ← Back to teams
                       </button>
