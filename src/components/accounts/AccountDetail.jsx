@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { typeColors, fmt } from '../../lib/constants';
 import { updateRow, insertRow } from '../../hooks/useSupabase';
 import { useUnipileAccount } from '../../hooks/useUnipileAccount';
+import { useLinkedInPosts } from '../../hooks/useLinkedInPosts';
 import { supabase } from '../../supabase';
 import { getMyTeams, getTeamChannels, getChannelMessages } from '../../lib/graph';
 import Chip from '../atoms/Chip';
@@ -302,18 +303,20 @@ export default function AccountDetail({ account, onBack, onSelectItem, onSelectC
     setSavingContact(null);
   };
 
-  // LinkedIn posts state
-  const [liPosts, setLiPosts] = useState([]);
-  const [liPostsLoading, setLiPostsLoading] = useState(false);
-  const [showAddPost, setShowAddPost] = useState(false);
-  const [postForm, setPostForm] = useState({ author_name:'', content:'', post_url:'', post_date:'', tags:'' });
-  const [savingPost, setSavingPost] = useState(false);
-
-  // Fetched LinkedIn posts (from Unipile API)
-  const [fetchedPosts, setFetchedPosts] = useState([]);
-  const [fetchingPosts, setFetchingPosts] = useState(false);
-  const [fetchError, setFetchError] = useState(null);
-  const [hasFetched, setHasFetched] = useState(false);
+  // LinkedIn posts (manual + fetched from Unipile) — managed by useLinkedInPosts
+  const {
+    posts: liPosts,
+    postsLoading: liPostsLoading,
+    fetchedPosts,
+    fetching: fetchingPosts,
+    fetchError,
+    hasFetched,
+    showAddPost, setShowAddPost,
+    postForm, setPostForm,
+    savingPost,
+    fetchPosts: fetchLinkedInPosts,
+    addPost,
+  } = useLinkedInPosts(account, contacts, { enabled: tab === 'linkedin' });
 
   // Comments & reactions state
   const [expandedComments, setExpandedComments] = useState({});
@@ -361,124 +364,6 @@ export default function AccountDetail({ account, onBack, onSelectItem, onSelectC
       setPostReactions(prev => ({ ...prev, [postId]: [] }));
     }
     setLoadingReactions(prev => ({ ...prev, [postId]: false }));
-  };
-
-  const fetchLinkedInPosts = async () => {
-    setFetchingPosts(true);
-    setFetchError(null);
-    try {
-      // Step 1: Get the Unipile LinkedIn account ID
-      const accResp = await fetch('/api/unipile?action=list-accounts');
-      const accData = await accResp.json();
-      if (!accData.success || !accData.data?.items?.length) {
-        throw new Error('No LinkedIn account connected in Unipile');
-      }
-      const linkedinAcc = accData.data.items.find(a => a.account_type === 'LINKEDIN' || a.type === 'LINKEDIN') || accData.data.items[0];
-      const accountId = linkedinAcc.id;
-
-      const allPosts = [];
-
-      // Step 2a: Fetch company page posts (if LinkedIn URL available)
-      if (account.linkedin_url) {
-        try {
-          const postsResp = await fetch(`/api/unipile?action=get-posts&account_id=${encodeURIComponent(accountId)}&linkedin_url=${encodeURIComponent(account.linkedin_url)}`);
-          const postsData = await postsResp.json();
-          if (postsData.success) {
-            const items = postsData.data?.items || postsData.data || [];
-            const posts = (Array.isArray(items) ? items : []).map(p => ({ ...p, _contactName: account.name, _isCompanyPost: true }));
-            allPosts.push(...posts);
-          }
-        } catch (e) { /* skip */ }
-      }
-
-      // Step 2b: Also fetch posts from key contacts at this company
-      const contactsAtCompany = contacts.filter(c => c.accountId === account.id && c.linkedin_url);
-      for (const contact of contactsAtCompany.slice(0, 3)) {
-        try {
-          const postsResp = await fetch(`/api/unipile?action=get-posts&account_id=${encodeURIComponent(accountId)}&linkedin_url=${encodeURIComponent(contact.linkedin_url)}`);
-          const postsData = await postsResp.json();
-          if (postsData.success) {
-            const items = postsData.data?.items || postsData.data || [];
-            const posts = (Array.isArray(items) ? items : []).map(p => ({ ...p, _contactName: contact.name, _isCompanyPost: false }));
-            allPosts.push(...posts);
-          }
-        } catch (e) { /* skip */ }
-      }
-
-      // Sort by date, newest first
-      allPosts.sort((a, b) => (b.date || b.timestamp || b.created_at || '').localeCompare(a.date || a.timestamp || a.created_at || ''));
-      setFetchedPosts(allPosts);
-      setHasFetched(true);
-
-      // Save fetched posts to Supabase (upsert by share_url to avoid duplicates)
-      for (const post of allPosts) {
-        const postUrl = post.share_url || post.url || post.post_url || '';
-        const postText = post.text || post.content || '';
-        if (!postText) continue;
-        try {
-          // Check if post already exists (by post_url)
-          if (postUrl) {
-            const { data: existing } = await supabase.from('linkedin_posts').select('id').eq('post_url', postUrl).eq('company_id', account.id).limit(1);
-            if (existing?.length > 0) continue;
-          }
-          await supabase.from('linkedin_posts').insert({
-            company_id: account.id,
-            author_name: post._contactName || post.author?.name || '',
-            content: postText,
-            post_url: postUrl || null,
-            post_date: post.date || post.parsed_datetime || new Date().toISOString().split('T')[0],
-            tags: null,
-            added_by: 'unipile',
-          });
-        } catch (e) { /* skip duplicates */ }
-      }
-
-      // Refresh manual posts list to include newly saved ones
-      const { data: refreshed } = await supabase.from('linkedin_posts').select('*').eq('company_id', account.id).order('post_date', { ascending: false, nullsFirst: false });
-      setLiPosts(refreshed || []);
-
-      if (allPosts.length === 0 && contactsAtCompany.length === 0) {
-        setFetchError('No contacts with LinkedIn URLs found for this company. Add LinkedIn URLs to contacts first.');
-      }
-    } catch (e) {
-      console.error('LinkedIn fetch error:', e);
-      setFetchError(e.message);
-    }
-    setFetchingPosts(false);
-  };
-
-  useEffect(() => {
-    if (tab === 'linkedin') {
-      setLiPostsLoading(true);
-      supabase.from('linkedin_posts')
-        .select('*')
-        .eq('company_id', account.id)
-        .order('post_date', { ascending: false, nullsFirst: false })
-        .then(({ data }) => {
-          setLiPosts(data || []);
-          setLiPostsLoading(false);
-        });
-    }
-  }, [tab, account.id]);
-
-  const addPost = async () => {
-    if (!postForm.content.trim()) return;
-    setSavingPost(true);
-    await supabase.from('linkedin_posts').insert({
-      company_id: account.id,
-      author_name: postForm.author_name || null,
-      content: postForm.content,
-      post_url: postForm.post_url || null,
-      post_date: postForm.post_date || new Date().toISOString().split('T')[0],
-      tags: postForm.tags || null,
-      added_by: 'manual',
-    });
-    setPostForm({ author_name:'', content:'', post_url:'', post_date:'', tags:'' });
-    setShowAddPost(false);
-    setSavingPost(false);
-    // Refetch
-    const { data } = await supabase.from('linkedin_posts').select('*').eq('company_id', account.id).order('post_date', { ascending: false, nullsFirst: false });
-    setLiPosts(data || []);
   };
 
   // New Opportunity state
