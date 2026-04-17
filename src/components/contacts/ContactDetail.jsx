@@ -3,8 +3,9 @@ import DOMPurify from 'dompurify';
 import { avatarColorFromName, getInitials, typeColors, fmt } from '../../lib/constants';
 import { updateRow, insertRow } from '../../hooks/useSupabase';
 import { useUnipileAccount } from '../../hooks/useUnipileAccount';
+import { useEmailComms } from '../../hooks/useEmailComms';
 import { supabase } from '../../supabase';
-import { getEmailsForContact, sendEmail, replyToEmail, getMyChats, getChatMessages } from '../../lib/graph';
+import { replyToEmail, getMyChats, getChatMessages } from '../../lib/graph';
 import { useAuth } from '../../lib/auth';
 import Avatar from '../atoms/Avatar';
 import Btn from '../atoms/Btn';
@@ -79,10 +80,13 @@ export default function ContactDetail({ contact, accounts, allItems, onBack, ref
   const [editing, setEditing] = useState(null);
   const [editValue, setEditValue] = useState('');
   const [saved, setSaved] = useState(null);
-  const [emails, setEmails] = useState([]);
-  const [emailLoading, setEmailLoading] = useState(false);
-  const [expandedEmail, setExpandedEmail] = useState(null);
-  const [showCompose, setShowCompose] = useState(false);
+  const {
+    emails, emailLoading, expandedEmail, setExpandedEmail,
+    showCompose, setShowCompose,
+    composeForm, setComposeForm,
+    sending, sendResult,
+    fetchEmails, handleSendEmail, cancelCompose,
+  } = useEmailComms(contact, { enabled: tab === 'comms' });
   const [showLinkedInCompose, setShowLinkedInCompose] = useState(false);
   const [showEnrollPlaybook, setShowEnrollPlaybook] = useState(false);
   const [availablePlaybooks, setAvailablePlaybooks] = useState(null);
@@ -97,9 +101,6 @@ export default function ContactDetail({ contact, accounts, allItems, onBack, ref
         });
     }
   }, [showEnrollPlaybook]);
-  const [composeForm, setComposeForm] = useState({ subject: '', body: '', cc: '' });
-  const [sending, setSending] = useState(false);
-  const [sendResult, setSendResult] = useState(null);
   const [activities, setActivities] = useState([]);
   const [activitiesLoading, setActivitiesLoading] = useState(false);
   const [newNote, setNewNote] = useState('');
@@ -179,22 +180,6 @@ export default function ContactDetail({ contact, accounts, allItems, onBack, ref
   const tc = acc ? (typeColors[acc.type] || typeColors.Klant) : typeColors.Klant;
   const linkedItems = allItems.filter(i => i.contactIds?.includes(contact.id));
 
-  /* ── Fetch emails when comms tab opens ─────────────────────── */
-  const fetchEmails = useCallback(() => {
-    if (!contact.email) return;
-    const token = localStorage.getItem('graph_token');
-    if (!token) { setEmails([]); return; }
-    setEmailLoading(true);
-    getEmailsForContact(contact.email, 50)
-      .then(result => { setEmails(result || []); })
-      .catch(() => { setEmails([]); })
-      .finally(() => { setEmailLoading(false); });
-  }, [contact.email]);
-
-  useEffect(() => {
-    if (tab === 'comms') fetchEmails();
-  }, [tab, fetchEmails]);
-
   /* ── Fetch activities when activity tab opens ──────────────── */
   const fetchActivities = useCallback(async () => {
     setActivitiesLoading(true);
@@ -266,19 +251,6 @@ export default function ContactDetail({ contact, accounts, allItems, onBack, ref
   };
   // Helper to get display value: local override > contact prop
   const getVal = (field, original) => field in localOverrides ? localOverrides[field] : original;
-
-  const handleSendEmail = async () => {
-    if (!composeForm.subject || !composeForm.body) return;
-    setSending(true);
-    const result = await sendEmail({ to: contact.email, subject: composeForm.subject, body: composeForm.body, cc: composeForm.cc || undefined });
-    setSending(false);
-    if (result.success) {
-      setSendResult('sent');
-      setTimeout(() => { setSendResult(null); setShowCompose(false); setComposeForm({ subject: '', body: '', cc: '' }); }, 1500);
-    } else {
-      setSendResult(result.error || 'Sending failed');
-    }
-  };
 
   const handleAddNote = async () => {
     if (!newNote.trim()) return;
@@ -581,7 +553,7 @@ export default function ContactDetail({ contact, accounts, allItems, onBack, ref
             {sendResult && sendResult !== 'sent' && <div style={{ fontSize: 11, color: "#dc2626", marginBottom: 8 }}>{sendResult}</div>}
             {sendResult === 'sent' && <div style={{ fontSize: 11, color: "#1D9E75", marginBottom: 8 }}>&#10003; Sent</div>}
             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-              <Btn small onClick={() => { setShowCompose(false); setSendResult(null); }}>Cancel</Btn>
+              <Btn small onClick={cancelCompose}>Cancel</Btn>
               <Btn primary small onClick={handleSendEmail}>{sending ? 'Sending...' : 'Send'}</Btn>
             </div>
           </div>
