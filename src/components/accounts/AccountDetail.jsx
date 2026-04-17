@@ -4,6 +4,7 @@ import { updateRow, insertRow } from '../../hooks/useSupabase';
 import { useUnipileAccount } from '../../hooks/useUnipileAccount';
 import { useLinkedInPosts } from '../../hooks/useLinkedInPosts';
 import { useTeamsChannels } from '../../hooks/useTeamsChannels';
+import { useContactSearch } from '../../hooks/useContactSearch';
 import { supabase } from '../../supabase';
 import Chip from '../atoms/Chip';
 import Avatar from '../atoms/Avatar';
@@ -151,77 +152,21 @@ export default function AccountDetail({ account, onBack, onSelectItem, onSelectC
     setGenerating(false);
   };
 
-  // LinkedIn contact search state
-  const [showContactSearch, setShowContactSearch] = useState(false);
-  const [contactSearchKeywords, setContactSearchKeywords] = useState('');
-  const [contactSearchResults, setContactSearchResults] = useState([]);
-  const [contactSearching, setContactSearching] = useState(false);
-  const [contactSearchError, setContactSearchError] = useState(null);
-  const [savingContact, setSavingContact] = useState(null);
-  const [savedContacts, setSavedContacts] = useState({});
-  const [searchCursor, setSearchCursor] = useState(null);
-  const [loadingMore, setLoadingMore] = useState(false);
   const { getAccountId: getUnipileAccountId } = useUnipileAccount();
 
-  const searchLinkedInContacts = async (loadMore = false) => {
-    if (loadMore) setLoadingMore(true);
-    else { setContactSearching(true); setContactSearchResults([]); setSearchCursor(null); }
-    setContactSearchError(null);
-    try {
-      const accountId = await getUnipileAccountId();
-      if (!accountId) throw new Error('No LinkedIn account connected');
-      const body = { account_id: accountId, company: account.name, keywords: contactSearchKeywords, linkedin_url: account.linkedin_url };
-      if (loadMore && searchCursor) body.cursor = searchCursor;
-      const resp = await fetch('/api/unipile?action=search-people', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      const data = await resp.json();
-      if (data.success) {
-        const items = data.data?.items || data.data || [];
-        const newItems = Array.isArray(items) ? items : [];
-        setContactSearchResults(prev => loadMore ? [...prev, ...newItems] : newItems);
-        setSearchCursor(data.data?.cursor || null);
-      } else {
-        setContactSearchError(data.error || 'Search failed');
-      }
-    } catch (e) {
-      setContactSearchError(e.message);
-    }
-    setContactSearching(false);
-    setLoadingMore(false);
-  };
-
-  const addContactToCRM = async (person) => {
-    const personId = person.id || person.provider_id || Math.random().toString();
-    setSavingContact(personId);
-    try {
-      const rawUrl = person.public_profile_url || person.linkedin_url || (person.public_identifier ? `https://www.linkedin.com/in/${person.public_identifier}` : '');
-      // Clean LinkedIn URL: remove everything after ? (tracking params)
-      const linkedinUrl = rawUrl.split('?')[0].replace(/\/$/, '');
-      const fullName = person.name || `${person.first_name || ''} ${person.last_name || ''}`.trim();
-      const firstName = person.first_name || fullName.split(' ')[0] || '';
-      const lastName = person.last_name || fullName.split(' ').slice(1).join(' ') || '';
-      await supabase.from('contacts').insert({
-        full_name: fullName,
-        first_name: firstName,
-        last_name: lastName,
-        title: person.headline || person.title || '',
-        company_id: account.id,
-        company_name: account.name,
-        linkedin_url: linkedinUrl,
-        source: 'LinkedIn Search',
-        stage: 'Active',
-        owner: 'MVG',
-      });
-      setSavedContacts(prev => ({ ...prev, [personId]: true }));
-      if (refetch) refetch();
-    } catch (e) {
-      console.error('Save contact error:', e);
-    }
-    setSavingContact(null);
-  };
+  // LinkedIn contact search — managed by useContactSearch
+  const {
+    showContactSearch, setShowContactSearch,
+    keywords: contactSearchKeywords, setKeywords: setContactSearchKeywords,
+    results: contactSearchResults,
+    searching: contactSearching,
+    error: contactSearchError,
+    savingContact, savedContacts,
+    cursor: searchCursor,
+    loadingMore,
+    search: searchLinkedInContacts,
+    addToCRM: addContactToCRM,
+  } = useContactSearch(account, refetch);
 
   // LinkedIn posts (manual + fetched from Unipile) — managed by useLinkedInPosts
   const {
