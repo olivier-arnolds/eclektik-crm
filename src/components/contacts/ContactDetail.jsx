@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import DOMPurify from 'dompurify';
 import { avatarColorFromName, getInitials, typeColors, fmt } from '../../lib/constants';
 import { updateRow, insertRow } from '../../hooks/useSupabase';
+import { useUnipileAccount } from '../../hooks/useUnipileAccount';
 import { supabase } from '../../supabase';
 import { getEmailsForContact, sendEmail, replyToEmail, getMyChats, getChatMessages } from '../../lib/graph';
 import { useAuth } from '../../lib/auth';
@@ -117,17 +118,7 @@ export default function ContactDetail({ contact, accounts, allItems, onBack, ref
   const [inviteMessage, setInviteMessage] = useState('');
   const [sendingInvite, setSendingInvite] = useState(false);
   const [inviteResult, setInviteResult] = useState(null);
-  const [cachedLiAccountId, setCachedLiAccountId] = useState(null);
-
-  const getLiAccountId = async () => {
-    if (cachedLiAccountId) return cachedLiAccountId;
-    const accResp = await fetch('/api/unipile?action=list-accounts');
-    const accData = await accResp.json();
-    if (!accData.success || !accData.data?.items?.length) return null;
-    const liAcc = accData.data.items.find(a => (a.account_type || a.type || '').toUpperCase().includes('LINKEDIN')) || accData.data.items[0];
-    setCachedLiAccountId(liAcc.id);
-    return liAcc.id;
-  };
+  const { getAccountId: getLiAccountId } = useUnipileAccount();
 
   // Check connection status on mount when contact has linkedin_url
   useEffect(() => {

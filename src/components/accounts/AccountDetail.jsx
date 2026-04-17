@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { typeColors, fmt } from '../../lib/constants';
 import { updateRow, insertRow } from '../../hooks/useSupabase';
+import { useUnipileAccount } from '../../hooks/useUnipileAccount';
 import { supabase } from '../../supabase';
 import { getMyTeams, getTeamChannels, getChannelMessages } from '../../lib/graph';
 import Chip from '../atoms/Chip';
@@ -239,17 +240,7 @@ export default function AccountDetail({ account, onBack, onSelectItem, onSelectC
   const [savedContacts, setSavedContacts] = useState({});
   const [searchCursor, setSearchCursor] = useState(null);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [cachedAccountId, setCachedAccountId] = useState(null);
-
-  const getUnipileAccountId = async () => {
-    if (cachedAccountId) return cachedAccountId;
-    const accResp = await fetch('/api/unipile?action=list-accounts');
-    const accData = await accResp.json();
-    if (!accData.success || !accData.data?.items?.length) throw new Error('No LinkedIn account connected');
-    const liAcc = accData.data.items.find(a => (a.account_type || a.type || '').toUpperCase().includes('LINKEDIN')) || accData.data.items[0];
-    setCachedAccountId(liAcc.id);
-    return liAcc.id;
-  };
+  const { getAccountId: getUnipileAccountId } = useUnipileAccount();
 
   const searchLinkedInContacts = async (loadMore = false) => {
     if (loadMore) setLoadingMore(true);
@@ -257,6 +248,7 @@ export default function AccountDetail({ account, onBack, onSelectItem, onSelectC
     setContactSearchError(null);
     try {
       const accountId = await getUnipileAccountId();
+      if (!accountId) throw new Error('No LinkedIn account connected');
       const body = { account_id: accountId, company: account.name, keywords: contactSearchKeywords, linkedin_url: account.linkedin_url };
       if (loadMore && searchCursor) body.cursor = searchCursor;
       const resp = await fetch('/api/unipile?action=search-people', {
