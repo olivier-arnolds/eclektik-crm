@@ -7,10 +7,16 @@ export default function AddCompanyModal({ open, onClose, refetch }) {
 
   if (!open) return null;
 
+  const [enriching, setEnriching] = useState(false);
+
   const handleSave = async () => {
     if (!form.name) return;
+    if (!form.website && !form.linkedin_url) {
+      alert('Please provide a Website URL or LinkedIn URL to enable auto-enrichment.');
+      return;
+    }
     setSaving(true);
-    await insertRow('companies', {
+    const { data: newCompany } = await insertRow('companies', {
       name: form.name,
       country: form.country || null,
       address: form.city || null,
@@ -24,7 +30,43 @@ export default function AddCompanyModal({ open, onClose, refetch }) {
       owner: 'MVG',
     });
     setSaving(false);
-    setForm({ name: '', country: '', city: '', industry: '', website: '', type: 'Klant', phone: '', email: '' });
+
+    // Auto-enrich if we have a website (via Surfe) or LinkedIn URL (via Unipile)
+    if (newCompany?.id && (form.website || form.linkedin_url)) {
+      setEnriching(true);
+      try {
+        // Try Surfe enrichment if website is available
+        if (form.website) {
+          const enrichResp = await fetch('/api/surfe-enrich', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: 'companies', ids: [newCompany.id] }),
+          });
+          const enrichData = await enrichResp.json();
+          if (enrichData.surfeResponse?.enrichmentID) {
+            // Poll for results
+            await new Promise(r => setTimeout(r, 5000));
+            await fetch(`/api/surfe-poll?enrichmentID=${enrichData.surfeResponse.enrichmentID}&type=companies`);
+          }
+        }
+        // Try Unipile enrichment if LinkedIn URL is available
+        if (form.linkedin_url) {
+          const match = form.linkedin_url.match(/linkedin\.com\/company\/([^\/\?]+)/);
+          if (match) {
+            const accResp = await fetch('/api/unipile?action=list-accounts');
+            const accData = await accResp.json();
+            const liAcc = accData.data?.items?.find(a => (a.account_type || '').includes('LINKEDIN'));
+            if (liAcc) {
+              const companyResp = await fetch(`/api/unipile?action=get-profile&account_id=${liAcc.id}&linkedin_url=${encodeURIComponent(form.linkedin_url)}`);
+              // Company data will be fetched on next view
+            }
+          }
+        }
+      } catch (e) { /* enrichment is best-effort */ }
+      setEnriching(false);
+    }
+
+    setForm({ name: '', country: '', city: '', industry: '', website: '', type: 'Klant', phone: '', email: '', linkedin_url: '' });
     refetch();
     onClose();
   };
@@ -60,7 +102,7 @@ export default function AddCompanyModal({ open, onClose, refetch }) {
         </div>
         <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
           <button onClick={onClose} style={{ padding: "7px 16px", borderRadius: 7, border: "0.5px solid #D3D1C7", fontSize: 12, cursor: "pointer", background: "#fff", color: "#2C2C2A", fontFamily: "inherit" }}>Cancel</button>
-          <button onClick={handleSave} disabled={saving} style={{ padding: "7px 16px", borderRadius: 7, border: "none", fontSize: 12, cursor: "pointer", background: "#042C53", color: "#B5D4F4", fontFamily: "inherit", fontWeight: 500 }}>{saving ? 'Saving...' : 'Save'}</button>
+          <button onClick={handleSave} disabled={saving || enriching} style={{ padding: "7px 16px", borderRadius: 7, border: "none", fontSize: 12, cursor: "pointer", background: "#042C53", color: "#B5D4F4", fontFamily: "inherit", fontWeight: 500 }}>{enriching ? '⟳ Enriching...' : saving ? 'Saving...' : 'Save & Enrich'}</button>
         </div>
       </div>
     </div>

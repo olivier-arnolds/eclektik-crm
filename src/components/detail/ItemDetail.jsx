@@ -55,13 +55,48 @@ export default function ItemDetail({ item, onBack, onSelectContact, extraTimelin
 
   const handleConvertToOpportunity = async () => {
     setConverting(true);
-    const companyName = acc?.name || '';
-    const firstContactId = item.contactIds?.[0] || null;
+    let companyId = item.accountId;
+    let companyName = acc?.name || item.company_name || '';
+    let contactId = item.contactIds?.[0] || null;
+
+    // Auto-create company if none linked
+    if (!companyId && companyName) {
+      const { data: newCompany } = await insertRow('companies', {
+        name: companyName,
+        website: item.website || null,
+        linkedin_url: item.linkedin_url || null,
+        type: 'Prospect',
+        stage: 'Active',
+        owner: item.owner || 'MVG',
+      });
+      if (newCompany?.id) companyId = newCompany.id;
+    }
+
+    // Auto-create contact if none linked
+    if (!contactId && (item.full_name || item.email)) {
+      const nameParts = (item.full_name || item.title || '').split(' ');
+      const { data: newContact } = await insertRow('contacts', {
+        full_name: item.full_name || item.title || '',
+        first_name: nameParts[0] || '',
+        last_name: nameParts.slice(1).join(' ') || '',
+        email: item.email || null,
+        linkedin_url: item.linkedin_url || null,
+        company_id: companyId || null,
+        company_name: companyName,
+        title: item.role || item.productLine || '',
+        stage: 'Active',
+        source: 'Lead conversion',
+        owner: item.owner || 'MVG',
+      });
+      if (newContact?.id) contactId = newContact.id;
+    }
+
+    // Create opportunity
     await insertRow('opportunities', {
       topic: item.title,
-      company_id: item.accountId,
+      company_id: companyId,
       company_name: companyName,
-      contact_id: firstContactId,
+      contact_id: contactId,
       stage: 'opportunity',
       sub_status: 'qualify',
       status: 'Open',
@@ -71,7 +106,7 @@ export default function ItemDetail({ item, onBack, onSelectContact, extraTimelin
       product_line: convertForm.productLine || null,
       owner: item.owner || null,
     });
-    await updateRow('leads', item.id, { status: 'Converted' });
+    await updateRow('leads', item.id, { status: 'Converted', converted: true });
     await refetch();
     setShowConvertModal(false);
     setConverting(false);
