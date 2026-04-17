@@ -366,7 +366,7 @@ export default function ItemDetail({ item, onBack, onSelectContact, extraTimelin
         </div>
         {/* Quick-action bar */}
         <div style={{ display:"flex", gap:8, padding:"8px 0 6px", borderTop:"0.5px solid #D3D1C7", marginLeft:-18, marginRight:-18, paddingLeft:18, paddingRight:18 }}>
-          <button onClick={() => { const c = getCts(item.contactIds)[0]; setComposeEmail(c?.email || ''); setShowCompose(true); }}
+          <button onClick={() => { const c = getCts(item.contactIds)[0]; setComposeEmail(c?.email || item.email || ''); setShowCompose(true); }}
             style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", gap:5, padding:"6px 10px", borderRadius:7, border:"0.5px solid #B4B2A9", fontSize:11, cursor:"pointer", background:"#042C53", color:"#B5D4F4", fontFamily:"inherit", fontWeight:500 }}>
             &#9993; Send Email
           </button>
@@ -472,7 +472,7 @@ export default function ItemDetail({ item, onBack, onSelectContact, extraTimelin
         {tab==="activity log" && (
           <div>
             <div style={{ display:"flex", gap:6, marginBottom:10 }}>
-              <button onClick={() => { const c = getCts(item.contactIds)[0]; setComposeEmail(c?.email || ''); setShowCompose(true); }} style={{ flex:1, display:"flex", alignItems:"center", gap:5, padding:"7px 12px", borderRadius:7, border:"0.5px solid #B4B2A9", fontSize:12, cursor:"pointer", background:"#042C53", color:"#B5D4F4", fontFamily:"inherit", justifyContent:"center", fontWeight:500 }}>&#9993; Compose</button>
+              <button onClick={() => { const c = getCts(item.contactIds)[0]; setComposeEmail(c?.email || item.email || ''); setShowCompose(true); }} style={{ flex:1, display:"flex", alignItems:"center", gap:5, padding:"7px 12px", borderRadius:7, border:"0.5px solid #B4B2A9", fontSize:12, cursor:"pointer", background:"#042C53", color:"#B5D4F4", fontFamily:"inherit", justifyContent:"center", fontWeight:500 }}>&#9993; Compose</button>
               <button onClick={() => setShowLinkedInCompose(true)} style={{ flex:1, display:"flex", alignItems:"center", gap:5, padding:"7px 12px", borderRadius:7, border:"0.5px solid #0A66C2", fontSize:12, cursor:"pointer", background:"#fff", color:"#0A66C2", fontFamily:"inherit", justifyContent:"center", fontWeight:500 }}>in LinkedIn</button>
               <button onClick={loadActivityLog} style={{ padding:"7px 12px", borderRadius:7, border:"0.5px solid #B4B2A9", fontSize:12, cursor:"pointer", background:"#fff", color:"#888780", fontFamily:"inherit" }}>&#8635; Refresh</button>
             </div>
