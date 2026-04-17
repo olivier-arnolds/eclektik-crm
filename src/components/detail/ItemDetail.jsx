@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
+import DOMPurify from 'dompurify';
 import { sc, docIcon, fmt } from '../../lib/constants';
 import { updateRow, insertRow } from '../../hooks/useSupabase';
 import { supabase } from '../../supabase';
@@ -538,7 +539,7 @@ export default function ItemDetail({ item, onBack, onSelectContact, extraTimelin
                     </div>
                     {isExpanded && a._body && (
                       <div style={{ marginTop:8, marginLeft:38, padding:"10px 12px", background:"#FAFAF8", borderRadius:7, border:"0.5px solid #D3D1C7", fontSize:12, color:"#2C2C2A", lineHeight:1.6, maxHeight:300, overflowY:"auto" }}
-                        dangerouslySetInnerHTML={a._type === 'email' ? { __html: a._body } : undefined}>
+                        dangerouslySetInnerHTML={a._type === 'email' ? { __html: DOMPurify.sanitize(a._body) } : undefined}>
                         {a._type !== 'email' ? a._body : undefined}
                       </div>
                     )}

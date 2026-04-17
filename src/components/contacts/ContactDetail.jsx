@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import DOMPurify from 'dompurify';
 import { avatarColorFromName, getInitials, typeColors, fmt } from '../../lib/constants';
 import { updateRow, insertRow } from '../../hooks/useSupabase';
 import { supabase } from '../../supabase';
@@ -658,7 +659,7 @@ export default function ContactDetail({ contact, accounts, allItems, onBack, ref
                     {expandedEmail === (m.id || i) && (
                       <div style={{ padding: "8px 10px 12px 42px", borderBottom: i < emails.length - 1 ? "0.5px solid #D3D1C7" : "none", background: "#F9F8F5" }}>
                         {m.bodyHtml ? (
-                          <div style={{ fontSize: 12, color: "#444441", lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: m.bodyHtml }} />
+                          <div style={{ fontSize: 12, color: "#444441", lineHeight: 1.6 }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(m.bodyHtml) }} />
                         ) : (
                           <div style={{ fontSize: 12, color: "#444441", lineHeight: 1.5, whiteSpace: "pre-wrap" }}>{m.bodyPreview}</div>
                         )}
