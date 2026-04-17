@@ -4,6 +4,7 @@ import { avatarColorFromName, getInitials, typeColors, fmt } from '../../lib/con
 import { updateRow, insertRow } from '../../hooks/useSupabase';
 import { useUnipileAccount } from '../../hooks/useUnipileAccount';
 import { useEmailComms } from '../../hooks/useEmailComms';
+import { useActivityLog } from '../../hooks/useActivityLog';
 import { supabase } from '../../supabase';
 import { replyToEmail, getMyChats, getChatMessages } from '../../lib/graph';
 import { useAuth } from '../../lib/auth';
@@ -101,10 +102,11 @@ export default function ContactDetail({ contact, accounts, allItems, onBack, ref
         });
     }
   }, [showEnrollPlaybook]);
-  const [activities, setActivities] = useState([]);
-  const [activitiesLoading, setActivitiesLoading] = useState(false);
-  const [newNote, setNewNote] = useState('');
-  const [addingNote, setAddingNote] = useState(false);
+  const {
+    activities, activitiesLoading,
+    newNote, setNewNote, addingNote,
+    fetchActivities, handleAddNote,
+  } = useActivityLog(contact, { enabled: tab === 'activity' });
   const [chats, setChats] = useState([]);
   const [chatsLoading, setChatsLoading] = useState(false);
   const [chatsError, setChatsError] = useState(null);
@@ -180,22 +182,6 @@ export default function ContactDetail({ contact, accounts, allItems, onBack, ref
   const tc = acc ? (typeColors[acc.type] || typeColors.Klant) : typeColors.Klant;
   const linkedItems = allItems.filter(i => i.contactIds?.includes(contact.id));
 
-  /* ── Fetch activities when activity tab opens ──────────────── */
-  const fetchActivities = useCallback(async () => {
-    setActivitiesLoading(true);
-    const { data } = await supabase
-      .from('activity')
-      .select('*')
-      .eq('contact_id', contact.id)
-      .order('created_at', { ascending: false });
-    setActivities(data || []);
-    setActivitiesLoading(false);
-  }, [contact.id]);
-
-  useEffect(() => {
-    if (tab === 'activity') fetchActivities();
-  }, [tab, fetchActivities]);
-
   /* ── Fetch Teams chats when teams tab opens ───────────────── */
   useEffect(() => {
     if (tab === 'teams') {
@@ -252,14 +238,6 @@ export default function ContactDetail({ contact, accounts, allItems, onBack, ref
   // Helper to get display value: local override > contact prop
   const getVal = (field, original) => field in localOverrides ? localOverrides[field] : original;
 
-  const handleAddNote = async () => {
-    if (!newNote.trim()) return;
-    setAddingNote(true);
-    await insertRow('activity', { contact_id: contact.id, type: 'note', note: newNote.trim() });
-    setNewNote('');
-    setAddingNote(false);
-    fetchActivities();
-  };
 
   /* ── Field definitions grouped ─────────────────────────────── */
   const fieldGroups = [
