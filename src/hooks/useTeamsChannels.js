@@ -42,10 +42,15 @@ export function useTeamsChannels(account, { enabled }) {
     setAddStep('teams');
     setSelectedTeam(null);
     setChannels([]);
-    setTeamsLoading(true);
     setTeamsError(null);
+    if (!localStorage.getItem('graph_token')) {
+      setTeamsError('auth');
+      setTeams([]);
+      return;
+    }
+    setTeamsLoading(true);
     const result = await getMyTeams();
-    if (result === null && !localStorage.getItem('graph_token')) {
+    if (!localStorage.getItem('graph_token')) {
       setTeamsError('auth');
     }
     setTeams(result || []);
