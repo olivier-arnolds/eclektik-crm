@@ -10,7 +10,7 @@ export default function SwimlaneView({ onSelectItem, search, allItems, accounts,
   const [dragOverCol, setDragOverCol] = useState(null);
   const [productLineFilter, setProductLineFilter] = useState('All types');
   const getAcc = (id) => accounts.find(a => a.id === id);
-  const applyProductFilter = (arr) => productLineFilter === 'All types' ? arr : arr.filter(i => i.productLine === productLineFilter);
+  const applyProductFilter = (arr) => productLineFilter === 'All types' ? arr : arr.filter(i => (i.productLine || "").split(",").map(s=>s.trim()).includes(productLineFilter));
   const applyStageFilter = (arr) => {
     if (!stageFilter || stageFilter === 'all') return arr;
     return arr.filter(i => i.funnelStage === stageFilter);

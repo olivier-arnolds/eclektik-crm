@@ -39,7 +39,7 @@ export default function ItemCard({ item, onClick, compact, accounts, contacts, f
             ))}
           </div>
           <div style={{ display:"flex", gap:4 }}>
-            {item.productLine && <Chip bg="#F3E8FF" color="#6B21A8" size={10}>{item.productLine}</Chip>}
+            {item.productLine && item.productLine.split(",").map(pl => pl.trim()).filter(Boolean).map(pl => <Chip key={pl} bg="#F3E8FF" color="#6B21A8" size={10}>{pl}</Chip>)}
             {item.funderId && <Chip bg="#FAEEDA" color="#633806" size={10}>ECIF</Chip>}
             {item.partnerIds?.length > 0 && <Chip bg="#E6F1FB" color="#0C447C" size={10}>+ partner</Chip>}
             <Chip bg={stC.bg} color={stC.color} size={10}>{item.subStatus||item.funnelStage}</Chip>

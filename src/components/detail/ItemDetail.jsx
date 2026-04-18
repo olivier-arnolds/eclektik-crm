@@ -203,7 +203,7 @@ export default function ItemDetail({ item, onBack, onSelectContact, extraTimelin
             <div style={{ display:"flex", gap:5, marginTop:5, flexWrap:"wrap" }}>
               <Chip>{acc?.flag} {acc?.name}</Chip>
               <Chip bg={stC.bg} color={stC.color}>{item.funnelStage}</Chip>
-              {item.productLine && <Chip>{item.productLine}</Chip>}
+              {item.productLine && item.productLine.split(",").map(pl => pl.trim()).filter(Boolean).map(pl => <Chip key={pl}>{pl}</Chip>)}
               <Chip>Owner: {item.owner}</Chip>
               {funder && <Chip bg="#FAEEDA" color="#633806">ECIF {fmt(item.fundingAmount||0)}</Chip>}
             </div>
@@ -314,7 +314,7 @@ export default function ItemDetail({ item, onBack, onSelectContact, extraTimelin
             <div style={{ background:"#FFFFFF", borderRadius:8, border:"0.5px solid #D3D1C7", padding:"12px 14px", marginBottom:10 }}>
               <div style={{ fontSize:10, fontWeight:500, color:"#888780", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:6 }}>Type / Product Line</div>
               <div style={{ fontSize:13 }}>
-                <EditableField value={item.productLine || ""} field="product_line" table={itemTable} rowId={item.id} type="select" options={["","Glint","People Science","AI Transformation","ROI","Technical","Other"]} displayValue={item.productLine || "Select type..."} refetch={refetch} updateRow={updateRow} />
+                <EditableField value={item.productLine || ""} field="product_line" table={itemTable} rowId={item.id} type="multiselect" options={["Glint","People Science","AI Transformation","ROI","Technical","Other"]} displayValue={item.productLine ? item.productLine.split(",").map(s=>s.trim()).filter(Boolean).join(", ") : "Select types..."} refetch={refetch} updateRow={updateRow} />
               </div>
             </div>
             <div style={{ background:"#FFFFFF", borderRadius:8, border:"0.5px solid #D3D1C7", padding:"12px 14px" }}>
