@@ -2,8 +2,9 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import DOMPurify from 'dompurify';
 import { sc, docIcon, fmt } from '../../lib/constants';
 import { updateRow, insertRow } from '../../hooks/useSupabase';
+import { useItemCalendar } from '../../hooks/useItemCalendar';
 import { supabase } from '../../supabase';
-import { graphGet, getEmailsForContact, getCalendarEvents, createCalendarEvent } from '../../lib/graph';
+import { graphGet, getEmailsForContact } from '../../lib/graph';
 import ComposeEmail from '../forms/ComposeEmail';
 import LinkedInCompose from '../forms/LinkedInCompose';
 import Chip from '../atoms/Chip';
@@ -252,68 +253,14 @@ export default function ItemDetail({ item, onBack, onSelectContact, extraTimelin
   const [taskForm, setTaskForm] = useState({ title: '', due_date: '', description: '' });
   const [savingTask, setSavingTask] = useState(false);
 
-  // Calendar Graph state
-  const [graphEvents, setGraphEvents] = useState([]);
-  const [graphCalLoading, setGraphCalLoading] = useState(false);
-  const [graphCalError, setGraphCalError] = useState(null);
-  const [showMeetingForm, setShowMeetingForm] = useState(false);
   const contactEmailPrefill = getCts(item.contactIds).map(c => c.email).filter(Boolean).join(', ');
-  const [meetingForm, setMeetingForm] = useState({ subject: '', date: '', startTime: '09:00', endTime: '09:30', attendees: '', isOnline: true });
-  const [savingMeeting, setSavingMeeting] = useState(false);
-
-  useEffect(() => {
-    setMeetingForm(f => ({ ...f, attendees: contactEmailPrefill }));
-  }, [contactEmailPrefill]);
-
-  const fetchGraphCal = useCallback(async () => {
-    setGraphCalLoading(true);
-    setGraphCalError(null);
-    try {
-      const evs = await getCalendarEvents(30);
-      setGraphEvents(evs);
-    } catch (e) {
-      setGraphCalError(e.message);
-    }
-    setGraphCalLoading(false);
-  }, []);
-
-  useEffect(() => {
-    if (tab === 'calendar') fetchGraphCal();
-  }, [tab, fetchGraphCal]);
-
-  const handleCreateMeeting = async () => {
-    if (!meetingForm.subject.trim() || !meetingForm.date) return;
-    setSavingMeeting(true);
-    const startDT = meetingForm.date + 'T' + meetingForm.startTime + ':00';
-    const endDT = meetingForm.date + 'T' + meetingForm.endTime + ':00';
-    const emails = meetingForm.attendees.split(',').map(s => s.trim()).filter(Boolean);
-    const result = await createCalendarEvent({
-      subject: meetingForm.subject.trim(),
-      startTime: startDT,
-      endTime: endDT,
-      attendeeEmails: emails,
-      isOnline: meetingForm.isOnline,
-    });
-    if (result.success) {
-      await insertRow('calendar_events', {
-        title: meetingForm.subject.trim(),
-        start_at: startDT,
-        end_at: endDT,
-        location: meetingForm.isOnline ? 'Teams meeting' : '',
-        attendees: meetingForm.attendees,
-        opportunity_id: item.funnelStage !== 'lead' ? item.id : null,
-        lead_id: item.funnelStage === 'lead' ? item.id : null,
-        contact_id: item?.contactIds?.[0] || null,
-      });
-      setMeetingForm({ subject: '', date: '', startTime: '09:00', endTime: '09:30', attendees: contactEmailPrefill, isOnline: true });
-      setShowMeetingForm(false);
-      await fetchGraphCal();
-      refetch();
-    } else {
-      setGraphCalError(result.error);
-    }
-    setSavingMeeting(false);
-  };
+  const {
+    graphEvents, graphCalLoading, graphCalError,
+    showMeetingForm, setShowMeetingForm,
+    meetingForm, setMeetingForm, savingMeeting,
+    fetchGraphCal, createMeeting: handleCreateMeeting,
+    groupedGraphEvents,
+  } = useItemCalendar(item, refetch, contactEmailPrefill, { enabled: tab === 'calendar' });
 
   const fmtCalTime = (dt) => {
     if (!dt) return '';
@@ -331,16 +278,6 @@ export default function ItemDetail({ item, onBack, onSelectContact, extraTimelin
     if (d.getTime() === tomorrow.getTime()) return 'Tomorrow, ' + d.getDate() + ' ' + months[d.getMonth()];
     return days[d.getDay()] + ' ' + d.getDate() + ' ' + months[d.getMonth()];
   };
-
-  const groupedGraphEvents = useMemo(() => {
-    const groups = {};
-    graphEvents.forEach(ev => {
-      const dateKey = ev.startAt ? ev.startAt.slice(0, 10) : 'unknown';
-      if (!groups[dateKey]) groups[dateKey] = [];
-      groups[dateKey].push(ev);
-    });
-    return Object.entries(groups).sort(([a], [b]) => a.localeCompare(b));
-  }, [graphEvents]);
 
   const evColors = ['#378ADD','#1D9E75','#D85A30','#7C5CFC','#E24B4A','#DAA520'];
 
