@@ -119,7 +119,7 @@ export default function BDDashboard() {
   } else if (isSearching) {
     mainContent = <SearchResults results={searchResults} onSelectItem={setSelectedItem} onSelectAccount={handleSelectAccount} accounts={accounts} />;
   } else if (sidebarMode==="funnel") {
-    if (viewMode==="swimlane") mainContent = <SwimlaneView onSelectItem={setSelectedItem} search="" allItems={allItems} accounts={accounts} contacts={contacts} followUps={followUps} refetch={refetch} />;
+    if (viewMode==="swimlane") mainContent = <SwimlaneView onSelectItem={setSelectedItem} search="" allItems={allItems} accounts={accounts} contacts={contacts} followUps={followUps} refetch={refetch} stageFilter={activeFunnelStage} />;
     else if (viewMode==="timeline") mainContent = <TimelineView onSelectItem={setSelectedItem} allItems={allItems} accounts={accounts} />;
     else mainContent = <ListView stageKey={activeFunnelStage} onSelectItem={setSelectedItem} search="" allItems={allItems} accounts={accounts} contacts={contacts} followUps={followUps} refetch={refetch} />;
   } else if (sidebarMode==="playbooks") {

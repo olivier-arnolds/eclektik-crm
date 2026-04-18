@@ -5,19 +5,27 @@ import Chip from '../atoms/Chip';
 import ItemCard from '../cards/ItemCard';
 import AddLeadModal from '../forms/AddLeadModal';
 
-export default function SwimlaneView({ onSelectItem, search, allItems, accounts, contacts, followUps, refetch }) {
+export default function SwimlaneView({ onSelectItem, search, allItems, accounts, contacts, followUps, refetch, stageFilter }) {
   const [showAddLead, setShowAddLead] = useState(false);
   const [dragOverCol, setDragOverCol] = useState(null);
   const [productLineFilter, setProductLineFilter] = useState('All types');
   const getAcc = (id) => accounts.find(a => a.id === id);
   const applyProductFilter = (arr) => productLineFilter === 'All types' ? arr : arr.filter(i => i.productLine === productLineFilter);
+  const applyStageFilter = (arr) => {
+    if (!stageFilter || stageFilter === 'all') return arr;
+    return arr.filter(i => i.funnelStage === stageFilter);
+  };
   const applySearch = (arr) => !search ? arr : arr.filter(i => i.title.toLowerCase().includes(search.toLowerCase()) || (getAcc(i.accountId)?.name||"").toLowerCase().includes(search.toLowerCase()));
-  const applyFilters = (arr) => applySearch(applyProductFilter(arr));
+  const applyFilters = (arr) => applySearch(applyProductFilter(applyStageFilter(arr)));
   const sorted = (arr) => [...arr].sort((a,b) => (b.sortDate||"").localeCompare(a.sortDate||""));
-  const filteredItems = applyProductFilter(allItems);
+  const filteredItems = applyStageFilter(applyProductFilter(allItems));
   const activeItems = filteredItems.filter(i => ["lead","opportunity","onboarding","active"].includes(i.funnelStage));
   const totalVal = activeItems.reduce((s,i)=>s+i.value,0);
+  const stageLabelMap = { lead:'Leads', opportunity:'Opportunities', onboarding:'Onboarding', active:'Active clients', inactive:'Inactive', past:'Past clients' };
+  const stageLabel = stageFilter && stageFilter !== 'all' ? (stageLabelMap[stageFilter] || stageFilter) : 'Pipeline';
   const productLines = ['All types', 'Glint', 'People Science', 'AI Transformation', 'ROI', 'Technical', 'Other'];
+  const stageMatchedCols = COLS.filter(col => col.funnelStages.includes(stageFilter));
+  const visibleCols = (!stageFilter || stageFilter === 'all' || stageMatchedCols.length === 0) ? COLS : stageMatchedCols;
 
   const handleDragStart = (e, item) => {
     const table = item.funnelStage === 'lead' ? 'leads' : 'opportunities';
@@ -66,7 +74,7 @@ export default function SwimlaneView({ onSelectItem, search, allItems, accounts,
   return (
     <div style={{ height:"100%", display:"flex", flexDirection:"column" }}>
       <div style={{ background:"#FFFFFF", borderBottom:"0.5px solid #D3D1C7", padding:"12px 18px", flexShrink:0, display:"flex", gap:10, alignItems:"center" }}>
-        <div style={{ fontSize:14, fontWeight:500 }}>Pipeline swimlane</div>
+        <div style={{ fontSize:14, fontWeight:500 }}>{stageLabel}</div>
         <Chip>{applyFilters(activeItems).length} items</Chip>
         <Chip bg="#FAEEDA" color="#633806">{fmt(totalVal)}</Chip>
         <select value={productLineFilter} onChange={e => setProductLineFilter(e.target.value)}
@@ -77,7 +85,7 @@ export default function SwimlaneView({ onSelectItem, search, allItems, accounts,
         <button onClick={() => setShowAddLead(true)} style={{ marginLeft:"auto", padding:"4px 12px", borderRadius:6, border:"none", fontSize:11, cursor:"pointer", background:"#042C53", color:"#B5D4F4", fontFamily:"inherit", fontWeight:500 }}>+ Add Lead</button>
       </div>
       <div style={{ flex:1, overflowX:"auto", overflowY:"hidden", display:"flex", padding:"12px 14px", gap:10 }}>
-        {COLS.map(col => {
+        {visibleCols.map(col => {
           const stC = sc(col.key);
           const rawAll = col.subStatus
             ? filteredItems.filter(i => col.funnelStages.includes(i.funnelStage) && i.subStatus===col.subStatus)
@@ -85,7 +93,7 @@ export default function SwimlaneView({ onSelectItem, search, allItems, accounts,
           const colItems = applySearch(sorted(rawAll));
           const colVal = rawAll.reduce((s,i)=>s+i.value,0);
           return (
-            <div key={col.key} style={{ flexShrink:0, width:195, display:"flex", flexDirection:"column" }}
+            <div key={col.key} style={{ flex:1, minWidth:180, maxWidth:300, display:"flex", flexDirection:"column" }}
               onDragOver={(e) => handleDragOver(e, col.key)}
               onDragLeave={(e) => handleDragLeave(e, col.key)}
               onDrop={(e) => handleDrop(e, col)}
