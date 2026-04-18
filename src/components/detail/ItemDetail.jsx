@@ -4,8 +4,8 @@ import { sc, docIcon, fmt } from '../../lib/constants';
 import { updateRow, insertRow } from '../../hooks/useSupabase';
 import { useItemCalendar } from '../../hooks/useItemCalendar';
 import { useItemTasks } from '../../hooks/useItemTasks';
+import { useItemActivityLog } from '../../hooks/useItemActivityLog';
 import { supabase } from '../../supabase';
-import { graphGet, getEmailsForContact } from '../../lib/graph';
 import ComposeEmail from '../forms/ComposeEmail';
 import LinkedInCompose from '../forms/LinkedInCompose';
 import Chip from '../atoms/Chip';
@@ -146,109 +146,13 @@ export default function ItemDetail({ item, onBack, onSelectContact, extraTimelin
     }
   }, [showEnrollPlaybook]);
 
-  // Activity Log state (combined comms)
-  const [activityLogItems, setActivityLogItems] = useState([]);
-  const [activityLogLoading, setActivityLogLoading] = useState(false);
-  const [expandedActivity, setExpandedActivity] = useState(null);
-
-  const loadActivityLog = useCallback(async () => {
-    setActivityLogLoading(true);
-    const firstContact = getCts(item.contactIds)[0];
-    const results = [];
-
-    // 1. Emails from Microsoft Graph
-    if (firstContact?.email) {
-      try {
-        const emails = await getEmailsForContact(firstContact.email, 30);
-        (emails || []).forEach(e => {
-          const myEmail = e.fromAddress?.toLowerCase() || '';
-          const contactEmail = firstContact.email?.toLowerCase() || '';
-          const isOutbound = myEmail !== contactEmail;
-          results.push({
-            _type: 'email',
-            _icon: '\u2709',
-            _channel: 'Email',
-            _direction: isOutbound ? 'outbound' : 'inbound',
-            _from: e.from || e.fromAddress || '',
-            _subject: e.subject || '',
-            _preview: e.bodyPreview || '',
-            _body: e.bodyHtml || e.bodyPreview || '',
-            _date: e.date || '',
-            _id: 'email-' + e.id,
-          });
-        });
-      } catch (err) { /* skip */ }
-    }
-
-    // 2. LinkedIn messages from comms table
-    const linkedinComms = commsFor(item.id).filter(c => (c.channel || '').toLowerCase() === 'linkedin');
-    linkedinComms.forEach(c => {
-      results.push({
-        _type: 'linkedin',
-        _icon: 'in',
-        _channel: 'LinkedIn',
-        _direction: c.direction || 'outbound',
-        _from: c.from || '',
-        _subject: c.sub || '',
-        _preview: c.sub || '',
-        _body: c.body || c.sub || '',
-        _date: c.date || '',
-        _id: 'li-' + c.id,
-      });
-    });
-
-    // 3. Activity notes from Supabase
-    if (firstContact) {
-      try {
-        const { data: activities } = await supabase.from('activity')
-          .select('*')
-          .eq('contact_id', firstContact.id)
-          .order('created_at', { ascending: false })
-          .limit(30);
-        (activities || []).forEach(a => {
-          results.push({
-            _type: 'note',
-            _icon: '\uD83D\uDCDD',
-            _channel: 'Note',
-            _direction: 'outbound',
-            _from: a.owner || a.created_by || '',
-            _subject: a.type || 'Activity',
-            _preview: a.note || a.description || '',
-            _body: a.note || a.description || '',
-            _date: a.created_at || '',
-            _id: 'act-' + a.id,
-          });
-        });
-      } catch (err) { /* skip */ }
-    }
-
-    // 4. Other comms records linked to this item
-    const otherComms = commsFor(item.id).filter(c => (c.channel || '').toLowerCase() !== 'linkedin');
-    otherComms.forEach(c => {
-      const ch = (c.channel || '').toLowerCase();
-      results.push({
-        _type: ch === 'teams' ? 'teams' : ch === 'email' ? 'email' : 'other',
-        _icon: ch === 'teams' ? '\u25CE' : ch === 'email' ? '\u2709' : c.icon || '\u25CE',
-        _channel: c.channel || 'Other',
-        _direction: c.direction || 'outbound',
-        _from: c.from || '',
-        _subject: c.sub || '',
-        _preview: c.sub || '',
-        _body: c.body || c.sub || '',
-        _date: c.date || '',
-        _id: 'comm-' + c.id,
-      });
-    });
-
-    // Sort newest first
-    results.sort((a, b) => (b._date || '').localeCompare(a._date || ''));
-    setActivityLogItems(results);
-    setActivityLogLoading(false);
-  }, [item.id, item.contactIds, comms]);
-
-  useEffect(() => {
-    if (tab === 'activity log') loadActivityLog();
-  }, [tab, loadActivityLog]);
+  const {
+    items: activityLogItems,
+    loading: activityLogLoading,
+    expanded: expandedActivity,
+    setExpanded: setExpandedActivity,
+    refresh: loadActivityLog,
+  } = useItemActivityLog(item, contacts, comms, { enabled: tab === 'activity log' });
 
   const {
     showTaskForm, setShowTaskForm,
