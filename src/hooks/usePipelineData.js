@@ -189,14 +189,14 @@ export function usePipelineData() {
       { data: commsRaw },
       { data: calRaw },
     ] = await Promise.all([
-      supabase.from('companies').select('*'),
+      supabase.from('companies').select('*').limit(1000),
       supabase.from('contacts').select('*').limit(500),
-      supabase.from('leads').select('*'),
-      supabase.from('opportunities').select('*'),
-      supabase.from('follow_ups').select('*'),
-      supabase.from('tasks').select('*'),
-      supabase.from('comms').select('*'),
-      supabase.from('calendar_events').select('*'),
+      supabase.from('leads').select('*').order('updated_at', { ascending: false }).limit(500),
+      supabase.from('opportunities').select('*').order('updated_at', { ascending: false }).limit(500),
+      supabase.from('follow_ups').select('*').order('due_date', { ascending: false }).limit(500),
+      supabase.from('tasks').select('*').order('due_date', { ascending: false }).limit(500),
+      supabase.from('comms').select('*').order('sent_at', { ascending: false }).limit(1000),
+      supabase.from('calendar_events').select('*').order('start_at', { ascending: false }).limit(500),
     ])
 
     const adaptedAccounts = (companiesRaw || []).map(adaptCompany)
