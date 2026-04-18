@@ -5,8 +5,9 @@ import { updateRow, insertRow } from '../../hooks/useSupabase';
 import { useUnipileAccount } from '../../hooks/useUnipileAccount';
 import { useEmailComms } from '../../hooks/useEmailComms';
 import { useActivityLog } from '../../hooks/useActivityLog';
+import { useTeamsChats } from '../../hooks/useTeamsChats';
 import { supabase } from '../../supabase';
-import { replyToEmail, getMyChats, getChatMessages } from '../../lib/graph';
+import { replyToEmail } from '../../lib/graph';
 import { useAuth } from '../../lib/auth';
 import Avatar from '../atoms/Avatar';
 import Btn from '../atoms/Btn';
@@ -107,12 +108,12 @@ export default function ContactDetail({ contact, accounts, allItems, onBack, ref
     newNote, setNewNote, addingNote,
     fetchActivities, handleAddNote,
   } = useActivityLog(contact, { enabled: tab === 'activity' });
-  const [chats, setChats] = useState([]);
-  const [chatsLoading, setChatsLoading] = useState(false);
-  const [chatsError, setChatsError] = useState(null);
-  const [selectedChat, setSelectedChat] = useState(null);
-  const [chatMessages, setChatMessages] = useState([]);
-  const [chatMessagesLoading, setChatMessagesLoading] = useState(false);
+  const {
+    chats, chatsLoading, chatsError,
+    selectedChat, setSelectedChat,
+    chatMessages, chatMessagesLoading,
+    backToChats,
+  } = useTeamsChats(contact, { enabled: tab === 'teams' });
 
   // Connection status state
   const [connectionStatus, setConnectionStatus] = useState(null); // 'connected' | 'pending' | 'not_connected' | null
@@ -181,44 +182,6 @@ export default function ContactDetail({ contact, accounts, allItems, onBack, ref
   const acc = accounts.find(a => a.id === contact.accountId);
   const tc = acc ? (typeColors[acc.type] || typeColors.Klant) : typeColors.Klant;
   const linkedItems = allItems.filter(i => i.contactIds?.includes(contact.id));
-
-  /* ── Fetch Teams chats when teams tab opens ───────────────── */
-  useEffect(() => {
-    if (tab === 'teams') {
-      setChatsLoading(true);
-      setChatsError(null);
-      setSelectedChat(null);
-      setChatMessages([]);
-      getMyChats(50).then(result => {
-        if (result === null && !localStorage.getItem('graph_token')) {
-          setChatsError('auth');
-          setChats([]);
-        } else {
-          // Fuzzy match: filter chats where any member name matches the contact name
-          const contactName = (contact.name || '').toLowerCase();
-          const contactFirst = contactName.split(' ')[0];
-          const filtered = (result || []).filter(c =>
-            (c.members || []).some(m => {
-              const mn = (m || '').toLowerCase();
-              return mn === contactName || mn.includes(contactName) || contactName.includes(mn) || mn.includes(contactFirst);
-            })
-          );
-          setChats(filtered);
-        }
-        setChatsLoading(false);
-      });
-    }
-  }, [tab, contact.name]);
-
-  useEffect(() => {
-    if (selectedChat) {
-      setChatMessagesLoading(true);
-      getChatMessages(selectedChat.id, 20).then(result => {
-        setChatMessages(result || []);
-        setChatMessagesLoading(false);
-      });
-    }
-  }, [selectedChat]);
 
   /* ── Edit helpers ──────────────────────────────────────────── */
   const [localOverrides, setLocalOverrides] = useState({});
@@ -766,7 +729,7 @@ export default function ContactDetail({ contact, accounts, allItems, onBack, ref
               </>
             ) : (
               <>
-                <button onClick={() => { setSelectedChat(null); setChatMessages([]); }}
+                <button onClick={backToChats}
                   style={{ background: "none", border: "none", cursor: "pointer", fontSize: 12, color: "#378ADD", fontFamily: "inherit", padding: 0, marginBottom: 10 }}>
                   &larr; back to chats
                 </button>
