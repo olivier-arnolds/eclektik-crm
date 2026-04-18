@@ -3,6 +3,7 @@ import DOMPurify from 'dompurify';
 import { sc, docIcon, fmt } from '../../lib/constants';
 import { updateRow, insertRow } from '../../hooks/useSupabase';
 import { useItemCalendar } from '../../hooks/useItemCalendar';
+import { useItemTasks } from '../../hooks/useItemTasks';
 import { supabase } from '../../supabase';
 import { graphGet, getEmailsForContact } from '../../lib/graph';
 import ComposeEmail from '../forms/ComposeEmail';
@@ -249,9 +250,12 @@ export default function ItemDetail({ item, onBack, onSelectContact, extraTimelin
     if (tab === 'activity log') loadActivityLog();
   }, [tab, loadActivityLog]);
 
-  const [showTaskForm, setShowTaskForm] = useState(false);
-  const [taskForm, setTaskForm] = useState({ title: '', due_date: '', description: '' });
-  const [savingTask, setSavingTask] = useState(false);
+  const {
+    showTaskForm, setShowTaskForm,
+    taskForm, setTaskForm, savingTask,
+    toggleTask: handleToggleTask,
+    createTask: handleCreateTask,
+  } = useItemTasks(item, refetch);
 
   const contactEmailPrefill = getCts(item.contactIds).map(c => c.email).filter(Boolean).join(', ');
   const {
@@ -281,30 +285,6 @@ export default function ItemDetail({ item, onBack, onSelectContact, extraTimelin
 
   const evColors = ['#378ADD','#1D9E75','#D85A30','#7C5CFC','#E24B4A','#DAA520'];
 
-  const handleToggleTask = async (t) => {
-    await updateRow('tasks', t.id, { status: t.done ? 'pending' : 'done' });
-    refetch();
-  };
-
-  const handleCreateTask = async () => {
-    if (!taskForm.title.trim()) return;
-    setSavingTask(true);
-    const row = {
-      title: taskForm.title.trim(),
-      status: 'pending',
-      due_date: taskForm.due_date || null,
-      description: taskForm.description.trim() || null,
-      contact_id: item?.contactIds?.[0] || null,
-      opportunity_id: item.funnelStage !== 'lead' ? item.id : null,
-      lead_id: item.funnelStage === 'lead' ? item.id : null,
-      owner: item.owner || null,
-    };
-    await insertRow('tasks', row);
-    setTaskForm({ title: '', due_date: '', description: '' });
-    setShowTaskForm(false);
-    setSavingTask(false);
-    refetch();
-  };
 
   return (
     <div style={{ display:"flex", flexDirection:"column", height:"100%" }}>
