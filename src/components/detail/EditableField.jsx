@@ -24,16 +24,27 @@ export default function EditableField({ value, field, table, rowId, type = "text
   }, [value]);
 
   // Close multiselect on outside click
+  const multiDraftRef = useRef(multiDraft);
+  multiDraftRef.current = multiDraft;
   useEffect(() => {
     if (!editing || type !== "multiselect") return;
     const handler = (e) => {
       if (containerRef.current && !containerRef.current.contains(e.target)) {
-        saveMulti();
+        // Use ref to get latest multiDraft
+        const joined = multiDraftRef.current.join(", ");
+        setEditing(false);
+        if (joined !== (value || "")) {
+          updateRow(table, rowId, { [field]: joined || null }).then(() => {
+            setSaved(true);
+            refetch();
+            setTimeout(() => setSaved(false), 1000);
+          });
+        }
       }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, [editing, multiDraft]);
+  }, [editing]);
 
   const save = async () => {
     setEditing(false);
@@ -91,13 +102,13 @@ export default function EditableField({ value, field, table, rowId, type = "text
       return (
         <div ref={containerRef} style={{ border: "0.5px solid #B4B2A9", borderRadius: 7, background: "#FFFFFF", padding: "6px 0" }}>
           {options.filter(o => o).map((o) => (
-            <label key={o} onClick={() => toggleOption(o)}
-              style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 12px", cursor: "pointer", fontSize: 12, fontFamily: "inherit", color: "#2C2C2A", background: multiDraft.includes(o) ? "#F1EFE8" : "transparent" }}>
-              <div style={{ width: 16, height: 16, borderRadius: 4, border: "1px solid #B4B2A9", background: multiDraft.includes(o) ? "#042C53" : "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <div key={o} onClick={() => toggleOption(o)}
+              style={{ display: "flex", alignItems: "center", gap: 8, padding: "5px 12px", cursor: "pointer", fontSize: 12, fontFamily: "inherit", color: "#2C2C2A", background: multiDraft.includes(o) ? "#F1EFE8" : "transparent", userSelect: "none" }}>
+              <div style={{ width: 16, height: 16, borderRadius: 4, border: "1px solid #B4B2A9", background: multiDraft.includes(o) ? "#042C53" : "#fff", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background 0.1s" }}>
                 {multiDraft.includes(o) && <span style={{ color: "#fff", fontSize: 11, lineHeight: 1 }}>✓</span>}
               </div>
               {o}
-            </label>
+            </div>
           ))}
           <div style={{ display: "flex", justifyContent: "flex-end", padding: "6px 10px 2px", gap: 6 }}>
             <button onClick={cancel} style={{ padding: "3px 10px", borderRadius: 5, border: "0.5px solid #D3D1C7", background: "#fff", fontSize: 11, cursor: "pointer", fontFamily: "inherit", color: "#888780" }}>Cancel</button>
