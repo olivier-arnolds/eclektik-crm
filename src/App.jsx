@@ -38,7 +38,7 @@ export default function BDDashboard() {
 
   const [sidebarCollapsed,   setSidebarCollapsed]   = useState(() => { try { return JSON.parse(localStorage.getItem('sidebar_collapsed')) || false; } catch { return false; } });
   const [sidebarMode,        setSidebarMode]        = useState("funnel");
-  const [activeFunnelStage,  setActiveFunnelStage]  = useState("lead");
+  const [activeFunnelStage,  setActiveFunnelStage]  = useState("all");
   const [viewMode,           setViewMode]           = useState("swimlane");
   const [selectedItem,       setSelectedItem]       = useState(null);
   const [selectedAccount,    setSelectedAccount]    = useState(null);
@@ -163,6 +163,7 @@ export default function BDDashboard() {
         accounts={accounts}
         reconnectMicrosoft={reconnectMicrosoft}
         hasGraphToken={hasGraphToken}
+        setActiveFunnelStage={setActiveFunnelStage}
       />
       <div style={{ display:"grid", gridTemplateColumns:sidebarCollapsed?"50px 1fr 380px":"200px 1fr 265px", flex:1, minHeight:0 }}>
         <Sidebar

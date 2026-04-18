@@ -2,7 +2,7 @@ import React from 'react';
 import { fmt } from '../../lib/constants';
 import EnrichModal from '../forms/EnrichModal';
 
-export default function TopBar({ totalPipeline, leadsCount, activeProjectsCount, pendingRappels, search, setSearch, sidebarMode, setSidebarMode, viewMode, setViewMode, selectedItem, isSearching, setSelectedItem, setSelectedAccount, setRightTab, logout, refetch, contacts, accounts, reconnectMicrosoft, hasGraphToken }) {
+export default function TopBar({ totalPipeline, leadsCount, activeProjectsCount, pendingRappels, search, setSearch, sidebarMode, setSidebarMode, viewMode, setViewMode, selectedItem, isSearching, setSelectedItem, setSelectedAccount, setRightTab, logout, refetch, contacts, accounts, reconnectMicrosoft, hasGraphToken, setActiveFunnelStage }) {
   const [syncing, setSyncing] = React.useState(false);
   const [syncDone, setSyncDone] = React.useState(false);
 
@@ -44,7 +44,7 @@ export default function TopBar({ totalPipeline, leadsCount, activeProjectsCount,
         {search && <button onClick={() => setSearch("")} style={{ position:"absolute", right:8, top:"50%", transform:"translateY(-50%)", background:"none", border:"none", cursor:"pointer", fontSize:13, color:"#888780", lineHeight:1 }}>×</button>}
       </div>
       <div style={{ marginLeft:"auto", display:"flex", gap:4, alignItems:"center" }}>
-        <button onClick={() => { setSidebarMode("funnel"); setViewMode("swimlane"); setSelectedItem(null); setSelectedAccount(null); }}
+        <button onClick={() => { setSidebarMode("funnel"); setViewMode("swimlane"); setSelectedItem(null); setSelectedAccount(null); if (setActiveFunnelStage) setActiveFunnelStage("all"); }}
           style={{ padding:"4px 9px", borderRadius:6, border:"0.5px solid", borderColor:sidebarMode==="funnel"?"#185FA5":"#D3D1C7", background:sidebarMode==="funnel"?"#E6F1FB":"transparent", color:sidebarMode==="funnel"?"#0C447C":"#888780", cursor:"pointer", fontFamily:"inherit", fontSize:11 }}>Pipeline</button>
         <button onClick={() => { setSidebarMode("accounts"); setSelectedItem(null); }}
           style={{ padding:"4px 9px", borderRadius:6, border:"0.5px solid", borderColor:sidebarMode==="accounts"?"#185FA5":"#D3D1C7", background:sidebarMode==="accounts"?"#E6F1FB":"transparent", color:sidebarMode==="accounts"?"#0C447C":"#888780", cursor:"pointer", fontFamily:"inherit", fontSize:11 }}>🏢 Accounts</button>

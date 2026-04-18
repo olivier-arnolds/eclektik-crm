@@ -107,6 +107,12 @@ export default function Sidebar({ sidebarMode, setSidebarMode, activeFunnelStage
           </div>
           <HDivider />
           <SLabel>Pipeline stages</SLabel>
+          <div onClick={() => { setActiveFunnelStage("all"); setViewMode("swimlane"); setSelectedItem(null); setSearch(""); }}
+            style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 14px", cursor:"pointer", background:activeFunnelStage==="all" && !selectedItem && !isSearching?"#F1EFE8":"transparent" }}>
+            <div style={{ width:8, height:8, borderRadius:"50%", background:"#888780", flexShrink:0 }} />
+            <div style={{ flex:1, fontSize:13, fontWeight:activeFunnelStage==="all"?500:400 }}>All stages</div>
+            <div style={{ fontSize:11, background:activeFunnelStage==="all"?"#E6F1FB":"#F1EFE8", color:activeFunnelStage==="all"?"#0C447C":"#888780", padding:"1px 7px", borderRadius:10, border:"0.5px solid #D3D1C7" }}>{allItems.length}</div>
+          </div>
           {FUNNEL_STAGES.map(s => {
             const stC = sc(s.key);
             const isA = activeFunnelStage===s.key && !selectedItem && !isSearching;
