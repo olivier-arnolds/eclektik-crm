@@ -6,6 +6,7 @@ import { useUnipileAccount } from '../../hooks/useUnipileAccount';
 import { useEmailComms } from '../../hooks/useEmailComms';
 import { useActivityLog } from '../../hooks/useActivityLog';
 import { useTeamsChats } from '../../hooks/useTeamsChats';
+import { useLinkedInMessages } from '../../hooks/useLinkedInMessages';
 import { supabase } from '../../supabase';
 import { replyToEmail } from '../../lib/graph';
 import { useAuth } from '../../lib/auth';
@@ -218,48 +219,10 @@ export default function ContactDetail({ contact, accounts, allItems, onBack, ref
     },
   ];
 
-  // LinkedIn messages state
-  const [liMessages, setLiMessages] = useState([]);
-  const [liMessagesLoading, setLiMessagesLoading] = useState(false);
-  const [liAccountId, setLiAccountId] = useState(null);
-
-  useEffect(() => {
-    if (tab === 'linkedin-msgs' && contact.linkedin_url) {
-      setLiMessagesLoading(true);
-      (async () => {
-        try {
-          // Step 1: Get Unipile LinkedIn account
-          const accResp = await fetch('/api/unipile?action=list-accounts');
-          const accData = await accResp.json();
-          const liAccount = accData.data?.items?.find(a => (a.account_type || a.type || '').toLowerCase().includes('linkedin'));
-          if (!liAccount) { setLiMessagesLoading(false); return; }
-          setLiAccountId(liAccount.id);
-
-          // Step 2: Resolve contact's provider ID from LinkedIn URL
-          const resolveResp = await fetch(`/api/unipile?action=resolve-user&account_id=${liAccount.id}&linkedin_url=${encodeURIComponent(contact.linkedin_url)}`);
-          const resolveData = await resolveResp.json();
-          const providerId = resolveData.provider_id;
-          if (!providerId) { setLiMessagesLoading(false); return; }
-
-          // Step 3: Get chats and find the one with this provider ID
-          const chatsResp = await fetch(`/api/unipile?action=get-chats&account_id=${liAccount.id}&limit=50`);
-          const chatsData = await chatsResp.json();
-          const chats = chatsData.data?.items || [];
-          const matchedChat = chats.find(c => c.attendee_provider_id === providerId);
-
-          if (matchedChat) {
-            // Step 4: Get messages from that chat
-            const msgsResp = await fetch(`/api/unipile?action=get-messages&chat_id=${matchedChat.id}`);
-            const msgsData = await msgsResp.json();
-            setLiMessages(msgsData.data?.items || msgsData.data || []);
-          }
-        } catch (e) {
-          console.error('LinkedIn messages error:', e);
-        }
-        setLiMessagesLoading(false);
-      })();
-    }
-  }, [tab, contact.linkedin_url]);
+  const { messages: liMessages, loading: liMessagesLoading } = useLinkedInMessages(
+    contact,
+    { enabled: tab === 'linkedin-msgs' }
+  );
 
   const tabs = [
     { key: 'details', label: 'Details' },
