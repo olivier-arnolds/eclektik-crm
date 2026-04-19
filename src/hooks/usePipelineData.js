@@ -40,6 +40,13 @@ function adaptContact(row, companies) {
   }
 }
 
+// Supabase may return product_line as string OR text[] array.
+// Normalize to a comma-separated string so downstream .split() is safe.
+function normalizeProductLine(v) {
+  if (Array.isArray(v)) return v.filter(Boolean).join(', ')
+  return v || ''
+}
+
 // Transform a lead row into pipeline item shape
 function adaptLead(row) {
   return {
@@ -55,7 +62,7 @@ function adaptLead(row) {
     owner: row.owner || '',
     probability: row.probability || 0,
     closeDate: row.close_date || '',
-    productLine: row.product_line || '',
+    productLine: normalizeProductLine(row.product_line),
     source: row.source || '',
     notes: row.notes || row.description || '',
     documents: [],
@@ -82,7 +89,7 @@ function adaptOpportunity(row) {
     closeDate: row.close_date || row.est_close_date || '',
     startDate: row.start_date || '',
     endDate: row.end_date || '',
-    productLine: row.product_line || '',
+    productLine: normalizeProductLine(row.product_line),
     status: row.status || '',
     statusReason: row.status_reason || '',
     notes: row.notes || '',

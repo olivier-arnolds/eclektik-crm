@@ -7,8 +7,11 @@ export default function EditableField({ value, field, table, rowId, type = "text
   const inputRef = useRef(null);
   const containerRef = useRef(null);
 
-  // For multiselect: parse comma-separated string into array
-  const parseMulti = (v) => (v || "").split(",").map(s => s.trim()).filter(Boolean);
+  // For multiselect: accept string OR array and return an array of trimmed values
+  const parseMulti = (v) => {
+    if (Array.isArray(v)) return v.filter(Boolean).map(s => String(s).trim());
+    return String(v ?? "").split(",").map(s => s.trim()).filter(Boolean);
+  };
   const [multiDraft, setMultiDraft] = useState(() => parseMulti(value));
 
   useEffect(() => {
