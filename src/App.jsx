@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { FUNNEL_STAGES, fmt } from './lib/constants';
 import { usePipelineData } from './hooks/usePipelineData';
 import { useAuth } from './lib/auth';
@@ -48,6 +48,14 @@ export default function BDDashboard() {
   const [noteText,           setNoteText]           = useState("");
   const [extraTimeline,      setExtraTimeline]      = useState({});
   const [search,             setSearch]             = useState("");
+
+  // Keep selectedItem in sync with fresh data after refetch
+  useEffect(() => {
+    if (selectedItem && allItems.length > 0) {
+      const fresh = allItems.find(i => i.id === selectedItem.id);
+      if (fresh && fresh !== selectedItem) setSelectedItem(fresh);
+    }
+  }, [allItems]);
 
   const getAcc = (id) => accounts.find(a => a.id === id);
 
