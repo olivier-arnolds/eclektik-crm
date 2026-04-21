@@ -151,19 +151,35 @@ function resolveContext(context, data) {
 
 function AccountsList({ accounts, onPickAccount, search, onAddAccount }) {
   const q = (search || '').toLowerCase();
+  const [typeFilters, setTypeFilters] = useState([]);
+  const [nameFilter, setNameFilter] = useState('');
+
+  // Build a dynamic list of all types present in our data (sorted, unique)
+  const allTypes = useMemo(() => {
+    const set = new Set();
+    (accounts || []).forEach(a => { if (a.type) set.add(a.type); });
+    return [...set].sort((a, b) => a.localeCompare(b));
+  }, [accounts]);
+
+  const toggleType = (t) => setTypeFilters(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]);
+
   const filtered = useMemo(() => {
-    const list = q
-      ? accounts.filter(a => a.name.toLowerCase().includes(q) || (a.industry || '').toLowerCase().includes(q))
-      : accounts;
+    let list = accounts || [];
+    // Global topbar search
+    if (q) list = list.filter(a => a.name.toLowerCase().includes(q) || (a.industry || '').toLowerCase().includes(q));
+    // Local name filter
+    const nf = nameFilter.trim().toLowerCase();
+    if (nf) list = list.filter(a => a.name.toLowerCase().includes(nf));
+    if (typeFilters.length) list = list.filter(a => typeFilters.includes(a.type));
     return [...list].sort((a, b) => a.name.localeCompare(b.name));
-  }, [accounts, q]);
+  }, [accounts, q, typeFilters, nameFilter]);
 
   return (
     <div className="lane lane-accounts">
       <div className="lane-header">
         <div className="lane-title">
           <span className="lane-title-label">Accounts</span>
-          <span className="lane-title-count">{filtered.length}</span>
+          <span className="lane-title-count">{filtered.length}{filtered.length !== accounts.length ? ` / ${accounts.length}` : ''}</span>
         </div>
         <div className="lane-actions">
           {onAddAccount && (
@@ -173,6 +189,51 @@ function AccountsList({ accounts, onPickAccount, search, onAddAccount }) {
           )}
         </div>
       </div>
+
+      <div style={{
+        display: 'flex', flexDirection: 'column', gap: 8,
+        padding: '8px 12px',
+        borderBottom: '0.5px solid var(--sep)',
+      }}>
+        {/* Name filter */}
+        <div className="searchfield" style={{ width: '100%' }}>
+          <I.search />
+          <input
+            type="text"
+            value={nameFilter}
+            onChange={e => setNameFilter(e.target.value)}
+            placeholder="Filter by company name…" />
+          {nameFilter && (
+            <button className="icon-btn tiny" onClick={() => setNameFilter('')}>
+              <I.close />
+            </button>
+          )}
+        </div>
+
+        {/* Type filter chips */}
+        {allTypes.length > 1 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center' }}>
+            <span style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)', marginRight: 4 }}>Type</span>
+            {allTypes.map(t => {
+              const on = typeFilters.includes(t);
+              const count = (accounts || []).filter(a => a.type === t).length;
+              return (
+                <button key={t}
+                  className={`chip ${on ? 'chip-on' : ''}`}
+                  onClick={() => toggleType(t)}
+                  style={{ fontSize: 11 }}>
+                  {t}
+                  <span style={{ opacity: 0.6, fontFamily: 'var(--font-mono)', fontSize: 10, marginLeft: 2 }}>{count}</span>
+                </button>
+              );
+            })}
+            {typeFilters.length > 0 && (
+              <button className="btn-ghost tiny" onClick={() => setTypeFilters([])}>Clear</button>
+            )}
+          </div>
+        )}
+      </div>
+
       <div className="accounts-grid">
         {filtered.map(a => (
           <div key={a.id} className="account-card" onClick={() => onPickAccount && onPickAccount(a)}>
