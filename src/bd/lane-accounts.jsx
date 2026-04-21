@@ -5,6 +5,7 @@ import AddContactModal from './add-contact-modal';
 import ContactSearchModal from './contact-search-modal';
 import InactivateAccountModal from './inactivate-modal';
 import ContactDetailModal from './contact-detail-modal';
+import MeetingNoteModal from './meeting-note-modal';
 
 export default function AccountsLane({ context, accounts, contacts, deals, comms, events, graphEvents, tasks, onPickAccount, onCompose, onOpenDeal, onSelectComm, search, refetch }) {
   // Merge DB events + graph events for context resolution
@@ -197,12 +198,30 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, comms, e
   const [showSearchContact, setShowSearchContact] = useState(false);
   const [showInactivate, setShowInactivate] = useState(false);
   const [detailContactId, setDetailContactId] = useState(null);
+  const [meetingNoteEvent, setMeetingNoteEvent] = useState(null);
   const accContacts = contacts.filter(c => c.accountId === account.id);
   const accDeals = deals.filter(d => d.accountId === account.id);
   const openDeals = accDeals.filter(d => ['qualify', 'develop', 'proposal', 'close'].includes(d.stage));
   const activeDeals = accDeals.filter(d => ['onboarding', 'active'].includes(d.stage));
   const accComms = comms.filter(c => c.accountId === account.id).sort((a, b) => new Date(b.ts || 0) - new Date(a.ts || 0)).slice(0, 8);
-  const accEvents = events.filter(e => e.accountId === account.id).sort((a, b) => new Date(a.startISO || 0) - new Date(b.startISO || 0));
+  // Show ALL meetings (past + future) — resolve account via accountId OR via attendee/domain matching
+  const accEvents = (events || []).filter(e => {
+    if (!account.id) return false;
+    if (e.accountId === account.id) return true;
+    // Additionally include graph events whose attendees match one of our contacts at this account
+    const attEmails = (e.attendeesEmails && e.attendeesEmails.length
+      ? e.attendeesEmails.map(s => (s || '').toLowerCase())
+      : []);
+    if (!attEmails.length) return false;
+    const accContactEmails = new Set((contacts || []).filter(c => c.accountId === account.id && c.email).map(c => c.email.toLowerCase()));
+    if (attEmails.some(e => accContactEmails.has(e))) return true;
+    // Domain match against account website
+    const web = (account.website || '').toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
+    if (web) {
+      return attEmails.some(e => (e.split('@')[1] || '').includes(web));
+    }
+    return false;
+  }).sort((a, b) => new Date(b.startISO || 0) - new Date(a.startISO || 0));
   const accTasks = tasks.filter(t => t.accountId === account.id);
   const openTasks = accTasks.filter(t => !t.done);
 
@@ -336,13 +355,13 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, comms, e
           </Section>
         )}
 
-        <Section label={`Upcoming meetings · ${accEvents.length}`}>
+        <Section label={`Meetings · ${accEvents.length}`}>
           {accEvents.length === 0 ? (
             <div className="empty" style={{ padding: '8px 0', textAlign: 'left' }}>No meetings scheduled</div>
           ) : (
             <div className="acc-comms">
               {accEvents.map(e => (
-                <div key={e.id} className="acc-comm-row">
+                <div key={e.id} className="acc-comm-row" onClick={() => setMeetingNoteEvent(e)} style={{ cursor: 'pointer' }} title="Click to add/view meeting notes">
                   {e.channel && <ChannelIcon ch={e.channel} size={11} />}
                   <span className="acc-comm-subj">{e.title}</span>
                   <span className="acc-comm-ts">{e.startISO ? new Date(e.startISO).toLocaleDateString('en', { day: 'numeric', month: 'short' }) : ''}</span>
@@ -417,6 +436,14 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, comms, e
           onClose={() => setDetailContactId(null)}
           refetch={refetch}
           onCompose={onCompose}
+        />
+      )}
+      {meetingNoteEvent && (
+        <MeetingNoteModal
+          event={meetingNoteEvent}
+          account={account}
+          onClose={() => setMeetingNoteEvent(null)}
+          refetch={refetch}
         />
       )}
     </div>

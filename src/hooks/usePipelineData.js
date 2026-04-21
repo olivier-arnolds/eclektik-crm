@@ -127,6 +127,7 @@ function adaptTask(row) {
   return {
     id: row.id,
     itemIds: [row.opportunity_id, row.lead_id].filter(Boolean),
+    company_id: row.company_id,
     text: row.title || '',
     due: dueLabel,
     dueDate: row.due_date || '',

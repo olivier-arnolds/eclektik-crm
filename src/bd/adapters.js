@@ -141,7 +141,10 @@ export function adaptCalEvent(row, rawItems, rawAccounts) {
 // ---------- Task ----------
 export function adaptTask(row, rawItems, rawAccounts) {
   const item = (rawItems || []).find(i => row.itemIds?.includes(i.id));
-  const acc = item ? (rawAccounts || []).find(a => a.id === item.accountId) : null;
+  const dealAccount = item ? (rawAccounts || []).find(a => a.id === item.accountId) : null;
+  // Prefer direct company_id link, fallback to deal's account
+  const directAccount = row.company_id ? (rawAccounts || []).find(a => a.id === row.company_id) : null;
+  const acc = directAccount || dealAccount;
   return {
     id: row.id,
     title: row.text || '',
@@ -151,6 +154,7 @@ export function adaptTask(row, rawItems, rawAccounts) {
     done: !!row.done,
     deal: item?.id,
     accountId: acc?.id,
+    company_id: row.company_id,
     owner: ownerIdFromName(item?.owner),
   };
 }

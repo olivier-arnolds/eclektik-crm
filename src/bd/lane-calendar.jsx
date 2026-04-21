@@ -290,6 +290,7 @@ function AddTaskModal({ day, dayDate, accounts, deals, onClose, onCreated }) {
       title: topic.trim(),
       due_date: dayDate.toISOString().split('T')[0],
       status: 'pending',
+      company_id: accountId || null,
       [deal?.table === 'opportunities' ? 'opportunity_id' : 'lead_id']: dealId || null,
     };
     const { error } = await supabase.from('tasks').insert(row);
