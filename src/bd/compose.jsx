@@ -61,7 +61,7 @@ function ContactPicker({ value, onChange, contacts }) {
 }
 
 const TONES = ['Professional', 'Warm', 'Executive', 'Direct'];
-const CHANNELS = ['email', 'linkedin', 'teams'];
+const CHANNELS = ['email', 'teams'];
 const TEMPLATES = ['Follow-up', 'Proposal cover', 'Check-in', 'Escalation', 'Meeting recap'];
 
 export default function ComposeModal({ ctx, onClose, onSent, accounts, contacts, deals }) {
@@ -121,11 +121,7 @@ export default function ComposeModal({ ctx, onClose, onSent, accounts, contacts,
 
   const send = async () => {
     if (channel !== 'email') {
-      if (channel === 'linkedin') {
-        alert('LinkedIn send via Unipile: open contact → Send LinkedIn Message (coming in next step).');
-      } else {
-        alert('Teams posts require opening Teams directly.');
-      }
+      alert('Teams posts require opening Teams directly.');
       return;
     }
     if (!to.trim()) {
@@ -238,7 +234,7 @@ export default function ComposeModal({ ctx, onClose, onSent, accounts, contacts,
             <div className="draft-actions">
               <button className="btn-ghost" onClick={onClose}>Cancel</button>
               <button className="btn-primary" disabled={sending || streaming || !draft.trim()} onClick={send}>
-                <I.send /> {sending ? 'Sending…' : channel === 'email' ? 'Send email' : channel === 'linkedin' ? 'Send LinkedIn' : 'Post to Teams'}
+                <I.send /> {sending ? 'Sending…' : channel === 'email' ? 'Send email' : 'Post to Teams'}
               </button>
             </div>
           </div>

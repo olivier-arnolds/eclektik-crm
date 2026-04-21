@@ -4,7 +4,7 @@ import { graphGet, getInboxEmails } from '../lib/graph';
 import { supabase } from '../supabase';
 import DOMPurify from 'dompurify';
 
-const CHANNEL_OPTIONS = ['all', 'email', 'linkedin', 'teams'];
+const CHANNEL_OPTIONS = ['all', 'email', 'teams'];
 
 export default function CommsLane({ comms, accounts, contacts, refetch, onCompose, selectedId, onSelect, accountScope, onClearScope, search: globalSearch }) {
   const [channel, setChannel] = useState('all');
