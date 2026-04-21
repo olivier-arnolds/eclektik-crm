@@ -1,8 +1,11 @@
 import { useState, useMemo, useEffect } from 'react';
 import { I, ChannelIcon, Avatar, fmtRelative, fmtFull } from './atoms';
-import { graphGet } from '../lib/graph';
+import { graphGet, getEmailAttachments } from '../lib/graph';
 import { supabase } from '../supabase';
 import DOMPurify from 'dompurify';
+import TaskFromEmailModal from './task-from-email-modal';
+import AddAccountModal from './add-account-modal';
+import AddContactModal from './add-contact-modal';
 
 const CHANNEL_OPTIONS = ['all', 'email', 'teams'];
 
@@ -157,27 +160,43 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
           )}
         </div>
 
-        <ReadingPane comm={selected} accounts={accounts} refetch={refetch} onCompose={onCompose} />
+        <ReadingPane comm={selected} accounts={accounts} contacts={contacts} refetch={refetch} refetchGraph={refetchGraph} onCompose={onCompose} />
       </div>
     </div>
   );
 }
 
-function ReadingPane({ comm, accounts, refetch, onCompose }) {
+function ReadingPane({ comm, accounts, contacts, refetch, refetchGraph, onCompose }) {
   const [fullBody, setFullBody] = useState(null);
   const [loadingBody, setLoadingBody] = useState(false);
+  const [attachments, setAttachments] = useState([]);
+  const [loadingAtt, setLoadingAtt] = useState(false);
+  const [showTaskModal, setShowTaskModal] = useState(false);
+  const [showAddAccount, setShowAddAccount] = useState(false);
+  const [showAddContact, setShowAddContact] = useState(false);
+  const [pendingAccountForContact, setPendingAccountForContact] = useState(null);
+
+  const isGraphMessage = comm?.id && /^[A-Za-z0-9=+/_-]{40,}$/.test(comm.id);
 
   useEffect(() => {
     setFullBody(null);
-    if (!comm || comm.channel !== 'email' || !comm.id) return;
-    // Only try to fetch if we have a real Graph/Outlook message ID (not a UUID)
-    if (!/^[A-Za-z0-9=+/_-]{40,}$/.test(comm.id)) return;
+    setAttachments([]);
+    if (!comm || comm.channel !== 'email' || !isGraphMessage) return;
     setLoadingBody(true);
-    graphGet(`/me/messages/${comm.id}?$select=body,from,toRecipients,subject`)
+    graphGet(`/me/messages/${comm.id}?$select=body,from,toRecipients,subject,hasAttachments`)
       .then(res => setFullBody(res?.body?.content || null))
       .catch(() => {})
       .finally(() => setLoadingBody(false));
-  }, [comm?.id]);
+
+    // Fetch attachments if flagged
+    if (comm.hasAttach) {
+      setLoadingAtt(true);
+      getEmailAttachments(comm.id)
+        .then(atts => setAttachments(atts || []))
+        .catch(() => {})
+        .finally(() => setLoadingAtt(false));
+    }
+  }, [comm?.id, isGraphMessage, comm?.hasAttach]);
 
   if (!comm) {
     return (
@@ -188,9 +207,31 @@ function ReadingPane({ comm, accounts, refetch, onCompose }) {
   }
 
   const account = accounts.find(a => a.id === comm.accountId);
+  // Find matching contact by email
+  const senderContact = (contacts || []).find(c =>
+    c.email && comm.fromAddress && c.email.toLowerCase() === comm.fromAddress.toLowerCase()
+  );
+  // Unmatched if no contact and no account
+  const isUnmatched = !senderContact && !account && comm.fromAddress;
+
+  // Derive suggested account name from email domain
+  const suggestedCompany = (() => {
+    if (!comm.fromAddress) return { name: '', domain: '' };
+    const domain = (comm.fromAddress.split('@')[1] || '').toLowerCase();
+    if (!domain) return { name: '', domain: '' };
+    // Strip common TLDs to build a suggested name
+    const base = domain.replace(/\.(com|nl|be|de|eu|org|io|co\.uk|co|net)$/i, '').replace(/\./g, ' ');
+    const name = base.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    return { name, domain };
+  })();
+
   const archive = async () => {
-    await supabase.from('comms').update({ archived: !comm.archived }).eq('id', comm.id);
-    if (refetch) refetch();
+    if (!isGraphMessage) {
+      await supabase.from('comms').update({ archived: !comm.archived }).eq('id', comm.id);
+      if (refetch) refetch();
+    } else {
+      alert('Archive for Graph emails coming soon. Use Outlook directly for now.');
+    }
   };
 
   return (
@@ -203,6 +244,9 @@ function ReadingPane({ comm, accounts, refetch, onCompose }) {
           <button className="btn-ghost tiny" onClick={() => onCompose && onCompose({ forwardOf: comm })}>
             <I.forward /> Forward
           </button>
+          <button className="btn-ghost tiny" onClick={() => setShowTaskModal(true)} title="Create task from this email">
+            <I.check /> Task
+          </button>
           <button className="btn-ghost tiny" onClick={archive}>
             <I.archive /> {comm.archived ? 'Unarchive' : 'Archive'}
           </button>
@@ -212,14 +256,35 @@ function ReadingPane({ comm, accounts, refetch, onCompose }) {
           <ChannelIcon ch={comm.channel} size={14} />
           <div className="rp-meta-main">
             <div className="rp-from">{comm.from || 'Unknown sender'}</div>
+            {comm.fromAddress && <div className="rp-email">{comm.fromAddress}</div>}
           </div>
           <div className="rp-time">{fmtFull(comm.ts)}</div>
         </div>
         <div className="rp-tags">
           {account && <span className="pill">{account.name}</span>}
+          {senderContact && !account && <span className="pill">{senderContact.name}</span>}
           {comm.flagged && <span className="pill">⚑ Flagged</span>}
         </div>
+
+        {isUnmatched && suggestedCompany.name && (
+          <div style={{
+            marginTop: 10, padding: '8px 10px',
+            background: 'var(--warn-tint)',
+            borderRadius: 6,
+            display: 'flex', alignItems: 'center', gap: 8,
+            fontSize: 11,
+          }}>
+            <span>📇</span>
+            <span style={{ flex: 1 }}>
+              <b>{suggestedCompany.name || comm.fromAddress}</b> isn't in your CRM yet.
+            </span>
+            <button className="btn-primary tiny" onClick={() => setShowAddAccount(true)}>
+              + Create account
+            </button>
+          </div>
+        )}
       </div>
+
       <div className="rp-body">
         {loadingBody && <div style={{ color: 'var(--text-3)' }}>Loading message…</div>}
         {fullBody ? (
@@ -231,14 +296,81 @@ function ReadingPane({ comm, accounts, refetch, onCompose }) {
             ) : (
               <p className="rp-p" style={{ color: 'var(--text-3)' }}>No preview available.</p>
             )}
-            {comm.channel === 'email' && !loadingBody && (
+            {comm.channel === 'email' && !loadingBody && !isGraphMessage && (
               <p className="rp-p" style={{ color: 'var(--text-3)', fontSize: 11 }}>
-                Full message body requires opening via Outlook (Graph token expired or message archived).
+                Full message body only available for live Graph-sourced emails.
               </p>
             )}
           </>
         )}
       </div>
+
+      {(attachments.length > 0 || loadingAtt) && (
+        <div className="rp-attachments">
+          <div className="rp-attachments-title">
+            <I.paperclip />
+            <span>{loadingAtt ? 'Loading attachments…' : `Attachments · ${attachments.length}`}</span>
+          </div>
+          {!loadingAtt && (
+            <div className="rp-attachments-grid">
+              {attachments.map(a => {
+                const ext = (a.name || '').split('.').pop()?.toLowerCase() || '';
+                const thumbCls =
+                  ['pdf'].includes(ext) ? 'attachment-thumb-pdf' :
+                  ['doc', 'docx'].includes(ext) ? 'attachment-thumb-doc' :
+                  ['xls', 'xlsx', 'csv'].includes(ext) ? 'attachment-thumb-xls' :
+                  ['ppt', 'pptx'].includes(ext) ? 'attachment-thumb-ppt' : '';
+                const kb = a.size ? Math.round(a.size / 1024) : 0;
+                return (
+                  <div key={a.id} className="attachment-card" title={a.name}>
+                    <div className={`attachment-thumb ${thumbCls}`} style={!thumbCls ? { background: '#888' } : {}}>
+                      {ext.slice(0, 4).toUpperCase() || '?'}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 1 }}>
+                      <div className="attachment-name">{a.name}</div>
+                      <div className="attachment-size">{kb ? `${kb} KB` : ''}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {showTaskModal && (
+        <TaskFromEmailModal
+          comm={comm}
+          contacts={contacts}
+          accounts={accounts}
+          onClose={() => setShowTaskModal(false)}
+          onCreated={() => { setShowTaskModal(false); if (refetch) refetch(); }}
+        />
+      )}
+
+      {showAddAccount && (
+        <AddAccountModal
+          initialName={suggestedCompany.name}
+          initialWebsite={suggestedCompany.domain ? `https://${suggestedCompany.domain}` : ''}
+          onClose={() => setShowAddAccount(false)}
+          onCreated={(newAcc) => {
+            setShowAddAccount(false);
+            setPendingAccountForContact(newAcc);
+            setShowAddContact(true);
+            if (refetch) refetch();
+          }}
+        />
+      )}
+
+      {showAddContact && pendingAccountForContact && (
+        <AddContactModal
+          account={{ id: pendingAccountForContact.id, name: pendingAccountForContact.name }}
+          initialName={comm.from}
+          initialEmail={comm.fromAddress}
+          onClose={() => { setShowAddContact(false); setPendingAccountForContact(null); }}
+          onCreated={() => { setShowAddContact(false); setPendingAccountForContact(null); if (refetch) refetch(); }}
+        />
+      )}
     </div>
   );
 }

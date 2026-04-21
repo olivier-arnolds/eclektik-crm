@@ -41,6 +41,7 @@ export function adaptDeal(item, rawAccounts, rawContacts) {
     subStatus: item.subStatus,
     owner: ownerIdFromName(item.owner),
     ownerRaw: item.owner,
+    team: (item.team || '').split(',').map(s => s.trim()).filter(Boolean), // e.g. ["MVG", "OA"]
     staleDays: item.sortDate ? Math.floor((Date.now() - new Date(item.sortDate).getTime()) / 86400000) : 0,
     dealType: item.productLine || '',
     closeDate: item.closeDate || '',

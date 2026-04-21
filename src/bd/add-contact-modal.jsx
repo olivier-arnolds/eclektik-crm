@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { I } from './atoms';
 import { supabase } from '../supabase';
 
-export default function AddContactModal({ account, onClose, onCreated }) {
-  const [fullName, setFullName] = useState('');
-  const [email, setEmail] = useState('');
+export default function AddContactModal({ account, onClose, onCreated, initialName, initialEmail }) {
+  const [fullName, setFullName] = useState(initialName || '');
+  const [email, setEmail] = useState(initialEmail || '');
   const [role, setRole] = useState('');
   const [linkedinUrl, setLinkedinUrl] = useState('');
   const [saving, setSaving] = useState(false);

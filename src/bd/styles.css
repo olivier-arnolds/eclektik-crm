@@ -375,19 +375,26 @@ em { font-style: normal; }
   font-size: 13px; line-height: 1.65;
   color: var(--text-1);
 }
-/* Force email HTML to readable colors regardless of theme.
-   Many emails come with inline "color: #333" which is invisible on dark bg. */
+/* Dark mode email body: force dark background + light text so inline
+   HTML colors (typical #000 or #333) don't make emails invisible. */
 .theme-dark .rp-body {
-  background: #ffffff;
-  color: #1d1d1f;
+  background: #1c1c1e;
+  color: #f5f5f7;
   border-radius: 6px;
   margin: 8px;
   padding: 12px 14px;
 }
-.theme-dark .rp-body * {
-  color: inherit !important;
+.theme-dark .rp-body *,
+.theme-dark .rp-body *::before,
+.theme-dark .rp-body *::after {
+  color: #f5f5f7 !important;
+  background-color: transparent !important;
+  background-image: none !important;
+  border-color: rgba(255,255,255,0.12) !important;
 }
-.theme-dark .rp-body a { color: #0071e3 !important; }
+.theme-dark .rp-body a,
+.theme-dark .rp-body a * { color: #4da6ff !important; }
+.theme-dark .rp-body img { opacity: 0.9; }
 .rp-p { margin: 0 0 8px; text-wrap: pretty; }
 .rp-p-spacer { height: 8px; }
 .rp-attachments {

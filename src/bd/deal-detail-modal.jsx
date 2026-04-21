@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { I, fmtMoney, OwnerDot, AccountMark, STAGE_TINT } from './atoms';
+import { I, fmtMoney, OwnerDot, AccountMark, STAGE_TINT, OWNERS } from './atoms';
 import { updateRow } from '../hooks/useSupabase';
 import { ConvertLeadModal, DisqualifyLeadModal } from './convert-disqualify-modal';
 import PlaybookEnrollModal from './playbook-enroll-modal';
@@ -124,6 +124,9 @@ export default function DealDetailModal({ deal, accounts, contacts, rawItems, on
             <F label="Product line">
               <span style={{ fontSize: 12 }}>{deal.dealType || '—'}</span>
             </F>
+            <F label="Eclectik team">
+              <TeamEditor deal={deal} onSave={(team) => updateField('team', team)} />
+            </F>
           </div>
 
           <F label="Contacts">
@@ -173,6 +176,56 @@ export default function DealDetailModal({ deal, accounts, contacts, rawItems, on
           onClose={() => setShowEnroll(false)}
           onEnrolled={() => { /* keep open for multiple enrollments */ }} />
       )}
+    </div>
+  );
+}
+
+// Inline team editor: multi-select of team members (MVG, OA, YK). Saves as
+// comma-separated string to tasks/leads/opportunities.team column.
+function TeamEditor({ deal, onSave }) {
+  const [editing, setEditing] = useState(false);
+  const currentTeam = deal.team || [];
+
+  const toggle = (memberId) => {
+    const next = currentTeam.includes(memberId)
+      ? currentTeam.filter(m => m !== memberId)
+      : [...currentTeam, memberId];
+    onSave(next.join(', '));
+  };
+
+  if (!editing) {
+    return (
+      <div onClick={() => setEditing(true)} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, cursor: 'pointer', padding: '2px 4px', borderRadius: 4 }}
+        onMouseEnter={e => e.currentTarget.style.background = 'var(--fill-1)'}
+        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+        {currentTeam.length === 0 ? (
+          <span style={{ fontSize: 11, color: 'var(--text-3)', fontStyle: 'italic' }}>Click to add team…</span>
+        ) : (
+          currentTeam.map(m => (
+            <span key={m} style={{ display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+              <OwnerDot id={m} />
+              <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-2)' }}>{m}</span>
+            </span>
+          ))
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', alignItems: 'center' }}>
+      {Object.values(OWNERS).map(o => {
+        const on = currentTeam.includes(o.id);
+        return (
+          <button key={o.id} onClick={() => toggle(o.id)}
+            className={`chip ${on ? 'chip-on' : ''}`}
+            style={{ fontSize: 11 }}>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: o.color, display: 'inline-block' }} />
+            {o.id}
+          </button>
+        );
+      })}
+      <button className="btn-ghost tiny" onClick={() => setEditing(false)}>Done</button>
     </div>
   );
 }

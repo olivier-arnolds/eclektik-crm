@@ -1,11 +1,15 @@
 const GRAPH_BASE = 'https://graph.microsoft.com/v1.0';
 
-export async function graphGet(endpoint) {
+// Local timezone for calendar events — Graph returns times in this zone
+// when we send the Prefer header, avoiding UTC-shift bugs.
+const LOCAL_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Amsterdam';
+
+export async function graphGet(endpoint, extraHeaders) {
   const token = localStorage.getItem('graph_token');
   if (!token) return null;
   try {
     const resp = await fetch(GRAPH_BASE + endpoint, {
-      headers: { 'Authorization': 'Bearer ' + token }
+      headers: { 'Authorization': 'Bearer ' + token, ...(extraHeaders || {}) }
     });
     if (resp.status === 401) {
       localStorage.removeItem('graph_token');
@@ -25,31 +29,41 @@ export async function getCalendarEvents(daysAhead = 14) {
 }
 
 export async function getCalendarEventsRange(startISO, endISO) {
-  // Paginate in case of many events
+  // Ask Graph to return times in our local timezone so we don't have to
+  // guess offsets. Response dateTime fields will then be in LOCAL_TZ.
+  const tzHeaders = { 'Prefer': `outlook.timezone="${LOCAL_TZ}"` };
   let all = [];
   let url = `/me/calendarView?startDateTime=${encodeURIComponent(startISO)}&endDateTime=${encodeURIComponent(endISO)}&$top=500&$orderby=start/dateTime&$select=id,subject,start,end,location,attendees,isOnlineMeeting,onlineMeetingUrl`;
   let safety = 0;
   while (url && safety < 20) {
-    const data = await graphGet(url);
+    const data = await graphGet(url, tzHeaders);
     if (!data?.value) break;
     all = all.concat(data.value);
     const next = data['@odata.nextLink'];
     if (!next) break;
-    // Strip the Graph base from nextLink to feed back to graphGet
     url = next.replace(/^https:\/\/graph\.microsoft\.com\/v1\.0/, '');
     safety++;
   }
-  return all.map(e => ({
-    id: e.id,
-    title: e.subject || 'Untitled',
-    startAt: e.start?.dateTime,
-    endAt: e.end?.dateTime,
-    location: e.location?.displayName || (e.isOnlineMeeting ? 'Teams meeting' : ''),
-    attendees: (e.attendees || []).map(a => a.emailAddress?.name || a.emailAddress?.address).join(', '),
-    attendeesEmails: (e.attendees || []).map(a => a.emailAddress?.address).filter(Boolean),
-    isOnline: e.isOnlineMeeting,
-    meetingUrl: e.onlineMeetingUrl,
-  }));
+  return all.map(e => {
+    // When the Prefer header is set, Graph returns the requested timezone in the response.
+    // Treat dateTime as local time (no Z suffix).
+    const startLocal = e.start?.dateTime;
+    const endLocal = e.end?.dateTime;
+    return {
+      id: e.id,
+      title: e.subject || 'Untitled',
+      // Store as local ISO-like string (no timezone marker) — consumer should parse without UTC
+      startAt: startLocal,
+      endAt: endLocal,
+      startTimeZone: e.start?.timeZone || LOCAL_TZ,
+      endTimeZone: e.end?.timeZone || LOCAL_TZ,
+      location: e.location?.displayName || (e.isOnlineMeeting ? 'Teams meeting' : ''),
+      attendees: (e.attendees || []).map(a => a.emailAddress?.name || a.emailAddress?.address).join(', '),
+      attendeesEmails: (e.attendees || []).map(a => a.emailAddress?.address).filter(Boolean),
+      isOnline: e.isOnlineMeeting,
+      meetingUrl: e.onlineMeetingUrl,
+    };
+  });
 }
 
 export async function createCalendarEvent({ subject, startTime, endTime, attendeeEmails, body, isOnline }) {
@@ -104,6 +118,18 @@ export async function getInboxEmails(limit = 50) {
     date: m.receivedDateTime,
     isRead: m.isRead,
     hasAttachments: m.hasAttachments,
+  }));
+}
+
+export async function getEmailAttachments(messageId) {
+  const data = await graphGet(`/me/messages/${messageId}/attachments?$select=id,name,contentType,size,isInline`);
+  if (!data?.value) return [];
+  return data.value.map(a => ({
+    id: a.id,
+    name: a.name,
+    contentType: a.contentType,
+    size: a.size,
+    isInline: a.isInline,
   }));
 }
 

@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { I } from './atoms';
 import { insertRow } from '../hooks/useSupabase';
 
-export default function AddAccountModal({ onClose, onCreated }) {
-  const [name, setName] = useState('');
-  const [linkedinUrl, setLinkedinUrl] = useState('');
-  const [website, setWebsite] = useState('');
+export default function AddAccountModal({ onClose, onCreated, initialName, initialWebsite, initialLinkedIn }) {
+  const [name, setName] = useState(initialName || '');
+  const [linkedinUrl, setLinkedinUrl] = useState(initialLinkedIn || '');
+  const [website, setWebsite] = useState(initialWebsite || '');
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState('');
 

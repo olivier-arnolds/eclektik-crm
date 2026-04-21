@@ -197,11 +197,13 @@ export default function BDApp() {
           contacts={contacts}
           deals={deals}
           comms={comms}
+          graphEmails={graphEmails}
           events={events}
           graphEvents={graphEvents}
           tasks={tasks}
           search={search}
           refetch={refetch}
+          refetchGraph={fetchGraphData}
           onPickAccount={pickAccount}
           onCompose={openCompose}
           onOpenDeal={selectDeal}

@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { I, fmtMoney, OwnerDot, ChannelIcon, OWNERS } from './atoms';
 import { supabase } from '../supabase';
+import NewMeetingModal from './new-meeting-modal';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 const START_HOUR = 6, END_HOUR = 24;
@@ -41,16 +42,20 @@ export default function CalendarLane({ events: dbEvents, tasks: dbTasks, deals, 
   const [week, setWeek] = useState(0);
   const [overlay, setOverlay] = useState({ OA: false, YK: false });
   const [addTaskDay, setAddTaskDay] = useState(null);
+  const [showNewMeeting, setShowNewMeeting] = useState(false);
   const scrollRef = useRef(null);
   const didScrollRef = useRef(false);
 
-  // Adapt graphEvents from BDApp into our internal shape
+  // Adapt graphEvents from BDApp into our internal shape.
+  // Graph returns times in the requested local timezone (no Z suffix).
+  // We treat the dateTime as a local time string and parse naively.
   const graphEvents = useMemo(() => (rawGraphEvents || []).map(e => ({
     id: 'graph:' + e.id,
     kind: 'meeting',
     title: e.title,
-    startISO: e.startAt ? (e.startAt.endsWith('Z') ? e.startAt : e.startAt + 'Z') : null,
-    endISO: e.endAt ? (e.endAt.endsWith('Z') ? e.endAt : e.endAt + 'Z') : null,
+    // Strip any trailing Z just in case; parse as local
+    startISO: e.startAt ? e.startAt.replace(/Z$/, '') : null,
+    endISO: e.endAt ? e.endAt.replace(/Z$/, '') : null,
     attendees: e.attendees,
     attendeesEmails: e.attendeesEmails,
     channel: e.isOnline ? 'teams' : null,
@@ -138,6 +143,9 @@ export default function CalendarLane({ events: dbEvents, tasks: dbTasks, deals, 
               );
             })}
           </div>
+          <button className="btn-primary tiny" onClick={() => setShowNewMeeting(true)} title="Create a new meeting">
+            <I.plus /> New meeting
+          </button>
           <button className="icon-btn" onClick={() => setWeek(w => w - 1)} title="Previous week">
             <I.chevronR style={{ transform: 'rotate(180deg)' }} />
           </button>
@@ -229,6 +237,20 @@ export default function CalendarLane({ events: dbEvents, tasks: dbTasks, deals, 
       </div>
 
       <TimezoneFooter />
+
+      {showNewMeeting && (
+        <NewMeetingModal
+          dayDate={new Date()}
+          contacts={contacts}
+          deals={deals}
+          accounts={accounts}
+          onClose={() => setShowNewMeeting(false)}
+          onCreated={() => {
+            setShowNewMeeting(false);
+            if (refetchGraph) refetchGraph();
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -330,7 +352,7 @@ function AddTaskModal({ day, dayDate, accounts, deals, onClose, onCreated }) {
               onKeyDown={e => { if (e.key === 'Enter') handleSubmit(); if (e.key === 'Escape') onClose(); }} />
           </div>
           <div>
-            <div style={labelStyle}>Account (optional)</div>
+            <div style={labelStyle}>Link to account (makes it visible in Account 360)</div>
             <select style={fieldStyle} value={accountId} onChange={e => { setAccountId(e.target.value); setDealId(''); }}>
               <option value="">— none —</option>
               {[...accounts].sort((a, b) => a.name.localeCompare(b.name)).map(a => (

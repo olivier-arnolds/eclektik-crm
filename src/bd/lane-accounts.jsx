@@ -7,7 +7,7 @@ import InactivateAccountModal from './inactivate-modal';
 import ContactDetailModal from './contact-detail-modal';
 import MeetingNoteModal from './meeting-note-modal';
 
-export default function AccountsLane({ context, accounts, contacts, deals, comms, events, graphEvents, tasks, onPickAccount, onCompose, onOpenDeal, onSelectComm, search, refetch }) {
+export default function AccountsLane({ context, accounts, contacts, deals, comms, graphEmails, events, graphEvents, tasks, onPickAccount, onCompose, onOpenDeal, onSelectComm, search, refetch, refetchGraph }) {
   // Merge DB events + graph events for context resolution
   const allEvents = useMemo(() => {
     const mappedGraph = (graphEvents || []).map(e => ({
@@ -47,7 +47,7 @@ export default function AccountsLane({ context, accounts, contacts, deals, comms
     );
   }
 
-  return <AccountDetail {...resolved} accounts={accounts} contacts={contacts} deals={deals} comms={comms} events={allEvents} tasks={tasks}
+  return <AccountDetail {...resolved} accounts={accounts} contacts={contacts} deals={deals} comms={comms} graphEmails={graphEmails} events={allEvents} tasks={tasks}
     onPickAccount={onPickAccount} onCompose={onCompose} onOpenDeal={onOpenDeal} onSelectComm={onSelectComm} refetch={refetch} />;
 }
 
@@ -254,7 +254,7 @@ function AccountsList({ accounts, onPickAccount, search, onAddAccount }) {
   );
 }
 
-function AccountDetail({ account, highlight, accounts, contacts, deals, comms, events, tasks, onPickAccount, onCompose, onOpenDeal, onSelectComm, refetch }) {
+function AccountDetail({ account, highlight, accounts, contacts, deals, comms, graphEmails, events, tasks, onPickAccount, onCompose, onOpenDeal, onSelectComm, refetch }) {
   const [showAddContact, setShowAddContact] = useState(false);
   const [showSearchContact, setShowSearchContact] = useState(false);
   const [showInactivate, setShowInactivate] = useState(false);
@@ -264,7 +264,37 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, comms, e
   const accDeals = deals.filter(d => d.accountId === account.id);
   const openDeals = accDeals.filter(d => ['qualify', 'develop', 'proposal', 'close'].includes(d.stage));
   const activeDeals = accDeals.filter(d => ['onboarding', 'active'].includes(d.stage));
-  const accComms = comms.filter(c => c.accountId === account.id).sort((a, b) => new Date(b.ts || 0) - new Date(a.ts || 0)).slice(0, 8);
+  // Merge DB comms + Graph emails matched to this account via contact email
+  const accountContactEmails = new Set((contacts || []).filter(c => c.accountId === account.id && c.email).map(c => c.email.toLowerCase()));
+  const webDomain = ((account.website || '').toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0]) || null;
+  const matchedGraph = (graphEmails || [])
+    .filter(e => {
+      const from = (e.fromAddress || '').toLowerCase();
+      if (!from) return false;
+      if (accountContactEmails.has(from)) return true;
+      if (webDomain) {
+        const dom = (from.split('@')[1] || '').toLowerCase();
+        if (dom && (dom === webDomain || dom.endsWith('.' + webDomain))) return true;
+      }
+      return false;
+    })
+    .map(e => ({
+      id: e.id,
+      channel: 'email',
+      from: e.from,
+      subject: e.bodyPreview ? e.subject : e.subject,
+      preview: e.bodyPreview || '',
+      ts: e.date,
+      hasAttach: !!e.hasAttachments,
+      accountId: account.id,
+    }));
+  const allComms = [...(comms || []).filter(c => c.accountId === account.id), ...matchedGraph];
+  // Dedupe by id and sort
+  const seen = new Set();
+  const accComms = allComms
+    .filter(c => { if (seen.has(c.id)) return false; seen.add(c.id); return true; })
+    .sort((a, b) => new Date(b.ts || 0) - new Date(a.ts || 0))
+    .slice(0, 12);
   // Show ALL meetings (past + future) — resolve account via accountId OR via attendee/domain matching
   const accEvents = (events || []).filter(e => {
     if (!account.id) return false;
@@ -389,7 +419,7 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, comms, e
                   <span className="deal-row-title">{d.title}</span>
                 </div>
                 <div className="deal-row-right">
-                  {d.owner && <OwnerDot id={d.owner} />}
+                  <TeamDots deal={d} />
                   <span className="deal-row-value">{fmtMoney(d.value)}</span>
                 </div>
               </div>
@@ -440,7 +470,11 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, comms, e
               {accComms.map(c => (
                 <div key={c.id} className="acc-comm-row" onClick={() => onSelectComm && onSelectComm(c.id)} style={{ cursor: 'pointer' }}>
                   <ChannelIcon ch={c.channel} size={11} />
-                  <span className="acc-comm-subj">{c.subject || c.from}</span>
+                  <span className="acc-comm-subj">
+                    {c.subject || c.from}
+                    {c.from && c.subject && <span style={{ color: 'var(--text-3)', marginLeft: 6 }}>· {c.from}</span>}
+                  </span>
+                  {c.hasAttach && <span style={{ color: 'var(--text-3)', fontSize: 10 }} title="Has attachments"><I.paperclip /></span>}
                   <span className="acc-comm-ts">{fmtRelative(c.ts)}</span>
                 </div>
               ))}
@@ -507,6 +541,24 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, comms, e
           refetch={refetch}
         />
       )}
+    </div>
+  );
+}
+
+// Shows the Eclectik-side team for a deal: owner + any extra team members.
+// Dots overlap slightly for compact display.
+function TeamDots({ deal }) {
+  const members = [];
+  if (deal.owner) members.push(deal.owner);
+  (deal.team || []).forEach(m => { if (m && !members.includes(m)) members.push(m); });
+  if (members.length === 0) return null;
+  return (
+    <div style={{ display: 'inline-flex', alignItems: 'center' }}>
+      {members.map((m, i) => (
+        <span key={m} style={{ marginLeft: i === 0 ? 0 : -3, display: 'inline-flex' }}>
+          <OwnerDot id={m} ring />
+        </span>
+      ))}
     </div>
   );
 }
