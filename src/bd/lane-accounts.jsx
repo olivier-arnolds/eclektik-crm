@@ -1,16 +1,35 @@
 import { useState, useMemo } from 'react';
 import { I, fmtMoney, fmtRelative, AccountMark, OwnerDot, OwnerChip, ChannelIcon, STAGE_TINT } from './atoms';
+import AddAccountModal from './add-account-modal';
+import AddContactModal from './add-contact-modal';
+import ContactSearchModal from './contact-search-modal';
 
-export default function AccountsLane({ context, accounts, contacts, deals, comms, events, tasks, onPickAccount, onCompose, onOpenDeal, onSelectComm, search }) {
-  // Resolve context → account to show
+export default function AccountsLane({ context, accounts, contacts, deals, comms, events, tasks, onPickAccount, onCompose, onOpenDeal, onSelectComm, search, refetch }) {
   const resolved = useMemo(() => resolveContext(context, { accounts, contacts, deals, comms, events, tasks }), [context, accounts, contacts, deals, comms, events, tasks]);
+  const [showAddAccount, setShowAddAccount] = useState(false);
 
   if (!resolved) {
-    return <AccountsList accounts={accounts} onPickAccount={onPickAccount} search={search} />;
+    return (
+      <>
+        <AccountsList accounts={accounts} onPickAccount={onPickAccount} search={search}
+          onAddAccount={() => setShowAddAccount(true)} />
+        {showAddAccount && (
+          <AddAccountModal
+            onClose={() => setShowAddAccount(false)}
+            onCreated={(newAcc) => {
+              setShowAddAccount(false);
+              if (refetch) refetch();
+              // Navigate to the new account
+              if (newAcc && onPickAccount) setTimeout(() => onPickAccount(newAcc), 500);
+            }}
+          />
+        )}
+      </>
+    );
   }
 
   return <AccountDetail {...resolved} accounts={accounts} contacts={contacts} deals={deals} comms={comms} events={events} tasks={tasks}
-    onPickAccount={onPickAccount} onCompose={onCompose} onOpenDeal={onOpenDeal} onSelectComm={onSelectComm} />;
+    onPickAccount={onPickAccount} onCompose={onCompose} onOpenDeal={onOpenDeal} onSelectComm={onSelectComm} refetch={refetch} />;
 }
 
 function resolveContext(context, data) {
@@ -65,7 +84,7 @@ function resolveContext(context, data) {
   return null;
 }
 
-function AccountsList({ accounts, onPickAccount, search }) {
+function AccountsList({ accounts, onPickAccount, search, onAddAccount }) {
   const q = (search || '').toLowerCase();
   const filtered = useMemo(() => {
     const list = q
@@ -80,6 +99,13 @@ function AccountsList({ accounts, onPickAccount, search }) {
         <div className="lane-title">
           <span className="lane-title-label">Accounts</span>
           <span className="lane-title-count">{filtered.length}</span>
+        </div>
+        <div className="lane-actions">
+          {onAddAccount && (
+            <button className="btn-primary tiny" onClick={onAddAccount}>
+              <I.plus /> New account
+            </button>
+          )}
         </div>
       </div>
       <div className="accounts-grid">
@@ -102,7 +128,9 @@ function AccountsList({ accounts, onPickAccount, search }) {
   );
 }
 
-function AccountDetail({ account, highlight, accounts, contacts, deals, comms, events, tasks, onPickAccount, onCompose, onOpenDeal, onSelectComm }) {
+function AccountDetail({ account, highlight, accounts, contacts, deals, comms, events, tasks, onPickAccount, onCompose, onOpenDeal, onSelectComm, refetch }) {
+  const [showAddContact, setShowAddContact] = useState(false);
+  const [showSearchContact, setShowSearchContact] = useState(false);
   const accContacts = contacts.filter(c => c.accountId === account.id);
   const accDeals = deals.filter(d => d.accountId === account.id);
   const openDeals = accDeals.filter(d => ['qualify', 'develop', 'proposal', 'close'].includes(d.stage));
@@ -164,7 +192,17 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, comms, e
           </div>
         )}
 
-        <Section label={`Contacts · ${accContacts.length}`}>
+        <Section label={`Contacts · ${accContacts.length}`}
+          actions={account.id && (
+            <>
+              <button className="btn-ghost tiny" onClick={() => setShowSearchContact(true)}>
+                <I.search /> Search
+              </button>
+              <button className="btn-ghost tiny" onClick={() => setShowAddContact(true)}>
+                <I.plus /> Add
+              </button>
+            </>
+          )}>
           <div className="contacts-grid">
             {accContacts.length === 0 && <div className="empty" style={{ padding: '8px 0', textAlign: 'left' }}>No contacts</div>}
             {accContacts.map(c => (
@@ -270,18 +308,36 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, comms, e
           )}
         </Section>
       </div>
+
+      {showAddContact && (
+        <AddContactModal
+          account={account}
+          onClose={() => setShowAddContact(false)}
+          onCreated={() => { setShowAddContact(false); if (refetch) refetch(); }}
+        />
+      )}
+      {showSearchContact && (
+        <ContactSearchModal
+          account={account}
+          onClose={() => setShowSearchContact(false)}
+          onAdded={() => { if (refetch) refetch(); }}
+        />
+      )}
     </div>
   );
 }
 
-function Section({ label, children }) {
+function Section({ label, actions, children }) {
   const [open, setOpen] = useState(true);
   return (
     <div className="acc-section">
-      <button className="acc-section-head" onClick={() => setOpen(o => !o)}>
-        {open ? <I.chevronD /> : <I.chevronR />}
-        <span>{label}</span>
-      </button>
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        <button className="acc-section-head" style={{ flex: 1 }} onClick={() => setOpen(o => !o)}>
+          {open ? <I.chevronD /> : <I.chevronR />}
+          <span>{label}</span>
+        </button>
+        {actions && <div style={{ display: 'flex', gap: 4, paddingRight: 14 }}>{actions}</div>}
+      </div>
       {open && <div className="acc-section-body">{children}</div>}
     </div>
   );

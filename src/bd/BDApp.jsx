@@ -141,6 +141,7 @@ export default function BDApp() {
           events={events}
           tasks={tasks}
           search={search}
+          refetch={refetch}
           onPickAccount={pickAccount}
           onCompose={openCompose}
           onOpenDeal={selectDeal}
