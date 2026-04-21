@@ -6,6 +6,10 @@ import { useBDData } from './useBDData';
 import Topbar from './topbar';
 import Statusbar from './statusbar';
 import FunnelLane from './lane-funnel';
+import CalendarLane from './lane-calendar';
+import CommsLane from './lane-comms';
+import AccountsLane from './lane-accounts';
+import ComposeModal from './compose';
 
 export default function BDApp() {
   const [theme, setTheme] = useLocal('bd_theme', 'light');
@@ -13,7 +17,13 @@ export default function BDApp() {
   const [layout, setLayout] = useLocal('bd_layout', 'fixed');
   const [search, setSearch] = useState('');
   const [filters, setFilters] = useState({ owners: [], types: [] });
+
+  // Cross-lane state
   const [selectedDeal, setSelectedDeal] = useState(null);
+  const [selectedComm, setSelectedComm] = useState(null);
+  const [accountScope, setAccountScope] = useState(null);
+  const [rightContext, setRightContext] = useState(null); // { type, id }
+  const [composeCtx, setComposeCtx] = useState(null);
 
   const { session } = useAuth();
   const userName = session?.user?.user_metadata?.full_name || session?.user?.email || '';
@@ -24,6 +34,21 @@ export default function BDApp() {
   const openDeals = deals.filter(d => ['qualify', 'develop', 'proposal', 'close'].includes(d.stage)).length;
   const totalValue = deals.filter(d => ['qualify', 'develop', 'proposal', 'close'].includes(d.stage))
                           .reduce((s, d) => s + d.value, 0);
+
+  // Handlers
+  const pickAccount = (acc) => {
+    if (!acc) { setRightContext(null); return; }
+    setRightContext({ type: 'account', id: acc.id });
+  };
+  const selectDeal = (d) => {
+    setSelectedDeal(d);
+    setRightContext({ type: 'deal', id: d.id });
+  };
+  const selectCommHandler = (id) => {
+    setSelectedComm(id);
+    setRightContext({ type: 'comm', id });
+  };
+  const openCompose = (ctx) => setComposeCtx(ctx || {});
 
   if (loading) {
     return (
@@ -38,6 +63,28 @@ export default function BDApp() {
     );
   }
 
+  const leftLane = view === 'funnel' ? (
+    <FunnelLane
+      deals={deals}
+      accounts={accounts}
+      contacts={contacts}
+      filters={filters}
+      setFilters={setFilters}
+      search={search}
+      onSelectDeal={selectDeal}
+      refetch={refetch}
+    />
+  ) : (
+    <CalendarLane
+      events={events}
+      tasks={tasks}
+      deals={deals}
+      accounts={accounts}
+      refetch={refetch}
+      onSelectEvent={(e) => setRightContext({ type: 'event', id: e.id })}
+    />
+  );
+
   return (
     <div className={`app theme-${theme}`} data-layout={layout}>
       <Topbar theme={theme} setTheme={setTheme} view={view} setView={setView}
@@ -51,42 +98,55 @@ export default function BDApp() {
             filters={filters}
             setFilters={setFilters}
             search={search}
-            onSelectDeal={setSelectedDeal}
+            onSelectDeal={selectDeal}
             refetch={refetch}
           />
         ) : (
           <>
-            <FunnelLane
-              deals={deals}
+            {leftLane}
+            <div className="divider" />
+            <CommsLane
+              comms={comms}
               accounts={accounts}
               contacts={contacts}
-              filters={filters}
-              setFilters={setFilters}
-              search={search}
-              onSelectDeal={setSelectedDeal}
               refetch={refetch}
+              onCompose={openCompose}
+              selectedId={selectedComm}
+              onSelect={selectCommHandler}
+              accountScope={accountScope}
+              onClearScope={() => setAccountScope(null)}
+              search={search}
             />
             <div className="divider" />
-            <div className="lane" style={{ padding: 20, flex: 1, color: 'var(--text-3)', fontSize: 12 }}>
-              <div style={{ fontSize: 13, color: 'var(--text-1)', marginBottom: 8, fontWeight: 500 }}>Comms lane</div>
-              Coming in next step
-            </div>
-            <div className="divider" />
-            <div className="lane" style={{ padding: 20, flex: 1, color: 'var(--text-3)', fontSize: 12 }}>
-              <div style={{ fontSize: 13, color: 'var(--text-1)', marginBottom: 8, fontWeight: 500 }}>Accounts 360°</div>
-              {selectedDeal ? (
-                <div>
-                  <b>{selectedDeal.title}</b><br />
-                  {selectedDeal.account} · {selectedDeal.contact}<br />
-                  {selectedDeal.stage} · {selectedDeal.owner}<br />
-                  <button className="btn-ghost tiny" onClick={() => setSelectedDeal(null)}>Clear</button>
-                </div>
-              ) : 'Select a deal to see context'}
-            </div>
+            <AccountsLane
+              context={rightContext}
+              accounts={accounts}
+              contacts={contacts}
+              deals={deals}
+              comms={comms}
+              events={events}
+              tasks={tasks}
+              search={search}
+              onPickAccount={pickAccount}
+              onCompose={openCompose}
+              onOpenDeal={selectDeal}
+              onSelectComm={selectCommHandler}
+            />
           </>
         )}
       </div>
       <Statusbar userName={userName} unreadCount={unreadCount} openDeals={openDeals} totalValue={totalValue} />
+
+      {composeCtx && (
+        <ComposeModal
+          ctx={composeCtx}
+          accounts={accounts}
+          contacts={contacts}
+          deals={deals}
+          onClose={() => setComposeCtx(null)}
+          onSent={() => { refetch(); setComposeCtx(null); }}
+        />
+      )}
     </div>
   );
 }
