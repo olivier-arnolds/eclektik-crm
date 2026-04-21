@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import './styles.css';
 import { useLocal } from './atoms';
 import { useAuth } from '../lib/auth';
@@ -17,6 +17,14 @@ import PlaybookDetail from '../components/playbooks/PlaybookDetail';
 
 export default function BDApp() {
   const [theme, setTheme] = useLocal('bd_theme', 'light');
+  // Apply theme class to body so CSS custom props resolve correctly everywhere
+  useEffect(() => {
+    document.body.classList.remove('theme-light', 'theme-dark');
+    document.body.classList.add(`theme-${theme}`);
+    return () => {
+      document.body.classList.remove('theme-light', 'theme-dark');
+    };
+  }, [theme]);
   const [view, setView] = useLocal('bd_view', 'workspace');
   const [layout, setLayout] = useLocal('bd_layout', 'fixed');
   const [search, setSearch] = useState('');

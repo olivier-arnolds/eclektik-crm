@@ -49,6 +49,14 @@ export default function CalendarLane({ events: dbEvents, tasks: dbTasks, deals, 
   const dates = useMemo(() => dayDatesForWeek(week), [week]);
   const weekStart = dates[0];
   const weekEnd = new Date(dates[4]); weekEnd.setDate(weekEnd.getDate() + 1);
+  // ISO week number
+  const weekNumber = useMemo(() => {
+    const d = new Date(Date.UTC(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate()));
+    const dayNum = d.getUTCDay() || 7;
+    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+  }, [weekStart.getTime()]);
 
   const todayIdx = useMemo(() => {
     const d = new Date();
@@ -124,7 +132,7 @@ export default function CalendarLane({ events: dbEvents, tasks: dbTasks, deals, 
         <div className="lane-title">
           <span className="lane-title-label">Calendar</span>
           <span className="lane-title-count">
-            {weekStart.toLocaleDateString('en', { day: 'numeric', month: 'short' })} – {dates[4].toLocaleDateString('en', { day: 'numeric', month: 'short' })}
+            Week {weekNumber} · {weekStart.toLocaleDateString('en', { day: 'numeric', month: 'short' })} – {dates[4].toLocaleDateString('en', { day: 'numeric', month: 'short' })}
           </span>
         </div>
         <div className="lane-actions">

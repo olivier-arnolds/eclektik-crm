@@ -29,8 +29,26 @@ function resolveContext(context, data) {
   if (context.type === 'event') {
     const e = events.find(x => x.id === context.id);
     if (!e) return null;
-    const acc = accounts.find(a => a.id === e.accountId);
-    return acc ? { account: acc, highlight: { kind: 'event', item: e, title: e.title, body: e.attendees } } : null;
+    // First try direct accountId link (DB events)
+    let acc = accounts.find(a => a.id === e.accountId);
+    // Fallback: match attendee emails/names against contacts
+    if (!acc && e.attendees) {
+      const attendeeList = e.attendees.split(/[,;]/).map(s => s.trim().toLowerCase());
+      const matchedContact = contacts.find(c =>
+        attendeeList.some(a => a.includes((c.email || '').toLowerCase()) || a.includes((c.name || '').toLowerCase()))
+      );
+      if (matchedContact?.accountId) {
+        acc = accounts.find(a => a.id === matchedContact.accountId);
+      }
+    }
+    if (acc) {
+      return { account: acc, highlight: { kind: 'event', item: e, title: e.title, body: e.attendees } };
+    }
+    // No account found — show a "pseudo-account" view with event info only
+    return {
+      account: { id: null, name: e.title, type: 'Calendar event', logoHue: 200 },
+      highlight: { kind: 'event', item: e, title: e.title, body: e.attendees || (e.startISO ? new Date(e.startISO).toLocaleString('en') : '') }
+    };
   }
   if (context.type === 'deal') {
     const d = deals.find(x => x.id === context.id);

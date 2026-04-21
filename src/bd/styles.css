@@ -152,6 +152,8 @@ em { font-style: normal; }
   overflow: hidden;
   padding: 10px;
   gap: 0;
+  width: 100%;
+  min-height: 0;
 }
 .lane {
   background: var(--bg-1);
@@ -161,6 +163,7 @@ em { font-style: normal; }
   overflow: hidden;
   min-width: 0;
   height: 100%;
+  flex: 1 1 0;
 }
 .divider {
   width: 10px;
@@ -501,6 +504,8 @@ em { font-style: normal; }
   padding: 4px;
   border-right: 0.5px solid var(--sep);
   display: flex; flex-direction: column; gap: 2px;
+  min-width: 0;
+  overflow: hidden;
 }
 .cal-taskcol:last-child { border-right: none; }
 .cal-task {
@@ -511,6 +516,9 @@ em { font-style: normal; }
   font-size: 11px;
   cursor: pointer;
   border-left: 2px solid transparent;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
 }
 .cal-task:hover { background: var(--fill-2); }
 .cal-task-done .cal-task-title { color: var(--text-3); text-decoration: line-through; }
@@ -522,7 +530,7 @@ em { font-style: normal; }
   color: white;
 }
 .task-check-on { background: var(--accent); border-color: var(--accent); }
-.cal-task-title { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cal-task-title { flex: 1; color: var(--text-1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cal-task-add {
   font-size: 10px; color: var(--text-3);
   display: inline-flex; align-items: center; gap: 4px;
@@ -702,7 +710,7 @@ em { font-style: normal; }
   padding: 12px 14px;
   border-bottom: 0.5px solid var(--sep);
 }
-.acc-hero-name { font-size: 15px; font-weight: 600; letter-spacing: -0.015em; font-family: var(--font-display); }
+.acc-hero-name { font-size: 15px; font-weight: 600; color: var(--text-1); letter-spacing: -0.015em; font-family: var(--font-display); }
 .acc-hero-meta { font-size: 11px; color: var(--text-3); font-family: var(--font-mono); display: flex; gap: 4px; align-items: center; }
 .acc-hero-meta .sep { color: var(--text-4); }
 .acc-scroll { flex: 1; overflow-y: auto; }
@@ -737,7 +745,7 @@ em { font-style: normal; }
   background: var(--fill-1);
   border-radius: var(--radius-sm);
 }
-.contact-name { font-size: 12px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.contact-name { font-size: 12px; font-weight: 500; color: var(--text-1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .contact-role { font-size: 10px; color: var(--text-3); font-family: var(--font-mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .deals-list { display: flex; flex-direction: column; gap: 2px; }
@@ -749,7 +757,7 @@ em { font-style: normal; }
 }
 .deal-row:hover { background: var(--fill-1); }
 .deal-row-left { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; }
-.deal-row-title { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.deal-row-title { font-size: 12px; color: var(--text-1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .deal-row-right { display: flex; align-items: center; gap: 6px; }
 .deal-row-value { font-family: var(--font-mono); font-size: 11px; font-weight: 500; }
 
@@ -789,7 +797,7 @@ em { font-style: normal; }
   cursor: pointer;
 }
 .account-card:hover { background: var(--fill-1); }
-.account-card-name { font-size: 12px; font-weight: 500; }
+.account-card-name { font-size: 12px; font-weight: 500; color: var(--text-1); }
 .account-card-meta { font-size: 10px; color: var(--text-3); font-family: var(--font-mono); display: flex; gap: 4px; }
 .account-card-meta .sep { color: var(--text-4); }
 
@@ -876,7 +884,7 @@ em { font-style: normal; }
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;
 }
 .deal-card-title {
-  font-size: 12px; font-weight: 500; line-height: 1.35;
+  font-size: 12px; font-weight: 500; color: var(--text-1); line-height: 1.35;
   overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
 }
 .deal-card-meta .deal-card-contact { font-size: 10px; color: var(--text-3); }

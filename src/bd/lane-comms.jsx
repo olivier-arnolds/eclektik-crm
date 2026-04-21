@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { I, ChannelIcon, Avatar, fmtRelative, fmtFull } from './atoms';
-import { graphGet } from '../lib/graph';
+import { graphGet, getInboxEmails } from '../lib/graph';
 import { supabase } from '../supabase';
 import DOMPurify from 'dompurify';
 
@@ -10,11 +10,50 @@ export default function CommsLane({ comms, accounts, contacts, refetch, onCompos
   const [channel, setChannel] = useState('all');
   const [folder, setFolder] = useState('inbox');
   const [localSearch, setLocalSearch] = useState('');
+  const [graphEmails, setGraphEmails] = useState([]);
+
+  // Fetch Graph inbox emails
+  useEffect(() => {
+    if (!localStorage.getItem('graph_token')) return;
+    getInboxEmails(50).then(emails => {
+      const mapped = emails.map(e => ({
+        id: e.id,
+        channel: 'email',
+        dir: 'in',
+        from: e.from,
+        fromAddress: e.fromAddress,
+        subject: e.subject,
+        preview: e.bodyPreview || '',
+        unread: !e.isRead,
+        ts: e.date,
+        hasAttach: e.hasAttachments,
+        archived: false,
+        source: 'graph',
+      }));
+      // Try to match email-address → contact → account
+      const contactByEmail = new Map((contacts || []).filter(c => c.email).map(c => [c.email.toLowerCase(), c]));
+      mapped.forEach(m => {
+        const contact = contactByEmail.get((m.fromAddress || '').toLowerCase());
+        if (contact) {
+          m.accountId = contact.accountId;
+          const acc = (accounts || []).find(a => a.id === contact.accountId);
+          if (acc) m.account = acc.name;
+        }
+      });
+      setGraphEmails(mapped);
+    }).catch(e => console.warn('Graph inbox fetch failed:', e));
+  }, [contacts, accounts]);
+
+  // Merge DB comms + Graph emails (dedupe by id)
+  const allComms = useMemo(() => {
+    const ids = new Set((comms || []).map(c => c.id));
+    return [...(comms || []), ...graphEmails.filter(e => !ids.has(e.id))];
+  }, [comms, graphEmails]);
 
   const q = (localSearch || globalSearch || '').toLowerCase();
 
   const filtered = useMemo(() => {
-    return comms.filter(c => {
+    return allComms.filter(c => {
       if (channel !== 'all' && c.channel !== channel) return false;
       if (folder === 'inbox' && c.archived) return false;
       if (folder === 'archived' && !c.archived) return false;
@@ -30,13 +69,13 @@ export default function CommsLane({ comms, accounts, contacts, refetch, onCompos
     }).sort((a, b) => new Date(b.ts || 0) - new Date(a.ts || 0));
   }, [comms, channel, folder, q, accountScope]);
 
-  const selected = comms.find(c => c.id === selectedId);
+  const selected = allComms.find(c => c.id === selectedId);
 
   const counts = useMemo(() => ({
-    inbox: comms.filter(c => !c.archived && c.dir !== 'out').length,
-    sent: comms.filter(c => c.dir === 'out').length,
-    archived: comms.filter(c => c.archived).length,
-  }), [comms]);
+    inbox: allComms.filter(c => !c.archived && c.dir !== 'out').length,
+    sent: allComms.filter(c => c.dir === 'out').length,
+    archived: allComms.filter(c => c.archived).length,
+  }), [allComms]);
 
   return (
     <div className="lane lane-comms">

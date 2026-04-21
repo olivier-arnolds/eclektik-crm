@@ -2,6 +2,64 @@ import { useState, useEffect, useRef } from 'react';
 import { I, ChannelIcon, fmtMoney } from './atoms';
 import { sendEmail, replyToEmail } from '../lib/graph';
 
+function ContactPicker({ value, onChange, contacts }) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState(value || '');
+  const ref = useRef(null);
+
+  useEffect(() => { setQuery(value || ''); }, [value]);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  const suggestions = (contacts || []).filter(c =>
+    c.email && (
+      !query ||
+      c.email.toLowerCase().includes(query.toLowerCase()) ||
+      (c.name || '').toLowerCase().includes(query.toLowerCase()) ||
+      (c.account || '').toLowerCase().includes(query.toLowerCase())
+    )
+  ).slice(0, 8);
+
+  const pick = (c) => {
+    onChange(c.email);
+    setQuery(c.email);
+    setOpen(false);
+  };
+
+  return (
+    <div ref={ref} style={{ flex: 1, position: 'relative' }}>
+      <input value={query}
+        onChange={e => { setQuery(e.target.value); onChange(e.target.value); setOpen(true); }}
+        onFocus={() => setOpen(true)}
+        placeholder="recipient@example.com or search by name…"
+        style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', fontSize: 13, color: 'var(--text-1)', padding: '4px 0' }} />
+      {open && suggestions.length > 0 && (
+        <div style={{
+          position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4,
+          background: 'var(--bg-1)', borderRadius: 8, boxShadow: 'var(--shadow-2)',
+          border: '0.5px solid var(--sep)', zIndex: 10, maxHeight: 240, overflowY: 'auto',
+        }}>
+          {suggestions.map(c => (
+            <div key={c.id} onClick={() => pick(c)}
+              style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '0.5px solid var(--sep)', display: 'flex', flexDirection: 'column', gap: 2 }}
+              onMouseEnter={e => e.currentTarget.style.background = 'var(--fill-1)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+              <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-1)' }}>{c.name}</div>
+              <div style={{ fontSize: 11, color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>{c.email}</div>
+              {c.account && <div style={{ fontSize: 10, color: 'var(--text-3)' }}>{c.account}{c.role ? ' · ' + c.role : ''}</div>}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const TONES = ['Professional', 'Warm', 'Executive', 'Direct'];
 const CHANNELS = ['email', 'linkedin', 'teams'];
 const TEMPLATES = ['Follow-up', 'Proposal cover', 'Check-in', 'Escalation', 'Meeting recap'];
@@ -70,19 +128,36 @@ export default function ComposeModal({ ctx, onClose, onSent, accounts, contacts,
       }
       return;
     }
+    if (!to.trim()) {
+      alert('Please enter a recipient email address.');
+      return;
+    }
+    if (!localStorage.getItem('graph_token')) {
+      alert('Microsoft not connected. Click "⚠ Reconnect Microsoft" in the top bar first.');
+      return;
+    }
     setSending(true);
     try {
-      if (ctx?.replyTo?.id) {
-        await replyToEmail(ctx.replyTo.id, draft);
+      // Convert plain text draft to simple HTML with line breaks
+      const htmlBody = draft.replace(/\n/g, '<br>');
+      if (ctx?.replyTo?.id && /^[A-Za-z0-9=+/_-]{40,}$/.test(ctx.replyTo.id)) {
+        await replyToEmail(ctx.replyTo.id, htmlBody);
       } else {
-        await sendEmail({ to, subject, body: draft });
+        await sendEmail({ to: to.trim(), subject, body: htmlBody });
       }
       setSending(false);
       if (onSent) onSent();
       onClose();
+      alert('Email sent ✓');
     } catch (err) {
       setSending(false);
-      alert('Send failed: ' + (err.message || err));
+      console.error('Send failed:', err);
+      const msg = err?.message || String(err);
+      if (msg.includes('401') || msg.includes('unauthorized') || msg.includes('token')) {
+        alert('Microsoft token expired. Click "⚠ Reconnect Microsoft" and try again.');
+      } else {
+        alert('Send failed: ' + msg);
+      }
     }
   };
 
@@ -94,10 +169,9 @@ export default function ComposeModal({ ctx, onClose, onSent, accounts, contacts,
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal modal-compose" onClick={e => e.stopPropagation()}>
         <div className="compose-header">
-          <div className="compose-to">
+          <div className="compose-to" style={{ position: 'relative' }}>
             <span className="compose-label">To</span>
-            <input value={to} onChange={e => setTo(e.target.value)} placeholder="recipient@example.com"
-              style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', fontSize: 13, color: 'var(--text-1)' }} />
+            <ContactPicker value={to} onChange={setTo} contacts={contacts} />
           </div>
           <div style={{ display: 'flex', gap: 4 }}>
             {CHANNELS.map(c => (

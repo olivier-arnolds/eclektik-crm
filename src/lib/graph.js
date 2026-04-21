@@ -76,6 +76,22 @@ export async function replyToEmail(messageId, body) {
   } catch (e) { return { error: e.message }; }
 }
 
+export async function getInboxEmails(limit = 50) {
+  const data = await graphGet(`/me/mailFolders/Inbox/messages?$top=${limit}&$orderby=receivedDateTime desc&$select=id,subject,bodyPreview,from,toRecipients,receivedDateTime,isRead,hasAttachments`);
+  if (!data?.value) return [];
+  return data.value.map(m => ({
+    id: m.id,
+    subject: m.subject,
+    bodyPreview: m.bodyPreview,
+    from: m.from?.emailAddress?.name || m.from?.emailAddress?.address || '',
+    fromAddress: m.from?.emailAddress?.address || '',
+    to: (m.toRecipients || []).map(r => r.emailAddress?.address).join(', '),
+    date: m.receivedDateTime,
+    isRead: m.isRead,
+    hasAttachments: m.hasAttachments,
+  }));
+}
+
 export async function getEmailsForContact(email, limit = 50) {
   if (!email) return [];
   const search = encodeURIComponent(`"${email}"`);
@@ -174,30 +190,27 @@ export async function getChatMessages(chatId, top = 20) {
   }));
 }
 
-export async function sendEmail({ to, subject, body, cc }) {
+export async function sendEmail({ to, subject, body, cc, isHtml = true }) {
   const token = localStorage.getItem('graph_token');
-  if (!token) return { error: 'No token' };
-  try {
-    const resp = await fetch('https://graph.microsoft.com/v1.0/me/sendMail', {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Bearer ' + token,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        message: {
-          subject,
-          body: { contentType: 'Text', content: body },
-          toRecipients: [{ emailAddress: { address: to } }],
-          ...(cc ? { ccRecipients: [{ emailAddress: { address: cc } }] } : {})
-        }
-      })
-    });
-    if (resp.status === 202 || resp.ok) return { success: true };
-    if (resp.status === 401) { localStorage.removeItem('graph_token'); return { error: 'Token expired' }; }
-    const data = await resp.json();
-    return { error: data?.error?.message || 'Sending failed' };
-  } catch (e) {
-    return { error: e.message };
-  }
+  if (!token) throw new Error('No Microsoft token. Please reconnect.');
+  const resp = await fetch('https://graph.microsoft.com/v1.0/me/sendMail', {
+    method: 'POST',
+    headers: {
+      'Authorization': 'Bearer ' + token,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      message: {
+        subject,
+        body: { contentType: isHtml ? 'HTML' : 'Text', content: body },
+        toRecipients: [{ emailAddress: { address: to } }],
+        ...(cc ? { ccRecipients: [{ emailAddress: { address: cc } }] } : {})
+      }
+    })
+  });
+  if (resp.status === 202 || resp.ok) return { success: true };
+  if (resp.status === 401) { localStorage.removeItem('graph_token'); throw new Error('Token expired. Please reconnect.'); }
+  let msg = 'Sending failed';
+  try { const data = await resp.json(); msg = data?.error?.message || msg; } catch {}
+  throw new Error(msg);
 }
