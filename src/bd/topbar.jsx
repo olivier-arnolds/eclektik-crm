@@ -55,11 +55,14 @@ export default function Topbar({ theme, setTheme, view, setView, leftLane, setLe
             ◈ Enrich
           </button>
         )}
-        {!hasGraphToken && (
-          <button className="btn-ghost" onClick={reconnectMicrosoft} style={{ color: 'var(--warn)' }} title="Microsoft token expired">
-            ⚠ Reconnect
-          </button>
-        )}
+        <button className="btn-ghost tiny" onClick={reconnectMicrosoft}
+          style={{
+            color: hasGraphToken ? 'var(--good)' : 'var(--warn)',
+            fontWeight: hasGraphToken ? 400 : 600,
+          }}
+          title={hasGraphToken ? 'Microsoft connected — click to re-authenticate' : 'Microsoft not connected — click to authenticate'}>
+          {hasGraphToken ? '● MS' : '⚠ Reconnect MS'}
+        </button>
         <button className="icon-btn" onClick={toggleTheme} title="Toggle theme">
           {theme === 'light' ? <I.moon /> : <I.sun />}
         </button>

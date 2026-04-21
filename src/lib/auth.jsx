@@ -72,7 +72,18 @@ export function AuthProvider({ children }) {
     if (error) setError(error.message)
   }
 
-  const hasGraphToken = !!localStorage.getItem('graph_token')
+  // Reactive graph-token state: updates when another tab changes it, when we
+  // poll, and when validateAndSet is called (after OAuth redirect).
+  const [hasGraphToken, setHasGraphToken] = useState(() => !!localStorage.getItem('graph_token'))
+  useEffect(() => {
+    const update = () => setHasGraphToken(!!localStorage.getItem('graph_token'))
+    update()
+    // Listen to cross-tab storage changes
+    window.addEventListener('storage', update)
+    // Poll every 5s in case graph.js silently removed the token on 401
+    const t = setInterval(update, 5000)
+    return () => { window.removeEventListener('storage', update); clearInterval(t) }
+  }, [session])
 
   return (
     <AuthContext.Provider value={{ session, loading, error, login, logout, reconnectMicrosoft, hasGraphToken }}>

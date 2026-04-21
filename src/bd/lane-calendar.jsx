@@ -28,13 +28,19 @@ function dayDatesForWeek(offset = 0) {
 function eventPosition(ev) {
   if (!ev.startISO) return null;
   const s = new Date(ev.startISO);
+  if (isNaN(s.getTime())) return null;
   const dayIdx = (s.getDay() + 6) % 7;
   if (dayIdx > 4) return null;
   const start = s.getHours() + s.getMinutes() / 60;
   const e = ev.endISO ? new Date(ev.endISO) : new Date(s.getTime() + 3600000);
   const end = e.getHours() + e.getMinutes() / 60 + (e.getDate() !== s.getDate() ? 24 : 0);
-  return { dayIdx, start, end, dateStr: s.toISOString().split('T')[0] };
+  // LOCAL date string (not UTC) so it matches our grid's local dates
+  const dateStr = `${s.getFullYear()}-${String(s.getMonth() + 1).padStart(2, '0')}-${String(s.getDate()).padStart(2, '0')}`;
+  return { dayIdx, start, end, dateStr };
 }
+
+// Build a local YYYY-MM-DD string from a Date (avoids UTC shift)
+const localDateStr = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
 const fmtHour = (h) => `${String(Math.floor(h)).padStart(2, '0')}:${String(Math.round((h - Math.floor(h)) * 60)).padStart(2, '0')}`;
 
@@ -213,8 +219,8 @@ export default function CalendarLane({ events: dbEvents, tasks: dbTasks, deals, 
             const dayEvents = allEvents.filter(e => {
               const p = eventPosition(e);
               if (!p) return false;
-              // Match by date string
-              return p.dateStr === dates[i].toISOString().split('T')[0];
+              // Match by local date string
+              return p.dateStr === localDateStr(dates[i]);
             });
             return (
               <div key={i} className={`cal-daycol ${isToday ? 'cal-daycol-today' : ''}`}>
