@@ -12,6 +12,8 @@ import CommsLane from './lane-comms';
 import AccountsLane from './lane-accounts';
 import ComposeModal from './compose';
 import DealDetailModal from './deal-detail-modal';
+import ContactDetailModal from './contact-detail-modal';
+import SearchResultsPanel from './search-results-panel';
 import EnrichModal from '../components/forms/EnrichModal';
 import PlaybooksList from '../components/playbooks/PlaybooksList';
 import PlaybookDetail from '../components/playbooks/PlaybookDetail';
@@ -29,7 +31,8 @@ export default function BDApp() {
   const [view, setView] = useLocal('bd_view', 'workspace');
   const [leftLane, setLeftLane] = useLocal('bd_leftlane', 'calendar');
   const [layout, setLayout] = useLocal('bd_layout', 'fixed');
-  const [search, setSearch] = useState('');
+  const [search, setSearchRaw] = useState('');
+  const setSearch = (v) => { setSearchRaw(v); setSearchPanelDismissed(false); };
   const [filters, setFilters] = useState({ owners: [], types: [] });
 
   // Cross-lane state
@@ -41,6 +44,8 @@ export default function BDApp() {
   const [composeCtx, setComposeCtx] = useState(null);
   const [showEnrich, setShowEnrich] = useState(false);
   const [selectedPlaybook, setSelectedPlaybook] = useState(null);
+  const [openContactId, setOpenContactId] = useState(null);
+  const [searchPanelDismissed, setSearchPanelDismissed] = useState(false);
 
   // Inbox emails + calendar events lifted to BDApp so they survive view switches
   const [graphEmails, setGraphEmails] = useState([]);
@@ -202,6 +207,25 @@ export default function BDApp() {
           onOpenDeal={selectDeal}
           onSelectComm={selectCommHandler}
         />
+
+        {/* Global search results overlay (only when user is typing ≥2 chars) */}
+        {search.trim().length >= 2 && !searchPanelDismissed && (
+          <SearchResultsPanel
+            query={search}
+            accounts={accounts}
+            contacts={contacts}
+            deals={deals}
+            events={events}
+            graphEvents={graphEvents}
+            tasks={tasks}
+            onPickAccount={(acc) => { pickAccount(acc); setSearchPanelDismissed(true); }}
+            onOpenContact={(id) => { setOpenContactId(id); setSearchPanelDismissed(true); }}
+            onOpenDeal={(d) => { selectDeal(d); }}
+            onSelectEvent={(e) => { setRightContext({ type: 'event', id: e.id }); }}
+            onClose={() => setSearchPanelDismissed(true)}
+            onClearSearch={() => { setSearchRaw(''); setSearchPanelDismissed(false); }}
+          />
+        )}
       </div>
       <Statusbar userName={userName} unreadCount={unreadCount} openDeals={openDealsCount} totalValue={totalValue} />
 
@@ -235,6 +259,15 @@ export default function BDApp() {
           contacts={rawContacts}
           accounts={rawAccounts}
           refetch={refetch}
+        />
+      )}
+
+      {openContactId && (
+        <ContactDetailModal
+          contactId={openContactId}
+          onClose={() => setOpenContactId(null)}
+          refetch={refetch}
+          onCompose={openCompose}
         />
       )}
     </div>

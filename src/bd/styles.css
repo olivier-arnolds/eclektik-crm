@@ -154,6 +154,7 @@ em { font-style: normal; }
   gap: 0;
   width: 100%;
   min-height: 0;
+  position: relative;
 }
 .lane {
   background: var(--bg-1);
