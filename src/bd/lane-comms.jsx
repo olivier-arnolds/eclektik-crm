@@ -1,48 +1,43 @@
 import { useState, useMemo, useEffect } from 'react';
 import { I, ChannelIcon, Avatar, fmtRelative, fmtFull } from './atoms';
-import { graphGet, getInboxEmails } from '../lib/graph';
+import { graphGet } from '../lib/graph';
 import { supabase } from '../supabase';
 import DOMPurify from 'dompurify';
 
 const CHANNEL_OPTIONS = ['all', 'email', 'teams'];
 
-export default function CommsLane({ comms, accounts, contacts, refetch, onCompose, selectedId, onSelect, accountScope, onClearScope, search: globalSearch }) {
+export default function CommsLane({ comms, accounts, contacts, graphEmails: rawGraphEmails, refetch, refetchGraph, onCompose, selectedId, onSelect, accountScope, onClearScope, search: globalSearch }) {
   const [channel, setChannel] = useState('all');
   const [folder, setFolder] = useState('inbox');
   const [localSearch, setLocalSearch] = useState('');
-  const [graphEmails, setGraphEmails] = useState([]);
 
-  // Fetch Graph inbox emails
-  useEffect(() => {
-    if (!localStorage.getItem('graph_token')) return;
-    getInboxEmails(50).then(emails => {
-      const mapped = emails.map(e => ({
-        id: e.id,
-        channel: 'email',
-        dir: 'in',
-        from: e.from,
-        fromAddress: e.fromAddress,
-        subject: e.subject,
-        preview: e.bodyPreview || '',
-        unread: !e.isRead,
-        ts: e.date,
-        hasAttach: e.hasAttachments,
-        archived: false,
-        source: 'graph',
-      }));
-      // Try to match email-address → contact → account
-      const contactByEmail = new Map((contacts || []).filter(c => c.email).map(c => [c.email.toLowerCase(), c]));
-      mapped.forEach(m => {
-        const contact = contactByEmail.get((m.fromAddress || '').toLowerCase());
-        if (contact) {
-          m.accountId = contact.accountId;
-          const acc = (accounts || []).find(a => a.id === contact.accountId);
-          if (acc) m.account = acc.name;
-        }
-      });
-      setGraphEmails(mapped);
-    }).catch(e => console.warn('Graph inbox fetch failed:', e));
-  }, [contacts, accounts]);
+  // Adapt graphEmails from BDApp into internal shape with account linkage
+  const graphEmails = useMemo(() => {
+    const mapped = (rawGraphEmails || []).map(e => ({
+      id: e.id,
+      channel: 'email',
+      dir: 'in',
+      from: e.from,
+      fromAddress: e.fromAddress,
+      subject: e.subject,
+      preview: e.bodyPreview || '',
+      unread: !e.isRead,
+      ts: e.date,
+      hasAttach: e.hasAttachments,
+      archived: false,
+      source: 'graph',
+    }));
+    const contactByEmail = new Map((contacts || []).filter(c => c.email).map(c => [c.email.toLowerCase(), c]));
+    mapped.forEach(m => {
+      const contact = contactByEmail.get((m.fromAddress || '').toLowerCase());
+      if (contact) {
+        m.accountId = contact.accountId;
+        const acc = (accounts || []).find(a => a.id === contact.accountId);
+        if (acc) m.account = acc.name;
+      }
+    });
+    return mapped;
+  }, [rawGraphEmails, contacts, accounts]);
 
   // Merge DB comms + Graph emails (dedupe by id)
   const allComms = useMemo(() => {

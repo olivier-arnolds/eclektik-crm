@@ -1,7 +1,7 @@
 import { useAuth } from '../lib/auth';
 import { I } from './atoms';
 
-export default function Topbar({ theme, setTheme, view, setView, layout, setLayout, search, setSearch, onOpenTweaks, onEnrich }) {
+export default function Topbar({ theme, setTheme, view, setView, leftLane, setLeftLane, layout, setLayout, search, setSearch, onOpenTweaks, onEnrich }) {
   const { session, logout, reconnectMicrosoft, hasGraphToken } = useAuth();
   const userName = session?.user?.user_metadata?.full_name || session?.user?.email || '';
   const userInitials = (userName || '?').split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase();
@@ -19,10 +19,12 @@ export default function Topbar({ theme, setTheme, view, setView, layout, setLayo
       <div className="topbar-sep" />
 
       <div className="topbar-nav">
-        <button className={view === 'workspace' ? 'on' : ''} onClick={() => setView('workspace')} title="Workspace">
-          <I.inbox /> Workspace
+        <button className={view === 'workspace' && leftLane === 'calendar' ? 'on' : ''}
+          onClick={() => { setView('workspace'); setLeftLane('calendar'); }} title="Calendar + Comms + Accounts">
+          <I.calendar /> Workspace
         </button>
-        <button className={view === 'funnel' ? 'on' : ''} onClick={() => setView('funnel')} title="Funnel">
+        <button className={view === 'workspace' && leftLane === 'funnel' ? 'on' : ''}
+          onClick={() => { setView('workspace'); setLeftLane('funnel'); }} title="Funnel + Comms + Accounts">
           <I.funnel /> Funnel
         </button>
         <button className={view === 'playbooks' ? 'on' : ''} onClick={() => setView('playbooks')} title="Playbooks">

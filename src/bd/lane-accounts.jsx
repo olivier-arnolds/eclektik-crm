@@ -4,9 +4,26 @@ import AddAccountModal from './add-account-modal';
 import AddContactModal from './add-contact-modal';
 import ContactSearchModal from './contact-search-modal';
 import InactivateAccountModal from './inactivate-modal';
+import ContactDetailModal from './contact-detail-modal';
 
-export default function AccountsLane({ context, accounts, contacts, deals, comms, events, tasks, onPickAccount, onCompose, onOpenDeal, onSelectComm, search, refetch }) {
-  const resolved = useMemo(() => resolveContext(context, { accounts, contacts, deals, comms, events, tasks }), [context, accounts, contacts, deals, comms, events, tasks]);
+export default function AccountsLane({ context, accounts, contacts, deals, comms, events, graphEvents, tasks, onPickAccount, onCompose, onOpenDeal, onSelectComm, search, refetch }) {
+  // Merge DB events + graph events for context resolution
+  const allEvents = useMemo(() => {
+    const mappedGraph = (graphEvents || []).map(e => ({
+      id: 'graph:' + e.id,
+      title: e.title,
+      startISO: e.startAt,
+      endISO: e.endAt,
+      attendees: e.attendees,
+      attendeesEmails: e.attendeesEmails,
+      channel: e.isOnline ? 'teams' : null,
+      accountId: null,
+    }));
+    const ids = new Set((events || []).map(e => e.id));
+    return [...(events || []), ...mappedGraph.filter(e => !ids.has(e.id))];
+  }, [events, graphEvents]);
+
+  const resolved = useMemo(() => resolveContext(context, { accounts, contacts, deals, comms, events: allEvents, tasks }), [context, accounts, contacts, deals, comms, allEvents, tasks]);
   const [showAddAccount, setShowAddAccount] = useState(false);
 
   if (!resolved) {
@@ -29,7 +46,7 @@ export default function AccountsLane({ context, accounts, contacts, deals, comms
     );
   }
 
-  return <AccountDetail {...resolved} accounts={accounts} contacts={contacts} deals={deals} comms={comms} events={events} tasks={tasks}
+  return <AccountDetail {...resolved} accounts={accounts} contacts={contacts} deals={deals} comms={comms} events={allEvents} tasks={tasks}
     onPickAccount={onPickAccount} onCompose={onCompose} onOpenDeal={onOpenDeal} onSelectComm={onSelectComm} refetch={refetch} />;
 }
 
@@ -49,24 +66,70 @@ function resolveContext(context, data) {
   if (context.type === 'event') {
     const e = events.find(x => x.id === context.id);
     if (!e) return null;
-    // First try direct accountId link (DB events)
+
+    // Extract email addresses from attendees string (format: "Name <email>, Name <email>" OR "name, name" OR emails only)
+    const extractEmails = (str) => {
+      if (!str) return [];
+      const emails = [];
+      // Match anything with <email>
+      const angleRe = /<([^>]+)>/g;
+      let m;
+      while ((m = angleRe.exec(str)) !== null) emails.push(m[1].trim().toLowerCase());
+      // Match bare emails in text (common after comma-split without brackets)
+      const emailRe = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g;
+      while ((m = emailRe.exec(str)) !== null) {
+        const addr = m[1].toLowerCase();
+        if (!emails.includes(addr)) emails.push(addr);
+      }
+      return emails;
+    };
+
+    const attendeeEmails = (e.attendeesEmails && e.attendeesEmails.length)
+      ? e.attendeesEmails.map(s => (s || '').toLowerCase())
+      : extractEmails(e.attendees);
+
+    // 1) Direct accountId link (DB events)
     let acc = accounts.find(a => a.id === e.accountId);
-    // Fallback: match attendee emails/names against contacts
-    if (!acc && e.attendees) {
-      const attendeeList = e.attendees.split(/[,;]/).map(s => s.trim().toLowerCase());
-      const matchedContact = contacts.find(c =>
-        attendeeList.some(a => a.includes((c.email || '').toLowerCase()) || a.includes((c.name || '').toLowerCase()))
-      );
-      if (matchedContact?.accountId) {
-        acc = accounts.find(a => a.id === matchedContact.accountId);
+
+    // 2) Match attendee email(s) against our contacts
+    if (!acc && attendeeEmails.length) {
+      const contactByEmail = new Map(contacts.filter(c => c.email).map(c => [c.email.toLowerCase(), c]));
+      for (const email of attendeeEmails) {
+        const c = contactByEmail.get(email);
+        if (c?.accountId) {
+          acc = accounts.find(a => a.id === c.accountId);
+          if (acc) break;
+        }
       }
     }
+
+    // 3) Match attendee email domain to company website domain
+    if (!acc && attendeeEmails.length) {
+      for (const email of attendeeEmails) {
+        const domain = email.split('@')[1];
+        if (!domain) continue;
+        const found = accounts.find(a => {
+          const web = (a.website || '').toLowerCase();
+          return web && (web.includes(domain) || domain.includes(web.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0]));
+        });
+        if (found) { acc = found; break; }
+      }
+    }
+
+    // 4) Match attendee name against contact name
+    if (!acc && e.attendees) {
+      const attNames = e.attendees.toLowerCase();
+      const matched = contacts.find(c => c.name && attNames.includes(c.name.toLowerCase()));
+      if (matched?.accountId) acc = accounts.find(a => a.id === matched.accountId);
+    }
+
     if (acc) {
       return { account: acc, highlight: { kind: 'event', item: e, title: e.title, body: e.attendees } };
     }
-    // No account found — show a "pseudo-account" view with event info only
+
+    // No account found — show pseudo-account view with event info
     return {
-      account: { id: null, name: e.title, type: 'Calendar event', logoHue: 200 },
+      account: { id: null, name: e.title || '(Untitled meeting)', type: 'Calendar event', logoHue: 200 },
       highlight: { kind: 'event', item: e, title: e.title, body: e.attendees || (e.startISO ? new Date(e.startISO).toLocaleString('en') : '') }
     };
   }
@@ -133,6 +196,7 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, comms, e
   const [showAddContact, setShowAddContact] = useState(false);
   const [showSearchContact, setShowSearchContact] = useState(false);
   const [showInactivate, setShowInactivate] = useState(false);
+  const [detailContactId, setDetailContactId] = useState(null);
   const accContacts = contacts.filter(c => c.accountId === account.id);
   const accDeals = deals.filter(d => d.accountId === account.id);
   const openDeals = accDeals.filter(d => ['qualify', 'develop', 'proposal', 'close'].includes(d.stage));
@@ -216,7 +280,8 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, comms, e
           <div className="contacts-grid">
             {accContacts.length === 0 && <div className="empty" style={{ padding: '8px 0', textAlign: 'left' }}>No contacts</div>}
             {accContacts.map(c => (
-              <div key={c.id} className="contact-card">
+              <div key={c.id} className="contact-card" style={{ cursor: 'pointer' }}
+                onClick={() => setDetailContactId(c.id)}>
                 <div style={{ width: 22, height: 22, borderRadius: 11, background: c.avatarBg || '#F1EFE8', color: c.avatarColor || '#888', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 600 }}>
                   {c.initials || (c.name || '?').split(' ').map(w => w[0]).slice(0, 2).join('')}
                 </div>
@@ -225,7 +290,7 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, comms, e
                   {c.role && <div className="contact-role">{c.role}</div>}
                 </div>
                 {c.email && onCompose && (
-                  <button className="icon-btn tiny" onClick={() => onCompose({ to: c.email, contact: c })} title="Email">
+                  <button className="icon-btn tiny" onClick={(e) => { e.stopPropagation(); onCompose({ to: c.email, contact: c }); }} title="Email">
                     <I.send />
                   </button>
                 )}
@@ -344,6 +409,14 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, comms, e
             // Navigate back to the accounts list after inactivation
             if (onPickAccount) onPickAccount(null);
           }}
+        />
+      )}
+      {detailContactId && (
+        <ContactDetailModal
+          contactId={detailContactId}
+          onClose={() => setDetailContactId(null)}
+          refetch={refetch}
+          onCompose={onCompose}
         />
       )}
     </div>

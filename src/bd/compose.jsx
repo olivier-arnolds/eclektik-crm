@@ -1,13 +1,21 @@
 import { useState, useEffect, useRef } from 'react';
-import { I, ChannelIcon, fmtMoney } from './atoms';
+import { I, ChannelIcon } from './atoms';
 import { sendEmail, replyToEmail } from '../lib/graph';
 
-function ContactPicker({ value, onChange, contacts }) {
-  const [open, setOpen] = useState(false);
-  const [query, setQuery] = useState(value || '');
-  const ref = useRef(null);
+// Parse string "foo@bar.com, baz@qux.com" → array; also extract from "Name <email>"
+function parseRecipients(str) {
+  if (!str) return [];
+  return str.split(/[,;]/).map(s => {
+    const m = s.match(/<([^>]+)>/);
+    return (m ? m[1] : s).trim();
+  }).filter(Boolean);
+}
 
-  useEffect(() => { setQuery(value || ''); }, [value]);
+function MultiContactPicker({ values, onChange, contacts, placeholder }) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const ref = useRef(null);
+  const inputRef = useRef(null);
 
   useEffect(() => {
     if (!open) return;
@@ -16,36 +24,67 @@ function ContactPicker({ value, onChange, contacts }) {
     return () => document.removeEventListener('mousedown', handler);
   }, [open]);
 
-  const suggestions = (contacts || []).filter(c =>
-    c.email && (
-      !query ||
-      c.email.toLowerCase().includes(query.toLowerCase()) ||
-      (c.name || '').toLowerCase().includes(query.toLowerCase()) ||
-      (c.account || '').toLowerCase().includes(query.toLowerCase())
-    )
-  ).slice(0, 8);
+  const suggestions = (contacts || []).filter(c => {
+    if (!c.email) return false;
+    if (values.includes(c.email)) return false;
+    if (!query) return true;
+    const q = query.toLowerCase();
+    return c.email.toLowerCase().includes(q)
+      || (c.name || '').toLowerCase().includes(q)
+      || (c.account || '').toLowerCase().includes(q);
+  }).slice(0, 8);
 
-  const pick = (c) => {
-    onChange(c.email);
-    setQuery(c.email);
-    setOpen(false);
+  const addEmail = (email) => {
+    const clean = email.trim();
+    if (!clean) return;
+    if (!values.includes(clean)) onChange([...values, clean]);
+    setQuery('');
+    inputRef.current?.focus();
+  };
+
+  const removeEmail = (email) => {
+    onChange(values.filter(v => v !== email));
+  };
+
+  const onKeyDown = (e) => {
+    if ((e.key === 'Enter' || e.key === ',' || e.key === ';' || e.key === 'Tab') && query.trim()) {
+      e.preventDefault();
+      addEmail(query);
+    } else if (e.key === 'Backspace' && !query && values.length > 0) {
+      removeEmail(values[values.length - 1]);
+    }
   };
 
   return (
-    <div ref={ref} style={{ flex: 1, position: 'relative' }}>
-      <input value={query}
-        onChange={e => { setQuery(e.target.value); onChange(e.target.value); setOpen(true); }}
+    <div ref={ref} style={{ flex: 1, position: 'relative', display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center', minHeight: 22 }}>
+      {values.map(v => (
+        <span key={v} style={{
+          display: 'inline-flex', alignItems: 'center', gap: 4,
+          padding: '2px 6px 2px 8px', borderRadius: 10, fontSize: 11,
+          background: 'var(--accent-tint)', color: 'var(--accent)',
+          fontFamily: 'var(--font-mono)',
+        }}>
+          {v}
+          <button onClick={() => removeEmail(v)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--accent)', padding: 0, display: 'flex' }}>
+            <I.close />
+          </button>
+        </span>
+      ))}
+      <input ref={inputRef}
+        value={query}
+        onChange={e => { setQuery(e.target.value); setOpen(true); }}
         onFocus={() => setOpen(true)}
-        placeholder="recipient@example.com or search by name…"
-        style={{ width: '100%', background: 'transparent', border: 'none', outline: 'none', fontSize: 13, color: 'var(--text-1)', padding: '4px 0' }} />
+        onKeyDown={onKeyDown}
+        placeholder={values.length === 0 ? placeholder : ''}
+        style={{ flex: 1, minWidth: 140, background: 'transparent', border: 'none', outline: 'none', fontSize: 13, color: 'var(--text-1)', padding: '4px 0' }} />
       {open && suggestions.length > 0 && (
         <div style={{
           position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4,
           background: 'var(--bg-1)', borderRadius: 8, boxShadow: 'var(--shadow-2)',
-          border: '0.5px solid var(--sep)', zIndex: 10, maxHeight: 240, overflowY: 'auto',
+          border: '0.5px solid var(--sep)', zIndex: 100, maxHeight: 240, overflowY: 'auto',
         }}>
           {suggestions.map(c => (
-            <div key={c.id} onClick={() => pick(c)}
+            <div key={c.id} onMouseDown={(e) => { e.preventDefault(); addEmail(c.email); }}
               style={{ padding: '8px 12px', cursor: 'pointer', borderBottom: '0.5px solid var(--sep)', display: 'flex', flexDirection: 'column', gap: 2 }}
               onMouseEnter={e => e.currentTarget.style.background = 'var(--fill-1)'}
               onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
@@ -65,10 +104,12 @@ const CHANNELS = ['email', 'teams'];
 const TEMPLATES = ['Follow-up', 'Proposal cover', 'Check-in', 'Escalation', 'Meeting recap'];
 
 export default function ComposeModal({ ctx, onClose, onSent, accounts, contacts, deals }) {
-  const [channel, setChannel] = useState(ctx?.replyTo?.channel || 'email');
+  const [channel, setChannel] = useState(ctx?.replyTo?.channel === 'teams' ? 'teams' : 'email');
   const [tone, setTone] = useState('Professional');
   const [template, setTemplate] = useState('');
-  const [to, setTo] = useState(ctx?.to || ctx?.replyTo?.from || '');
+  const [toList, setToList] = useState(() => parseRecipients(ctx?.to || ctx?.replyTo?.fromAddress || ctx?.replyTo?.from || ''));
+  const [ccList, setCcList] = useState([]);
+  const [showCc, setShowCc] = useState(false);
   const [subject, setSubject] = useState(
     ctx?.replyTo ? (ctx.replyTo.subject?.startsWith('Re:') ? ctx.replyTo.subject : 'Re: ' + (ctx.replyTo.subject || '')) :
     ctx?.forwardOf ? 'Fwd: ' + (ctx.forwardOf.subject || '') : ''
@@ -80,13 +121,12 @@ export default function ComposeModal({ ctx, onClose, onSent, accounts, contacts,
   const [streaming, setStreaming] = useState(false);
   const [sending, setSending] = useState(false);
 
-  const contact = ctx?.contact || (ctx?.replyTo?.accountId && contacts.find(c => c.email === ctx?.replyTo?.from));
-  const account = contact?.accountId ? accounts.find(a => a.id === contact.accountId) : null;
+  const contact = ctx?.contact || (ctx?.replyTo?.fromAddress && contacts?.find(c => c.email?.toLowerCase() === ctx.replyTo.fromAddress.toLowerCase()));
+  const account = contact?.accountId ? accounts?.find(a => a.id === contact.accountId) : null;
 
   const generateDraft = () => {
     setStreaming(true);
     setDraft('');
-    // Simple template-based draft (future: replace with Anthropic API call)
     const greeting = tone === 'Warm' ? `Hi ${contact?.name?.split(' ')[0] || 'there'},` :
                      tone === 'Direct' ? `${contact?.name?.split(' ')[0] || 'Hi'} –` :
                      tone === 'Executive' ? `Dear ${contact?.name?.split(' ')[0] || 'colleague'},` :
@@ -101,16 +141,11 @@ export default function ComposeModal({ ctx, onClose, onSent, accounts, contacts,
     }[template] || '';
     const closing = tone === 'Warm' ? 'Cheers,' : tone === 'Executive' ? 'Kind regards,' : 'Best,';
     const full = `${greeting}\n\n${templateBody}\n\n${closing}\n${localStorage.getItem('user_first_name') || ''}`;
-    // Character-by-character streaming
     let i = 0;
     const timer = setInterval(() => {
       setDraft(full.slice(0, i));
       i += 3;
-      if (i >= full.length) {
-        clearInterval(timer);
-        setDraft(full);
-        setStreaming(false);
-      }
+      if (i >= full.length) { clearInterval(timer); setDraft(full); setStreaming(false); }
     }, 18);
   };
 
@@ -124,22 +159,21 @@ export default function ComposeModal({ ctx, onClose, onSent, accounts, contacts,
       alert('Teams posts require opening Teams directly.');
       return;
     }
-    if (!to.trim()) {
-      alert('Please enter a recipient email address.');
+    if (toList.length === 0) {
+      alert('Please add at least one recipient.');
       return;
     }
     if (!localStorage.getItem('graph_token')) {
-      alert('Microsoft not connected. Click "⚠ Reconnect Microsoft" in the top bar first.');
+      alert('Microsoft not connected. Click "⚠ Reconnect" in the top bar first.');
       return;
     }
     setSending(true);
     try {
-      // Convert plain text draft to simple HTML with line breaks
       const htmlBody = draft.replace(/\n/g, '<br>');
       if (ctx?.replyTo?.id && /^[A-Za-z0-9=+/_-]{40,}$/.test(ctx.replyTo.id)) {
         await replyToEmail(ctx.replyTo.id, htmlBody);
       } else {
-        await sendEmail({ to: to.trim(), subject, body: htmlBody });
+        await sendEmail({ to: toList, cc: ccList, subject, body: htmlBody });
       }
       setSending(false);
       if (onSent) onSent();
@@ -150,33 +184,39 @@ export default function ComposeModal({ ctx, onClose, onSent, accounts, contacts,
       console.error('Send failed:', err);
       const msg = err?.message || String(err);
       if (msg.includes('401') || msg.includes('unauthorized') || msg.includes('token')) {
-        alert('Microsoft token expired. Click "⚠ Reconnect Microsoft" and try again.');
+        alert('Microsoft token expired. Click "⚠ Reconnect" and try again.');
       } else {
         alert('Send failed: ' + msg);
       }
     }
   };
 
-  const copy = () => {
-    navigator.clipboard.writeText(draft);
-  };
+  const copy = () => navigator.clipboard.writeText(draft);
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal modal-compose" onClick={e => e.stopPropagation()}>
-        <div className="compose-header">
-          <div className="compose-to" style={{ position: 'relative' }}>
+        <div className="compose-header" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <span className="compose-label">To</span>
-            <ContactPicker value={to} onChange={setTo} contacts={contacts} />
+            <MultiContactPicker values={toList} onChange={setToList} contacts={contacts} placeholder="Add recipients (type email or search)…" />
+            {!showCc && <button className="btn-ghost tiny" onClick={() => setShowCc(true)}>+ Cc</button>}
+            <div style={{ display: 'flex', gap: 4 }}>
+              {CHANNELS.map(c => (
+                <button key={c} className={`chip ${channel === c ? 'chip-on' : ''}`} onClick={() => setChannel(c)}>
+                  <ChannelIcon ch={c} size={10} />{c}
+                </button>
+              ))}
+            </div>
+            <button className="icon-btn" onClick={onClose}><I.close /></button>
           </div>
-          <div style={{ display: 'flex', gap: 4 }}>
-            {CHANNELS.map(c => (
-              <button key={c} className={`chip ${channel === c ? 'chip-on' : ''}`} onClick={() => setChannel(c)}>
-                <ChannelIcon ch={c} size={10} />{c}
-              </button>
-            ))}
-          </div>
-          <button className="icon-btn" onClick={onClose}><I.close /></button>
+          {showCc && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span className="compose-label">Cc</span>
+              <MultiContactPicker values={ccList} onChange={setCcList} contacts={contacts} placeholder="Add Cc recipients…" />
+              <button className="btn-ghost tiny" onClick={() => { setCcList([]); setShowCc(false); }}>Remove Cc</button>
+            </div>
+          )}
         </div>
 
         <div className="compose-split">

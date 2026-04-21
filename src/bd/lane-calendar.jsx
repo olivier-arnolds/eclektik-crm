@@ -1,6 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { I, fmtMoney, OwnerDot, ChannelIcon, OWNERS } from './atoms';
-import { getCalendarEvents } from '../lib/graph';
 import { supabase } from '../supabase';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
@@ -38,13 +37,27 @@ function eventPosition(ev) {
 
 const fmtHour = (h) => `${String(Math.floor(h)).padStart(2, '0')}:${String(Math.round((h - Math.floor(h)) * 60)).padStart(2, '0')}`;
 
-export default function CalendarLane({ events: dbEvents, tasks: dbTasks, deals, accounts, refetch, onSelectEvent }) {
+export default function CalendarLane({ events: dbEvents, tasks: dbTasks, deals, accounts, contacts, graphEvents: rawGraphEvents, refetch, refetchGraph, onSelectEvent }) {
   const [week, setWeek] = useState(0);
   const [overlay, setOverlay] = useState({ OA: false, YK: false });
   const [addTaskDay, setAddTaskDay] = useState(null);
-  const [graphEvents, setGraphEvents] = useState([]);
   const scrollRef = useRef(null);
   const didScrollRef = useRef(false);
+
+  // Adapt graphEvents from BDApp into our internal shape
+  const graphEvents = useMemo(() => (rawGraphEvents || []).map(e => ({
+    id: 'graph:' + e.id,
+    kind: 'meeting',
+    title: e.title,
+    startISO: e.startAt ? (e.startAt.endsWith('Z') ? e.startAt : e.startAt + 'Z') : null,
+    endISO: e.endAt ? (e.endAt.endsWith('Z') ? e.endAt : e.endAt + 'Z') : null,
+    attendees: e.attendees,
+    attendeesEmails: e.attendeesEmails,
+    channel: e.isOnline ? 'teams' : null,
+    meetingUrl: e.meetingUrl,
+    owner: 'MVG',
+    source: 'graph',
+  })), [rawGraphEvents]);
 
   const dates = useMemo(() => dayDatesForWeek(week), [week]);
   const weekStart = dates[0];
@@ -63,33 +76,6 @@ export default function CalendarLane({ events: dbEvents, tasks: dbTasks, deals, 
     const i = (d.getDay() + 6) % 7;
     return (i >= 0 && i <= 4 && week === 0) ? i : -1;
   }, [week]);
-
-  // Fetch Graph calendar events (next 21 days to cover current + next week navigation)
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const list = await getCalendarEvents(21);
-        if (cancelled) return;
-        const mapped = (list || []).map(e => ({
-          id: 'graph:' + e.id,
-          kind: 'meeting',
-          title: e.title,
-          startISO: e.startAt ? (e.startAt.endsWith('Z') ? e.startAt : e.startAt + 'Z') : null,
-          endISO: e.endAt ? (e.endAt.endsWith('Z') ? e.endAt : e.endAt + 'Z') : null,
-          attendees: e.attendees,
-          channel: e.isOnline ? 'teams' : null,
-          meetingUrl: e.meetingUrl,
-          owner: 'MVG',
-          source: 'graph',
-        }));
-        setGraphEvents(mapped);
-      } catch (err) {
-        console.warn('Graph calendar fetch failed:', err);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
 
   // Merge DB events + graph events
   const allEvents = useMemo(() => {

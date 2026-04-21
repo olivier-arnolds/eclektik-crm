@@ -374,6 +374,19 @@ em { font-style: normal; }
   font-size: 13px; line-height: 1.65;
   color: var(--text-1);
 }
+/* Force email HTML to readable colors regardless of theme.
+   Many emails come with inline "color: #333" which is invisible on dark bg. */
+.theme-dark .rp-body {
+  background: #ffffff;
+  color: #1d1d1f;
+  border-radius: 6px;
+  margin: 8px;
+  padding: 12px 14px;
+}
+.theme-dark .rp-body * {
+  color: inherit !important;
+}
+.theme-dark .rp-body a { color: #0071e3 !important; }
 .rp-p { margin: 0 0 8px; text-wrap: pretty; }
 .rp-p-spacer { height: 8px; }
 .rp-attachments {
@@ -1129,6 +1142,7 @@ em { font-style: normal; }
 
 /* stabilize account lane: fixed-width container, internal scroll only */
 .acc-hero { min-height: 64px; }
+.lane-accounts { min-width: 300px; }
 .lane-accounts .acc-scroll { scrollbar-gutter: stable; }
 
 /* Scrollbars */

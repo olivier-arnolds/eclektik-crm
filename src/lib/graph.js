@@ -21,17 +21,32 @@ export async function graphGet(endpoint) {
 export async function getCalendarEvents(daysAhead = 14) {
   const now = new Date();
   const end = new Date(now.getTime() + daysAhead * 86400000);
-  const startStr = now.toISOString();
-  const endStr = end.toISOString();
-  const data = await graphGet(`/me/calendarView?startDateTime=${startStr}&endDateTime=${endStr}&$top=50&$orderby=start/dateTime&$select=id,subject,start,end,location,attendees,isOnlineMeeting,onlineMeetingUrl`);
-  if (!data?.value) return [];
-  return data.value.map(e => ({
+  return getCalendarEventsRange(now.toISOString(), end.toISOString());
+}
+
+export async function getCalendarEventsRange(startISO, endISO) {
+  // Paginate in case of many events
+  let all = [];
+  let url = `/me/calendarView?startDateTime=${encodeURIComponent(startISO)}&endDateTime=${encodeURIComponent(endISO)}&$top=500&$orderby=start/dateTime&$select=id,subject,start,end,location,attendees,isOnlineMeeting,onlineMeetingUrl`;
+  let safety = 0;
+  while (url && safety < 20) {
+    const data = await graphGet(url);
+    if (!data?.value) break;
+    all = all.concat(data.value);
+    const next = data['@odata.nextLink'];
+    if (!next) break;
+    // Strip the Graph base from nextLink to feed back to graphGet
+    url = next.replace(/^https:\/\/graph\.microsoft\.com\/v1\.0/, '');
+    safety++;
+  }
+  return all.map(e => ({
     id: e.id,
     title: e.subject || 'Untitled',
     startAt: e.start?.dateTime,
     endAt: e.end?.dateTime,
     location: e.location?.displayName || (e.isOnlineMeeting ? 'Teams meeting' : ''),
     attendees: (e.attendees || []).map(a => a.emailAddress?.name || a.emailAddress?.address).join(', '),
+    attendeesEmails: (e.attendees || []).map(a => a.emailAddress?.address).filter(Boolean),
     isOnline: e.isOnlineMeeting,
     meetingUrl: e.onlineMeetingUrl,
   }));
@@ -193,6 +208,11 @@ export async function getChatMessages(chatId, top = 20) {
 export async function sendEmail({ to, subject, body, cc, isHtml = true }) {
   const token = localStorage.getItem('graph_token');
   if (!token) throw new Error('No Microsoft token. Please reconnect.');
+
+  // Normalize to + cc to arrays of email strings
+  const toArr = Array.isArray(to) ? to : (to || '').split(/[,;]/).map(s => s.trim()).filter(Boolean);
+  const ccArr = Array.isArray(cc) ? cc : (cc ? (cc || '').split(/[,;]/).map(s => s.trim()).filter(Boolean) : []);
+
   const resp = await fetch('https://graph.microsoft.com/v1.0/me/sendMail', {
     method: 'POST',
     headers: {
@@ -203,8 +223,8 @@ export async function sendEmail({ to, subject, body, cc, isHtml = true }) {
       message: {
         subject,
         body: { contentType: isHtml ? 'HTML' : 'Text', content: body },
-        toRecipients: [{ emailAddress: { address: to } }],
-        ...(cc ? { ccRecipients: [{ emailAddress: { address: cc } }] } : {})
+        toRecipients: toArr.map(addr => ({ emailAddress: { address: addr } })),
+        ...(ccArr.length ? { ccRecipients: ccArr.map(addr => ({ emailAddress: { address: addr } })) } : {})
       }
     })
   });
