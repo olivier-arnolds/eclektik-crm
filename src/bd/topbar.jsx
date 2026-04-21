@@ -1,7 +1,7 @@
 import { useAuth } from '../lib/auth';
 import { I } from './atoms';
 
-export default function Topbar({ theme, setTheme, view, setView, layout, setLayout, search, setSearch, onOpenTweaks }) {
+export default function Topbar({ theme, setTheme, view, setView, layout, setLayout, search, setSearch, onOpenTweaks, onEnrich }) {
   const { session, logout, reconnectMicrosoft, hasGraphToken } = useAuth();
   const userName = session?.user?.user_metadata?.full_name || session?.user?.email || '';
   const userInitials = (userName || '?').split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase();
@@ -25,6 +25,9 @@ export default function Topbar({ theme, setTheme, view, setView, layout, setLayo
         <button className={view === 'funnel' ? 'on' : ''} onClick={() => setView('funnel')} title="Funnel">
           <I.funnel /> Funnel
         </button>
+        <button className={view === 'playbooks' ? 'on' : ''} onClick={() => setView('playbooks')} title="Playbooks">
+          <I.sparkle /> Playbooks
+        </button>
       </div>
 
       <button className="btn-ghost" onClick={toggleLayout} title="Toggle focus layout">
@@ -45,6 +48,11 @@ export default function Topbar({ theme, setTheme, view, setView, layout, setLayo
       </div>
 
       <div className="topbar-right">
+        {onEnrich && (
+          <button className="btn-ghost tiny" onClick={onEnrich} title="Enrich via Surfe">
+            ◈ Enrich
+          </button>
+        )}
         {!hasGraphToken && (
           <button className="btn-ghost" onClick={reconnectMicrosoft} style={{ color: 'var(--warn)' }} title="Microsoft token expired">
             ⚠ Reconnect
