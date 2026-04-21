@@ -7,7 +7,8 @@ import LoginScreen from './components/auth/LoginScreen'
 
 function Root() {
   const { session, loading } = useAuth()
-  const isBD = window.location.pathname.startsWith('/bd')
+  // Default: new BD app. Old app kept as fallback on /old
+  const isOld = window.location.pathname.startsWith('/old')
 
   if (loading) {
     return (
@@ -24,7 +25,7 @@ function Root() {
     return <LoginScreen />
   }
 
-  return isBD ? <BDApp /> : <BDDashboard />
+  return isOld ? <BDDashboard /> : <BDApp />
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(

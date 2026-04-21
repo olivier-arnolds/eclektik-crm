@@ -48,7 +48,7 @@ export function AuthProvider({ children }) {
       provider: 'azure',
       options: {
         scopes: 'email profile openid User.Read Mail.Read Mail.Send Calendars.Read',
-        redirectTo: window.location.origin + (window.location.pathname.startsWith('/bd') ? '/bd' : '')
+        redirectTo: window.location.origin + (window.location.pathname.startsWith('/old') ? '/old' : '')
       }
     })
     if (error) setError(error.message)
@@ -66,7 +66,7 @@ export function AuthProvider({ children }) {
       provider: 'azure',
       options: {
         scopes: 'email profile openid User.Read Mail.Read Mail.Send Calendars.Read',
-        redirectTo: window.location.origin + (window.location.pathname.startsWith('/bd') ? '/bd' : '')
+        redirectTo: window.location.origin + (window.location.pathname.startsWith('/old') ? '/old' : '')
       }
     })
     if (error) setError(error.message)
