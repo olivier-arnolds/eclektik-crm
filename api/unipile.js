@@ -40,11 +40,29 @@ async function unipileRequest(method, path, body, isFormData) {
 }
 
 export default async function handler(req, res) {
+  const { action } = req.query;
+
+  // Debug endpoint — does NOT leak secret values
+  if (action === 'debug') {
+    return res.status(200).json({
+      hasDSN: !!DSN,
+      dsnLength: DSN ? DSN.length : 0,
+      dsnPrefix: DSN ? DSN.split('.')[0] : null,
+      hasToken: !!TOKEN,
+      tokenLength: TOKEN ? TOKEN.length : 0,
+      tokenPrefix: TOKEN ? TOKEN.slice(0, 6) + '…' : null,
+      env: {
+        UNIPILE_API_KEY: !!process.env.UNIPILE_API_KEY,
+        UNIPILE_TOKEN: !!process.env.UNIPILE_TOKEN,
+        UNIPILE_BASE_URL: !!process.env.UNIPILE_BASE_URL,
+        UNIPILE_DSN: !!process.env.UNIPILE_DSN,
+      }
+    });
+  }
+
   if (!DSN || !TOKEN) {
     return res.status(500).json({ error: 'Unipile not configured (missing DSN or TOKEN)' });
   }
-
-  const { action } = req.query;
 
   try {
     // ── GENERATE HOSTED AUTH LINK (for connecting a LinkedIn account) ──
