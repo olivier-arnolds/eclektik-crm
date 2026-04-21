@@ -48,6 +48,20 @@ export default function Topbar({ theme, setTheme, view, setView, layout, setLayo
       </div>
 
       <div className="topbar-right">
+        <button className="btn-ghost tiny" title="Connect LinkedIn via Unipile"
+          onClick={async () => {
+            try {
+              const resp = await fetch(`/api/unipile?action=connect-linkedin&redirect_url=${encodeURIComponent(window.location.href)}`);
+              const data = await resp.json();
+              const url = data?.data?.url || data?.url;
+              if (url) window.open(url, '_blank', 'width=700,height=800');
+              else alert('Failed to generate LinkedIn connect link: ' + (data?.error || 'unknown error'));
+            } catch (e) {
+              alert('Connect failed: ' + e.message);
+            }
+          }}>
+          ◈ LinkedIn
+        </button>
         {onEnrich && (
           <button className="btn-ghost tiny" onClick={onEnrich} title="Enrich via Surfe">
             ◈ Enrich

@@ -47,6 +47,24 @@ export default async function handler(req, res) {
   const { action } = req.query;
 
   try {
+    // ── GENERATE HOSTED AUTH LINK (for connecting a LinkedIn account) ──
+    if (action === 'connect-linkedin') {
+      const { redirect_url } = req.query;
+      const successUrl = redirect_url || 'https://crm.eclectik-insights.co';
+      // Expires 1 hour from now
+      const expiresOn = new Date(Date.now() + 3600 * 1000).toISOString();
+      const body = {
+        type: 'create',
+        providers: ['LINKEDIN'],
+        api_url: `https://${DSN}`,
+        expiresOn,
+        success_redirect_url: successUrl,
+        failure_redirect_url: successUrl,
+      };
+      const result = await unipileRequest('POST', '/hosted/accounts/link', body);
+      return res.status(result.error ? 400 : 200).json(result);
+    }
+
     // ── START NEW CHAT (send first message to a LinkedIn contact) ──
     if (action === 'start-chat' && req.method === 'POST') {
       const { account_id, attendee_id, text } = req.body;

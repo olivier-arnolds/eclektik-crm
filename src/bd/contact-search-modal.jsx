@@ -127,7 +127,27 @@ export default function ContactSearchModal({ account, onClose, onAdded }) {
             </button>
           </div>
 
-          {error && <div style={{ fontSize: 12, color: 'var(--danger)' }}>⚠ {error}</div>}
+          {error && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ fontSize: 12, color: 'var(--danger)' }}>⚠ {error}</div>
+              {error.includes('No LinkedIn account') && (
+                <button className="btn-primary tiny" style={{ alignSelf: 'flex-start' }}
+                  onClick={async () => {
+                    try {
+                      const resp = await fetch(`/api/unipile?action=connect-linkedin&redirect_url=${encodeURIComponent(window.location.href)}`);
+                      const data = await resp.json();
+                      const url = data?.data?.url || data?.url;
+                      if (url) window.open(url, '_blank', 'width=700,height=800');
+                      else alert('Failed to generate connect link: ' + (data?.error || 'unknown error'));
+                    } catch (e) {
+                      alert('Connect failed: ' + e.message);
+                    }
+                  }}>
+                  → Connect LinkedIn account
+                </button>
+              )}
+            </div>
+          )}
 
           <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6, minHeight: 200 }}>
             {results.length === 0 && !searching && !error && (
