@@ -7,14 +7,19 @@ export function useBDData() {
   const raw = usePipelineData();
 
   const data = useMemo(() => {
-    const accounts  = (raw.accounts || []).map(adaptAccount);
-    const contacts  = (raw.contacts || []).map(c => adaptContact(c, accounts));
-    const deals     = (raw.allItems || []).map(d => adaptDeal(d, raw.accounts || [], raw.contacts || []));
-    const comms     = (raw.comms || []).map(c => adaptComm(c, raw.allItems || [], raw.accounts || []));
-    const events    = (raw.calEvents || []).map(e => adaptCalEvent(e, raw.allItems || [], raw.accounts || []));
-    const tasks     = (raw.tasks || []).map(t => adaptTask(t, raw.allItems || [], raw.accounts || []));
-    const followUps = (raw.followUps || []).map(f => adaptFollowUp(f, raw.allItems || [], raw.accounts || []));
-    return { accounts, contacts, deals, comms, events, tasks, followUps };
+    // Filter inactive accounts and contacts out of all views
+    const isActive = (row) => (row?.stage || '').toLowerCase() !== 'inactive';
+    const activeRawAccounts = (raw.accounts || []).filter(isActive);
+    const activeRawContacts = (raw.contacts || []).filter(isActive);
+
+    const accounts  = activeRawAccounts.map(adaptAccount);
+    const contacts  = activeRawContacts.map(c => adaptContact(c, accounts));
+    const deals     = (raw.allItems || []).map(d => adaptDeal(d, activeRawAccounts, activeRawContacts));
+    const comms     = (raw.comms || []).map(c => adaptComm(c, raw.allItems || [], activeRawAccounts));
+    const events    = (raw.calEvents || []).map(e => adaptCalEvent(e, raw.allItems || [], activeRawAccounts));
+    const tasks     = (raw.tasks || []).map(t => adaptTask(t, raw.allItems || [], activeRawAccounts));
+    const followUps = (raw.followUps || []).map(f => adaptFollowUp(f, raw.allItems || [], activeRawAccounts));
+    return { accounts, contacts, deals, comms, events, tasks, followUps, activeRawAccounts, activeRawContacts };
   }, [raw.accounts, raw.contacts, raw.allItems, raw.comms, raw.calEvents, raw.tasks, raw.followUps]);
 
   return {
@@ -23,7 +28,9 @@ export function useBDData() {
     refetch: raw.refetch,
     // also expose raw for mutations that need the original shape
     rawAllItems: raw.allItems,
-    rawAccounts: raw.accounts,
-    rawContacts: raw.contacts,
+    rawAccounts: data.activeRawAccounts,
+    rawContacts: data.activeRawContacts,
+    rawAccountsAll: raw.accounts,
+    rawContactsAll: raw.contacts,
   };
 }

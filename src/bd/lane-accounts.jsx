@@ -3,6 +3,7 @@ import { I, fmtMoney, fmtRelative, AccountMark, OwnerDot, OwnerChip, ChannelIcon
 import AddAccountModal from './add-account-modal';
 import AddContactModal from './add-contact-modal';
 import ContactSearchModal from './contact-search-modal';
+import InactivateAccountModal from './inactivate-modal';
 
 export default function AccountsLane({ context, accounts, contacts, deals, comms, events, tasks, onPickAccount, onCompose, onOpenDeal, onSelectComm, search, refetch }) {
   const resolved = useMemo(() => resolveContext(context, { accounts, contacts, deals, comms, events, tasks }), [context, accounts, contacts, deals, comms, events, tasks]);
@@ -131,6 +132,7 @@ function AccountsList({ accounts, onPickAccount, search, onAddAccount }) {
 function AccountDetail({ account, highlight, accounts, contacts, deals, comms, events, tasks, onPickAccount, onCompose, onOpenDeal, onSelectComm, refetch }) {
   const [showAddContact, setShowAddContact] = useState(false);
   const [showSearchContact, setShowSearchContact] = useState(false);
+  const [showInactivate, setShowInactivate] = useState(false);
   const accContacts = contacts.filter(c => c.accountId === account.id);
   const accDeals = deals.filter(d => d.accountId === account.id);
   const openDeals = accDeals.filter(d => ['qualify', 'develop', 'proposal', 'close'].includes(d.stage));
@@ -158,6 +160,14 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, comms, e
           <button className="btn-ghost tiny" onClick={() => onPickAccount && onPickAccount(null)}><I.back /></button>
           <span className="lane-title-label">Account</span>
         </div>
+        {account.id && (
+          <div className="lane-actions">
+            <button className="btn-ghost tiny" style={{ color: 'var(--danger)' }}
+              onClick={() => setShowInactivate(true)} title="Inactivate this account and all linked contacts">
+              <I.archive /> Inactivate
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="acc-hero">
@@ -321,6 +331,19 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, comms, e
           account={account}
           onClose={() => setShowSearchContact(false)}
           onAdded={() => { if (refetch) refetch(); }}
+        />
+      )}
+      {showInactivate && (
+        <InactivateAccountModal
+          account={account}
+          contacts={contacts}
+          onClose={() => setShowInactivate(false)}
+          onDone={() => {
+            setShowInactivate(false);
+            if (refetch) refetch();
+            // Navigate back to the accounts list after inactivation
+            if (onPickAccount) onPickAccount(null);
+          }}
         />
       )}
     </div>
