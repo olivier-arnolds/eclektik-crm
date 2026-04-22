@@ -18,10 +18,16 @@ export default function AccountsLane({ context, accounts, contacts, deals, comms
       attendees: e.attendees,
       attendeesEmails: e.attendeesEmails,
       channel: e.isOnline ? 'teams' : null,
+      isAllDay: !!e.isAllDay,
+      bodyHtml: e.bodyHtml,
+      bodyPreview: e.bodyPreview,
+      meetingUrl: e.meetingUrl,
       accountId: null,
     }));
+    // Filter out all-day events — these are often birthdays/company events not relevant for account 360
+    const visibleGraph = mappedGraph.filter(e => !e.isAllDay);
     const ids = new Set((events || []).map(e => e.id));
-    return [...(events || []), ...mappedGraph.filter(e => !ids.has(e.id))];
+    return [...(events || []), ...visibleGraph.filter(e => !ids.has(e.id))];
   }, [events, graphEvents]);
 
   const resolved = useMemo(() => resolveContext(context, { accounts, contacts, deals, comms, events: allEvents, tasks }), [context, accounts, contacts, deals, comms, allEvents, tasks]);
@@ -104,14 +110,16 @@ function resolveContext(context, data) {
       }
     }
 
-    // 3) Match attendee email domain to company website domain
+    // 3) STRICT domain match (exact or subdomain) against company website
+    const ECLECTIK = new Set(['eclectik.co', 'eclectik.com', 'eclectikadmin.onmicrosoft.com']);
     if (!acc && attendeeEmails.length) {
       for (const email of attendeeEmails) {
-        const domain = email.split('@')[1];
-        if (!domain) continue;
+        const domain = (email.split('@')[1] || '').toLowerCase();
+        if (!domain || ECLECTIK.has(domain)) continue;
         const found = accounts.find(a => {
-          const web = (a.website || '').toLowerCase();
-          return web && (web.includes(domain) || domain.includes(web.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0]));
+          const web = (a.website || '').toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0].trim();
+          if (!web || web.length < 4) return false;
+          return domain === web || domain.endsWith('.' + web);
         });
         if (found) { acc = found; break; }
       }
@@ -295,23 +303,35 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, comms, g
     .filter(c => { if (seen.has(c.id)) return false; seen.add(c.id); return true; })
     .sort((a, b) => new Date(b.ts || 0) - new Date(a.ts || 0))
     .slice(0, 12);
-  // Show ALL meetings (past + future) — resolve account via accountId OR via attendee/domain matching
+  // Show meetings matched to this account. Strict matching to avoid false positives:
+  // 1. Explicit accountId link (deals linked to account)
+  // 2. Attendee email matches a known contact at this account
+  // 3. STRICT domain match: attendee domain equals account website domain (or is direct subdomain)
+  //    (previously used .includes which matched too aggressively)
+  // We NEVER match on our own Eclectik domain (it's in every meeting).
+  const ECLECTIK_DOMAINS = new Set(['eclectik.co', 'eclectik.com', 'eclectikadmin.onmicrosoft.com']);
   const accEvents = (events || []).filter(e => {
     if (!account.id) return false;
     if (e.accountId === account.id) return true;
-    // Additionally include graph events whose attendees match one of our contacts at this account
+
     const attEmails = (e.attendeesEmails && e.attendeesEmails.length
-      ? e.attendeesEmails.map(s => (s || '').toLowerCase())
+      ? e.attendeesEmails.map(s => (s || '').toLowerCase()).filter(Boolean)
       : []);
     if (!attEmails.length) return false;
+
+    // 2) Direct contact-email match
     const accContactEmails = new Set((contacts || []).filter(c => c.accountId === account.id && c.email).map(c => c.email.toLowerCase()));
-    if (attEmails.some(e => accContactEmails.has(e))) return true;
-    // Domain match against account website
-    const web = (account.website || '').toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
-    if (web) {
-      return attEmails.some(e => (e.split('@')[1] || '').includes(web));
-    }
-    return false;
+    if (accContactEmails.size && attEmails.some(ae => accContactEmails.has(ae))) return true;
+
+    // 3) STRICT domain match against account website
+    const web = (account.website || '').toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0].trim();
+    if (!web || web.length < 4) return false; // skip too-short / empty websites
+    return attEmails.some(ae => {
+      const dom = (ae.split('@')[1] || '').toLowerCase();
+      if (!dom || ECLECTIK_DOMAINS.has(dom)) return false;
+      // Exact match or direct subdomain (not arbitrary substring)
+      return dom === web || dom.endsWith('.' + web);
+    });
   }).sort((a, b) => new Date(b.startISO || 0) - new Date(a.startISO || 0));
   const accTasks = tasks.filter(t => t.accountId === account.id);
   const openTasks = accTasks.filter(t => !t.done);

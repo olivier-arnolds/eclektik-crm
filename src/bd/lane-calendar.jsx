@@ -25,14 +25,37 @@ function dayDatesForWeek(offset = 0) {
   });
 }
 
+// Parse an ISO-ish string as local time. Handles:
+//  - "2026-04-22T10:00:00" (no Z, from Graph with Prefer header → local)
+//  - "2026-04-22T10:00:00.0000000" (Graph high-precision)
+//  - "2026-04-22T10:00:00Z" (UTC, legacy)
+// Avoids browser inconsistencies for ISO-without-TZ.
+function parseLocalDateTime(str) {
+  if (!str) return null;
+  const s = String(str).trim();
+  // If ends with Z or has explicit +/-HH:MM offset, use standard parser (UTC/zoned)
+  if (/Z$|[+-]\d{2}:\d{2}$/.test(s)) {
+    const d = new Date(s);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  // Otherwise parse as LOCAL time manually
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}(?:\.\d+)?))?/);
+  if (!m) {
+    const d = new Date(s);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  const [, y, mo, d, hh, mm, ss] = m;
+  return new Date(+y, +mo - 1, +d, +hh, +mm, ss ? Math.floor(parseFloat(ss)) : 0);
+}
+
 function eventPosition(ev) {
   if (!ev.startISO) return null;
-  const s = new Date(ev.startISO);
-  if (isNaN(s.getTime())) return null;
+  const s = parseLocalDateTime(ev.startISO);
+  if (!s || isNaN(s.getTime())) return null;
   const dayIdx = (s.getDay() + 6) % 7;
   if (dayIdx > 4) return null;
   const start = s.getHours() + s.getMinutes() / 60;
-  const e = ev.endISO ? new Date(ev.endISO) : new Date(s.getTime() + 3600000);
+  const e = ev.endISO ? parseLocalDateTime(ev.endISO) : new Date(s.getTime() + 3600000);
   const end = e.getHours() + e.getMinutes() / 60 + (e.getDate() !== s.getDate() ? 24 : 0);
   // LOCAL date string (not UTC) so it matches our grid's local dates
   const dateStr = `${s.getFullYear()}-${String(s.getMonth() + 1).padStart(2, '0')}-${String(s.getDate()).padStart(2, '0')}`;
@@ -53,22 +76,26 @@ export default function CalendarLane({ events: dbEvents, tasks: dbTasks, deals, 
   const didScrollRef = useRef(false);
 
   // Adapt graphEvents from BDApp into our internal shape.
-  // Graph returns times in the requested local timezone (no Z suffix).
-  // We treat the dateTime as a local time string and parse naively.
+  // Split into (a) all-day events — shown as chips at top of each day,
+  // and (b) timed events — rendered in the hour-grid.
   const graphEvents = useMemo(() => (rawGraphEvents || []).map(e => ({
     id: 'graph:' + e.id,
     kind: 'meeting',
     title: e.title,
-    // Strip any trailing Z just in case; parse as local
     startISO: e.startAt ? e.startAt.replace(/Z$/, '') : null,
     endISO: e.endAt ? e.endAt.replace(/Z$/, '') : null,
     attendees: e.attendees,
     attendeesEmails: e.attendeesEmails,
     channel: e.isOnline ? 'teams' : null,
     meetingUrl: e.meetingUrl,
+    isAllDay: !!e.isAllDay,
+    bodyPreview: e.bodyPreview || '',
     owner: 'MVG',
     source: 'graph',
   })), [rawGraphEvents]);
+
+  const timedGraphEvents = useMemo(() => graphEvents.filter(e => !e.isAllDay), [graphEvents]);
+  const allDayGraphEvents = useMemo(() => graphEvents.filter(e => e.isAllDay), [graphEvents]);
 
   const dates = useMemo(() => dayDatesForWeek(week), [week]);
   const weekStart = dates[0];
@@ -89,10 +116,11 @@ export default function CalendarLane({ events: dbEvents, tasks: dbTasks, deals, 
   }, [week]);
 
   // Merge DB events + graph events
+  // Only TIMED events go into the hour-grid. All-day events are shown separately.
   const allEvents = useMemo(() => {
     const dbIds = new Set((dbEvents || []).map(e => e.id));
-    return [...(dbEvents || []), ...graphEvents.filter(e => !dbIds.has(e.id))];
-  }, [dbEvents, graphEvents]);
+    return [...(dbEvents || []), ...timedGraphEvents.filter(e => !dbIds.has(e.id))];
+  }, [dbEvents, timedGraphEvents]);
 
   // Tasks grouped by day in this week
   const tasksByDay = useMemo(() => {
@@ -175,8 +203,24 @@ export default function CalendarLane({ events: dbEvents, tasks: dbTasks, deals, 
 
       <div className="cal-tasksrow">
         <div className="cal-gutter cal-gutter-tasks">Tasks</div>
-        {DAYS.map((_, i) => (
+        {DAYS.map((_, i) => {
+          // All-day events for this day (shown as compact chips at top, not in grid)
+          const dayAllDay = allDayGraphEvents.filter(e => {
+            if (!e.startISO) return false;
+            const d = parseLocalDateTime(e.startISO);
+            if (!d) return false;
+            return localDateStr(d) === localDateStr(dates[i]);
+          });
+          return (
           <div key={i} className="cal-taskcol">
+            {dayAllDay.map(e => (
+              <div key={e.id} className="cal-task" title={e.title}
+                onClick={() => onSelectEvent && onSelectEvent(e)}
+                style={{ cursor: 'pointer', borderLeft: '2px solid var(--accent)' }}>
+                <I.calendar />
+                <span className="cal-task-title">{e.title}</span>
+              </div>
+            ))}
             {tasksByDay[i].map(t => (
               <div key={t.id} className={`cal-task ${t.done ? 'cal-task-done' : ''}`}>
                 <span className={`task-check ${t.done ? 'task-check-on' : ''}`} onClick={(e) => { e.stopPropagation(); toggleTaskDone(t); }}>
@@ -191,7 +235,8 @@ export default function CalendarLane({ events: dbEvents, tasks: dbTasks, deals, 
               <span>Add task</span>
             </button>
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {addTaskDay !== null && (

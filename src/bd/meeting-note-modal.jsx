@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { I, fmtFull } from './atoms';
 import { supabase } from '../supabase';
+import DOMPurify from 'dompurify';
 
 // Modal for viewing/editing meeting notes (transcripts, takeaways, action items)
 // attached to a calendar event. Stored in meeting_notes table.
@@ -60,6 +61,35 @@ export default function MeetingNoteModal({ event, account, onClose, refetch }) {
         </div>
 
         <div className="modal-body" style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {(event?.bodyHtml || event?.bodyPreview) && (
+            <div>
+              <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)', marginBottom: 5 }}>
+                Meeting description
+              </div>
+              <div style={{
+                padding: 10, border: '0.5px solid var(--sep)', borderRadius: 6,
+                background: 'var(--bg-2)', fontSize: 12, lineHeight: 1.5,
+                maxHeight: 200, overflowY: 'auto',
+                color: 'var(--text-1)',
+              }}>
+                {event.bodyHtml
+                  ? <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(event.bodyHtml) }} />
+                  : <div style={{ whiteSpace: 'pre-wrap' }}>{event.bodyPreview}</div>}
+              </div>
+              {event.attendees && (
+                <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 6 }}>
+                  <b>Attendees:</b> {event.attendees}
+                </div>
+              )}
+              {event.meetingUrl && (
+                <a href={event.meetingUrl} target="_blank" rel="noopener noreferrer"
+                  style={{ fontSize: 11, color: 'var(--accent)', display: 'inline-block', marginTop: 6 }}>
+                  Join Teams meeting →
+                </a>
+              )}
+            </div>
+          )}
+
           <div>
             <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)', marginBottom: 5 }}>
               Add note / transcript

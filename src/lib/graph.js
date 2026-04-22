@@ -29,11 +29,13 @@ export async function getCalendarEvents(daysAhead = 14) {
 }
 
 export async function getCalendarEventsRange(startISO, endISO) {
+  // Use /me/calendar/calendarView (PRIMARY calendar only) — avoids pulling in
+  // Birthdays, Dutch Holidays, or any secondary calendars the user has.
   // Ask Graph to return times in our local timezone so we don't have to
-  // guess offsets. Response dateTime fields will then be in LOCAL_TZ.
+  // guess offsets.
   const tzHeaders = { 'Prefer': `outlook.timezone="${LOCAL_TZ}"` };
   let all = [];
-  let url = `/me/calendarView?startDateTime=${encodeURIComponent(startISO)}&endDateTime=${encodeURIComponent(endISO)}&$top=500&$orderby=start/dateTime&$select=id,subject,start,end,location,attendees,isOnlineMeeting,onlineMeetingUrl`;
+  let url = `/me/calendar/calendarView?startDateTime=${encodeURIComponent(startISO)}&endDateTime=${encodeURIComponent(endISO)}&$top=500&$orderby=start/dateTime&$select=id,subject,start,end,location,attendees,isOnlineMeeting,onlineMeetingUrl,isAllDay,body,bodyPreview,showAs,sensitivity,categories`;
   let safety = 0;
   while (url && safety < 20) {
     const data = await graphGet(url, tzHeaders);
@@ -62,6 +64,13 @@ export async function getCalendarEventsRange(startISO, endISO) {
       attendeesEmails: (e.attendees || []).map(a => a.emailAddress?.address).filter(Boolean),
       isOnline: e.isOnlineMeeting,
       meetingUrl: e.onlineMeetingUrl,
+      isAllDay: !!e.isAllDay,
+      bodyPreview: e.bodyPreview || '',
+      bodyHtml: e.body?.content || '',
+      bodyType: e.body?.contentType || 'html',
+      showAs: e.showAs,
+      sensitivity: e.sensitivity,
+      categories: e.categories || [],
     };
   });
 }

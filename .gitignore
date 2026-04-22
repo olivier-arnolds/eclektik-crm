@@ -4,3 +4,8 @@ dist
 .env*.local
 .DS_Store
 *.txt
+
+# Video recordings (too large for GitHub)
+*.mp4
+*.mov
+*.webm
