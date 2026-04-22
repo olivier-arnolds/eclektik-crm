@@ -7,9 +7,11 @@ import InactivateAccountModal from './inactivate-modal';
 import ContactDetailModal from './contact-detail-modal';
 import MeetingNoteModal from './meeting-note-modal';
 import AccountLinksSection from './account-links-section';
+import ExpandableRow from './expandable-row';
+import { InlineContactDetail, InlineMeetingDetail, InlineDealDetail } from './inline-details';
 import { supabase } from '../supabase';
 
-export default function AccountsLane({ context, accounts, contacts, deals, comms, graphEmails, events, graphEvents, tasks, onPickAccount, onCompose, onOpenDeal, onSelectComm, search, refetch, refetchGraph }) {
+export default function AccountsLane({ context, accounts, contacts, deals, rawItems, comms, graphEmails, events, graphEvents, tasks, onPickAccount, onCompose, onOpenDeal, onSelectComm, search, refetch, refetchGraph }) {
   // Merge DB events + graph events for context resolution
   const allEvents = useMemo(() => {
     const mappedGraph = (graphEvents || []).map(e => ({
@@ -55,7 +57,7 @@ export default function AccountsLane({ context, accounts, contacts, deals, comms
     );
   }
 
-  return <AccountDetail {...resolved} accounts={accounts} contacts={contacts} deals={deals} comms={comms} graphEmails={graphEmails} events={allEvents} tasks={tasks}
+  return <AccountDetail {...resolved} accounts={accounts} contacts={contacts} deals={deals} rawItems={rawItems} comms={comms} graphEmails={graphEmails} events={allEvents} tasks={tasks}
     onPickAccount={onPickAccount} onCompose={onCompose} onOpenDeal={onOpenDeal} onSelectComm={onSelectComm} refetch={refetch} />;
 }
 
@@ -264,7 +266,7 @@ function AccountsList({ accounts, onPickAccount, search, onAddAccount }) {
   );
 }
 
-function AccountDetail({ account, highlight, accounts, contacts, deals, comms, graphEmails, events, tasks, onPickAccount, onCompose, onOpenDeal, onSelectComm, refetch }) {
+function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems, comms, graphEmails, events, tasks, onPickAccount, onCompose, onOpenDeal, onSelectComm, refetch }) {
   const [showAddContact, setShowAddContact] = useState(false);
   const [showSearchContact, setShowSearchContact] = useState(false);
   const [showInactivate, setShowInactivate] = useState(false);
@@ -424,46 +426,48 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, comms, g
           <div className="contacts-grid">
             {accContacts.length === 0 && <div className="empty" style={{ padding: '8px 0', textAlign: 'left' }}>No contacts</div>}
             {accContacts.map(c => (
-              <div key={c.id} className="contact-card" style={{ cursor: 'pointer' }}
-                onClick={() => setDetailContactId(c.id)}>
-                <div style={{
-                  width: 22, height: 22, borderRadius: 11,
-                  background: c.avatarBg || '#F1EFE8', color: c.avatarColor || '#888',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 10, fontWeight: 600,
-                  // Primary contact: green ring
-                  ...(c.isPrimary ? { boxShadow: '0 0 0 2px var(--good)' } : {}),
-                }}>
-                  {c.initials || (c.name || '?').split(' ').map(w => w[0]).slice(0, 2).join('')}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div className="contact-name">
-                    {c.name}
-                    {c.isPrimary && <span title="Primary contact" style={{ color: 'var(--good)', marginLeft: 6, fontSize: 10, fontFamily: 'var(--font-mono)' }}>★ PRIMARY</span>}
+              <ExpandableRow key={c.id} accent="var(--accent)"
+                collapsed={(open) => (
+                  <div className="contact-card">
+                    <div style={{
+                      width: 22, height: 22, borderRadius: 11,
+                      background: c.avatarBg || '#F1EFE8', color: c.avatarColor || '#888',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: 10, fontWeight: 600,
+                      ...(c.isPrimary ? { boxShadow: '0 0 0 2px var(--good)' } : {}),
+                    }}>
+                      {c.initials || (c.name || '?').split(' ').map(w => w[0]).slice(0, 2).join('')}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div className="contact-name">
+                        {c.name}
+                        {c.isPrimary && <span title="Primary contact" style={{ color: 'var(--good)', marginLeft: 6, fontSize: 10, fontFamily: 'var(--font-mono)' }}>★</span>}
+                      </div>
+                      {c.role && <div className="contact-role">{c.role}</div>}
+                    </div>
+                    <button className="icon-btn tiny"
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        const newVal = !c.isPrimary;
+                        if (newVal) await supabase.from('contacts').update({ is_primary: false }).eq('company_id', account.id);
+                        await supabase.from('contacts').update({ is_primary: newVal }).eq('id', c.id);
+                        if (refetch) refetch();
+                      }}
+                      title={c.isPrimary ? 'Unset as primary' : 'Set as primary contact'}
+                      style={{ color: c.isPrimary ? 'var(--good)' : 'var(--text-3)' }}>
+                      <I.star />
+                    </button>
+                    {c.email && onCompose && (
+                      <button className="icon-btn tiny" onClick={(e) => { e.stopPropagation(); onCompose({ to: c.email, contact: c }); }} title="Email">
+                        <I.send />
+                      </button>
+                    )}
                   </div>
-                  {c.role && <div className="contact-role">{c.role}</div>}
-                </div>
-                <button className="icon-btn tiny"
-                  onClick={async (e) => {
-                    e.stopPropagation();
-                    // Toggle primary — unsets others at this account first
-                    const newVal = !c.isPrimary;
-                    if (newVal) {
-                      await supabase.from('contacts').update({ is_primary: false }).eq('company_id', account.id);
-                    }
-                    await supabase.from('contacts').update({ is_primary: newVal }).eq('id', c.id);
-                    if (refetch) refetch();
-                  }}
-                  title={c.isPrimary ? 'Unset as primary' : 'Set as primary contact'}
-                  style={{ color: c.isPrimary ? 'var(--good)' : 'var(--text-3)' }}>
-                  <I.star />
-                </button>
-                {c.email && onCompose && (
-                  <button className="icon-btn tiny" onClick={(e) => { e.stopPropagation(); onCompose({ to: c.email, contact: c }); }} title="Email">
-                    <I.send />
-                  </button>
                 )}
-              </div>
+                expanded={() => (
+                  <InlineContactDetail contactId={c.id} onCompose={onCompose} />
+                )}
+              />
             ))}
           </div>
         </Section>
@@ -493,16 +497,27 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, comms, g
           <div className="deals-list">
             {openDeals.length === 0 && <div className="empty" style={{ padding: '8px 0', textAlign: 'left' }}>No open deals</div>}
             {openDeals.map(d => (
-              <div key={d.id} className="deal-row" onClick={() => onOpenDeal && onOpenDeal(d)}>
-                <div className="deal-row-left">
-                  <span className={`stage-pill stage-${stageClass(d.stage)}`}>{STAGE_TINT[d.stage]?.label || d.stage}</span>
-                  <span className="deal-row-title">{d.title}</span>
-                </div>
-                <div className="deal-row-right">
-                  <TeamDots deal={d} />
-                  <span className="deal-row-value">{fmtMoney(d.value)}</span>
-                </div>
-              </div>
+              <ExpandableRow key={d.id} accent="var(--accent)"
+                collapsed={(open) => (
+                  <div className="deal-row">
+                    <div className="deal-row-left">
+                      <span className={`stage-pill stage-${stageClass(d.stage)}`}>{STAGE_TINT[d.stage]?.label || d.stage}</span>
+                      <span className="deal-row-title">{d.title}</span>
+                    </div>
+                    <div className="deal-row-right">
+                      <TeamDots deal={d} />
+                      <span className="deal-row-value">{fmtMoney(d.value)}</span>
+                    </div>
+                  </div>
+                )}
+                expanded={() => (
+                  <InlineDealDetail deal={d}
+                    rawItems={rawItems}
+                    onCompose={onCompose}
+                    onOpenModal={() => onOpenDeal && onOpenDeal(d)}
+                    refetch={refetch} />
+                )}
+              />
             ))}
           </div>
         </Section>
@@ -511,16 +526,27 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, comms, g
           <Section label={`Active projects · ${activeDeals.length}`}>
             <div className="deals-list">
               {activeDeals.map(d => (
-                <div key={d.id} className="deal-row" onClick={() => onOpenDeal && onOpenDeal(d)}>
-                  <div className="deal-row-left">
-                    <span className={`stage-pill stage-${stageClass(d.stage)}`}>{STAGE_TINT[d.stage]?.label || d.stage}</span>
-                    <span className="deal-row-title">{d.title}</span>
-                  </div>
-                  <div className="deal-row-right">
-                    {d.owner && <OwnerDot id={d.owner} />}
-                    <span className="deal-row-value">{fmtMoney(d.value)}</span>
-                  </div>
-                </div>
+                <ExpandableRow key={d.id} accent="var(--good)"
+                  collapsed={(open) => (
+                    <div className="deal-row">
+                      <div className="deal-row-left">
+                        <span className={`stage-pill stage-${stageClass(d.stage)}`}>{STAGE_TINT[d.stage]?.label || d.stage}</span>
+                        <span className="deal-row-title">{d.title}</span>
+                      </div>
+                      <div className="deal-row-right">
+                        <TeamDots deal={d} />
+                        <span className="deal-row-value">{fmtMoney(d.value)}</span>
+                      </div>
+                    </div>
+                  )}
+                  expanded={() => (
+                    <InlineDealDetail deal={d}
+                      rawItems={rawItems}
+                      onCompose={onCompose}
+                      onOpenModal={() => onOpenDeal && onOpenDeal(d)}
+                      refetch={refetch} />
+                  )}
+                />
               ))}
             </div>
           </Section>
@@ -534,17 +560,33 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, comms, g
               {accEvents.map(e => {
                 const noteCount = notesCountByEvent[e.id] || 0;
                 return (
-                  <div key={e.id} className="acc-comm-row" onClick={() => setMeetingNoteEvent(e)} style={{ cursor: 'pointer' }} title="Click to add/view meeting notes">
-                    {e.channel && <ChannelIcon ch={e.channel} size={11} />}
-                    <span className="acc-comm-subj">{e.title}</span>
-                    {noteCount > 0 && (
-                      <span title={`${noteCount} note${noteCount !== 1 ? 's' : ''}`}
-                        style={{ fontSize: 10, color: 'var(--accent)', fontFamily: 'var(--font-mono)', display: 'inline-flex', alignItems: 'center', gap: 2 }}>
-                        📝{noteCount > 1 ? noteCount : ''}
-                      </span>
+                  <ExpandableRow key={e.id} accent="var(--accent)"
+                    collapsed={(open) => (
+                      <div className="acc-comm-row">
+                        {e.channel && <ChannelIcon ch={e.channel} size={11} />}
+                        <span className="acc-comm-subj">{e.title}</span>
+                        {noteCount > 0 && (
+                          <span title={`${noteCount} note${noteCount !== 1 ? 's' : ''}`}
+                            style={{ fontSize: 10, color: 'var(--accent)', fontFamily: 'var(--font-mono)', display: 'inline-flex', alignItems: 'center', gap: 2 }}>
+                            📝{noteCount > 1 ? noteCount : ''}
+                          </span>
+                        )}
+                        <span className="acc-comm-ts">{e.startISO ? new Date(e.startISO).toLocaleDateString('en', { day: 'numeric', month: 'short' }) : ''}</span>
+                      </div>
                     )}
-                    <span className="acc-comm-ts">{e.startISO ? new Date(e.startISO).toLocaleDateString('en', { day: 'numeric', month: 'short' }) : ''}</span>
-                  </div>
+                    expanded={() => (
+                      <InlineMeetingDetail event={e} companyId={account.id}
+                        onRefresh={() => {
+                          // Refresh note counts
+                          supabase.from('meeting_notes').select('event_id').eq('company_id', account.id)
+                            .then(({ data }) => {
+                              const counts = {};
+                              (data || []).forEach(r => { counts[r.event_id] = (counts[r.event_id] || 0) + 1; });
+                              setNotesCountByEvent(counts);
+                            });
+                        }} />
+                    )}
+                  />
                 );
               })}
             </div>

@@ -196,6 +196,7 @@ export default function BDApp() {
           accounts={accounts}
           contacts={contacts}
           deals={deals}
+          rawItems={rawAllItems}
           comms={comms}
           graphEmails={graphEmails}
           events={events}
