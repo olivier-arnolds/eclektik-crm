@@ -1,10 +1,11 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { I, fmtMoney, OwnerDot, ChannelIcon, OWNERS } from './atoms';
 import { supabase } from '../supabase';
+import { deleteCalendarEvent } from '../lib/graph';
 import NewMeetingModal from './new-meeting-modal';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
-const START_HOUR = 6, END_HOUR = 24;
+const START_HOUR = 0, END_HOUR = 24; // full day — Marco wants "hele dag over de hele panel"
 const HOURS = Array.from({ length: END_HOUR - START_HOUR }, (_, i) => i + START_HOUR);
 const HOUR_HEIGHT = 44;
 
@@ -151,6 +152,14 @@ export default function CalendarLane({ events: dbEvents, tasks: dbTasks, deals, 
     if (refetch) refetch();
   };
 
+  // Drag-drop state for tasks between days
+  const [draggingTaskId, setDraggingTaskId] = useState(null);
+  const moveTaskToDate = async (taskId, newDateStr) => {
+    setDraggingTaskId(null);
+    await supabase.from('tasks').update({ due_date: newDateStr }).eq('id', taskId);
+    if (refetch) refetch();
+  };
+
   return (
     <div className="lane lane-calendar">
       <div className="lane-header">
@@ -180,6 +189,25 @@ export default function CalendarLane({ events: dbEvents, tasks: dbTasks, deals, 
           <button className="btn-primary tiny" onClick={() => setShowNewMeeting(true)} title="Create a new meeting">
             <I.plus /> New meeting
           </button>
+          <input type="date"
+            value={weekStart.toISOString().split('T')[0]}
+            onChange={(e) => {
+              if (!e.target.value) return;
+              const target = new Date(e.target.value);
+              const today = new Date(); today.setHours(0, 0, 0, 0);
+              const monToday = new Date(today);
+              monToday.setDate(today.getDate() - ((today.getDay() + 6) % 7));
+              const monTarget = new Date(target);
+              monTarget.setDate(target.getDate() - ((target.getDay() + 6) % 7));
+              const diffWeeks = Math.round((monTarget - monToday) / (7 * 86400000));
+              setWeek(diffWeeks);
+            }}
+            title="Jump to date"
+            style={{
+              padding: '3px 6px', borderRadius: 5, fontSize: 11,
+              border: '0.5px solid var(--sep)', background: 'var(--fill-1)',
+              color: 'var(--text-1)', outline: 'none', fontFamily: 'var(--font)',
+            }} />
           <button className="icon-btn" onClick={() => setWeek(w => w - 1)} title="Previous week">
             <I.chevronR style={{ transform: 'rotate(180deg)' }} />
           </button>
@@ -212,7 +240,15 @@ export default function CalendarLane({ events: dbEvents, tasks: dbTasks, deals, 
             return localDateStr(d) === localDateStr(dates[i]);
           });
           return (
-          <div key={i} className="cal-taskcol">
+          <div key={i} className="cal-taskcol"
+            onDragOver={(e) => { e.preventDefault(); e.currentTarget.style.background = 'var(--fill-2)'; }}
+            onDragLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+            onDrop={(e) => {
+              e.preventDefault();
+              e.currentTarget.style.background = 'transparent';
+              const taskId = e.dataTransfer.getData('text/task-id');
+              if (taskId) moveTaskToDate(taskId, localDateStr(dates[i]));
+            }}>
             {dayAllDay.map(e => (
               <div key={e.id} className="cal-task" title={e.title}
                 onClick={() => onSelectEvent && onSelectEvent(e)}
@@ -222,7 +258,11 @@ export default function CalendarLane({ events: dbEvents, tasks: dbTasks, deals, 
               </div>
             ))}
             {tasksByDay[i].map(t => (
-              <div key={t.id} className={`cal-task ${t.done ? 'cal-task-done' : ''}`}>
+              <div key={t.id} className={`cal-task ${t.done ? 'cal-task-done' : ''}`}
+                draggable
+                onDragStart={(e) => { e.dataTransfer.setData('text/task-id', t.id); setDraggingTaskId(t.id); }}
+                onDragEnd={() => setDraggingTaskId(null)}
+                style={{ cursor: 'grab', opacity: draggingTaskId === t.id ? 0.5 : 1 }}>
                 <span className={`task-check ${t.done ? 'task-check-on' : ''}`} onClick={(e) => { e.stopPropagation(); toggleTaskDone(t); }}>
                   {t.done && <I.check />}
                 </span>
@@ -278,7 +318,18 @@ export default function CalendarLane({ events: dbEvents, tasks: dbTasks, deals, 
                   if (!p) return null;
                   return (
                     <EventBlock key={e.id} ev={e} pos={p} deals={deals} accounts={accounts}
-                      onSelect={() => onSelectEvent && onSelectEvent(e)} />
+                      onSelect={() => onSelectEvent && onSelectEvent(e)}
+                      onDelete={async (ev) => {
+                        const graphId = String(ev.id).replace(/^graph:/, '');
+                        if (!confirm(`Delete "${ev.title}" from your Outlook calendar?`)) return;
+                        try {
+                          await deleteCalendarEvent(graphId);
+                          if (refetchGraph) refetchGraph();
+                        } catch (err) {
+                          alert('Delete failed: ' + err.message);
+                        }
+                      }}
+                    />
                   );
                 })}
               </div>
@@ -306,12 +357,13 @@ export default function CalendarLane({ events: dbEvents, tasks: dbTasks, deals, 
   );
 }
 
-function EventBlock({ ev, pos, deals, accounts, onSelect }) {
+function EventBlock({ ev, pos, deals, accounts, onSelect, onDelete }) {
   const top = (pos.start - START_HOUR) * HOUR_HEIGHT;
   const height = Math.max(20, (pos.end - pos.start) * HOUR_HEIGHT);
   const owner = OWNERS[ev.owner];
   const deal = ev.deal ? deals.find(d => d.id === ev.deal) : null;
   const account = deal ? accounts.find(a => a.id === deal.accountId) : null;
+  const isGraph = ev.source === 'graph' || (typeof ev.id === 'string' && ev.id.startsWith('graph:'));
   return (
     <div className="cal-event"
       style={{
@@ -322,7 +374,14 @@ function EventBlock({ ev, pos, deals, accounts, onSelect }) {
     >
       <div className="cal-event-title">
         {ev.channel === 'teams' && <ChannelIcon ch="teams" size={10} />}
-        <span>{ev.title}</span>
+        <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ev.title}</span>
+        {isGraph && onDelete && (
+          <button onClick={(e) => { e.stopPropagation(); onDelete(ev); }}
+            title="Delete event"
+            style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--danger)', padding: 0, fontSize: 12, opacity: 0.6 }}>
+            ×
+          </button>
+        )}
       </div>
       {height > 30 && (
         <div className="cal-event-meta">

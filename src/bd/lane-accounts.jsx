@@ -40,7 +40,7 @@ export default function AccountsLane({ context, accounts, contacts, deals, rawIt
   if (!resolved) {
     return (
       <>
-        <AccountsList accounts={accounts} onPickAccount={onPickAccount} search={search}
+        <AccountsList accounts={accounts} contacts={contacts} onPickAccount={onPickAccount} search={search}
           onAddAccount={() => setShowAddAccount(true)} />
         {showAddAccount && (
           <AddAccountModal
@@ -161,7 +161,7 @@ function resolveContext(context, data) {
   return null;
 }
 
-function AccountsList({ accounts, onPickAccount, search, onAddAccount }) {
+function AccountsList({ accounts, contacts, onPickAccount, search, onAddAccount }) {
   const q = (search || '').toLowerCase();
   const [typeFilters, setTypeFilters] = useState([]);
   const [nameFilter, setNameFilter] = useState('');
@@ -175,16 +175,46 @@ function AccountsList({ accounts, onPickAccount, search, onAddAccount }) {
 
   const toggleType = (t) => setTypeFilters(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t]);
 
+  // Build a lookup: for each account id, which contacts match current filter (by name/email/role)
+  // Used so "Mark van Veldhoven" finds companies where he's a contact.
+  const matchContactAccounts = (query) => {
+    if (!query) return null;
+    const cl = query.toLowerCase();
+    const set = new Set();
+    (contacts || []).forEach(c => {
+      const hit =
+        (c.name || '').toLowerCase().includes(cl)
+        || (c.email || '').toLowerCase().includes(cl)
+        || (c.role || '').toLowerCase().includes(cl);
+      if (hit && c.accountId) set.add(c.accountId);
+    });
+    return set;
+  };
+
   const filtered = useMemo(() => {
     let list = accounts || [];
-    // Global topbar search
-    if (q) list = list.filter(a => a.name.toLowerCase().includes(q) || (a.industry || '').toLowerCase().includes(q));
-    // Local name filter
+    // Global topbar search — matches account OR any of its contacts
+    if (q) {
+      const contactAccts = matchContactAccounts(q);
+      list = list.filter(a =>
+        a.name.toLowerCase().includes(q)
+        || (a.industry || '').toLowerCase().includes(q)
+        || (a.country || '').toLowerCase().includes(q)
+        || (contactAccts && contactAccts.has(a.id))
+      );
+    }
+    // Local name/contact filter
     const nf = nameFilter.trim().toLowerCase();
-    if (nf) list = list.filter(a => a.name.toLowerCase().includes(nf));
+    if (nf) {
+      const contactAccts = matchContactAccounts(nf);
+      list = list.filter(a =>
+        a.name.toLowerCase().includes(nf)
+        || (contactAccts && contactAccts.has(a.id))
+      );
+    }
     if (typeFilters.length) list = list.filter(a => typeFilters.includes(a.type));
     return [...list].sort((a, b) => a.name.localeCompare(b.name));
-  }, [accounts, q, typeFilters, nameFilter]);
+  }, [accounts, contacts, q, typeFilters, nameFilter]);
 
   return (
     <div className="lane lane-accounts">
@@ -214,7 +244,7 @@ function AccountsList({ accounts, onPickAccount, search, onAddAccount }) {
             type="text"
             value={nameFilter}
             onChange={e => setNameFilter(e.target.value)}
-            placeholder="Filter by company name…" />
+            placeholder="Filter by company or contact name…" />
           {nameFilter && (
             <button className="icon-btn tiny" onClick={() => setNameFilter('')}>
               <I.close />
