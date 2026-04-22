@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { I, fmtMoney, fmtRelative, AccountMark, OwnerDot, OwnerChip, ChannelIcon, STAGE_TINT } from './atoms';
 import AddAccountModal from './add-account-modal';
 import AddContactModal from './add-contact-modal';
@@ -6,6 +6,8 @@ import ContactSearchModal from './contact-search-modal';
 import InactivateAccountModal from './inactivate-modal';
 import ContactDetailModal from './contact-detail-modal';
 import MeetingNoteModal from './meeting-note-modal';
+import AccountLinksSection from './account-links-section';
+import { supabase } from '../supabase';
 
 export default function AccountsLane({ context, accounts, contacts, deals, comms, graphEmails, events, graphEvents, tasks, onPickAccount, onCompose, onOpenDeal, onSelectComm, search, refetch, refetchGraph }) {
   // Merge DB events + graph events for context resolution
@@ -268,6 +270,18 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, comms, g
   const [showInactivate, setShowInactivate] = useState(false);
   const [detailContactId, setDetailContactId] = useState(null);
   const [meetingNoteEvent, setMeetingNoteEvent] = useState(null);
+  // Track which events have notes (so we show a 📝 indicator)
+  const [notesCountByEvent, setNotesCountByEvent] = useState({});
+  useEffect(() => {
+    if (!account?.id) return;
+    supabase.from('meeting_notes').select('event_id').eq('company_id', account.id)
+      .then(({ data, error }) => {
+        if (error) return;
+        const counts = {};
+        (data || []).forEach(r => { counts[r.event_id] = (counts[r.event_id] || 0) + 1; });
+        setNotesCountByEvent(counts);
+      });
+  }, [account?.id, meetingNoteEvent]); // refresh after closing modal
   const accContacts = contacts.filter(c => c.accountId === account.id);
   const accDeals = deals.filter(d => d.accountId === account.id);
   const openDeals = accDeals.filter(d => ['qualify', 'develop', 'proposal', 'close'].includes(d.stage));
@@ -412,13 +426,38 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, comms, g
             {accContacts.map(c => (
               <div key={c.id} className="contact-card" style={{ cursor: 'pointer' }}
                 onClick={() => setDetailContactId(c.id)}>
-                <div style={{ width: 22, height: 22, borderRadius: 11, background: c.avatarBg || '#F1EFE8', color: c.avatarColor || '#888', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 600 }}>
+                <div style={{
+                  width: 22, height: 22, borderRadius: 11,
+                  background: c.avatarBg || '#F1EFE8', color: c.avatarColor || '#888',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 10, fontWeight: 600,
+                  // Primary contact: green ring
+                  ...(c.isPrimary ? { boxShadow: '0 0 0 2px var(--good)' } : {}),
+                }}>
                   {c.initials || (c.name || '?').split(' ').map(w => w[0]).slice(0, 2).join('')}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div className="contact-name">{c.name}</div>
+                  <div className="contact-name">
+                    {c.name}
+                    {c.isPrimary && <span title="Primary contact" style={{ color: 'var(--good)', marginLeft: 6, fontSize: 10, fontFamily: 'var(--font-mono)' }}>★ PRIMARY</span>}
+                  </div>
                   {c.role && <div className="contact-role">{c.role}</div>}
                 </div>
+                <button className="icon-btn tiny"
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    // Toggle primary — unsets others at this account first
+                    const newVal = !c.isPrimary;
+                    if (newVal) {
+                      await supabase.from('contacts').update({ is_primary: false }).eq('company_id', account.id);
+                    }
+                    await supabase.from('contacts').update({ is_primary: newVal }).eq('id', c.id);
+                    if (refetch) refetch();
+                  }}
+                  title={c.isPrimary ? 'Unset as primary' : 'Set as primary contact'}
+                  style={{ color: c.isPrimary ? 'var(--good)' : 'var(--text-3)' }}>
+                  <I.star />
+                </button>
                 {c.email && onCompose && (
                   <button className="icon-btn tiny" onClick={(e) => { e.stopPropagation(); onCompose({ to: c.email, contact: c }); }} title="Email">
                     <I.send />
@@ -428,6 +467,27 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, comms, g
             ))}
           </div>
         </Section>
+
+        {account.id && (
+          <AccountLinksSection
+            account={account}
+            contacts={contacts}
+            linkType="partner"
+            label="Partners"
+            accent="var(--accent)"
+            onOpenContact={(id) => setDetailContactId(id)}
+          />
+        )}
+        {account.id && (
+          <AccountLinksSection
+            account={account}
+            contacts={contacts}
+            linkType="eclectik_team"
+            label="Eclectik team"
+            accent="var(--good)"
+            onOpenContact={(id) => setDetailContactId(id)}
+          />
+        )}
 
         <Section label={`Open deals · ${openDeals.length}`}>
           <div className="deals-list">
@@ -471,13 +531,22 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, comms, g
             <div className="empty" style={{ padding: '8px 0', textAlign: 'left' }}>No meetings scheduled</div>
           ) : (
             <div className="acc-comms">
-              {accEvents.map(e => (
-                <div key={e.id} className="acc-comm-row" onClick={() => setMeetingNoteEvent(e)} style={{ cursor: 'pointer' }} title="Click to add/view meeting notes">
-                  {e.channel && <ChannelIcon ch={e.channel} size={11} />}
-                  <span className="acc-comm-subj">{e.title}</span>
-                  <span className="acc-comm-ts">{e.startISO ? new Date(e.startISO).toLocaleDateString('en', { day: 'numeric', month: 'short' }) : ''}</span>
-                </div>
-              ))}
+              {accEvents.map(e => {
+                const noteCount = notesCountByEvent[e.id] || 0;
+                return (
+                  <div key={e.id} className="acc-comm-row" onClick={() => setMeetingNoteEvent(e)} style={{ cursor: 'pointer' }} title="Click to add/view meeting notes">
+                    {e.channel && <ChannelIcon ch={e.channel} size={11} />}
+                    <span className="acc-comm-subj">{e.title}</span>
+                    {noteCount > 0 && (
+                      <span title={`${noteCount} note${noteCount !== 1 ? 's' : ''}`}
+                        style={{ fontSize: 10, color: 'var(--accent)', fontFamily: 'var(--font-mono)', display: 'inline-flex', alignItems: 'center', gap: 2 }}>
+                        📝{noteCount > 1 ? noteCount : ''}
+                      </span>
+                    )}
+                    <span className="acc-comm-ts">{e.startISO ? new Date(e.startISO).toLocaleDateString('en', { day: 'numeric', month: 'short' }) : ''}</span>
+                  </div>
+                );
+              })}
             </div>
           )}
         </Section>
@@ -502,7 +571,7 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, comms, g
           )}
         </Section>
 
-        <Section label={`Open tasks · ${openTasks.length}`}>
+        <Section label={`Tasks · ${openTasks.length}`}>
           {openTasks.length === 0 ? (
             <div className="empty" style={{ padding: '8px 0', textAlign: 'left' }}>No open tasks</div>
           ) : (

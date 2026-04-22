@@ -37,6 +37,7 @@ function adaptContact(row, companies) {
     avatarColor: ac.color,
     email: row.email || '',
     source: row.event_source || '',
+    isPrimary: !!row.is_primary,
   }
 }
 
