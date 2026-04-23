@@ -522,7 +522,15 @@ export function InlineAccountDetails({ accountId, onPickAccount }) {
         <InlineField label="Stage" value={row.stage} onSave={v => saveField('stage', v)} />
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2, gridColumn: 'span 2' }}>
           <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span>Website</span>
+            <span
+              title="Search this company on Google"
+              onClick={() => {
+                const q = encodeURIComponent(`${row.name || ''} official website`);
+                window.open(`https://www.google.com/search?q=${q}`, '_blank', 'noopener,width=1000,height=700');
+              }}
+              style={{ cursor: 'pointer', textDecoration: 'underline dotted', textUnderlineOffset: 2 }}>
+              Website
+            </span>
             {websiteUrl && (
               <a href={websiteUrl} target="_blank" rel="noopener noreferrer"
                 style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)', fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.08em', textDecoration: 'none' }}>
@@ -534,7 +542,15 @@ export function InlineAccountDetails({ accountId, onPickAccount }) {
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2, gridColumn: 'span 2' }}>
           <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span>LinkedIn URL</span>
+            <span
+              title="Search this company on LinkedIn"
+              onClick={() => {
+                const q = encodeURIComponent(row.name || '');
+                window.open(`https://www.linkedin.com/search/results/companies/?keywords=${q}`, '_blank', 'noopener,width=1000,height=700');
+              }}
+              style={{ cursor: 'pointer', textDecoration: 'underline dotted', textUnderlineOffset: 2 }}>
+              LinkedIn URL
+            </span>
             {row.linkedin_url && (
               <a href={row.linkedin_url} target="_blank" rel="noopener noreferrer"
                 style={{ color: 'var(--chip-linkedin)', fontFamily: 'var(--font-mono)', fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.08em', textDecoration: 'none' }}>
