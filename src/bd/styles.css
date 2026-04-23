@@ -1150,7 +1150,13 @@ em { font-style: normal; }
 
 /* stabilize account lane: fixed-width container, internal scroll only */
 .acc-hero { min-height: 64px; }
-.lane-accounts { min-width: 300px; }
+/* Account 360 has a fixed width — never grows/shrinks, so expanding
+   the left lane only consumes the middle (Comms) space. */
+.lane-accounts {
+  flex: 0 0 360px;
+  min-width: 360px;
+  max-width: 360px;
+}
 .lane-accounts .acc-scroll { scrollbar-gutter: stable; }
 
 /* Scrollbars */
