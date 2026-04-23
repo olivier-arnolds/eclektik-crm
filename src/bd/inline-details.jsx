@@ -147,28 +147,32 @@ export function InlineMeetingDetail({ event, companyId, dedupKey, onRefresh }) {
   useEffect(() => {
     if (!graphEventId && !dedupKey) return;
     setLoading(true);
-    // Fetch notes matched by EITHER dedup_key OR graph_event_id.
-    // Also match legacy rows that accidentally stored event_id WITH the
-    // "graph:" prefix — so old notes stay visible.
-    const prefixedId = graphEventId ? 'graph:' + graphEventId : null;
-    const orParts = [];
-    if (dedupKey) orParts.push(`dedup_key.eq.${dedupKey}`);
-    if (graphEventId) orParts.push(`event_id.eq.${graphEventId}`);
-    if (prefixedId) orParts.push(`event_id.eq.${prefixedId}`);
-    const query = supabase.from('meeting_notes').select('*').or(orParts.join(','));
-    query.order('created_at', { ascending: false })
-      .then(({ data }) => {
-        // Dedupe rows that appear twice due to prefixed vs unprefixed event_id.
-        const seen = new Set();
-        const unique = (data || []).filter(n => {
-          const key = n.id;
-          if (seen.has(key)) return false;
-          seen.add(key);
-          return true;
+    // Run up to 3 parallel queries (dedup_key, event_id, and legacy
+    // "graph:"-prefixed event_id). We avoid .or() because dedup_key values
+    // contain commas, which break PostgREST's .or() parsing.
+    const queries = [];
+    if (dedupKey) {
+      queries.push(supabase.from('meeting_notes').select('*').eq('dedup_key', dedupKey));
+    }
+    if (graphEventId) {
+      queries.push(supabase.from('meeting_notes').select('*').eq('event_id', graphEventId));
+      queries.push(supabase.from('meeting_notes').select('*').eq('event_id', 'graph:' + graphEventId));
+    }
+    Promise.all(queries).then(results => {
+      const merged = [];
+      const seen = new Set();
+      results.forEach(r => {
+        (r.data || []).forEach(row => {
+          if (!seen.has(row.id)) {
+            seen.add(row.id);
+            merged.push(row);
+          }
         });
-        setNotes(unique);
-        setLoading(false);
       });
+      merged.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      setNotes(merged);
+      setLoading(false);
+    });
   }, [graphEventId, dedupKey]);
 
   const saveNote = async () => {

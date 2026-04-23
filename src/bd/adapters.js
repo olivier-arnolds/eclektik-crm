@@ -183,8 +183,8 @@ export const STAGES = [
   { id: 'qualify',    label: 'Qualify',    hue: 220 },
   { id: 'develop',    label: 'Develop',    hue: 200 },
   { id: 'proposal',   label: 'Proposal',   hue: 260 },
-  { id: 'close',      label: 'Close',      hue: 40 },
   { id: 'onboarding', label: 'Onboarding', hue: 150 },
+  { id: 'close',      label: 'Close',      hue: 40 },
   { id: 'active',     label: 'Active',     hue: 140 },
 ];
 
