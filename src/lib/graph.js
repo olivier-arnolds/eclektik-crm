@@ -133,10 +133,24 @@ export async function replyToEmail(messageId, body) {
 //   SentItems   — sent
 //   Archive     — archived (may not exist if user never archived)
 //   DeletedItems, Drafts, etc.
-export async function getFolderEmails(folderName, limit = 50) {
-  const data = await graphGet(`/me/mailFolders/${folderName}/messages?$top=${limit}&$orderby=receivedDateTime desc&$select=id,subject,bodyPreview,from,toRecipients,receivedDateTime,sentDateTime,isRead,hasAttachments,parentFolderId`);
-  if (!data?.value) return [];
-  return data.value.map(m => ({
+// Paginates via @odata.nextLink to go beyond Graph's 1000-per-request cap.
+export async function getFolderEmails(folderName, limit = 500) {
+  const select = 'id,subject,bodyPreview,from,toRecipients,receivedDateTime,sentDateTime,isRead,hasAttachments,parentFolderId';
+  const pageSize = Math.min(limit, 1000);
+  let url = `/me/mailFolders/${folderName}/messages?$top=${pageSize}&$orderby=receivedDateTime desc&$select=${select}`;
+  let all = [];
+  let safety = 0;
+  while (url && all.length < limit && safety < 10) {
+    const data = await graphGet(url);
+    if (!data?.value) break;
+    all = all.concat(data.value);
+    const next = data['@odata.nextLink'];
+    if (!next) break;
+    // Feed only the path+query back to graphGet
+    url = next.replace(/^https:\/\/graph\.microsoft\.com\/v1\.0/, '');
+    safety++;
+  }
+  return all.slice(0, limit).map(m => ({
     id: m.id,
     subject: m.subject,
     bodyPreview: m.bodyPreview,
@@ -151,13 +165,13 @@ export async function getFolderEmails(folderName, limit = 50) {
   }));
 }
 
-export async function getInboxEmails(limit = 50) {
+export async function getInboxEmails(limit = 500) {
   return getFolderEmails('Inbox', limit);
 }
 
 // Fetch Inbox + SentItems + Archive in parallel. Returns { inbox, sent, archived }.
 // If Archive folder doesn't exist (user never archived), silently returns [].
-export async function getAllMailFolders(limit = 100) {
+export async function getAllMailFolders(limit = 500) {
   const [inboxResp, sentResp, archiveResp] = await Promise.allSettled([
     getFolderEmails('Inbox', limit),
     getFolderEmails('SentItems', limit),

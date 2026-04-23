@@ -69,8 +69,8 @@ export default function BDApp() {
     // All merged into one comms list; folder/channel tags drive UI filtering.
     try {
       const [mails, teams] = await Promise.all([
-        getAllMailFolders(100).catch(e => { console.warn('mail:', e); return { inbox: [], sent: [], archived: [] }; }),
-        getTeamsConversations(30).catch(e => { console.warn('teams:', e); return []; }),
+        getAllMailFolders(500).catch(e => { console.warn('mail:', e); return { inbox: [], sent: [], archived: [] }; }),
+        getTeamsConversations(50).catch(e => { console.warn('teams:', e); return []; }),
       ]);
       const { inbox, sent, archived } = mails;
       const merged = [
