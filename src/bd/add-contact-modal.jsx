@@ -196,7 +196,22 @@ export default function AddContactModal({ account, onClose, onCreated, initialNa
               placeholder="Head of HR" />
           </div>
           <div>
-            <div style={label}>LinkedIn URL</div>
+            <div style={label}>
+              <span
+                title="Search this person on LinkedIn"
+                onClick={() => {
+                  const keywords = [fullName, pickedAccount?.name].filter(Boolean).join(' ').trim();
+                  if (!keywords) return;
+                  window.open(
+                    `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(keywords)}`,
+                    '_blank',
+                    'noopener,width=1000,height=700'
+                  );
+                }}
+                style={{ cursor: 'pointer', textDecoration: 'underline dotted', textUnderlineOffset: 2 }}>
+                LinkedIn URL
+              </span>
+            </div>
             <input style={fieldStyle} value={linkedinUrl} onChange={e => setLinkedinUrl(e.target.value)}
               placeholder="https://linkedin.com/in/jane-doe" />
           </div>
