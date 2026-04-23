@@ -48,6 +48,8 @@ export default function BDApp() {
   const [selectedPlaybook, setSelectedPlaybook] = useState(null);
   const [openContactId, setOpenContactId] = useState(null);
   const [searchPanelDismissed, setSearchPanelDismissed] = useState(false);
+  // Which lane (if any) is expanded to full width — hides the other two.
+  const [expandedLane, setExpandedLane] = useState(null); // 'left' | null
 
   // Inbox emails + calendar events lifted to BDApp so they survive view switches
   const [graphEmails, setGraphEmails] = useState([]);
@@ -180,6 +182,8 @@ export default function BDApp() {
             search={search}
             onSelectDeal={selectDeal}
             refetch={refetch}
+            expanded={expandedLane === 'left'}
+            onToggleExpand={() => setExpandedLane(expandedLane === 'left' ? null : 'left')}
           />
         ) : (
           <CalendarLane
@@ -192,49 +196,54 @@ export default function BDApp() {
             refetch={refetch}
             refetchGraph={fetchGraphData}
             onSelectEvent={(e) => setRightContext({ type: 'event', id: e.id })}
+            expanded={expandedLane === 'left'}
+            onToggleExpand={() => setExpandedLane(expandedLane === 'left' ? null : 'left')}
           />
         )}
 
-        <div className="divider" />
+        {expandedLane !== 'left' && <div className="divider" />}
 
-        {/* MIDDLE LANE: Comms */}
-        <CommsLane
-          comms={comms}
-          accounts={accounts}
-          contacts={contacts}
-          graphEmails={graphEmails}
-          refetch={refetch}
-          refetchGraph={fetchGraphData}
-          onCompose={openCompose}
-          selectedId={selectedComm}
-          onSelect={selectCommHandler}
-          accountScope={accountScope}
-          onClearScope={() => setAccountScope(null)}
-          search={search}
-        />
+        {/* MIDDLE + RIGHT lanes — hidden when left lane is expanded */}
+        {expandedLane !== 'left' && (
+          <>
+            <CommsLane
+              comms={comms}
+              accounts={accounts}
+              contacts={contacts}
+              graphEmails={graphEmails}
+              refetch={refetch}
+              refetchGraph={fetchGraphData}
+              onCompose={openCompose}
+              selectedId={selectedComm}
+              onSelect={selectCommHandler}
+              accountScope={accountScope}
+              onClearScope={() => setAccountScope(null)}
+              search={search}
+            />
 
-        <div className="divider" />
+            <div className="divider" />
 
-        {/* RIGHT LANE: Accounts 360 */}
-        <AccountsLane
-          context={rightContext}
-          accounts={accounts}
-          contacts={contacts}
-          deals={deals}
-          rawItems={rawAllItems}
-          comms={comms}
-          graphEmails={graphEmails}
-          events={events}
-          graphEvents={graphEvents}
-          tasks={tasks}
-          search={search}
-          refetch={refetch}
-          refetchGraph={fetchGraphData}
-          onPickAccount={pickAccount}
-          onCompose={openCompose}
-          onOpenDeal={selectDeal}
-          onSelectComm={selectCommHandler}
-        />
+            <AccountsLane
+              context={rightContext}
+              accounts={accounts}
+              contacts={contacts}
+              deals={deals}
+              rawItems={rawAllItems}
+              comms={comms}
+              graphEmails={graphEmails}
+              events={events}
+              graphEvents={graphEvents}
+              tasks={tasks}
+              search={search}
+              refetch={refetch}
+              refetchGraph={fetchGraphData}
+              onPickAccount={pickAccount}
+              onCompose={openCompose}
+              onOpenDeal={selectDeal}
+              onSelectComm={selectCommHandler}
+            />
+          </>
+        )}
 
         {/* Global search results overlay (only when user is typing ≥2 chars) */}
         {search.trim().length >= 2 && !searchPanelDismissed && (

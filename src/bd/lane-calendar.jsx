@@ -68,7 +68,7 @@ const localDateStr = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padSt
 
 const fmtHour = (h) => `${String(Math.floor(h)).padStart(2, '0')}:${String(Math.round((h - Math.floor(h)) * 60)).padStart(2, '0')}`;
 
-export default function CalendarLane({ events: dbEvents, tasks: dbTasks, deals, accounts, contacts, graphEvents: rawGraphEvents, refetch, refetchGraph, onSelectEvent }) {
+export default function CalendarLane({ events: dbEvents, tasks: dbTasks, deals, accounts, contacts, graphEvents: rawGraphEvents, refetch, refetchGraph, onSelectEvent, expanded, onToggleExpand }) {
   const [week, setWeek] = useState(0);
   const [overlay, setOverlay] = useState({ OA: false, YK: false });
   const [addTaskDay, setAddTaskDay] = useState(null);
@@ -189,6 +189,13 @@ export default function CalendarLane({ events: dbEvents, tasks: dbTasks, deals, 
           <button className="btn-primary tiny" onClick={() => setShowNewMeeting(true)} title="Create a new meeting">
             <I.plus /> New meeting
           </button>
+          {onToggleExpand && (
+            <button className="icon-btn" onClick={onToggleExpand} title={expanded ? 'Collapse to 3-lane view' : 'Expand full width'}>
+              <span style={{ fontSize: 14, display: 'inline-block', transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }}>
+                ›
+              </span>
+            </button>
+          )}
           <input type="date"
             value={weekStart.toISOString().split('T')[0]}
             onChange={(e) => {

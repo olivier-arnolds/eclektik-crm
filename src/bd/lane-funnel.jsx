@@ -6,7 +6,7 @@ import NewDealModal from './new-deal-modal';
 
 const toggle = (arr, v) => arr.includes(v) ? arr.filter(x => x !== v) : [...arr, v];
 
-export default function FunnelLane({ deals, accounts, contacts, filters, setFilters, onSelectDeal, onClose, refetch, search }) {
+export default function FunnelLane({ deals, accounts, contacts, filters, setFilters, onSelectDeal, onClose, refetch, search, expanded, onToggleExpand }) {
   const [collapsed, setCollapsed] = useState(false);
   const [draggingId, setDraggingId] = useState(null);
   const [overStage, setOverStage] = useState(null);
@@ -93,6 +93,13 @@ export default function FunnelLane({ deals, accounts, contacts, filters, setFilt
           <button className="btn-ghost tiny" onClick={() => setCollapsed(c => !c)}>
             {collapsed ? 'Expand' : 'Collapse'}
           </button>
+          {onToggleExpand && (
+            <button className="icon-btn" onClick={onToggleExpand} title={expanded ? 'Collapse to 3-lane view' : 'Expand full width'}>
+              <span style={{ fontSize: 14, display: 'inline-block', transform: expanded ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }}>
+                ›
+              </span>
+            </button>
+          )}
           {onClose && (
             <button className="icon-btn" onClick={onClose} title="Close">
               <I.close />
