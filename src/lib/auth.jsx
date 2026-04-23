@@ -47,7 +47,7 @@ export function AuthProvider({ children }) {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'azure',
       options: {
-        scopes: 'email profile openid User.Read Mail.Read Mail.Send Calendars.Read',
+        scopes: 'email profile openid User.Read Mail.Read Mail.Send Calendars.Read Chat.Read ChatMessage.Read',
         redirectTo: window.location.origin + (window.location.pathname.startsWith('/old') ? '/old' : '')
       }
     })
@@ -65,7 +65,7 @@ export function AuthProvider({ children }) {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'azure',
       options: {
-        scopes: 'email profile openid User.Read Mail.Read Mail.Send Calendars.Read',
+        scopes: 'email profile openid User.Read Mail.Read Mail.Send Calendars.Read Chat.Read ChatMessage.Read',
         redirectTo: window.location.origin + (window.location.pathname.startsWith('/old') ? '/old' : '')
       }
     })

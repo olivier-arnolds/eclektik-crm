@@ -266,6 +266,66 @@ export async function getMyChats(top = 30) {
   }));
 }
 
+// Fetch recent 1:1 and group chats as a flat list of "conversation threads",
+// one row per chat with the latest message preview. For use in the Comms lane.
+// Returns an array compatible with our email shape (folder, dir, from, etc.).
+export async function getTeamsConversations(limit = 30) {
+  const token = localStorage.getItem('graph_token');
+  if (!token) return [];
+  // Also need my email to determine direction (who sent the last message)
+  let myEmail = '';
+  let myId = '';
+  try {
+    const meResp = await fetch('https://graph.microsoft.com/v1.0/me?$select=mail,userPrincipalName,id', { headers: { 'Authorization': 'Bearer ' + token } });
+    const meData = await meResp.json();
+    myEmail = (meData.mail || meData.userPrincipalName || '').toLowerCase();
+    myId = meData.id;
+  } catch {}
+
+  const data = await graphGet(`/me/chats?$top=${limit}&$expand=members&$orderby=lastMessagePreview/createdDateTime desc`);
+  if (!data?.value) return [];
+
+  // Chats can be 'oneOnOne', 'group', or 'meeting'. Filter out meetings (those come through calendar).
+  const chats = data.value.filter(c => c.chatType !== 'meeting');
+
+  return chats.map(c => {
+    const members = c.members || [];
+    // Other-party members (exclude me)
+    const others = members.filter(m => {
+      const em = (m.email || '').toLowerCase();
+      return em && em !== myEmail;
+    });
+    const otherNames = others.map(m => m.displayName).filter(Boolean);
+    const otherEmails = others.map(m => (m.email || '').toLowerCase()).filter(Boolean);
+
+    const preview = (c.lastMessagePreview?.body?.content || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 200);
+    const lastFromId = c.lastMessagePreview?.from?.user?.id;
+    const lastFromName = c.lastMessagePreview?.from?.user?.displayName || '';
+    const iSent = !!(lastFromId && myId && lastFromId === myId);
+
+    return {
+      id: c.id,
+      channel: 'teams',
+      chatType: c.chatType,
+      topic: c.topic || otherNames.join(', ') || 'Chat',
+      // Use email-like shape for uniform rendering
+      subject: c.topic || (others.length === 1 ? `Chat with ${otherNames[0] || 'Unknown'}` : `Group: ${otherNames.slice(0, 3).join(', ')}${otherNames.length > 3 ? '…' : ''}`),
+      from: iSent ? 'You' : (lastFromName || otherNames[0] || 'Unknown'),
+      fromAddress: iSent ? myEmail : (otherEmails[0] || ''),
+      to: iSent ? otherEmails.join(', ') : myEmail,
+      toAddresses: iSent ? otherEmails : (myEmail ? [myEmail] : []),
+      bodyPreview: preview,
+      date: c.lastMessagePreview?.createdDateTime || c.lastUpdatedDateTime || '',
+      isRead: true, // Graph doesn't expose unread at chat level via basic scope
+      dir: iSent ? 'out' : 'in',
+      folder: 'Inbox', // Show Teams chats in Inbox by default (so channel=teams filter finds them)
+      archived: false,
+      // Extra context for matching
+      participantEmails: [...otherEmails, myEmail].filter(Boolean),
+    };
+  });
+}
+
 // Get messages in a chat
 export async function getChatMessages(chatId, top = 20) {
   const data = await graphGet(`/me/chats/${chatId}/messages?$top=${top}`);

@@ -18,7 +18,8 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
   const graphEmails = useMemo(() => {
     const mapped = (rawGraphEmails || []).map(e => ({
       id: e.id,
-      channel: 'email',
+      // channel comes from the fetch: 'email' for mail, 'teams' for chats
+      channel: e.channel || 'email',
       dir: e.dir || 'in',
       from: e.from,
       fromAddress: e.fromAddress,
@@ -31,14 +32,22 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
       hasAttach: e.hasAttachments,
       archived: !!e.archived,
       folder: e.folder,
+      chatType: e.chatType,
+      participantEmails: e.participantEmails,
       source: 'graph',
     }));
     const contactByEmail = new Map((contacts || []).filter(c => c.email).map(c => [c.email.toLowerCase(), c]));
     mapped.forEach(m => {
-      // For incoming emails: match on sender; for sent emails: match on recipients
-      const candidates = m.dir === 'out'
-        ? (m.toAddresses || []).map(a => (a || '').toLowerCase())
-        : [(m.fromAddress || '').toLowerCase()];
+      // For incoming: match on sender. For sent: match on recipients.
+      // For Teams chats: check all participants (excluding me).
+      let candidates;
+      if (m.channel === 'teams') {
+        candidates = (m.participantEmails || []).map(a => (a || '').toLowerCase());
+      } else if (m.dir === 'out') {
+        candidates = (m.toAddresses || []).map(a => (a || '').toLowerCase());
+      } else {
+        candidates = [(m.fromAddress || '').toLowerCase()];
+      }
       for (const addr of candidates) {
         if (!addr) continue;
         const contact = contactByEmail.get(addr);
