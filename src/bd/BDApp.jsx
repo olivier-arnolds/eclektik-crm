@@ -125,7 +125,8 @@ export default function BDApp() {
   const selectDeal = (d) => {
     setSelectedDeal(d);
     setRightContext({ type: 'deal', id: d.id });
-    setOpenDeal(d);
+    // Popup disabled — Account 360 on the right shows everything we need.
+    // setOpenDeal(d);
   };
   const selectCommHandler = (id) => {
     setSelectedComm(id);
