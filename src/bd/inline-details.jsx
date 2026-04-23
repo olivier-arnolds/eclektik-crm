@@ -271,6 +271,81 @@ export function InlineMeetingDetail({ event, companyId, dedupKey, onRefresh }) {
   );
 }
 
+// Inline expand contents for an account (shows core company fields,
+// click to edit any value). Used in Account 360 hero.
+export function InlineAccountDetails({ accountId }) {
+  const [row, setRow] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState({});
+
+  useEffect(() => {
+    if (!accountId) return;
+    setLoading(true);
+    supabase.from('companies').select('*').eq('id', accountId).single()
+      .then(({ data }) => { setRow(data); setLoading(false); });
+  }, [accountId]);
+
+  const saveField = async (field, value) => {
+    setSaving(s => ({ ...s, [field]: true }));
+    const { error } = await supabase.from('companies').update({ [field]: value }).eq('id', accountId);
+    setSaving(s => ({ ...s, [field]: false }));
+    if (!error) setRow(r => ({ ...r, [field]: value }));
+  };
+
+  if (loading || !row) return <div style={{ fontSize: 11, color: 'var(--text-3)' }}>Loading…</div>;
+
+  const websiteUrl = row.website && (row.website.startsWith('http') ? row.website : `https://${row.website}`);
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+        <InlineField label="Type" value={row.type} onSave={v => saveField('type', v)} />
+        <InlineField label="Stage" value={row.stage} onSave={v => saveField('stage', v)} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, gridColumn: 'span 2' }}>
+          <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span>Website</span>
+            {websiteUrl && (
+              <a href={websiteUrl} target="_blank" rel="noopener noreferrer"
+                style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)', fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.08em', textDecoration: 'none' }}>
+                → Open
+              </a>
+            )}
+          </div>
+          <InlineField label="" value={row.website} onSave={v => saveField('website', v)} />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, gridColumn: 'span 2' }}>
+          <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span>LinkedIn URL</span>
+            {row.linkedin_url && (
+              <a href={row.linkedin_url} target="_blank" rel="noopener noreferrer"
+                style={{ color: 'var(--chip-linkedin)', fontFamily: 'var(--font-mono)', fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.08em', textDecoration: 'none' }}>
+                → Open
+              </a>
+            )}
+          </div>
+          <InlineField label="" value={row.linkedin_url} onSave={v => saveField('linkedin_url', v)} />
+        </div>
+        <InlineField label="Phone" value={row.phone} onSave={v => saveField('phone', v)} />
+        <InlineField label="Email" value={row.email} type="email" onSave={v => saveField('email', v)} />
+        <InlineField label="Industry" value={row.industry} onSave={v => saveField('industry', v)} colspan={2} />
+        <InlineField label="Address" value={row.address} onSave={v => saveField('address', v)} colspan={2} />
+        <InlineField label="City" value={row.city} onSave={v => saveField('city', v)} />
+        <InlineField label="Postal code" value={row.postal_code} onSave={v => saveField('postal_code', v)} />
+        <InlineField label="Country" value={row.country} onSave={v => saveField('country', v)} />
+        <InlineField label="Employees" value={row.employee_count} onSave={v => saveField('employee_count', v)} />
+        <InlineField label="Annual revenue" value={row.annual_revenue} onSave={v => saveField('annual_revenue', v)} />
+        <InlineField label="Size" value={row.size} onSave={v => saveField('size', v)} />
+        <InlineField label="Founded" value={row.founded_year} onSave={v => saveField('founded_year', v)} />
+        <InlineField label="Parent account" value={row.parent_account} onSave={v => saveField('parent_account', v)} />
+        <InlineField label="Owner" value={row.owner} onSave={v => saveField('owner', v)} />
+        <InlineField label="Tagline" value={row.tagline} onSave={v => saveField('tagline', v)} colspan={2} />
+        <InlineField label="Specialities" value={row.specialities} onSave={v => saveField('specialities', v)} type="textarea" colspan={2} />
+        <InlineField label="Description" value={row.description} type="textarea" onSave={v => saveField('description', v)} colspan={2} />
+      </div>
+    </div>
+  );
+}
+
 // Parse notes with date-prefix lines into entries
 // Supports: DDMMYYYY:, DD-MM-YYYY:, YYYY-MM-DD:, DD/MM/YYYY:
 function parseDatedNotes(notes) {

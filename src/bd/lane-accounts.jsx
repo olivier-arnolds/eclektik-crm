@@ -8,7 +8,7 @@ import ContactDetailModal from './contact-detail-modal';
 import MeetingNoteModal from './meeting-note-modal';
 import AccountLinksSection from './account-links-section';
 import ExpandableRow from './expandable-row';
-import { InlineContactDetail, InlineMeetingDetail, InlineDealDetail } from './inline-details';
+import { InlineContactDetail, InlineMeetingDetail, InlineDealDetail, InlineAccountDetails } from './inline-details';
 import { supabase } from '../supabase';
 import { syncMyCalendar, getSharedEventsForAccount, buildDedupKey } from './sync-events';
 import { useAuth } from '../lib/auth';
@@ -304,6 +304,7 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
   const [showInactivate, setShowInactivate] = useState(false);
   const [detailContactId, setDetailContactId] = useState(null);
   const [meetingNoteEvent, setMeetingNoteEvent] = useState(null);
+  const [showCoreDetails, setShowCoreDetails] = useState(false);
   // Shared calendar events for this account (synced from all users' Outlook)
   const [sharedEvents, setSharedEvents] = useState([]);
   const [syncingEvents, setSyncingEvents] = useState(false);
@@ -443,10 +444,19 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
         )}
       </div>
 
-      <div className="acc-hero">
+      <div className="acc-hero" style={{ flexWrap: 'wrap' }}>
         <AccountMark account={account} size={40} />
-        <div>
-          <div className="acc-hero-name">{account.name}</div>
+        <div style={{ cursor: account.id ? 'pointer' : 'default', flex: 1, minWidth: 0 }}
+          onClick={() => account.id && setShowCoreDetails(v => !v)}
+          title={account.id ? (showCoreDetails ? 'Hide core details' : 'Show core details') : ''}>
+          <div className="acc-hero-name" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            {account.name}
+            {account.id && (
+              <span style={{ fontSize: 10, color: 'var(--text-3)', fontFamily: 'var(--font-mono)', transform: showCoreDetails ? 'rotate(90deg)' : 'none', transition: 'transform 0.12s' }}>
+                ›
+              </span>
+            )}
+          </div>
           <div className="acc-hero-meta">
             <span>{account.type || '—'}</span>
             {account.tier && <><span className="sep">·</span><span>{account.tier}</span></>}
@@ -455,6 +465,11 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
           </div>
         </div>
         {account.owner && <div style={{ marginLeft: 'auto' }}><OwnerChip id={account.owner} /></div>}
+        {showCoreDetails && account.id && (
+          <div style={{ flexBasis: '100%', marginTop: 10, padding: '10px 0', borderTop: '0.5px solid var(--sep)' }}>
+            <InlineAccountDetails accountId={account.id} />
+          </div>
+        )}
       </div>
 
       <div className="acc-scroll">
