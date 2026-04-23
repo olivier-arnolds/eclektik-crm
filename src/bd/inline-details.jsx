@@ -68,7 +68,7 @@ const fieldInputStyle = {
 };
 
 // Inline expand contents for a contact
-export function InlineContactDetail({ contactId, onCompose }) {
+export function InlineContactDetail({ contactId, onCompose, refetch }) {
   const [row, setRow] = useState(null);
   const [saving, setSaving] = useState({});
   const [loading, setLoading] = useState(true);
@@ -147,13 +147,28 @@ export function InlineContactDetail({ contactId, onCompose }) {
         <InlineField label="" value={row.linkedin_url} onSave={v => saveField('linkedin_url', v)} />
       </div>
       <InlineField label="Notes" value={row.notes} onSave={v => saveField('notes', v)} type="textarea" colspan={2} />
-      {row.email && onCompose && (
-        <div style={{ gridColumn: 'span 2', marginTop: 4 }}>
+      <div style={{ gridColumn: 'span 2', marginTop: 4, display: 'flex', gap: 6, alignItems: 'center', borderTop: '0.5px solid var(--sep)', paddingTop: 8 }}>
+        {row.email && onCompose && (
           <button className="btn-primary tiny" onClick={() => onCompose({ to: row.email, contact: row })}>
             <I.send /> Email
           </button>
-        </div>
-      )}
+        )}
+        <button className="btn-ghost tiny" style={{ marginLeft: 'auto', color: 'var(--danger)' }}
+          onClick={async () => {
+            const reason = prompt(`Inactivate ${row.full_name || 'this contact'}?\n\nOptional reason (e.g. duplicate, left company, unsubscribed):`, '');
+            if (reason === null) return; // cancelled
+            const { error } = await supabase.from('contacts').update({
+              stage: 'Inactive',
+              inactive_reason: reason.trim() || 'Manually inactivated',
+              inactivated_at: new Date().toISOString(),
+            }).eq('id', contactId);
+            if (error) { alert('Failed: ' + error.message); return; }
+            setRow(r => ({ ...r, stage: 'Inactive' }));
+            if (refetch) refetch();
+          }}>
+          <I.archive /> Inactivate
+        </button>
+      </div>
     </div>
   );
 }

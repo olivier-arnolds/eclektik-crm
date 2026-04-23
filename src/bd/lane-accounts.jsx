@@ -543,7 +543,7 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
                   </div>
                 )}
                 expanded={() => (
-                  <InlineContactDetail contactId={c.id} onCompose={onCompose} />
+                  <InlineContactDetail contactId={c.id} onCompose={onCompose} refetch={refetch} />
                 )}
               />
             ))}
