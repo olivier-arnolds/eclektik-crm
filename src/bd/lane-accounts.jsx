@@ -467,7 +467,7 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
         {account.owner && <div style={{ marginLeft: 'auto' }}><OwnerChip id={account.owner} /></div>}
         {showCoreDetails && account.id && (
           <div style={{ flexBasis: '100%', marginTop: 10, padding: '10px 0', borderTop: '0.5px solid var(--sep)' }}>
-            <InlineAccountDetails accountId={account.id} />
+            <InlineAccountDetails accountId={account.id} onPickAccount={onPickAccount} />
           </div>
         )}
       </div>

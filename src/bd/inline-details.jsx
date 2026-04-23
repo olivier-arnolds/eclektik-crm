@@ -242,6 +242,85 @@ function CompanyPicker({ value, label, accounts, onChange, saving }) {
   );
 }
 
+// Parent account picker: select an existing account as the parent of
+// the current account. Shows current parent as a clickable chip that
+// navigates to that account.
+function ParentAccountPicker({ value, parent, parentNameFallback, accounts, currentAccountId, onChange, onOpenParent, saving }) {
+  const [editing, setEditing] = useState(false);
+  const [query, setQuery] = useState('');
+
+  const filtered = (accounts || []).filter(a => {
+    if (a.id === currentAccountId) return false; // can't parent to self
+    if (!query) return true;
+    const q = query.toLowerCase();
+    return a.name.toLowerCase().includes(q) || (a.type || '').toLowerCase().includes(q);
+  }).slice(0, 20);
+
+  const pick = (id) => {
+    onChange(id);
+    setEditing(false);
+    setQuery('');
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)', display: 'flex', alignItems: 'center', gap: 6 }}>
+        <span>Parent account</span>
+        {saving && <span style={{ color: 'var(--accent)' }}>…</span>}
+        {value && !editing && (
+          <button onClick={(e) => { e.stopPropagation(); if (confirm('Remove parent link?')) onChange(null); }}
+            style={{ marginLeft: 'auto', background: 'transparent', border: 'none', color: 'var(--danger)', cursor: 'pointer', fontSize: 9, fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '0.08em', padding: 0 }}>
+            × unlink
+          </button>
+        )}
+      </div>
+      {editing ? (
+        <div style={{ border: '0.5px solid var(--accent)', borderRadius: 6, padding: 6, background: 'var(--fill-1)' }}>
+          <input autoFocus value={query} onChange={e => setQuery(e.target.value)}
+            placeholder="Search parent account…"
+            onKeyDown={e => { if (e.key === 'Escape') { setEditing(false); setQuery(''); } }}
+            style={{ width: '100%', padding: '4px 8px', borderRadius: 4, border: '0.5px solid var(--sep)', background: 'var(--bg-1)', color: 'var(--text-1)', fontSize: 12, outline: 'none', boxSizing: 'border-box', marginBottom: 4 }} />
+          <div style={{ maxHeight: 200, overflowY: 'auto' }}>
+            {filtered.length === 0 && <div style={{ fontSize: 11, color: 'var(--text-3)', fontStyle: 'italic', padding: 6 }}>No matches</div>}
+            {filtered.map(a => (
+              <div key={a.id} onClick={() => pick(a.id)}
+                style={{ padding: '5px 8px', cursor: 'pointer', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 6 }}
+                onMouseEnter={e => e.currentTarget.style.background = 'var(--fill-2)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                <div style={{ fontSize: 12, color: 'var(--text-1)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.name}</div>
+                {a.type && <div style={{ fontSize: 10, color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>{a.type}</div>}
+              </div>
+            ))}
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 4 }}>
+            <button onClick={() => { setEditing(false); setQuery(''); }} className="btn-ghost tiny">Cancel</button>
+          </div>
+        </div>
+      ) : parent ? (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 8px', borderRadius: 5 }}>
+          <button onClick={() => onOpenParent && onOpenParent(parent)}
+            style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--accent)', fontSize: 12, padding: 0, textAlign: 'left', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+            title="Open parent account">
+            → {parent.name}
+          </button>
+          {parent.type && <span style={{ fontSize: 10, color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>{parent.type}</span>}
+          <button onClick={() => setEditing(true)} className="btn-ghost tiny">Change</button>
+        </div>
+      ) : (
+        <div onClick={() => setEditing(true)}
+          style={{
+            fontSize: 12, color: 'var(--text-3)',
+            padding: '5px 8px', borderRadius: 5, cursor: 'pointer', fontStyle: 'italic',
+          }}
+          onMouseEnter={e => e.currentTarget.style.background = 'var(--fill-1)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+          {parentNameFallback ? `${parentNameFallback} (not linked) — click to link` : 'Click to link a parent…'}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Inline expand contents for a meeting (shows body + notes + add-note).
 // Notes are stored against dedup_key so all users see the same shared notes
 // for a given meeting (regardless of who synced it).
@@ -383,23 +462,47 @@ export function InlineMeetingDetail({ event, companyId, dedupKey, onRefresh }) {
 
 // Inline expand contents for an account (shows core company fields,
 // click to edit any value). Used in Account 360 hero.
-export function InlineAccountDetails({ accountId }) {
+export function InlineAccountDetails({ accountId, onPickAccount }) {
   const [row, setRow] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState({});
+  const [allAccounts, setAllAccounts] = useState([]);
+  const [parentInfo, setParentInfo] = useState(null);
 
   useEffect(() => {
     if (!accountId) return;
     setLoading(true);
     supabase.from('companies').select('*').eq('id', accountId).single()
       .then(({ data }) => { setRow(data); setLoading(false); });
+    supabase.from('companies').select('id,name,type').neq('stage', 'Inactive').order('name')
+      .then(({ data }) => setAllAccounts(data || []));
   }, [accountId]);
+
+  // Load parent info whenever parent_id changes
+  useEffect(() => {
+    if (!row?.parent_id) { setParentInfo(null); return; }
+    supabase.from('companies').select('id,name,type,stage').eq('id', row.parent_id).single()
+      .then(({ data }) => setParentInfo(data));
+  }, [row?.parent_id]);
 
   const saveField = async (field, value) => {
     setSaving(s => ({ ...s, [field]: true }));
     const { error } = await supabase.from('companies').update({ [field]: value }).eq('id', accountId);
     setSaving(s => ({ ...s, [field]: false }));
     if (!error) setRow(r => ({ ...r, [field]: value }));
+  };
+
+  const setParent = async (parentId) => {
+    setSaving(s => ({ ...s, parent_id: true }));
+    const parent = allAccounts.find(a => a.id === parentId);
+    const { error } = await supabase.from('companies').update({
+      parent_id: parentId || null,
+      parent_account: parent?.name || null, // keep text field in sync for legacy/Dynamics
+    }).eq('id', accountId);
+    setSaving(s => ({ ...s, parent_id: false }));
+    if (!error) {
+      setRow(r => ({ ...r, parent_id: parentId || null, parent_account: parent?.name || null }));
+    }
   };
 
   if (loading || !row) return <div style={{ fontSize: 11, color: 'var(--text-3)' }}>Loading…</div>;
@@ -446,7 +549,18 @@ export function InlineAccountDetails({ accountId }) {
         <InlineField label="Annual revenue" value={row.annual_revenue} onSave={v => saveField('annual_revenue', v)} />
         <InlineField label="Size" value={row.size} onSave={v => saveField('size', v)} />
         <InlineField label="Founded" value={row.founded_year} onSave={v => saveField('founded_year', v)} />
-        <InlineField label="Parent account" value={row.parent_account} onSave={v => saveField('parent_account', v)} />
+        <div style={{ gridColumn: 'span 1' }}>
+          <ParentAccountPicker
+            value={row.parent_id}
+            parent={parentInfo}
+            parentNameFallback={row.parent_account}
+            accounts={allAccounts}
+            currentAccountId={accountId}
+            saving={saving.parent_id}
+            onChange={setParent}
+            onOpenParent={(acc) => onPickAccount && onPickAccount(acc)}
+          />
+        </div>
         <InlineField label="Owner" value={row.owner} onSave={v => saveField('owner', v)} />
         <InlineField label="Tagline" value={row.tagline} onSave={v => saveField('tagline', v)} colspan={2} />
         <InlineField label="Specialities" value={row.specialities} onSave={v => saveField('specialities', v)} type="textarea" colspan={2} />
