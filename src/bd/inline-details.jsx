@@ -147,22 +147,21 @@ export function InlineMeetingDetail({ event, companyId, dedupKey, onRefresh }) {
   useEffect(() => {
     if (!graphEventId && !dedupKey) return;
     setLoading(true);
-    // Fetch notes matched by EITHER dedup_key OR graph_event_id
-    // (dedup_key is the canonical key shared across all users)
-    let query = supabase.from('meeting_notes').select('*');
-    if (dedupKey && graphEventId) {
-      query = query.or(`dedup_key.eq.${dedupKey},event_id.eq.${graphEventId}`);
-    } else if (dedupKey) {
-      query = query.eq('dedup_key', dedupKey);
-    } else {
-      query = query.eq('event_id', graphEventId);
-    }
+    // Fetch notes matched by EITHER dedup_key OR graph_event_id.
+    // Also match legacy rows that accidentally stored event_id WITH the
+    // "graph:" prefix — so old notes stay visible.
+    const prefixedId = graphEventId ? 'graph:' + graphEventId : null;
+    const orParts = [];
+    if (dedupKey) orParts.push(`dedup_key.eq.${dedupKey}`);
+    if (graphEventId) orParts.push(`event_id.eq.${graphEventId}`);
+    if (prefixedId) orParts.push(`event_id.eq.${prefixedId}`);
+    const query = supabase.from('meeting_notes').select('*').or(orParts.join(','));
     query.order('created_at', { ascending: false })
       .then(({ data }) => {
-        // Dedupe: same content + same created_by within 10 seconds
+        // Dedupe rows that appear twice due to prefixed vs unprefixed event_id.
         const seen = new Set();
         const unique = (data || []).filter(n => {
-          const key = `${n.content}|${n.created_by}|${n.created_at?.slice(0, 16)}`;
+          const key = n.id;
           if (seen.has(key)) return false;
           seen.add(key);
           return true;
