@@ -62,6 +62,18 @@ export default function FunnelLane({ deals, accounts, contacts, filters, setFilt
       }
     }
     await updateRow(deal.table, dealId, updates);
+    // Auto-promote Prospect → Customer on a win or when moving into delivery:
+    //   - Any explicit 'Won' status
+    //   - Proposal → Onboarding (new customer moving into delivery, implicit won)
+    const implicitWin = !winStatus
+      && toStage === 'onboarding'
+      && deal.stage === 'proposal';
+    if ((winStatus === 'Won' || implicitWin) && deal.accountId) {
+      const acc = (accounts || []).find(a => a.id === deal.accountId);
+      if (acc && (acc.type || '').toLowerCase() === 'prospect') {
+        await updateRow('companies', deal.accountId, { type: 'Customer' });
+      }
+    }
     if (refetch) refetch();
   };
 
