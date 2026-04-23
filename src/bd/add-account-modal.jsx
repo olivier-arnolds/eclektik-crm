@@ -1,6 +1,72 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { I } from './atoms';
 import { insertRow } from '../hooks/useSupabase';
+import { supabase } from '../supabase';
+
+// Normalize a company name for similarity matching:
+// - lowercase, strip whitespace
+// - remove common prefixes ("* ", "P2P |")
+// - remove common corporate suffixes/stopwords (Inc, Ltd, BV, GmbH, Corp, LLC,
+//   Technologies, Solutions, Group, etc.)
+// - collapse multiple spaces
+const CORP_STOPWORDS = [
+  'inc', 'incorporated', 'ltd', 'limited', 'bv', 'b.v.', 'nv', 'n.v.',
+  'gmbh', 'ag', 'corp', 'corporation', 'co', 'company', 'llc', 'llp', 'sa',
+  'sarl', 'srl', 'oy', 'ab', 'as', 'plc', 'gbr', 'kgaa',
+  'group', 'holdings', 'enterprises', 'international', 'global',
+  'technologies', 'technology', 'tech', 'solutions', 'solution',
+  'services', 'service', 'systems', 'system', 'consulting',
+  'partners', 'ventures', 'capital', 'industries',
+];
+const STOPWORD_SET = new Set(CORP_STOPWORDS);
+
+function normalizeName(raw) {
+  if (!raw) return '';
+  let n = raw.toLowerCase().trim();
+  // Strip common prefixes
+  if (n.startsWith('* ')) n = n.slice(2).trim();
+  if (n.startsWith('p2p |')) n = n.slice(5).trim();
+  if (n.startsWith('p2p|')) n = n.slice(4).trim();
+  // Remove punctuation (keep alphanumerics + spaces)
+  n = n.replace(/[^a-z0-9\s]+/g, ' ');
+  // Remove stopword tokens
+  const kept = n.split(/\s+/).filter(t => t && !STOPWORD_SET.has(t));
+  return kept.join(' ').trim();
+}
+
+function findSimilarAccounts(query, accounts) {
+  const q = query.trim();
+  if (!q || q.length < 2) return [];
+  const qLower = q.toLowerCase();
+  const qNorm = normalizeName(q);
+
+  const matches = [];
+  for (const a of accounts || []) {
+    if (!a?.name) continue;
+    const nameLower = a.name.toLowerCase();
+    const nameNorm = normalizeName(a.name);
+
+    // 1) Exact (normalized) match
+    if (qNorm && nameNorm && qNorm === nameNorm) {
+      matches.push({ account: a, matchType: 'exact', score: 100 });
+      continue;
+    }
+    // 2) Normalized stem contains the other (e.g. "trane" ⊂ "trane technologies")
+    if (qNorm && nameNorm && qNorm.length >= 3 && nameNorm.length >= 3) {
+      if (nameNorm.includes(qNorm) || qNorm.includes(nameNorm)) {
+        matches.push({ account: a, matchType: 'similar', score: 70 });
+        continue;
+      }
+    }
+    // 3) Raw substring (catches punctuation-heavy names e.g. "P2P | X")
+    if (qLower.length >= 3 && (nameLower.includes(qLower) || qLower.includes(nameLower))) {
+      matches.push({ account: a, matchType: 'substring', score: 50 });
+      continue;
+    }
+  }
+  matches.sort((a, b) => b.score - a.score);
+  return matches.slice(0, 5);
+}
 
 export default function AddAccountModal({ onClose, onCreated, initialName, initialWebsite, initialLinkedIn }) {
   const [name, setName] = useState(initialName || '');
@@ -8,6 +74,22 @@ export default function AddAccountModal({ onClose, onCreated, initialName, initi
   const [website, setWebsite] = useState(initialWebsite || '');
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState('');
+  const [allAccounts, setAllAccounts] = useState([]);
+
+  useEffect(() => {
+    supabase.from('companies').select('id,name,type,stage').order('name')
+      .then(({ data }) => setAllAccounts(data || []));
+  }, []);
+
+  // Debounced version of `name` for dupe-check (avoids firing on each keystroke)
+  const [debouncedName, setDebouncedName] = useState(name);
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedName(name), 300);
+    return () => clearTimeout(t);
+  }, [name]);
+
+  const similar = useMemo(() => findSimilarAccounts(debouncedName, allAccounts), [debouncedName, allAccounts]);
+  const exactMatch = similar.find(m => m.matchType === 'exact')?.account;
 
   const canSave = name.trim().length > 0 && (website.trim() || linkedinUrl.trim());
 
@@ -21,6 +103,15 @@ export default function AddAccountModal({ onClose, onCreated, initialName, initi
 
   const handleSave = async () => {
     if (!canSave) return;
+    // Warn if there's an exact duplicate, but allow creating anyway
+    if (exactMatch) {
+      const proceed = confirm(
+        `An account called "${exactMatch.name}" already exists (${exactMatch.type || 'no type'}).\n\n` +
+        `Create a new one anyway?\n\n` +
+        `Click OK to continue, or Cancel to go back and pick the existing one.`
+      );
+      if (!proceed) return;
+    }
     setSaving(true);
     setStatus('Creating account…');
     const { data: newCompany, error } = await insertRow('companies', {
@@ -37,7 +128,6 @@ export default function AddAccountModal({ onClose, onCreated, initialName, initi
       return;
     }
 
-    // Auto-enrich via Surfe (best-effort)
     if (newCompany?.id) {
       setStatus('Enriching via Surfe…');
       try {
@@ -48,7 +138,6 @@ export default function AddAccountModal({ onClose, onCreated, initialName, initi
         });
         const enrichData = await enrichResp.json();
         if (enrichData.surfeResponse?.enrichmentID) {
-          // Brief poll attempt to catch fast results
           await new Promise(r => setTimeout(r, 4000));
           await fetch(`/api/surfe-poll?enrichmentID=${enrichData.surfeResponse.enrichmentID}&type=companies`);
         }
@@ -72,6 +161,12 @@ export default function AddAccountModal({ onClose, onCreated, initialName, initi
     color: 'var(--text-3)', fontFamily: 'var(--font-mono)', marginBottom: 5,
   };
 
+  const openExisting = (acc) => {
+    // Signal parent to navigate to this account instead of creating a new one
+    if (onCreated) onCreated(acc);
+    onClose();
+  };
+
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal" style={{ width: 440 }} onClick={e => e.stopPropagation()}>
@@ -89,6 +184,52 @@ export default function AddAccountModal({ onClose, onCreated, initialName, initi
             <div style={label}>Company name *</div>
             <input autoFocus style={fieldStyle} value={name} onChange={e => setName(e.target.value)}
               placeholder="Acme Corporation" />
+
+            {similar.length > 0 && (
+              <div style={{
+                marginTop: 8, padding: 10, borderRadius: 6,
+                background: exactMatch ? 'var(--danger-tint)' : 'var(--warn-tint)',
+                border: `0.5px solid ${exactMatch ? 'var(--danger)' : 'var(--warn)'}`,
+                fontSize: 11,
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6, color: exactMatch ? 'var(--danger)' : 'var(--warn)' }}>
+                  <span style={{ fontWeight: 600 }}>
+                    {exactMatch ? '⚠ Exact duplicate found' : '⚠ Possible duplicates'}
+                  </span>
+                  <span style={{ opacity: 0.7, fontFamily: 'var(--font-mono)', fontSize: 10 }}>
+                    {similar.length} match{similar.length !== 1 ? 'es' : ''}
+                  </span>
+                </div>
+                <div style={{ fontSize: 10, color: 'var(--text-2)', marginBottom: 6 }}>
+                  {exactMatch
+                    ? 'A company with this exact name already exists. Consider opening the existing one instead, or create new if this is a different entity (e.g. country branch).'
+                    : 'Check if one of these is the same company. Country branches / divisions are fine to add separately.'}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  {similar.map(({ account: a, matchType }) => (
+                    <div key={a.id} style={{
+                      display: 'flex', alignItems: 'center', gap: 6,
+                      padding: '5px 8px', background: 'var(--bg-1)',
+                      borderRadius: 4,
+                    }}>
+                      <span style={{
+                        fontSize: 9, fontFamily: 'var(--font-mono)', textTransform: 'uppercase',
+                        padding: '1px 5px', borderRadius: 3,
+                        background: matchType === 'exact' ? 'var(--danger-tint)' : 'var(--fill-2)',
+                        color: matchType === 'exact' ? 'var(--danger)' : 'var(--text-3)',
+                      }}>
+                        {matchType === 'exact' ? 'EXACT' : matchType === 'similar' ? 'SIMILAR' : 'SUBSTR'}
+                      </span>
+                      <span style={{ fontSize: 12, color: 'var(--text-1)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {a.name}
+                      </span>
+                      {a.type && <span style={{ fontSize: 10, color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>{a.type}</span>}
+                      <button className="btn-ghost tiny" onClick={() => openExisting(a)}>Open</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <div>
@@ -112,7 +253,7 @@ export default function AddAccountModal({ onClose, onCreated, initialName, initi
         <div className="modal-actions">
           <button className="btn-ghost" onClick={onClose} disabled={saving}>Cancel</button>
           <button className="btn-primary" onClick={handleSave} disabled={!canSave || saving}>
-            {saving ? 'Saving…' : 'Save & enrich'}
+            {saving ? 'Saving…' : (exactMatch ? 'Create anyway' : 'Save & enrich')}
           </button>
         </div>
       </div>
