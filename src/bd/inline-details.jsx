@@ -72,12 +72,15 @@ export function InlineContactDetail({ contactId, onCompose }) {
   const [row, setRow] = useState(null);
   const [saving, setSaving] = useState({});
   const [loading, setLoading] = useState(true);
+  const [allAccounts, setAllAccounts] = useState([]);
 
   useEffect(() => {
     if (!contactId) return;
     setLoading(true);
     supabase.from('contacts').select('*, companies(name, linkedin_url, website)').eq('id', contactId).single()
       .then(({ data }) => { setRow(data); setLoading(false); });
+    supabase.from('companies').select('id,name,type').neq('stage', 'Inactive').order('name')
+      .then(({ data }) => setAllAccounts(data || []));
   }, [contactId]);
 
   const saveField = async (field, value) => {
@@ -85,6 +88,20 @@ export function InlineContactDetail({ contactId, onCompose }) {
     const { error } = await supabase.from('contacts').update({ [field]: value }).eq('id', contactId);
     setSaving(s => ({ ...s, [field]: false }));
     if (!error) setRow(r => ({ ...r, [field]: value }));
+  };
+
+  const moveToAccount = async (newCompanyId) => {
+    // Also update company_name so the legacy text field stays in sync
+    const newAcc = allAccounts.find(a => a.id === newCompanyId);
+    setSaving(s => ({ ...s, company_id: true }));
+    const { error } = await supabase.from('contacts').update({
+      company_id: newCompanyId || null,
+      company_name: newAcc?.name || null,
+    }).eq('id', contactId);
+    setSaving(s => ({ ...s, company_id: false }));
+    if (!error) {
+      setRow(r => ({ ...r, company_id: newCompanyId, company_name: newAcc?.name || null, companies: newAcc ? { name: newAcc.name } : null }));
+    }
   };
 
   if (loading || !row) return <div style={{ fontSize: 11, color: 'var(--text-3)' }}>Loading…</div>;
@@ -99,6 +116,15 @@ export function InlineContactDetail({ contactId, onCompose }) {
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+      <div style={{ gridColumn: 'span 2' }}>
+        <CompanyPicker
+          value={row.company_id}
+          label={row.companies?.name || row.company_name || '— no account linked —'}
+          accounts={allAccounts}
+          saving={saving.company_id}
+          onChange={moveToAccount}
+        />
+      </div>
       <InlineField label="First name" value={row.first_name} onSave={v => saveField('first_name', v)} />
       <InlineField label="Last name" value={row.last_name} onSave={v => saveField('last_name', v)} />
       <InlineField label="Email" value={row.email} onSave={v => saveField('email', v)} type="email" colspan={2} />
@@ -126,6 +152,75 @@ export function InlineContactDetail({ contactId, onCompose }) {
           <button className="btn-primary tiny" onClick={() => onCompose({ to: row.email, contact: row })}>
             <I.send /> Email
           </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Picker to link/move a contact to a different account (company).
+// Type to search; click to select; clear with the × on the selected chip.
+function CompanyPicker({ value, label, accounts, onChange, saving }) {
+  const [editing, setEditing] = useState(false);
+  const [query, setQuery] = useState('');
+
+  const filtered = (accounts || []).filter(a => {
+    if (!query) return true;
+    const q = query.toLowerCase();
+    return a.name.toLowerCase().includes(q) || (a.type || '').toLowerCase().includes(q);
+  }).slice(0, 20);
+
+  const pick = (id) => {
+    onChange(id);
+    setEditing(false);
+    setQuery('');
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)', display: 'flex', alignItems: 'center', gap: 6 }}>
+        <span>Account</span>
+        {saving && <span style={{ color: 'var(--accent)' }}>…</span>}
+        {value && !editing && (
+          <button onClick={(e) => { e.stopPropagation(); if (confirm('Unlink from this account?')) onChange(null); }}
+            style={{ marginLeft: 'auto', background: 'transparent', border: 'none', color: 'var(--danger)', cursor: 'pointer', fontSize: 9, fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '0.08em', padding: 0 }}>
+            × unlink
+          </button>
+        )}
+      </div>
+      {editing ? (
+        <div style={{ border: '0.5px solid var(--accent)', borderRadius: 6, padding: 6, background: 'var(--fill-1)' }}>
+          <input autoFocus value={query} onChange={e => setQuery(e.target.value)}
+            placeholder="Search accounts by name or type…"
+            onKeyDown={e => { if (e.key === 'Escape') { setEditing(false); setQuery(''); } }}
+            style={{ width: '100%', padding: '4px 8px', borderRadius: 4, border: '0.5px solid var(--sep)', background: 'var(--bg-1)', color: 'var(--text-1)', fontSize: 12, outline: 'none', boxSizing: 'border-box', marginBottom: 4 }} />
+          <div style={{ maxHeight: 200, overflowY: 'auto' }}>
+            {filtered.length === 0 && <div style={{ fontSize: 11, color: 'var(--text-3)', fontStyle: 'italic', padding: 6 }}>No matches</div>}
+            {filtered.map(a => (
+              <div key={a.id} onClick={() => pick(a.id)}
+                style={{ padding: '5px 8px', cursor: 'pointer', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 6 }}
+                onMouseEnter={e => e.currentTarget.style.background = 'var(--fill-2)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                <div style={{ fontSize: 12, color: 'var(--text-1)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.name}</div>
+                {a.type && <div style={{ fontSize: 10, color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>{a.type}</div>}
+              </div>
+            ))}
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 4 }}>
+            <button onClick={() => { setEditing(false); setQuery(''); }} className="btn-ghost tiny">Cancel</button>
+          </div>
+        </div>
+      ) : (
+        <div onClick={() => setEditing(true)}
+          style={{
+            fontSize: 12, color: value ? 'var(--text-1)' : 'var(--text-3)',
+            padding: '5px 8px', borderRadius: 5, cursor: 'pointer',
+            border: '0.5px solid transparent',
+            fontStyle: value ? 'normal' : 'italic',
+          }}
+          onMouseEnter={e => e.currentTarget.style.background = 'var(--fill-1)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+          {label} <span style={{ color: 'var(--text-3)', fontSize: 10, fontFamily: 'var(--font-mono)', marginLeft: 4 }}>→ click to change</span>
         </div>
       )}
     </div>
