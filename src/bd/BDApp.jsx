@@ -201,11 +201,11 @@ export default function BDApp() {
           />
         )}
 
-        {expandedLane !== 'left' && <div className="divider" />}
-
-        {/* MIDDLE + RIGHT lanes — hidden when left lane is expanded */}
+        {/* MIDDLE lane (Comms) — hidden when left lane is expanded.
+            Account 360 stays visible even in expanded mode. */}
         {expandedLane !== 'left' && (
           <>
+            <div className="divider" />
             <CommsLane
               comms={comms}
               accounts={accounts}
@@ -220,30 +220,31 @@ export default function BDApp() {
               onClearScope={() => setAccountScope(null)}
               search={search}
             />
-
-            <div className="divider" />
-
-            <AccountsLane
-              context={rightContext}
-              accounts={accounts}
-              contacts={contacts}
-              deals={deals}
-              rawItems={rawAllItems}
-              comms={comms}
-              graphEmails={graphEmails}
-              events={events}
-              graphEvents={graphEvents}
-              tasks={tasks}
-              search={search}
-              refetch={refetch}
-              refetchGraph={fetchGraphData}
-              onPickAccount={pickAccount}
-              onCompose={openCompose}
-              onOpenDeal={selectDeal}
-              onSelectComm={selectCommHandler}
-            />
           </>
         )}
+
+        <div className="divider" />
+
+        {/* RIGHT lane (Accounts 360) — always visible */}
+        <AccountsLane
+          context={rightContext}
+          accounts={accounts}
+          contacts={contacts}
+          deals={deals}
+          rawItems={rawAllItems}
+          comms={comms}
+          graphEmails={graphEmails}
+          events={events}
+          graphEvents={graphEvents}
+          tasks={tasks}
+          search={search}
+          refetch={refetch}
+          refetchGraph={fetchGraphData}
+          onPickAccount={pickAccount}
+          onCompose={openCompose}
+          onOpenDeal={selectDeal}
+          onSelectComm={selectCommHandler}
+        />
 
         {/* Global search results overlay (only when user is typing ≥2 chars) */}
         {search.trim().length >= 2 && !searchPanelDismissed && (
