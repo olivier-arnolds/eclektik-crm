@@ -7,6 +7,7 @@ import InactivateAccountModal from './inactivate-modal';
 import ContactDetailModal from './contact-detail-modal';
 import MeetingNoteModal from './meeting-note-modal';
 import AccountLinksSection from './account-links-section';
+import TypePicker from './type-picker';
 import ExpandableRow from './expandable-row';
 import { InlineContactDetail, InlineMeetingDetail, InlineDealDetail, InlineAccountDetails } from './inline-details';
 import { supabase } from '../supabase';
@@ -465,8 +466,19 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
               </span>
             )}
           </div>
-          <div className="acc-hero-meta">
-            <span>{account.type || '—'}</span>
+          <div className="acc-hero-meta" onClick={e => e.stopPropagation()}>
+            {account.id ? (
+              <TypePicker
+                value={account.type}
+                compact
+                onSave={async (v) => {
+                  await supabase.from('companies').update({ type: v }).eq('id', account.id);
+                  if (refetch) refetch();
+                }}
+              />
+            ) : (
+              <span>{account.type || '—'}</span>
+            )}
             {account.tier && <><span className="sep">·</span><span>{account.tier}</span></>}
             {account.region && <><span className="sep">·</span><span>{account.region}</span></>}
             {account.arr && <><span className="sep">·</span><span>{account.arr}</span></>}

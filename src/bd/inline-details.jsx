@@ -3,6 +3,7 @@ import { I, fmtFull, fmtMoney, OwnerDot, STAGE_TINT } from './atoms';
 import { supabase } from '../supabase';
 import DOMPurify from 'dompurify';
 import { updateRow } from '../hooks/useSupabase';
+import TypePicker from './type-picker';
 
 // Inline editable field — click to edit, blur/Enter to save.
 export function InlineField({ label, value, onSave, type = 'text', colspan }) {
@@ -512,7 +513,12 @@ export function InlineAccountDetails({ accountId, onPickAccount }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-        <InlineField label="Type" value={row.type} onSave={v => saveField('type', v)} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>
+            Type {saving.type && <span style={{ color: 'var(--accent)', marginLeft: 4 }}>…</span>}
+          </div>
+          <TypePicker value={row.type} onSave={v => saveField('type', v)} saving={saving.type} />
+        </div>
         <InlineField label="Stage" value={row.stage} onSave={v => saveField('stage', v)} />
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2, gridColumn: 'span 2' }}>
           <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)', display: 'flex', alignItems: 'center', gap: 8 }}>
