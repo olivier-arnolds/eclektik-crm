@@ -10,6 +10,8 @@ import AccountLinksSection from './account-links-section';
 import ExpandableRow from './expandable-row';
 import { InlineContactDetail, InlineMeetingDetail, InlineDealDetail } from './inline-details';
 import { supabase } from '../supabase';
+import { syncMyCalendar, getSharedEventsForAccount, buildDedupKey } from './sync-events';
+import { useAuth } from '../lib/auth';
 
 export default function AccountsLane({ context, accounts, contacts, deals, rawItems, comms, graphEmails, events, graphEvents, tasks, onPickAccount, onCompose, onOpenDeal, onSelectComm, search, refetch, refetchGraph }) {
   // Merge DB events + graph events for context resolution
@@ -302,18 +304,59 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
   const [showInactivate, setShowInactivate] = useState(false);
   const [detailContactId, setDetailContactId] = useState(null);
   const [meetingNoteEvent, setMeetingNoteEvent] = useState(null);
-  // Track which events have notes (so we show a 📝 indicator)
+  // Shared calendar events for this account (synced from all users' Outlook)
+  const [sharedEvents, setSharedEvents] = useState([]);
+  const [syncingEvents, setSyncingEvents] = useState(false);
+
+  const { session } = useAuth();
+  const userEmail = session?.user?.email || '';
+  const userName = session?.user?.user_metadata?.full_name || '';
+
+  // Sync my calendar + refetch shared events whenever a new account is opened.
+  useEffect(() => {
+    if (!account?.id) return;
+    let cancelled = false;
+    (async () => {
+      setSyncingEvents(true);
+      // 1. Push my own Outlook events into synced_events (if any new ones)
+      if (userEmail && localStorage.getItem('graph_token')) {
+        // Get raw accounts+contacts for company resolution (with company_id directly)
+        const { data: rawAccs } = await supabase.from('companies').select('id, name, website, linkedin_url');
+        const { data: rawCs } = await supabase.from('contacts').select('id, email, company_id').not('email', 'is', null);
+        await syncMyCalendar({
+          userEmail, userName,
+          accounts: rawAccs || [],
+          contacts: rawCs || [],
+          skipIfRecent: true,
+        });
+      }
+      if (cancelled) return;
+      // 2. Pull shared events for this account (from all users)
+      const events = await getSharedEventsForAccount(account.id);
+      if (cancelled) return;
+      setSharedEvents(events);
+      setSyncingEvents(false);
+    })();
+    return () => { cancelled = true; };
+  }, [account?.id, userEmail, userName]);
+
+  // Track which events have notes (📝 indicator)
   const [notesCountByEvent, setNotesCountByEvent] = useState({});
   useEffect(() => {
     if (!account?.id) return;
-    supabase.from('meeting_notes').select('event_id').eq('company_id', account.id)
+    supabase.from('meeting_notes')
+      .select('event_id, dedup_key')
+      .eq('company_id', account.id)
       .then(({ data, error }) => {
         if (error) return;
         const counts = {};
-        (data || []).forEach(r => { counts[r.event_id] = (counts[r.event_id] || 0) + 1; });
+        (data || []).forEach(r => {
+          if (r.dedup_key) counts['dedup:' + r.dedup_key] = (counts['dedup:' + r.dedup_key] || 0) + 1;
+          if (r.event_id) counts[r.event_id] = (counts[r.event_id] || 0) + 1;
+        });
         setNotesCountByEvent(counts);
       });
-  }, [account?.id, meetingNoteEvent]); // refresh after closing modal
+  }, [account?.id, meetingNoteEvent]);
   const accContacts = contacts.filter(c => c.accountId === account.id);
   const accDeals = deals.filter(d => d.accountId === account.id);
   const openDeals = accDeals.filter(d => ['qualify', 'develop', 'proposal', 'close'].includes(d.stage));
@@ -349,36 +392,26 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
     .filter(c => { if (seen.has(c.id)) return false; seen.add(c.id); return true; })
     .sort((a, b) => new Date(b.ts || 0) - new Date(a.ts || 0))
     .slice(0, 12);
-  // Show meetings matched to this account. Strict matching to avoid false positives:
-  // 1. Explicit accountId link (deals linked to account)
-  // 2. Attendee email matches a known contact at this account
-  // 3. STRICT domain match: attendee domain equals account website domain (or is direct subdomain)
-  //    (previously used .includes which matched too aggressively)
-  // We NEVER match on our own Eclectik domain (it's in every meeting).
-  const ECLECTIK_DOMAINS = new Set(['eclectik.co', 'eclectik.com', 'eclectikadmin.onmicrosoft.com']);
-  const accEvents = (events || []).filter(e => {
-    if (!account.id) return false;
-    if (e.accountId === account.id) return true;
-
-    const attEmails = (e.attendeesEmails && e.attendeesEmails.length
-      ? e.attendeesEmails.map(s => (s || '').toLowerCase()).filter(Boolean)
-      : []);
-    if (!attEmails.length) return false;
-
-    // 2) Direct contact-email match
-    const accContactEmails = new Set((contacts || []).filter(c => c.accountId === account.id && c.email).map(c => c.email.toLowerCase()));
-    if (accContactEmails.size && attEmails.some(ae => accContactEmails.has(ae))) return true;
-
-    // 3) STRICT domain match against account website
-    const web = (account.website || '').toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0].trim();
-    if (!web || web.length < 4) return false; // skip too-short / empty websites
-    return attEmails.some(ae => {
-      const dom = (ae.split('@')[1] || '').toLowerCase();
-      if (!dom || ECLECTIK_DOMAINS.has(dom)) return false;
-      // Exact match or direct subdomain (not arbitrary substring)
-      return dom === web || dom.endsWith('.' + web);
-    });
-  }).sort((a, b) => new Date(b.startISO || 0) - new Date(a.startISO || 0));
+  // Meetings shown for this account come from the SHARED synced_events table:
+  // all CRM users' Outlook events matched to this account. The dedup happens
+  // in getSharedEventsForAccount so one physical meeting only appears once.
+  const accEvents = useMemo(() => {
+    return (sharedEvents || []).map(row => ({
+      id: 'graph:' + row.graph_event_id,
+      graphEventId: row.graph_event_id,
+      dedupKey: row.dedup_key,
+      title: row.subject,
+      startISO: row.start_at,
+      endISO: row.end_at,
+      attendees: Array.isArray(row.attendees) ? row.attendees.map(a => a.name || a.email).join(', ') : '',
+      attendeesEmails: row.attendee_emails || [],
+      bodyHtml: row.body_html,
+      bodyPreview: row.body_preview,
+      channel: row.is_online ? 'teams' : null,
+      meetingUrl: row.online_url,
+      owners: row.owners || [],
+    }));
+  }, [sharedEvents]);
   const accTasks = tasks.filter(t => t.accountId === account.id);
   const openTasks = accTasks.filter(t => !t.done);
 
@@ -582,19 +615,33 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
           </Section>
         )}
 
-        <Section label={`Meetings · ${accEvents.length}`}>
+        <Section label={`Meetings · ${accEvents.length}${syncingEvents ? ' (syncing…)' : ''}`}>
           {accEvents.length === 0 ? (
-            <div className="empty" style={{ padding: '8px 0', textAlign: 'left' }}>No meetings scheduled</div>
+            <div className="empty" style={{ padding: '8px 0', textAlign: 'left' }}>
+              {syncingEvents ? 'Syncing calendars…' : 'No meetings scheduled'}
+            </div>
           ) : (
             <div className="acc-comms">
               {accEvents.map(e => {
-                const noteCount = notesCountByEvent[e.id] || 0;
+                // Notes can be attached via graph_event_id OR dedup_key
+                const noteCount = (notesCountByEvent[e.id] || 0)
+                  + (e.dedupKey ? (notesCountByEvent['dedup:' + e.dedupKey] || 0) : 0);
+                // Show which users synced this meeting (Marco, Yamilla, etc.)
+                const ownerInitials = (e.owners || [])
+                  .map(em => (em || '').split('@')[0].split('.').map(p => p[0]).join('').toUpperCase())
+                  .filter(Boolean);
                 return (
                   <ExpandableRow key={e.id} accent="var(--accent)"
                     collapsed={(open) => (
                       <div className="acc-comm-row">
                         {e.channel && <ChannelIcon ch={e.channel} size={11} />}
                         <span className="acc-comm-subj">{e.title}</span>
+                        {ownerInitials.length > 0 && (
+                          <span title={`Synced from: ${e.owners.join(', ')}`}
+                            style={{ fontSize: 9, color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>
+                            {ownerInitials.slice(0, 3).join('/')}
+                          </span>
+                        )}
                         {noteCount > 0 && (
                           <span title={`${noteCount} note${noteCount !== 1 ? 's' : ''}`}
                             style={{ fontSize: 10, color: 'var(--accent)', fontFamily: 'var(--font-mono)', display: 'inline-flex', alignItems: 'center', gap: 2 }}>
@@ -606,12 +653,16 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
                     )}
                     expanded={() => (
                       <InlineMeetingDetail event={e} companyId={account.id}
+                        dedupKey={e.dedupKey}
                         onRefresh={() => {
                           // Refresh note counts
-                          supabase.from('meeting_notes').select('event_id').eq('company_id', account.id)
+                          supabase.from('meeting_notes').select('event_id, dedup_key').eq('company_id', account.id)
                             .then(({ data }) => {
                               const counts = {};
-                              (data || []).forEach(r => { counts[r.event_id] = (counts[r.event_id] || 0) + 1; });
+                              (data || []).forEach(r => {
+                                if (r.dedup_key) counts['dedup:' + r.dedup_key] = (counts['dedup:' + r.dedup_key] || 0) + 1;
+                                if (r.event_id) counts[r.event_id] = (counts[r.event_id] || 0) + 1;
+                              });
                               setNotesCountByEvent(counts);
                             });
                         }} />

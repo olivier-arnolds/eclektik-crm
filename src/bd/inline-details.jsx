@@ -132,25 +132,52 @@ export function InlineContactDetail({ contactId, onCompose }) {
   );
 }
 
-// Inline expand contents for a meeting (shows body + notes + add-note)
-export function InlineMeetingDetail({ event, companyId, onRefresh }) {
+// Inline expand contents for a meeting (shows body + notes + add-note).
+// Notes are stored against dedup_key so all users see the same shared notes
+// for a given meeting (regardless of who synced it).
+export function InlineMeetingDetail({ event, companyId, dedupKey, onRefresh }) {
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [draft, setDraft] = useState('');
   const [saving, setSaving] = useState(false);
 
+  // Graph event id without "graph:" prefix, for backward-compat with older notes
+  const graphEventId = typeof event?.id === 'string' ? event.id.replace(/^graph:/, '') : event?.id;
+
   useEffect(() => {
-    if (!event?.id) return;
+    if (!graphEventId && !dedupKey) return;
     setLoading(true);
-    supabase.from('meeting_notes').select('*').eq('event_id', event.id).order('created_at', { ascending: false })
-      .then(({ data }) => { setNotes(data || []); setLoading(false); });
-  }, [event?.id]);
+    // Fetch notes matched by EITHER dedup_key OR graph_event_id
+    // (dedup_key is the canonical key shared across all users)
+    let query = supabase.from('meeting_notes').select('*');
+    if (dedupKey && graphEventId) {
+      query = query.or(`dedup_key.eq.${dedupKey},event_id.eq.${graphEventId}`);
+    } else if (dedupKey) {
+      query = query.eq('dedup_key', dedupKey);
+    } else {
+      query = query.eq('event_id', graphEventId);
+    }
+    query.order('created_at', { ascending: false })
+      .then(({ data }) => {
+        // Dedupe: same content + same created_by within 10 seconds
+        const seen = new Set();
+        const unique = (data || []).filter(n => {
+          const key = `${n.content}|${n.created_by}|${n.created_at?.slice(0, 16)}`;
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+        setNotes(unique);
+        setLoading(false);
+      });
+  }, [graphEventId, dedupKey]);
 
   const saveNote = async () => {
     if (!draft.trim()) return;
     setSaving(true);
     const { data, error } = await supabase.from('meeting_notes').insert({
-      event_id: event.id,
+      event_id: graphEventId || null,
+      dedup_key: dedupKey || null,
       company_id: companyId || null,
       content: draft.trim(),
       created_by: localStorage.getItem('user_first_name') || 'MVG',

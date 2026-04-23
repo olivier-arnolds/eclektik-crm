@@ -4,6 +4,8 @@ import { useLocal } from './atoms';
 import { useAuth } from '../lib/auth';
 import { useBDData } from './useBDData';
 import { getInboxEmails, getCalendarEventsRange } from '../lib/graph';
+import { syncMyCalendar } from './sync-events';
+import { supabase } from '../supabase';
 import Topbar from './topbar';
 import Statusbar from './statusbar';
 import FunnelLane from './lane-funnel';
@@ -76,8 +78,25 @@ export default function BDApp() {
       setGraphEvents(evs || []);
     } catch (e) { console.warn('Graph calendar fetch failed:', e); }
 
+    // Also sync my calendar into shared synced_events so Account 360 sees
+    // my meetings right away (not just when I click an account).
+    const userEmail = session?.user?.email;
+    const userName = session?.user?.user_metadata?.full_name || '';
+    if (userEmail) {
+      try {
+        const { data: rawAccs } = await supabase.from('companies').select('id, name, website');
+        const { data: rawCs } = await supabase.from('contacts').select('id, email, company_id').not('email', 'is', null);
+        await syncMyCalendar({
+          userEmail, userName,
+          accounts: rawAccs || [],
+          contacts: rawCs || [],
+          skipIfRecent: true,
+        });
+      } catch (e) { console.warn('Shared events sync failed:', e); }
+    }
+
     setGraphLoading(false);
-  }, []);
+  }, [session?.user?.email, session?.user?.user_metadata?.full_name]);
 
   useEffect(() => { fetchGraphData(); }, [fetchGraphData]);
 
