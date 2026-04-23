@@ -128,8 +128,13 @@ export async function replyToEmail(messageId, body) {
   } catch (e) { return { error: e.message }; }
 }
 
-export async function getInboxEmails(limit = 50) {
-  const data = await graphGet(`/me/mailFolders/Inbox/messages?$top=${limit}&$orderby=receivedDateTime desc&$select=id,subject,bodyPreview,from,toRecipients,receivedDateTime,isRead,hasAttachments`);
+// Well-known folder names in Graph:
+//   Inbox       — incoming
+//   SentItems   — sent
+//   Archive     — archived (may not exist if user never archived)
+//   DeletedItems, Drafts, etc.
+export async function getFolderEmails(folderName, limit = 50) {
+  const data = await graphGet(`/me/mailFolders/${folderName}/messages?$top=${limit}&$orderby=receivedDateTime desc&$select=id,subject,bodyPreview,from,toRecipients,receivedDateTime,sentDateTime,isRead,hasAttachments,parentFolderId`);
   if (!data?.value) return [];
   return data.value.map(m => ({
     id: m.id,
@@ -138,10 +143,31 @@ export async function getInboxEmails(limit = 50) {
     from: m.from?.emailAddress?.name || m.from?.emailAddress?.address || '',
     fromAddress: m.from?.emailAddress?.address || '',
     to: (m.toRecipients || []).map(r => r.emailAddress?.address).join(', '),
-    date: m.receivedDateTime,
+    toAddresses: (m.toRecipients || []).map(r => r.emailAddress?.address).filter(Boolean),
+    date: m.receivedDateTime || m.sentDateTime,
     isRead: m.isRead,
     hasAttachments: m.hasAttachments,
+    folder: folderName,
   }));
+}
+
+export async function getInboxEmails(limit = 50) {
+  return getFolderEmails('Inbox', limit);
+}
+
+// Fetch Inbox + SentItems + Archive in parallel. Returns { inbox, sent, archived }.
+// If Archive folder doesn't exist (user never archived), silently returns [].
+export async function getAllMailFolders(limit = 100) {
+  const [inboxResp, sentResp, archiveResp] = await Promise.allSettled([
+    getFolderEmails('Inbox', limit),
+    getFolderEmails('SentItems', limit),
+    getFolderEmails('Archive', limit),
+  ]);
+  return {
+    inbox: inboxResp.status === 'fulfilled' ? inboxResp.value : [],
+    sent: sentResp.status === 'fulfilled' ? sentResp.value : [],
+    archived: archiveResp.status === 'fulfilled' ? archiveResp.value : [],
+  };
 }
 
 export async function getEmailAttachments(messageId) {

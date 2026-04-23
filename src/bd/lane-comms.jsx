@@ -19,24 +19,35 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
     const mapped = (rawGraphEmails || []).map(e => ({
       id: e.id,
       channel: 'email',
-      dir: 'in',
+      dir: e.dir || 'in',
       from: e.from,
       fromAddress: e.fromAddress,
+      to: e.to,
+      toAddresses: e.toAddresses,
       subject: e.subject,
       preview: e.bodyPreview || '',
       unread: !e.isRead,
       ts: e.date,
       hasAttach: e.hasAttachments,
-      archived: false,
+      archived: !!e.archived,
+      folder: e.folder,
       source: 'graph',
     }));
     const contactByEmail = new Map((contacts || []).filter(c => c.email).map(c => [c.email.toLowerCase(), c]));
     mapped.forEach(m => {
-      const contact = contactByEmail.get((m.fromAddress || '').toLowerCase());
-      if (contact) {
-        m.accountId = contact.accountId;
-        const acc = (accounts || []).find(a => a.id === contact.accountId);
-        if (acc) m.account = acc.name;
+      // For incoming emails: match on sender; for sent emails: match on recipients
+      const candidates = m.dir === 'out'
+        ? (m.toAddresses || []).map(a => (a || '').toLowerCase())
+        : [(m.fromAddress || '').toLowerCase()];
+      for (const addr of candidates) {
+        if (!addr) continue;
+        const contact = contactByEmail.get(addr);
+        if (contact) {
+          m.accountId = contact.accountId;
+          const acc = (accounts || []).find(a => a.id === contact.accountId);
+          if (acc) m.account = acc.name;
+          break;
+        }
       }
     });
     return mapped;
@@ -53,9 +64,14 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
   const filtered = useMemo(() => {
     return allComms.filter(c => {
       if (channel !== 'all' && c.channel !== channel) return false;
-      if (folder === 'inbox' && c.archived) return false;
-      if (folder === 'archived' && !c.archived) return false;
-      if (folder === 'sent' && c.dir !== 'out') return false;
+      // Folder filtering: prefer Graph's `folder` when present, else fall back
+      // to our DB flags (dir/archived).
+      const inboxHit = c.folder === 'Inbox' || (!c.folder && !c.archived && c.dir !== 'out');
+      const sentHit = c.folder === 'SentItems' || (!c.folder && c.dir === 'out');
+      const archivedHit = c.folder === 'Archive' || (!c.folder && c.archived);
+      if (folder === 'inbox' && !inboxHit) return false;
+      if (folder === 'sent' && !sentHit) return false;
+      if (folder === 'archived' && !archivedHit) return false;
       if (accountScope && c.accountId !== accountScope) return false;
       if (q && !(
         (c.subject || '').toLowerCase().includes(q) ||
@@ -69,11 +85,19 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
 
   const selected = allComms.find(c => c.id === selectedId);
 
-  const counts = useMemo(() => ({
-    inbox: allComms.filter(c => !c.archived && c.dir !== 'out').length,
-    sent: allComms.filter(c => c.dir === 'out').length,
-    archived: allComms.filter(c => c.archived).length,
-  }), [allComms]);
+  const counts = useMemo(() => {
+    const matchFolder = (c, target) => {
+      if (target === 'inbox') return c.folder === 'Inbox' || (!c.folder && !c.archived && c.dir !== 'out');
+      if (target === 'sent') return c.folder === 'SentItems' || (!c.folder && c.dir === 'out');
+      if (target === 'archived') return c.folder === 'Archive' || (!c.folder && c.archived);
+      return false;
+    };
+    return {
+      inbox: allComms.filter(c => matchFolder(c, 'inbox')).length,
+      sent: allComms.filter(c => matchFolder(c, 'sent')).length,
+      archived: allComms.filter(c => matchFolder(c, 'archived')).length,
+    };
+  }, [allComms]);
 
   return (
     <div className="lane lane-comms">

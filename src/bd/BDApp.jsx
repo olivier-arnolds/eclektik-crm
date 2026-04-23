@@ -3,7 +3,7 @@ import './styles.css';
 import { useLocal } from './atoms';
 import { useAuth } from '../lib/auth';
 import { useBDData } from './useBDData';
-import { getInboxEmails, getCalendarEventsRange } from '../lib/graph';
+import { getInboxEmails, getAllMailFolders, getCalendarEventsRange } from '../lib/graph';
 import { syncMyCalendar } from './sync-events';
 import { supabase } from '../supabase';
 import Topbar from './topbar';
@@ -63,11 +63,17 @@ export default function BDApp() {
     if (!localStorage.getItem('graph_token')) return;
     setGraphLoading(true);
 
-    // Inbox (50 latest)
+    // Fetch Inbox + Sent + Archived in parallel. We merge into one list;
+    // the `folder` field tells the UI which folder it came from.
     try {
-      const emails = await getInboxEmails(50);
-      setGraphEmails(emails || []);
-    } catch (e) { console.warn('Graph inbox fetch failed:', e); }
+      const { inbox, sent, archived } = await getAllMailFolders(100);
+      const merged = [
+        ...inbox.map(e => ({ ...e, dir: 'in', archived: false })),
+        ...sent.map(e => ({ ...e, dir: 'out', archived: false })),
+        ...archived.map(e => ({ ...e, dir: 'in', archived: true })),
+      ];
+      setGraphEmails(merged);
+    } catch (e) { console.warn('Graph mail fetch failed:', e); }
 
     // Calendar: full year (Jan 1 → Dec 31)
     try {
