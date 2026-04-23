@@ -24,8 +24,12 @@ function adaptCompany(row) {
 
 // Transform a Supabase contact row
 function adaptContact(row, companies) {
-  const ac = avatarColorFromName(row.full_name || `${row.first_name} ${row.last_name}`)
-  const name = row.full_name || `${row.first_name || ''} ${row.last_name || ''}`.trim()
+  // Build name from first + last when available; fall back to full_name.
+  // This keeps consistent "Firstname Lastname" formatting across imports
+  // (Dynamics exports sometimes have odd spacing/casing in full_name).
+  const built = `${row.first_name || ''} ${row.last_name || ''}`.trim()
+  const name = built || row.full_name || ''
+  const ac = avatarColorFromName(name)
   return {
     ...row,
     id: row.id,

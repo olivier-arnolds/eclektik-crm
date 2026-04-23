@@ -358,7 +358,15 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
         setNotesCountByEvent(counts);
       });
   }, [account?.id, meetingNoteEvent]);
-  const accContacts = contacts.filter(c => c.accountId === account.id);
+  // Sort contacts A-Z by first name (fall back to full name)
+  const accContacts = contacts
+    .filter(c => c.accountId === account.id)
+    .slice()
+    .sort((a, b) => {
+      const fa = (a.first_name || (a.name || '').split(' ')[0] || '').toLowerCase();
+      const fb = (b.first_name || (b.name || '').split(' ')[0] || '').toLowerCase();
+      return fa.localeCompare(fb);
+    });
   const accDeals = deals.filter(d => d.accountId === account.id);
   const openDeals = accDeals.filter(d => ['qualify', 'develop', 'proposal', 'close'].includes(d.stage));
   const activeDeals = accDeals.filter(d => ['onboarding', 'active'].includes(d.stage));
