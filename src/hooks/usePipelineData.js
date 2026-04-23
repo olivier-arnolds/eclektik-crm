@@ -145,16 +145,19 @@ function adaptTask(row) {
 
 // Transform a comm row
 function adaptComm(row) {
-  const channelIcons = { email: '✉', teams: '◎', linkedin: '◈', phone: '☎', other: '◆' }
+  const channelIcons = { email: '✉', teams: '◎', linkedin: '◈', phone: '☎', note: '📝', other: '◆' }
   const ac = avatarColorFromName(row.owner || 'Unknown')
   return {
     id: row.id,
     itemIds: [row.opportunity_id, row.lead_id].filter(Boolean),
+    companyId: row.company_id || null,
     icon: channelIcons[row.channel] || '✉',
+    channel: row.channel || 'email',
     bg: ac.bg,
     tc: ac.color,
     from: row.owner || 'Unknown',
     sub: row.subject || '',
+    preview: row.body_preview || '',
     time: row.sent_at ? new Date(row.sent_at).toLocaleDateString('en', { day: 'numeric', month: 'short' }) : '',
     unread: !row.is_read,
     date: row.sent_at || row.created_at || '',

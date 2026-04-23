@@ -6,6 +6,7 @@ import DOMPurify from 'dompurify';
 import TaskFromEmailModal from './task-from-email-modal';
 import AddAccountModal from './add-account-modal';
 import AddContactModal from './add-contact-modal';
+import CreateNoteModal from './create-note-modal';
 
 const CHANNEL_OPTIONS = ['all', 'email', 'teams'];
 
@@ -302,6 +303,7 @@ function ReadingPane({ comm, accounts, contacts, refetch, refetchGraph, onCompos
   const [ctxMenu, setCtxMenu] = useState(null); // { x, y, text }
   const [selectionContactPrefill, setSelectionContactPrefill] = useState(null);
   const [selectionAccountPrefill, setSelectionAccountPrefill] = useState(null);
+  const [noteModal, setNoteModal] = useState(null); // { text, defaultAccount }
 
   // Close context menu on any outside click
   useEffect(() => {
@@ -550,7 +552,29 @@ function ReadingPane({ comm, accounts, contacts, refetch, refetchGraph, onCompos
             onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
             <I.plus /> Create account from selection
           </button>
+          <div style={{ borderTop: '0.5px solid var(--sep)', margin: '4px 0' }} />
+          <button
+            onMouseDown={(e) => {
+              e.stopPropagation();
+              setNoteModal({ text: ctxMenu.text, defaultAccount: account || null });
+              setCtxMenu(null);
+            }}
+            style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 12px', background: 'transparent', border: 'none', fontSize: 12, color: 'var(--text-1)', cursor: 'pointer', fontFamily: 'inherit', borderRadius: 4 }}
+            onMouseEnter={e => e.currentTarget.style.background = 'var(--fill-1)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+            📝 Create note on {account ? account.name : 'account…'}
+          </button>
         </div>
+      )}
+
+      {noteModal && (
+        <CreateNoteModal
+          text={noteModal.text}
+          accounts={accounts}
+          defaultAccount={noteModal.defaultAccount}
+          onClose={() => setNoteModal(null)}
+          onCreated={() => { setNoteModal(null); if (refetch) refetch(); }}
+        />
       )}
 
       {/* Contact modal prefilled from text selection */}

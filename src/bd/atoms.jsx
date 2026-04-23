@@ -43,13 +43,14 @@ export function fmtMoney(v) {
 
 // ---------- Channel icons ----------
 export function ChannelIcon({ ch, size = 14 }) {
-  const label = { email: 'E', teams: 'T', whatsapp: 'W', linkedin: 'L', 'in-person': '·' }[ch] || '·';
+  const label = { email: 'E', teams: 'T', whatsapp: 'W', linkedin: 'L', 'in-person': '·', note: 'N' }[ch] || '·';
   const bg = {
     email: 'var(--chip-email)',
     teams: 'var(--chip-teams)',
     whatsapp: 'var(--chip-whatsapp)',
     linkedin: 'var(--chip-linkedin)',
     'in-person': 'var(--chip-inperson)',
+    note: 'var(--accent)',
   }[ch] || 'var(--fill-3)';
   return (
     <span style={{

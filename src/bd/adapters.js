@@ -94,8 +94,12 @@ export function adaptContact(row, adaptedAccounts) {
 // Raw comm from adaptComm in usePipelineData: { id, icon, from, sub, time, unread, date, itemIds }
 export function adaptComm(row, rawItems, rawAccounts) {
   const item = (rawItems || []).find(i => row.itemIds?.includes(i.id));
-  const acc = item ? (rawAccounts || []).find(a => a.id === item.accountId) : null;
-  const channel = row.icon === '◈' ? 'linkedin' : row.icon === '◎' ? 'teams' : row.icon === '☎' ? 'phone' : 'email';
+  // Prefer direct company_id (for account-level notes), else derive via deal
+  const acc = row.companyId
+    ? (rawAccounts || []).find(a => a.id === row.companyId)
+    : (item ? (rawAccounts || []).find(a => a.id === item.accountId) : null);
+  const channel = row.channel
+    || (row.icon === '◈' ? 'linkedin' : row.icon === '◎' ? 'teams' : row.icon === '☎' ? 'phone' : row.icon === '📝' ? 'note' : 'email');
   return {
     id: row.id,
     channel,
