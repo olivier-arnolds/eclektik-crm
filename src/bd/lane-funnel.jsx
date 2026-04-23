@@ -34,11 +34,33 @@ export default function FunnelLane({ deals, accounts, contacts, filters, setFilt
     deals: filteredDeals.filter(d => d.stage === s.id),
   }));
 
-  const doMove = async (dealId, toStage) => {
+  // Some transitions need a Won/Lost decision before we can save.
+  // Specifically, anything that moves INTO 'close' or 'active' from an
+  // earlier/non-final stage should ask the user.
+  const needsWonLost = (fromStage, toStage) => {
+    if (!fromStage || !toStage) return false;
+    if (fromStage === toStage) return false;
+    // Closing a deal from Proposal or Onboarding
+    if (toStage === 'close' && ['proposal', 'onboarding'].includes(fromStage)) return true;
+    // Moving from Onboarding into Active (project started — won) or not (lost)
+    if (toStage === 'active' && fromStage === 'onboarding') return true;
+    return false;
+  };
+
+  const doMove = async (dealId, toStage, winStatus) => {
     const deal = deals.find(d => d.id === dealId);
     if (!deal) return;
     setConfirmMove(null);
     const updates = stageUpdates(toStage, deal.table);
+    // If winStatus provided, also update the opportunity status
+    if (winStatus) {
+      updates.status = winStatus; // 'Won' or 'Lost'
+      if (winStatus === 'Lost' && deal.table === 'opportunities') {
+        // Lost deals are stored as past/inactive funnelStage in our data model
+        updates.stage = 'past';
+        updates.sub_status = null;
+      }
+    }
     await updateRow(deal.table, dealId, updates);
     if (refetch) refetch();
   };
@@ -156,23 +178,49 @@ export default function FunnelLane({ deals, accounts, contacts, filters, setFilt
         />
       )}
 
-      {confirmMove && (
+      {confirmMove && (() => {
+        const mvDeal = deals.find(d => d.id === confirmMove.dealId);
+        const askWonLost = mvDeal ? needsWonLost(mvDeal.stage, confirmMove.toStage) : false;
+        return (
         <div className="modal-backdrop" onClick={() => setConfirmMove(null)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
-            <div className="modal-title">Move deal to {STAGE_TINT[confirmMove.toStage]?.label || confirmMove.toStage}?</div>
+            <div className="modal-title">
+              {askWonLost
+                ? `Close deal — won or lost?`
+                : `Move deal to ${STAGE_TINT[confirmMove.toStage]?.label || confirmMove.toStage}?`}
+            </div>
             <div className="modal-body">
-              <div className="modal-body-strong">{deals.find(d => d.id === confirmMove.dealId)?.title}</div>
+              <div className="modal-body-strong">{mvDeal?.title}</div>
               <div className="modal-body-sub">
-                From <b>{STAGE_TINT[deals.find(d => d.id === confirmMove.dealId)?.stage]?.label}</b> → <b>{STAGE_TINT[confirmMove.toStage]?.label}</b>
+                From <b>{STAGE_TINT[mvDeal?.stage]?.label}</b> → <b>{STAGE_TINT[confirmMove.toStage]?.label}</b>
               </div>
+              {askWonLost && (
+                <div className="modal-body-sub" style={{ marginTop: 8 }}>
+                  Mark this deal as <b>Won</b> or <b>Lost</b>.
+                </div>
+              )}
             </div>
             <div className="modal-actions">
               <button className="btn-ghost" onClick={() => setConfirmMove(null)}>Cancel</button>
-              <button className="btn-primary" onClick={() => doMove(confirmMove.dealId, confirmMove.toStage)}>Confirm</button>
+              {askWonLost ? (
+                <>
+                  <button className="btn-ghost tiny" style={{ color: 'var(--danger)' }}
+                    onClick={() => doMove(confirmMove.dealId, confirmMove.toStage, 'Lost')}>
+                    Lost
+                  </button>
+                  <button className="btn-primary" style={{ background: 'var(--good)' }}
+                    onClick={() => doMove(confirmMove.dealId, confirmMove.toStage, 'Won')}>
+                    ✓ Won
+                  </button>
+                </>
+              ) : (
+                <button className="btn-primary" onClick={() => doMove(confirmMove.dealId, confirmMove.toStage)}>Confirm</button>
+              )}
             </div>
           </div>
         </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
