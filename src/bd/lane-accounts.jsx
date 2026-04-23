@@ -8,6 +8,7 @@ import ContactDetailModal from './contact-detail-modal';
 import MeetingNoteModal from './meeting-note-modal';
 import AccountLinksSection from './account-links-section';
 import TypePicker from './type-picker';
+import LinkExistingContactModal from './link-existing-contact-modal';
 import ExpandableRow from './expandable-row';
 import { InlineContactDetail, InlineMeetingDetail, InlineDealDetail, InlineAccountDetails } from './inline-details';
 import { supabase } from '../supabase';
@@ -302,6 +303,7 @@ function AccountsList({ accounts, contacts, onPickAccount, search, onAddAccount 
 function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems, comms, graphEmails, events, tasks, onPickAccount, onCompose, onOpenDeal, onSelectComm, refetch }) {
   const [showAddContact, setShowAddContact] = useState(false);
   const [showSearchContact, setShowSearchContact] = useState(false);
+  const [showLinkExisting, setShowLinkExisting] = useState(false);
   const [showInactivate, setShowInactivate] = useState(false);
   const [detailContactId, setDetailContactId] = useState(null);
   const [meetingNoteEvent, setMeetingNoteEvent] = useState(null);
@@ -513,8 +515,11 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
         <Section label={`Contacts · ${accContacts.length}`}
           actions={account.id && (
             <>
-              <button className="btn-ghost tiny" onClick={() => setShowSearchContact(true)}>
-                <I.search /> Search
+              <button className="btn-ghost tiny" onClick={() => setShowLinkExisting(true)} title="Link a contact that already exists in the CRM">
+                <I.search /> Link existing
+              </button>
+              <button className="btn-ghost tiny" onClick={() => setShowSearchContact(true)} title="Search on LinkedIn">
+                <I.search /> LinkedIn
               </button>
               <button className="btn-ghost tiny" onClick={() => setShowAddContact(true)}>
                 <I.plus /> Add
@@ -757,6 +762,17 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
           account={account}
           onClose={() => setShowSearchContact(false)}
           onAdded={() => { if (refetch) refetch(); }}
+        />
+      )}
+      {showLinkExisting && (
+        <LinkExistingContactModal
+          account={account}
+          contacts={contacts}
+          onClose={() => setShowLinkExisting(false)}
+          onLinked={() => {
+            setShowLinkExisting(false);
+            if (refetch) refetch();
+          }}
         />
       )}
       {showInactivate && (
