@@ -7,8 +7,8 @@ import InactivateAccountModal from './inactivate-modal';
 import ContactDetailModal from './contact-detail-modal';
 import MeetingNoteModal from './meeting-note-modal';
 import AccountLinksSection from './account-links-section';
-import TypePicker from './type-picker';
 import LinkExistingContactModal from './link-existing-contact-modal';
+import DuplicateContactsModal from './duplicate-contacts-modal';
 import ExpandableRow from './expandable-row';
 import { InlineContactDetail, InlineMeetingDetail, InlineDealDetail, InlineAccountDetails } from './inline-details';
 import { supabase } from '../supabase';
@@ -169,6 +169,7 @@ function AccountsList({ accounts, contacts, onPickAccount, search, onAddAccount 
   const q = (search || '').toLowerCase();
   const [typeFilters, setTypeFilters] = useState([]);
   const [nameFilter, setNameFilter] = useState('');
+  const [showDupes, setShowDupes] = useState(false);
 
   // Build a dynamic list of all types present in our data (sorted, unique)
   const allTypes = useMemo(() => {
@@ -227,7 +228,10 @@ function AccountsList({ accounts, contacts, onPickAccount, search, onAddAccount 
           <span className="lane-title-label">Accounts</span>
           <span className="lane-title-count">{filtered.length}{filtered.length !== accounts.length ? ` / ${accounts.length}` : ''}</span>
         </div>
-        <div className="lane-actions">
+        <div className="lane-actions" style={{ display: 'flex', gap: 6 }}>
+          <button className="btn-ghost tiny" onClick={() => setShowDupes(true)} title="Duplicaten opschonen">
+            Duplicates
+          </button>
           {onAddAccount && (
             <button className="btn-primary tiny" onClick={onAddAccount}>
               <I.plus /> New account
@@ -235,6 +239,12 @@ function AccountsList({ accounts, contacts, onPickAccount, search, onAddAccount 
           )}
         </div>
       </div>
+      {showDupes && (
+        <DuplicateContactsModal
+          onClose={() => setShowDupes(false)}
+          onDone={() => { setShowDupes(false); window.location.reload(); }}
+        />
+      )}
 
       <div style={{
         display: 'flex', flexDirection: 'column', gap: 8,
@@ -468,19 +478,8 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
               </span>
             )}
           </div>
-          <div className="acc-hero-meta" onClick={e => e.stopPropagation()}>
-            {account.id ? (
-              <TypePicker
-                value={account.type}
-                compact
-                onSave={async (v) => {
-                  await supabase.from('companies').update({ type: v }).eq('id', account.id);
-                  if (refetch) refetch();
-                }}
-              />
-            ) : (
-              <span>{account.type || '—'}</span>
-            )}
+          <div className="acc-hero-meta">
+            <span>{account.type || '—'}</span>
             {account.tier && <><span className="sep">·</span><span>{account.tier}</span></>}
             {account.region && <><span className="sep">·</span><span>{account.region}</span></>}
             {account.arr && <><span className="sep">·</span><span>{account.arr}</span></>}
