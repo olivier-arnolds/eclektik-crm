@@ -39,6 +39,23 @@ export function InlineField({ label, value, onSave, type = 'text', colspan }) {
         onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') { setDraft(value || ''); setEditing(false); } }}
         style={fieldInputStyle} />
     )
+  ) : type === 'url' && value ? (
+    <div style={{
+      display: 'flex', alignItems: 'center', gap: 6,
+      padding: '4px 6px', borderRadius: 4, minHeight: 20,
+      border: '0.5px solid transparent',
+    }}>
+      <a href={value.startsWith('http') ? value : `https://${value}`}
+        target="_blank" rel="noopener noreferrer"
+        style={{ fontSize: 12, color: 'var(--accent)', textDecoration: 'underline', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, minWidth: 0 }}>
+        {value}
+      </a>
+      <button onClick={() => setEditing(true)}
+        title="Edit"
+        style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-3)', fontSize: 10, padding: 2, fontFamily: 'var(--font-mono)' }}>
+        edit
+      </button>
+    </div>
   ) : (
     <div onClick={() => setEditing(true)}
       style={{
@@ -112,7 +129,7 @@ export function InlineContactDetail({ contactId, onCompose, refetch }) {
     const slugMatch = (row.companies?.linkedin_url || '').match(/linkedin\.com\/company\/([^\/\?]+)/);
     const slug = slugMatch ? slugMatch[1] : '';
     const keywords = [row.full_name, slug || company].filter(Boolean).join(' ');
-    window.open(`https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(keywords)}`, '_blank');
+    window.open(`https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(keywords)}`, '_blank', 'noopener,width=1000,height=700');
   };
 
   return (
@@ -134,18 +151,14 @@ export function InlineContactDetail({ contactId, onCompose, refetch }) {
       <InlineField label="Role / title" value={row.title} onSave={v => saveField('title', v)} colspan={2} />
       <div style={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'column', gap: 2 }}>
         <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span>LinkedIn URL</span>
-          <button onClick={linkedinSearch} style={{ marginLeft: 'auto', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--chip-linkedin)', fontFamily: 'var(--font-mono)', fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.08em', padding: 0 }}>
-            🔍 Search on LinkedIn
-          </button>
-          {row.linkedin_url && (
-            <a href={row.linkedin_url} target="_blank" rel="noopener noreferrer"
-              style={{ color: 'var(--chip-linkedin)', fontFamily: 'var(--font-mono)', fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.08em', textDecoration: 'none' }}>
-              → Open
-            </a>
-          )}
+          <span
+            title="Search this person on LinkedIn"
+            onClick={linkedinSearch}
+            style={{ cursor: 'pointer', textDecoration: 'underline dotted', textUnderlineOffset: 2 }}>
+            LinkedIn URL
+          </span>
         </div>
-        <InlineField label="" value={row.linkedin_url} onSave={v => saveField('linkedin_url', v)} />
+        <InlineField label="" value={row.linkedin_url} type="url" onSave={v => saveField('linkedin_url', v)} />
       </div>
       <InlineField label="Notes" value={row.notes} onSave={v => saveField('notes', v)} type="textarea" colspan={2} />
       <div style={{ gridColumn: 'span 2', marginTop: 4, display: 'flex', gap: 6, alignItems: 'center', borderTop: '0.5px solid var(--sep)', paddingTop: 8 }}>
@@ -531,14 +544,8 @@ export function InlineAccountDetails({ accountId, onPickAccount }) {
               style={{ cursor: 'pointer', textDecoration: 'underline dotted', textUnderlineOffset: 2 }}>
               Website
             </span>
-            {websiteUrl && (
-              <a href={websiteUrl} target="_blank" rel="noopener noreferrer"
-                style={{ color: 'var(--accent)', fontFamily: 'var(--font-mono)', fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.08em', textDecoration: 'none' }}>
-                → Open
-              </a>
-            )}
           </div>
-          <InlineField label="" value={row.website} onSave={v => saveField('website', v)} />
+          <InlineField label="" value={row.website} type="url" onSave={v => saveField('website', v)} />
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2, gridColumn: 'span 2' }}>
           <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -551,14 +558,8 @@ export function InlineAccountDetails({ accountId, onPickAccount }) {
               style={{ cursor: 'pointer', textDecoration: 'underline dotted', textUnderlineOffset: 2 }}>
               LinkedIn URL
             </span>
-            {row.linkedin_url && (
-              <a href={row.linkedin_url} target="_blank" rel="noopener noreferrer"
-                style={{ color: 'var(--chip-linkedin)', fontFamily: 'var(--font-mono)', fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.08em', textDecoration: 'none' }}>
-                → Open
-              </a>
-            )}
           </div>
-          <InlineField label="" value={row.linkedin_url} onSave={v => saveField('linkedin_url', v)} />
+          <InlineField label="" value={row.linkedin_url} type="url" onSave={v => saveField('linkedin_url', v)} />
         </div>
         <InlineField label="Phone" value={row.phone} onSave={v => saveField('phone', v)} />
         <InlineField label="Email" value={row.email} type="email" onSave={v => saveField('email', v)} />
