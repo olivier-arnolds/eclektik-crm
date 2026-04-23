@@ -2,11 +2,12 @@ import { useState } from 'react';
 import { I } from './atoms';
 import { supabase } from '../supabase';
 
-export default function AddContactModal({ account, onClose, onCreated, initialName, initialEmail }) {
+export default function AddContactModal({ account, onClose, onCreated, initialName, initialEmail, initialRole, initialLinkedIn, initialPhone }) {
   const [fullName, setFullName] = useState(initialName || '');
   const [email, setEmail] = useState(initialEmail || '');
-  const [role, setRole] = useState('');
-  const [linkedinUrl, setLinkedinUrl] = useState('');
+  const [role, setRole] = useState(initialRole || '');
+  const [linkedinUrl, setLinkedinUrl] = useState(initialLinkedIn || '');
+  const [phone] = useState(initialPhone || ''); // captured for save (UI not yet editable)
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState('');
 
@@ -32,6 +33,7 @@ export default function AddContactModal({ account, onClose, onCreated, initialNa
       first_name: first,
       last_name: last,
       email: email.trim() || null,
+      phone: (phone || '').trim() || null,
       title: role.trim() || null,
       linkedin_url: normalizeUrl(linkedinUrl),
       company_id: account?.id || null,

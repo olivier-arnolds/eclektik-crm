@@ -199,6 +199,97 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
   );
 }
 
+// Parse a chunk of free-form text (e.g. from an email signature) and try to
+// extract contact fields: name, email, linkedin URL, phone, role.
+function parseContactFromText(text) {
+  const out = { fullName: '', email: '', linkedinUrl: '', phone: '', role: '' };
+  if (!text) return out;
+  const clean = text.replace(/\s+/g, ' ').trim();
+
+  // Email
+  const emailMatch = clean.match(/([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/);
+  if (emailMatch) out.email = emailMatch[1];
+
+  // LinkedIn
+  const liMatch = clean.match(/https?:\/\/(?:[a-z]+\.)?linkedin\.com\/(?:in|pub)\/[^\s<>"']+/i);
+  if (liMatch) out.linkedinUrl = liMatch[0].replace(/[,.;:]+$/, '');
+
+  // Phone — sequences of digits, dashes, spaces, parens, +; at least 7 digits total
+  const phoneMatch = clean.match(/(?:\+?\d[\d\s().-]{6,}\d)/);
+  if (phoneMatch && phoneMatch[0].replace(/\D/g, '').length >= 7) out.phone = phoneMatch[0].trim();
+
+  // Name: first line of the selection, take up to 4 words that look name-like
+  // (no @, no digits, no common role words, starts with capital)
+  const firstLine = text.split(/[\n\r]/)[0].trim();
+  const candidates = firstLine.split(/\s+/).filter(w => {
+    if (!w) return false;
+    if (w.includes('@')) return false;
+    if (/^\d/.test(w)) return false;
+    if (['the', 'a', 'at', 'van', 'de', 'der', 'ter', 'von', 'mr', 'ms', 'mrs'].includes(w.toLowerCase())) return true;
+    return /^[A-ZÀ-Ý][A-Za-zÀ-ÿ'.-]+/.test(w) || /^[A-ZÀ-Ý]+$/.test(w); // also MCBREEN style
+  }).slice(0, 4);
+  if (candidates.length >= 1) out.fullName = candidates.join(' ');
+
+  // Role: look for a line that looks like a title (no @, includes words like
+  // Manager/Director/Lead/CEO/CTO/HR/etc., or contains "at")
+  const lines = text.split(/[\n\r]+/).map(l => l.trim()).filter(Boolean);
+  const roleLine = lines.find(l => {
+    if (l.includes('@')) return false;
+    if (l.includes('linkedin.com')) return false;
+    if (/\+?\d[\d\s().-]{6,}/.test(l)) return false;
+    return /(manager|director|lead|head|chief|officer|ceo|cto|cfo|chro|hr|engagement|consultant|specialist|analyst|architect|executive|partner|president|vice|vp)/i.test(l);
+  });
+  if (roleLine && roleLine !== out.fullName) {
+    out.role = roleLine.length > 80 ? roleLine.slice(0, 80) : roleLine;
+  }
+
+  return out;
+}
+
+// Parse a chunk of text and extract account fields.
+function parseAccountFromText(text) {
+  const out = { name: '', website: '', linkedinUrl: '', phone: '', address: '' };
+  if (!text) return out;
+
+  // LinkedIn company URL
+  const liMatch = text.match(/https?:\/\/(?:[a-z]+\.)?linkedin\.com\/company\/[^\s<>"']+/i);
+  if (liMatch) out.linkedinUrl = liMatch[0].replace(/[,.;:]+$/, '');
+
+  // Website: any http(s) URL that's NOT linkedin
+  const urls = text.match(/https?:\/\/[^\s<>"']+/gi) || [];
+  const website = urls.find(u => !/linkedin\.com/i.test(u));
+  if (website) out.website = website.replace(/[,.;:]+$/, '');
+  // Fallback: bare domain (foo.com)
+  if (!out.website) {
+    const domMatch = text.match(/\b([a-zA-Z0-9][a-zA-Z0-9-]*\.(?:com|nl|be|de|co|io|org|net|eu|co\.uk|ch|fr|es|it|us))\b/i);
+    if (domMatch) out.website = 'https://' + domMatch[1];
+  }
+
+  // Phone
+  const phoneMatch = text.match(/(?:\+?\d[\d\s().-]{6,}\d)/);
+  if (phoneMatch && phoneMatch[0].replace(/\D/g, '').length >= 7) out.phone = phoneMatch[0].trim();
+
+  // Name: first non-empty line (unless it looks like a URL/email/phone)
+  const lines = text.split(/[\n\r]+/).map(l => l.trim()).filter(Boolean);
+  const nameLine = lines.find(l =>
+    !l.includes('@')
+    && !/^https?:/i.test(l)
+    && !/^\+?\d[\d\s().-]{6,}/.test(l)
+  );
+  if (nameLine) out.name = nameLine.length > 80 ? nameLine.slice(0, 80) : nameLine;
+
+  // Address: lines that aren't the name and contain street-like patterns (numbers + letters, or postcodes)
+  const addressLines = lines.filter(l =>
+    l !== out.name
+    && !l.includes('@')
+    && !/^https?:/i.test(l)
+    && /\d/.test(l) // has numbers (house number / postcode)
+  );
+  if (addressLines.length) out.address = addressLines.join(', ').slice(0, 200);
+
+  return out;
+}
+
 function ReadingPane({ comm, accounts, contacts, refetch, refetchGraph, onCompose }) {
   const [fullBody, setFullBody] = useState(null);
   const [loadingBody, setLoadingBody] = useState(false);
@@ -208,6 +299,21 @@ function ReadingPane({ comm, accounts, contacts, refetch, refetchGraph, onCompos
   const [showAddAccount, setShowAddAccount] = useState(false);
   const [showAddContact, setShowAddContact] = useState(false);
   const [pendingAccountForContact, setPendingAccountForContact] = useState(null);
+  const [ctxMenu, setCtxMenu] = useState(null); // { x, y, text }
+  const [selectionContactPrefill, setSelectionContactPrefill] = useState(null);
+  const [selectionAccountPrefill, setSelectionAccountPrefill] = useState(null);
+
+  // Close context menu on any outside click
+  useEffect(() => {
+    if (!ctxMenu) return;
+    const handler = () => setCtxMenu(null);
+    document.addEventListener('click', handler);
+    document.addEventListener('scroll', handler, true);
+    return () => {
+      document.removeEventListener('click', handler);
+      document.removeEventListener('scroll', handler, true);
+    };
+  }, [ctxMenu]);
 
   const isGraphMessage = comm?.id && /^[A-Za-z0-9=+/_-]{40,}$/.test(comm.id);
 
@@ -318,7 +424,14 @@ function ReadingPane({ comm, accounts, contacts, refetch, refetchGraph, onCompos
         )}
       </div>
 
-      <div className="rp-body">
+      <div className="rp-body"
+        onContextMenu={(e) => {
+          const sel = window.getSelection();
+          const txt = sel ? sel.toString().trim() : '';
+          if (!txt) { setCtxMenu(null); return; } // no selection → native menu
+          e.preventDefault();
+          setCtxMenu({ x: e.clientX, y: e.clientY, text: txt });
+        }}>
         {loadingBody && <div style={{ color: 'var(--text-3)' }}>Loading message…</div>}
         {fullBody ? (
           <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(fullBody) }} />
@@ -402,6 +515,65 @@ function ReadingPane({ comm, accounts, contacts, refetch, refetchGraph, onCompos
           initialEmail={comm.fromAddress}
           onClose={() => { setShowAddContact(false); setPendingAccountForContact(null); }}
           onCreated={() => { setShowAddContact(false); setPendingAccountForContact(null); if (refetch) refetch(); }}
+        />
+      )}
+
+      {/* Context menu on text selection in email body */}
+      {ctxMenu && (
+        <div style={{
+          position: 'fixed', top: ctxMenu.y, left: ctxMenu.x,
+          background: 'var(--bg-1)', border: '0.5px solid var(--sep)',
+          borderRadius: 8, boxShadow: 'var(--shadow-2)',
+          padding: 4, minWidth: 240, zIndex: 1000,
+        }}>
+          <button
+            onMouseDown={(e) => {
+              e.stopPropagation();
+              const parsed = parseContactFromText(ctxMenu.text);
+              setSelectionContactPrefill(parsed);
+              setCtxMenu(null);
+            }}
+            style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 12px', background: 'transparent', border: 'none', fontSize: 12, color: 'var(--text-1)', cursor: 'pointer', fontFamily: 'inherit', borderRadius: 4 }}
+            onMouseEnter={e => e.currentTarget.style.background = 'var(--fill-1)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+            <I.plus /> Create contact from selection
+          </button>
+          <button
+            onMouseDown={(e) => {
+              e.stopPropagation();
+              const parsed = parseAccountFromText(ctxMenu.text);
+              setSelectionAccountPrefill(parsed);
+              setCtxMenu(null);
+            }}
+            style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 12px', background: 'transparent', border: 'none', fontSize: 12, color: 'var(--text-1)', cursor: 'pointer', fontFamily: 'inherit', borderRadius: 4 }}
+            onMouseEnter={e => e.currentTarget.style.background = 'var(--fill-1)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+            <I.plus /> Create account from selection
+          </button>
+        </div>
+      )}
+
+      {/* Contact modal prefilled from text selection */}
+      {selectionContactPrefill && (
+        <AddContactModal
+          initialName={selectionContactPrefill.fullName}
+          initialEmail={selectionContactPrefill.email}
+          initialRole={selectionContactPrefill.role}
+          initialLinkedIn={selectionContactPrefill.linkedinUrl}
+          initialPhone={selectionContactPrefill.phone}
+          onClose={() => setSelectionContactPrefill(null)}
+          onCreated={() => { setSelectionContactPrefill(null); if (refetch) refetch(); }}
+        />
+      )}
+
+      {/* Account modal prefilled from text selection */}
+      {selectionAccountPrefill && (
+        <AddAccountModal
+          initialName={selectionAccountPrefill.name}
+          initialWebsite={selectionAccountPrefill.website}
+          initialLinkedIn={selectionAccountPrefill.linkedinUrl}
+          onClose={() => setSelectionAccountPrefill(null)}
+          onCreated={() => { setSelectionAccountPrefill(null); if (refetch) refetch(); }}
         />
       )}
     </div>
