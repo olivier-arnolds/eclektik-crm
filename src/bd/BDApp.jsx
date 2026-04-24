@@ -133,8 +133,10 @@ export default function BDApp() {
   const selectDeal = (d) => {
     setSelectedDeal(d);
     setRightContext({ type: 'deal', id: d.id });
-    // Popup disabled — Account 360 on the right shows everything we need.
-    // setOpenDeal(d);
+    // Popup is suppressed when the deal has an account (Account 360 covers it).
+    // Deals without an account (typically qualify-stage leads) have nothing
+    // to show on the right, so fall back to the detail modal.
+    if (!d.accountId) setOpenDeal(d);
   };
   const selectCommHandler = (id) => {
     setSelectedComm(id);
