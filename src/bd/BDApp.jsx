@@ -28,6 +28,14 @@ export default function BDApp() {
     return () => { document.body.classList.remove('theme-light', 'theme-dark'); };
   }, [theme]);
 
+  // Restore persisted Account-lane width on mount
+  useEffect(() => {
+    try {
+      const w = localStorage.getItem('acc-lane-width');
+      if (w) document.documentElement.style.setProperty('--acc-lane-width', w);
+    } catch (_) {}
+  }, []);
+
   // view = which top-level area ('workspace' = 3-lane, 'playbooks' = full)
   // leftLane = for workspace: 'calendar' or 'funnel'
   const [view, setView] = useLocal('bd_view', 'workspace');

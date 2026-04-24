@@ -9,6 +9,34 @@ import MeetingNoteModal from './meeting-note-modal';
 import AccountLinksSection from './account-links-section';
 import LinkExistingContactModal from './link-existing-contact-modal';
 import DuplicateContactsModal from './duplicate-contacts-modal';
+
+// Drag-handle on the left edge of the Accounts lane to resize its width.
+// Persists to localStorage and applies via CSS var on document root.
+function LaneResizer() {
+  const onMouseDown = (e) => {
+    e.preventDefault();
+    e.currentTarget.classList.add('dragging');
+    const startX = e.clientX;
+    const root = document.documentElement;
+    const startWidth = parseInt(getComputedStyle(root).getPropertyValue('--acc-lane-width')) || 480;
+    const handle = e.currentTarget;
+    const onMove = (ev) => {
+      const dx = startX - ev.clientX; // drag left = wider
+      const next = Math.min(900, Math.max(320, startWidth + dx));
+      root.style.setProperty('--acc-lane-width', next + 'px');
+    };
+    const onUp = () => {
+      const final = getComputedStyle(root).getPropertyValue('--acc-lane-width').trim();
+      try { localStorage.setItem('acc-lane-width', final); } catch (_) {}
+      handle.classList.remove('dragging');
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  };
+  return <div className="lane-accounts-resizer" onMouseDown={onMouseDown} title="Drag to resize" />;
+}
 import ExpandableRow from './expandable-row';
 import { InlineContactDetail, InlineMeetingDetail, InlineDealDetail, InlineAccountDetails } from './inline-details';
 import { supabase } from '../supabase';
@@ -223,6 +251,7 @@ function AccountsList({ accounts, contacts, onPickAccount, search, onAddAccount 
 
   return (
     <div className="lane lane-accounts">
+      <LaneResizer />
       <div className="lane-header">
         <div className="lane-title">
           <span className="lane-title-label">Accounts</span>
@@ -450,6 +479,7 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
 
   return (
     <div className="lane lane-accounts">
+      <LaneResizer />
       <div className="lane-header">
         <div className="lane-title">
           <button className="btn-ghost tiny" onClick={() => onPickAccount && onPickAccount(null)}><I.back /></button>

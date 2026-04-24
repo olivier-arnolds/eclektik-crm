@@ -1150,14 +1150,22 @@ em { font-style: normal; }
 
 /* stabilize account lane: fixed-width container, internal scroll only */
 .acc-hero { min-height: 64px; }
-/* Account 360 has a fixed width — never grows/shrinks, so expanding
-   the left lane only consumes the middle (Comms) space. */
+/* Account 360 has a user-resizable width (drag the left edge). Default 480px,
+   persisted in localStorage as 'acc-lane-width'. Width is set inline via
+   --acc-lane-width on BDApp's root. */
 .lane-accounts {
-  flex: 0 0 360px;
-  min-width: 360px;
-  max-width: 360px;
+  flex: 0 0 var(--acc-lane-width, 480px);
+  min-width: var(--acc-lane-width, 480px);
+  max-width: var(--acc-lane-width, 480px);
+  position: relative;
 }
 .lane-accounts .acc-scroll { scrollbar-gutter: stable; }
+.lane-accounts-resizer {
+  position: absolute; top: 0; left: -3px; width: 6px; height: 100%;
+  cursor: col-resize; z-index: 5; background: transparent;
+}
+.lane-accounts-resizer:hover,
+.lane-accounts-resizer.dragging { background: var(--accent); opacity: 0.4; }
 
 /* Scrollbars */
 ::-webkit-scrollbar { width: 10px; height: 10px; }
