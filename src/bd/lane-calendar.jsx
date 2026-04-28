@@ -3,6 +3,7 @@ import { I, fmtMoney, OwnerDot, ChannelIcon, OWNERS } from './atoms';
 import { supabase } from '../supabase';
 import { deleteCalendarEvent } from '../lib/graph';
 import NewMeetingModal from './new-meeting-modal';
+import TaskDetailModal from './task-detail-modal';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 const START_HOUR = 0, END_HOUR = 24; // full day — Marco wants "hele dag over de hele panel"
@@ -73,6 +74,7 @@ export default function CalendarLane({ events: dbEvents, tasks: dbTasks, deals, 
   const [overlay, setOverlay] = useState({ OA: false, YK: false });
   const [addTaskDay, setAddTaskDay] = useState(null);
   const [showNewMeeting, setShowNewMeeting] = useState(false);
+  const [openTaskId, setOpenTaskId] = useState(null);
   const scrollRef = useRef(null);
   const didScrollRef = useRef(false);
 
@@ -269,7 +271,8 @@ export default function CalendarLane({ events: dbEvents, tasks: dbTasks, deals, 
                 draggable
                 onDragStart={(e) => { e.dataTransfer.setData('text/task-id', t.id); setDraggingTaskId(t.id); }}
                 onDragEnd={() => setDraggingTaskId(null)}
-                style={{ cursor: 'grab', opacity: draggingTaskId === t.id ? 0.5 : 1 }}>
+                onClick={() => setOpenTaskId(t.id)}
+                style={{ cursor: 'pointer', opacity: draggingTaskId === t.id ? 0.5 : 1 }}>
                 <span className={`task-check ${t.done ? 'task-check-on' : ''}`} onClick={(e) => { e.stopPropagation(); toggleTaskDone(t); }}>
                   {t.done && <I.check />}
                 </span>
@@ -358,6 +361,15 @@ export default function CalendarLane({ events: dbEvents, tasks: dbTasks, deals, 
             setShowNewMeeting(false);
             if (refetchGraph) refetchGraph();
           }}
+        />
+      )}
+
+      {openTaskId && (
+        <TaskDetailModal
+          taskId={openTaskId}
+          accounts={accounts}
+          onClose={() => setOpenTaskId(null)}
+          refetch={refetch}
         />
       )}
     </div>
