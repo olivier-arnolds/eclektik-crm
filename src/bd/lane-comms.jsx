@@ -342,6 +342,7 @@ function ReadingPane({ comm, accounts, contacts, refetch, refetchGraph, onCompos
   const [fullBody, setFullBody] = useState(null);
   const [loadingBody, setLoadingBody] = useState(false);
   const [chatMessages, setChatMessages] = useState(null); // for Teams chats
+  const [recipients, setRecipients] = useState({ to: [], cc: [] });
   const [attachments, setAttachments] = useState([]);
   const [loadingAtt, setLoadingAtt] = useState(false);
   const [showTaskModal, setShowTaskModal] = useState(false);
@@ -394,8 +395,19 @@ function ReadingPane({ comm, accounts, contacts, refetch, refetchGraph, onCompos
 
     if (comm.channel !== 'email' || !isGraphMessage) return;
     setLoadingBody(true);
-    graphGet(`/me/messages/${comm.id}?$select=body,from,toRecipients,subject,hasAttachments`)
-      .then(res => setFullBody(res?.body?.content || null))
+    setRecipients({ to: [], cc: [] });
+    graphGet(`/me/messages/${comm.id}?$select=body,from,toRecipients,ccRecipients,subject,hasAttachments`)
+      .then(res => {
+        setFullBody(res?.body?.content || null);
+        const mapAddr = (r) => ({
+          name: r?.emailAddress?.name || '',
+          email: r?.emailAddress?.address || '',
+        });
+        setRecipients({
+          to: (res?.toRecipients || []).map(mapAddr).filter(r => r.email),
+          cc: (res?.ccRecipients || []).map(mapAddr).filter(r => r.email),
+        });
+      })
       .catch(() => {})
       .finally(() => setLoadingBody(false));
 
@@ -471,7 +483,39 @@ function ReadingPane({ comm, accounts, contacts, refetch, refetchGraph, onCompos
           </div>
           <div className="rp-time">{fmtFull(comm.ts)}</div>
         </div>
-        <div className="rp-tags">
+        {(recipients.to.length > 0 || recipients.cc.length > 0) && (
+          <div style={{ marginTop: 6, fontSize: 11, color: 'var(--text-2)', display: 'flex', flexDirection: 'column', gap: 2 }}>
+            {recipients.to.length > 0 && (
+              <div style={{ display: 'flex', gap: 6 }}>
+                <span style={{ color: 'var(--text-3)', fontFamily: 'var(--font-mono)', fontSize: 10, textTransform: 'uppercase', flexShrink: 0, width: 22 }}>to</span>
+                <span style={{ flex: 1 }}>
+                  {recipients.to.map((r, i) => (
+                    <span key={i}>
+                      {i > 0 && ', '}
+                      {r.name && <span>{r.name} </span>}
+                      <span style={{ color: 'var(--text-3)', fontFamily: 'var(--font-mono)', fontSize: 10 }}>&lt;{r.email}&gt;</span>
+                    </span>
+                  ))}
+                </span>
+              </div>
+            )}
+            {recipients.cc.length > 0 && (
+              <div style={{ display: 'flex', gap: 6 }}>
+                <span style={{ color: 'var(--text-3)', fontFamily: 'var(--font-mono)', fontSize: 10, textTransform: 'uppercase', flexShrink: 0, width: 22 }}>cc</span>
+                <span style={{ flex: 1 }}>
+                  {recipients.cc.map((r, i) => (
+                    <span key={i}>
+                      {i > 0 && ', '}
+                      {r.name && <span>{r.name} </span>}
+                      <span style={{ color: 'var(--text-3)', fontFamily: 'var(--font-mono)', fontSize: 10 }}>&lt;{r.email}&gt;</span>
+                    </span>
+                  ))}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+        <div className="rp-tags" style={{ marginTop: 6 }}>
           {account && <span className="pill">{account.name}</span>}
           {senderContact && !account && <span className="pill">{senderContact.name}</span>}
           {comm.flagged && <span className="pill">⚑ Flagged</span>}
