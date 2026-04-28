@@ -3,6 +3,7 @@ import { I, fmtMoney, OwnerDot, AccountMark, StaleDot, OWNERS, STAGE_TINT } from
 import { STAGES, stageUpdates } from './adapters';
 import { updateRow } from '../hooks/useSupabase';
 import NewDealModal from './new-deal-modal';
+import BulkLinkDealsModal from './bulk-link-deals-modal';
 
 const toggle = (arr, v) => arr.includes(v) ? arr.filter(x => x !== v) : [...arr, v];
 
@@ -12,6 +13,7 @@ export default function FunnelLane({ deals, accounts, contacts, filters, setFilt
   const [overStage, setOverStage] = useState(null);
   const [confirmMove, setConfirmMove] = useState(null);
   const [showNewDeal, setShowNewDeal] = useState(false);
+  const [showBulkLink, setShowBulkLink] = useState(false);
 
   const q = (search || '').toLowerCase();
   const matchesSearch = (d) => !q ||
@@ -89,6 +91,9 @@ export default function FunnelLane({ deals, accounts, contacts, filters, setFilt
         <div className="lane-actions">
           <button className="btn-primary tiny" onClick={() => setShowNewDeal(true)}>
             <I.plus /> New deal
+          </button>
+          <button className="btn-ghost tiny" onClick={() => setShowBulkLink(true)} title="Link unlinked deals to existing accounts">
+            Link deals
           </button>
           <button className="btn-ghost tiny" onClick={() => setCollapsed(c => !c)}>
             {collapsed ? 'Expand' : 'Collapse'}
@@ -194,6 +199,14 @@ export default function FunnelLane({ deals, accounts, contacts, filters, setFilt
           contacts={contacts}
           onClose={() => setShowNewDeal(false)}
           onCreated={() => { setShowNewDeal(false); if (refetch) refetch(); }}
+        />
+      )}
+
+      {showBulkLink && (
+        <BulkLinkDealsModal
+          accounts={accounts}
+          onClose={() => setShowBulkLink(false)}
+          onDone={() => { setShowBulkLink(false); if (refetch) refetch(); }}
         />
       )}
 
