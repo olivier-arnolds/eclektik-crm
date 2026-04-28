@@ -5,14 +5,13 @@ import { supabase } from '../supabase';
 // All-tasks overview (Dynamics-style table). Click a row to open the
 // linked account on the right pane (the same wiring as calendar tasks).
 // Columns: Regarding · Subject · Description · Priority · Start Date.
-export default function TasksView({ accounts, contacts, onSelectTask, onPickAccount }) {
+export default function TasksView({ accounts, contacts, onSelectTask, onPickAccount, expanded, onToggleExpand }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showDone, setShowDone] = useState(false);
   const [sortBy, setSortBy] = useState('due_date');
   const [sortDir, setSortDir] = useState('asc');
   const [query, setQuery] = useState('');
-  const [expanded, setExpanded] = useState(false); // shows extra columns when true
 
   useEffect(() => {
     setLoading(true);
@@ -93,28 +92,30 @@ export default function TasksView({ accounts, contacts, onSelectTask, onPickAcco
   return (
     <div className="lane" style={{
       flex: 1, display: 'flex', flexDirection: 'column',
-      padding: 14, overflow: 'hidden',
+      padding: 10, overflow: 'hidden',
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-        <div style={{ fontSize: 16, fontWeight: 600 }}>Tasks</div>
-        <div style={{ fontSize: 11, fontFamily: 'var(--font-mono)', color: 'var(--text-3)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+        <div style={{ fontSize: 13, fontWeight: 600 }}>Tasks</div>
+        <div style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-3)' }}>
           {filtered.length} {showDone ? 'total' : 'open'}
         </div>
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
-          <div className="searchfield" style={{ width: 240 }}>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 6, alignItems: 'center' }}>
+          <div className="searchfield" style={{ width: 180 }}>
             <I.search />
             <input value={query} onChange={e => setQuery(e.target.value)}
-              placeholder="Filter tasks…" />
+              placeholder="Filter…" style={{ fontSize: 11 }} />
             {query && <button className="icon-btn tiny" onClick={() => setQuery('')}><I.close /></button>}
           </div>
-          <label style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'var(--text-2)', cursor: 'pointer' }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: 'var(--text-2)', cursor: 'pointer' }}>
             <input type="checkbox" checked={showDone} onChange={e => setShowDone(e.target.checked)} />
-            Show completed
+            Done
           </label>
-          <button className="btn-ghost tiny" onClick={() => setExpanded(e => !e)}
-            title={expanded ? 'Collapse: hide Description and Priority' : 'Expand: show Description and Priority'}>
-            {expanded ? '‹ Compact' : 'Expand ›'}
-          </button>
+          {onToggleExpand && (
+            <button className="btn-ghost tiny" onClick={onToggleExpand}
+              title={expanded ? 'Collapse: show Comms again' : 'Expand: hide Comms, show all task columns'}>
+              {expanded ? '‹ Compact' : 'Expand ›'}
+            </button>
+          )}
         </div>
       </div>
 
@@ -123,13 +124,13 @@ export default function TasksView({ accounts, contacts, onSelectTask, onPickAcco
         border: '0.5px solid var(--sep)', borderRadius: 8,
         background: 'var(--bg-1)',
       }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11 }}>
           <thead style={{ position: 'sticky', top: 0, zIndex: 1, background: 'var(--bg-2)' }}>
             <tr>
               {cols.map(({ key, label, width }) => (
                 <th key={key} onClick={() => toggleSort(key)}
                   style={{
-                    padding: '10px 12px', textAlign: 'left', cursor: 'pointer',
+                    padding: '7px 10px', textAlign: 'left', cursor: 'pointer',
                     borderBottom: '0.5px solid var(--sep)',
                     fontSize: 11, fontWeight: 500, color: 'var(--text-2)',
                     fontFamily: 'var(--font-mono)', textTransform: 'uppercase',
@@ -166,7 +167,7 @@ export default function TasksView({ accounts, contacts, onSelectTask, onPickAcco
                   }}
                   onMouseEnter={e => e.currentTarget.style.background = 'var(--fill-1)'}
                   onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                  <td style={{ padding: '8px 12px' }}>
+                  <td style={{ padding: '6px 10px' }}>
                     {acc && onPickAccount ? (
                       <span
                         onClick={(e) => { e.stopPropagation(); onPickAccount(acc); }}
@@ -177,16 +178,16 @@ export default function TasksView({ accounts, contacts, onSelectTask, onPickAcco
                       <span style={{ color: 'var(--text-2)' }}>{regarding}</span>
                     )}
                   </td>
-                  <td style={{ padding: '8px 12px', color: 'var(--text-1)', textDecoration: t.status === 'done' ? 'line-through' : 'none' }}>
+                  <td style={{ padding: '6px 10px', color: 'var(--text-1)', textDecoration: t.status === 'done' ? 'line-through' : 'none' }}>
                     {t.title || '(untitled)'}
                   </td>
                   {showDescription && (
-                    <td style={{ padding: '8px 12px', color: 'var(--text-2)', maxWidth: 420, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    <td style={{ padding: '6px 10px', color: 'var(--text-2)', maxWidth: 420, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {(t.description || '').replace(/\s+/g, ' ').slice(0, 200)}
                     </td>
                   )}
                   {showPriority && (
-                    <td style={{ padding: '8px 12px' }}>
+                    <td style={{ padding: '6px 10px' }}>
                       <span style={{
                         fontSize: 10, padding: '2px 6px', borderRadius: 3,
                         background: priority === 'High' ? 'var(--warn-tint)' : priority === 'Low' ? 'var(--fill-2)' : 'var(--fill-1)',
@@ -197,7 +198,7 @@ export default function TasksView({ accounts, contacts, onSelectTask, onPickAcco
                       </span>
                     </td>
                   )}
-                  <td style={{ padding: '8px 12px', fontFamily: 'var(--font-mono)', color: overdue && t.status !== 'done' ? 'var(--danger)' : 'var(--text-2)' }}>
+                  <td style={{ padding: '6px 10px', fontFamily: 'var(--font-mono)', color: overdue && t.status !== 'done' ? 'var(--danger)' : 'var(--text-2)' }}>
                     {fmtDate(t.due_date)}
                   </td>
                 </tr>

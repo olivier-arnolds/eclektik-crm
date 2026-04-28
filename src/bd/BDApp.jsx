@@ -200,8 +200,32 @@ export default function BDApp() {
                 onEnrich={() => setShowEnrich(true)} />
         <div className="lanes">
           <TasksView accounts={accounts} contacts={contacts}
-            onSelectTask={(t) => setRightContext({ type: 'task', id: t.id })}
-            onPickAccount={pickAccount} />
+            onSelectTask={(t) => {
+              setRightContext({ type: 'task', id: t.id });
+              // Filter Comms + open Account 360 to the task's account
+              if (t.company_id) setAccountScope(t.company_id);
+              else setAccountScope(null);
+            }}
+            onPickAccount={(acc) => { pickAccount(acc); }}
+            expanded={expandedLane === 'left'}
+            onToggleExpand={() => setExpandedLane(expandedLane === 'left' ? null : 'left')}
+          />
+          {expandedLane !== 'left' && (
+            <CommsLane
+              comms={comms}
+              accounts={accounts}
+              contacts={contacts}
+              graphEmails={graphEmails}
+              refetch={refetch}
+              refetchGraph={fetchGraphData}
+              onCompose={openCompose}
+              selectedId={selectedComm}
+              onSelect={selectCommHandler}
+              accountScope={accountScope}
+              onClearScope={() => setAccountScope(null)}
+              search={search}
+            />
+          )}
           <AccountsLane
             context={rightContext}
             accounts={accounts}
