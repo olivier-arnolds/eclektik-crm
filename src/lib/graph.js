@@ -425,7 +425,8 @@ export async function getChatMessages(chatId, max = 200) {
   if (isChannel) {
     const [, teamId, channelId] = chatId.split(':');
     // $expand=replies pulls threaded replies in the same call (no N+1)
-    const baseUrl = `/teams/${teamId}/channels/${channelId}/messages?$top=50&$expand=replies`;
+    // NB: Graph caps $top at 20 when $expand=replies is used (returns 400 otherwise).
+    const baseUrl = `/teams/${teamId}/channels/${channelId}/messages?$top=20&$expand=replies`;
 
     const all = [];
     let page = await graphGet(baseUrl);
