@@ -378,10 +378,14 @@ function ReadingPane({ comm, accounts, contacts, refetch, refetchGraph, onCompos
     // regex, so we trigger purely on channel === 'teams'.
     if (comm.channel === 'teams' && comm.id) {
       setLoadingBody(true);
-      getChatMessages(comm.id, 50)
+      getChatMessages(comm.id, 200)
         .then(msgs => {
-          // Graph returns newest-first; show oldest-first like a normal chat
-          setChatMessages((msgs || []).slice().reverse());
+          // Always render oldest-first. graph.js returns chats newest-first
+          // but channels already sorted oldest-first.
+          const list = (msgs || []).slice();
+          const isChannel = comm.id.startsWith('channel:');
+          const ordered = isChannel ? list : list.reverse();
+          setChatMessages(ordered);
         })
         .catch(err => { console.error('chat fetch failed', err); setChatMessages([]); })
         .finally(() => setLoadingBody(false));

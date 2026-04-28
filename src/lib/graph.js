@@ -416,18 +416,57 @@ export async function getTeamsChannelConversations() {
 
 // Get messages in a chat (1:1 / group) OR in a team channel.
 // For channels, pass the synthetic 'channel:teamId:channelId' id we generate
-// in getTeamsChannelConversations.
-export async function getChatMessages(chatId, top = 50) {
-  let url;
-  if (chatId.startsWith('channel:')) {
-    const [, teamId, channelId] = chatId.split(':');
-    url = `/teams/${teamId}/channels/${channelId}/messages?$top=${top}`;
-  } else {
-    url = `/me/chats/${chatId}/messages?$top=${top}`;
+// in getTeamsChannelConversations. For channels, replies (threaded answers)
+// are fetched and inlined under each top-level message.
+export async function getChatMessages(chatId, max = 200) {
+  const token = localStorage.getItem('graph_token');
+  const isChannel = chatId.startsWith('channel:');
+  const baseUrl = isChannel
+    ? (() => { const [, teamId, channelId] = chatId.split(':'); return `/teams/${teamId}/channels/${channelId}/messages?$top=50`; })()
+    : `/me/chats/${chatId}/messages?$top=50`;
+
+  // Paginate top-level messages
+  const all = [];
+  let page = await graphGet(baseUrl);
+  while (page?.value?.length) {
+    all.push(...page.value);
+    if (all.length >= max || !page['@odata.nextLink']) break;
+    try {
+      const r = await fetch(page['@odata.nextLink'], { headers: { 'Authorization': 'Bearer ' + token } });
+      page = await r.json();
+    } catch (e) { break; }
   }
-  const data = await graphGet(url);
-  if (!data?.value) return [];
-  return data.value.map(m => ({
+
+  // For channels, fetch replies for each top-level message (in batches of 5)
+  if (isChannel) {
+    const [, teamId, channelId] = chatId.split(':');
+    const concurrency = 5;
+    const withReplies = [];
+    for (let i = 0; i < all.length; i += concurrency) {
+      const slice = all.slice(i, i + concurrency);
+      const replies = await Promise.all(slice.map(async m => {
+        try {
+          const r = await graphGet(`/teams/${teamId}/channels/${channelId}/messages/${m.id}/replies?$top=50`);
+          return r?.value || [];
+        } catch { return []; }
+      }));
+      slice.forEach((m, idx) => withReplies.push(m, ...replies[idx]));
+    }
+    // Channel API returns parents newest-first; sort everything by createdDateTime asc
+    return withReplies
+      .map(m => ({
+        id: m.id,
+        from: m.from?.user?.displayName || 'Unknown',
+        body: m.body?.content || '',
+        contentType: m.body?.contentType || 'text',
+        date: m.createdDateTime,
+        type: 'chat',
+      }))
+      .sort((a, b) => new Date(a.date || 0) - new Date(b.date || 0));
+  }
+
+  // Plain chat: just map (caller already reverses for chronological order)
+  return all.map(m => ({
     id: m.id,
     from: m.from?.user?.displayName || 'Unknown',
     body: m.body?.content || '',
