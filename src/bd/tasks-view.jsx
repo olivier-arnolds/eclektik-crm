@@ -83,7 +83,7 @@ export default function TasksView({ accounts, contacts, onSelectTask, onPickAcco
     { key: 'description',  label: 'Description',width: 380, alwaysShow: false },
     { key: 'priority',     label: 'Priority',   width: 90,  alwaysShow: false },
     { key: 'due_date',     label: 'Start Date', width: 120, alwaysShow: true },
-    { key: 'completed_at', label: 'Completed',  width: 120, alwaysShow: false },
+    { key: 'completed_at', label: 'Completed',  width: 120, alwaysShow: true },
   ];
   const cols = allColumns.filter(c => expanded || c.alwaysShow);
 
