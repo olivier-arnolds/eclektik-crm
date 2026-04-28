@@ -9,10 +9,35 @@ export default function DealDetailModal({ deal, accounts, contacts, rawItems, on
   const [showDisqualify, setShowDisqualify] = useState(false);
   const [showEnroll, setShowEnroll] = useState(false);
   const [editingField, setEditingField] = useState(null);
+  const [linkingAccount, setLinkingAccount] = useState(false);
+  const [linkQuery, setLinkQuery] = useState('');
 
   const account = accounts.find(a => a.id === deal.accountId);
   const dealContacts = contacts.filter(c => deal.contactIds?.includes(c.id));
   const primaryContact = dealContacts[0];
+
+  // Suggest matching accounts based on deal title + notes.
+  // Match if any whole word of length ≥ 3 in account.name appears in the deal text.
+  const accountSuggestions = (() => {
+    if (account) return [];
+    const haystack = `${deal.title || ''} ${deal.description || ''} ${deal.notes || ''}`.toLowerCase();
+    if (!haystack.trim()) return [];
+    return (accounts || []).filter(a => {
+      const words = (a.name || '').toLowerCase().split(/[\s\-,&\/]+/).filter(w => w.length >= 3);
+      return words.some(w => new RegExp(`\\b${w.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')}\\b`).test(haystack));
+    }).slice(0, 4);
+  })();
+
+  const linkAccount = async (accId) => {
+    await updateRow(deal.table, deal.id, { company_id: accId });
+    setLinkingAccount(false);
+    setLinkQuery('');
+    if (refetch) refetch();
+  };
+
+  const filteredLink = (linkQuery || '').trim().length >= 1
+    ? (accounts || []).filter(a => a.name.toLowerCase().includes(linkQuery.trim().toLowerCase())).slice(0, 12)
+    : [];
 
   const isLead = deal.funnelStage === 'lead';
 
@@ -36,10 +61,64 @@ export default function DealDetailModal({ deal, accounts, contacts, rawItems, on
           <AccountMark account={account} size={26} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{deal.title}</div>
-            <div style={{ fontSize: 10, color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>{account?.name || '—'}</div>
+            <div style={{ fontSize: 10, color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>
+              {account?.name ? (
+                <span>{account.name}</span>
+              ) : (
+                <button
+                  onClick={() => setLinkingAccount(v => !v)}
+                  style={{ background: 'transparent', border: 'none', padding: 0, color: 'var(--accent)', cursor: 'pointer', fontFamily: 'var(--font-mono)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                  + Link account
+                </button>
+              )}
+            </div>
           </div>
           <button className="icon-btn" onClick={onClose}><I.close /></button>
         </div>
+
+        {linkingAccount && !account && (
+          <div style={{
+            padding: 10, margin: '0 16px', borderBottom: '0.5px solid var(--sep)',
+            background: 'var(--fill-1)', borderRadius: 6, marginTop: 8,
+          }}>
+            {accountSuggestions.length > 0 && (
+              <div style={{ marginBottom: 8 }}>
+                <div style={{ fontSize: 10, color: 'var(--text-3)', fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 4 }}>
+                  Suggestions (from notes/title)
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                  {accountSuggestions.map(a => (
+                    <button key={a.id} className="btn-ghost tiny"
+                      onClick={() => linkAccount(a.id)}
+                      style={{ background: 'var(--bg-1)', border: '0.5px solid var(--sep)' }}>
+                      {a.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+            <input autoFocus value={linkQuery} onChange={e => setLinkQuery(e.target.value)}
+              placeholder="Search accounts to link…"
+              style={{
+                width: '100%', padding: '6px 8px', borderRadius: 5,
+                border: '0.5px solid var(--sep)', background: 'var(--bg-1)',
+                color: 'var(--text-1)', fontSize: 12, outline: 'none', boxSizing: 'border-box',
+              }} />
+            {filteredLink.length > 0 && (
+              <div style={{ marginTop: 6, maxHeight: 200, overflowY: 'auto' }}>
+                {filteredLink.map(a => (
+                  <div key={a.id} onClick={() => linkAccount(a.id)}
+                    style={{ padding: '5px 8px', borderRadius: 4, cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}
+                    onMouseEnter={e => e.currentTarget.style.background = 'var(--fill-2)'}
+                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                    <span style={{ flex: 1 }}>{a.name}</span>
+                    {a.type && <span style={{ fontSize: 10, color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>{a.type}</span>}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="modal-body" style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12 }}>
 
