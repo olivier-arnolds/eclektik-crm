@@ -137,9 +137,12 @@ export default function BDApp() {
     setSelectedDeal(d);
     setRightContext({ type: 'deal', id: d.id });
     // Popup is suppressed when the deal has an account (Account 360 covers it).
-    // Deals without an account (typically qualify-stage leads) have nothing
-    // to show on the right, so fall back to the detail modal.
-    if (!d.accountId) setOpenDeal(d);
+    // Open the modal if either:
+    //  - the deal has no account at all (typical qualify-stage lead), or
+    //  - the linked account isn't in the active accounts list (inactive /
+    //    filtered out), so the right pane would otherwise be empty.
+    const accExists = d.accountId && accounts.some(a => a.id === d.accountId);
+    if (!accExists) setOpenDeal(d);
   };
   const selectCommHandler = (id) => {
     setSelectedComm(id);
