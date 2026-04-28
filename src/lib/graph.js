@@ -421,39 +421,33 @@ export async function getTeamsChannelConversations() {
 export async function getChatMessages(chatId, max = 200) {
   const token = localStorage.getItem('graph_token');
   const isChannel = chatId.startsWith('channel:');
-  const baseUrl = isChannel
-    ? (() => { const [, teamId, channelId] = chatId.split(':'); return `/teams/${teamId}/channels/${channelId}/messages?$top=50`; })()
-    : `/me/chats/${chatId}/messages?$top=50`;
 
-  // Paginate top-level messages
-  const all = [];
-  let page = await graphGet(baseUrl);
-  while (page?.value?.length) {
-    all.push(...page.value);
-    if (all.length >= max || !page['@odata.nextLink']) break;
-    try {
-      const r = await fetch(page['@odata.nextLink'], { headers: { 'Authorization': 'Bearer ' + token } });
-      page = await r.json();
-    } catch (e) { break; }
-  }
-
-  // For channels, fetch replies for each top-level message (in batches of 5)
   if (isChannel) {
     const [, teamId, channelId] = chatId.split(':');
-    const concurrency = 5;
-    const withReplies = [];
-    for (let i = 0; i < all.length; i += concurrency) {
-      const slice = all.slice(i, i + concurrency);
-      const replies = await Promise.all(slice.map(async m => {
-        try {
-          const r = await graphGet(`/teams/${teamId}/channels/${channelId}/messages/${m.id}/replies?$top=50`);
-          return r?.value || [];
-        } catch { return []; }
-      }));
-      slice.forEach((m, idx) => withReplies.push(m, ...replies[idx]));
+    // $expand=replies pulls threaded replies in the same call (no N+1)
+    const baseUrl = `/teams/${teamId}/channels/${channelId}/messages?$top=50&$expand=replies`;
+
+    const all = [];
+    let page = await graphGet(baseUrl);
+    if (page && !page.value && page.error) {
+      console.warn('[channel messages]', page.error);
     }
-    // Channel API returns parents newest-first; sort everything by createdDateTime asc
-    return withReplies
+    while (page?.value?.length) {
+      all.push(...page.value);
+      if (all.length >= max || !page['@odata.nextLink']) break;
+      try {
+        const r = await fetch(page['@odata.nextLink'], { headers: { 'Authorization': 'Bearer ' + token } });
+        page = await r.json();
+      } catch (e) { break; }
+    }
+
+    // Flatten parent + replies, then sort chronologically
+    const flat = [];
+    for (const m of all) {
+      flat.push(m);
+      if (Array.isArray(m.replies)) flat.push(...m.replies);
+    }
+    return flat
       .map(m => ({
         id: m.id,
         from: m.from?.user?.displayName || 'Unknown',
@@ -465,7 +459,21 @@ export async function getChatMessages(chatId, max = 200) {
       .sort((a, b) => new Date(a.date || 0) - new Date(b.date || 0));
   }
 
-  // Plain chat: just map (caller already reverses for chronological order)
+  // Plain chat (1:1 / group). Graph returns newest-first; caller reverses.
+  const baseUrl = `/me/chats/${chatId}/messages?$top=50`;
+  const all = [];
+  let page = await graphGet(baseUrl);
+  if (page && !page.value && page.error) {
+    console.warn('[chat messages]', page.error);
+  }
+  while (page?.value?.length) {
+    all.push(...page.value);
+    if (all.length >= max || !page['@odata.nextLink']) break;
+    try {
+      const r = await fetch(page['@odata.nextLink'], { headers: { 'Authorization': 'Bearer ' + token } });
+      page = await r.json();
+    } catch (e) { break; }
+  }
   return all.map(m => ({
     id: m.id,
     from: m.from?.user?.displayName || 'Unknown',
