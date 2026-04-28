@@ -87,6 +87,7 @@ export function adaptContact(row, adaptedAccounts) {
     avatarColor: row.avatarColor,
     initials: row.initials,
     isPrimary: !!row.isPrimary,
+    isFormer: !!row.isFormer,
   };
 }
 

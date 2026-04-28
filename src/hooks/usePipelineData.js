@@ -42,6 +42,7 @@ function adaptContact(row, companies) {
     email: row.email || '',
     source: row.event_source || '',
     isPrimary: !!row.is_primary,
+    isFormer: !!row.former,
   }
 }
 

@@ -431,6 +431,8 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
     .filter(c => c.accountId === account.id)
     .slice()
     .sort((a, b) => {
+      // Former contacts to the bottom
+      if (!!a.isFormer !== !!b.isFormer) return a.isFormer ? 1 : -1;
       const fa = (a.first_name || (a.name || '').split(' ')[0] || '').toLowerCase();
       const fb = (b.first_name || (b.name || '').split(' ')[0] || '').toLowerCase();
       return fa.localeCompare(fb);
@@ -599,7 +601,7 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
             {accContacts.map(c => (
               <ExpandableRow key={c.id} accent="var(--accent)"
                 collapsed={(open) => (
-                  <div className="contact-card">
+                  <div className="contact-card" style={c.isFormer ? { opacity: 0.55 } : {}}>
                     <div style={{
                       width: 22, height: 22, borderRadius: 11,
                       background: c.avatarBg || '#F1EFE8', color: c.avatarColor || '#888',
@@ -610,12 +612,23 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
                       {c.initials || (c.name || '?').split(' ').map(w => w[0]).slice(0, 2).join('')}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div className="contact-name">
+                      <div className="contact-name" style={c.isFormer ? { textDecoration: 'line-through' } : {}}>
                         {c.name}
                         {c.isPrimary && <span title="Primary contact" style={{ color: 'var(--good)', marginLeft: 6, fontSize: 10, fontFamily: 'var(--font-mono)' }}>★</span>}
+                        {c.isFormer && <span title="No longer at this account" style={{ color: 'var(--text-3)', marginLeft: 6, fontSize: 9, fontFamily: 'var(--font-mono)', textDecoration: 'none' }}>former</span>}
                       </div>
-                      {c.role && <div className="contact-role">{c.role}</div>}
+                      {c.role && <div className="contact-role" style={c.isFormer ? { textDecoration: 'line-through' } : {}}>{c.role}</div>}
                     </div>
+                    <button className="icon-btn tiny"
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        await supabase.from('contacts').update({ former: !c.isFormer }).eq('id', c.id);
+                        if (refetch) refetch();
+                      }}
+                      title={c.isFormer ? 'Mark as current employee' : 'Mark as former (no longer at this account)'}
+                      style={{ color: c.isFormer ? 'var(--text-3)' : 'var(--text-3)', fontFamily: 'var(--font-mono)', fontSize: 11 }}>
+                      {c.isFormer ? '↻' : '✕'}
+                    </button>
                     <button className="icon-btn tiny"
                       onClick={async (e) => {
                         e.stopPropagation();
