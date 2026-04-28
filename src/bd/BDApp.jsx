@@ -77,10 +77,11 @@ export default function BDApp() {
     // Fetch Inbox + Sent + Archived + Teams chats in parallel.
     // All merged into one comms list; folder/channel tags drive UI filtering.
     try {
-      const [mails, teams, channels] = await Promise.all([
+      const [mails, teams] = await Promise.all([
         getAllMailFolders(1000).catch(e => { console.warn('mail:', e); return { inbox: [], sent: [], archived: [] }; }),
         getTeamsConversations(500).catch(e => { console.warn('teams chats:', e); return []; }),
-        getTeamsChannelConversations().catch(e => { console.warn('teams channels:', e); return []; }),
+        // Team channels disabled: requires admin-consent scopes that broke
+        // the Supabase OAuth flow. Re-enable later via a separate auth path.
       ]);
       const { inbox, sent, archived } = mails;
       const merged = [
@@ -88,7 +89,6 @@ export default function BDApp() {
         ...sent.map(e => ({ ...e, dir: 'out', archived: false })),
         ...archived.map(e => ({ ...e, dir: 'in', archived: true })),
         ...teams,
-        ...channels,
       ];
       setGraphEmails(merged);
     } catch (e) { console.warn('Graph fetch failed:', e); }
