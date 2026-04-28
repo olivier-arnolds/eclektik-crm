@@ -1,6 +1,18 @@
 import { useState } from 'react';
 import { supabase } from '../supabase';
 
+// Defined OUTSIDE the component so React doesn't re-create the wrapper
+// every render (which was unmounting/remounting inputs on every keystroke
+// and stealing focus).
+function F({ label, children }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+      <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-3)' }}>{label}</span>
+      {children}
+    </div>
+  );
+}
+
 export default function NewDealModal({ accounts, contacts, onClose, onCreated }) {
   const [title, setTitle] = useState('');
   const [accountId, setAccountId] = useState('');
@@ -22,12 +34,12 @@ export default function NewDealModal({ accounts, contacts, onClose, onCreated })
     if (!canSave) return;
     setSaving(true);
     const numericValue = parseInt((value || '').replace(/\D/g, '')) || 0;
-    // New deals always start as leads
+    // New deals always start as leads. The leads table doesn't have a
+    // contact_id column — contacts get linked via contacts.lead_id afterwards.
     const row = {
       full_name: title.trim(),
       topic: title.trim(),
       company_id: accountId,
-      contact_id: contactIds[0] || null,
       est_revenue: numericValue,
       sub_status: stage,
       product_line: dealType || null,
@@ -42,13 +54,6 @@ export default function NewDealModal({ accounts, contacts, onClose, onCreated })
     }
     if (onCreated) onCreated();
   };
-
-  const F = ({ label, children }) => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
-      <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-3)' }}>{label}</span>
-      {children}
-    </div>
-  );
 
   const chipSingle = (options, selected, onPick) => (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
