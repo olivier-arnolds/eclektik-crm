@@ -383,6 +383,10 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
 
   // Sync my calendar + refetch shared events whenever a new account is opened.
   useEffect(() => {
+    // Always reset the previous account's events first — otherwise a
+    // pseudo-account view (clicking a calendar event with no match) would
+    // keep showing the previous account's meetings/contacts/etc.
+    setSharedEvents([]);
     if (!account?.id) return;
     let cancelled = false;
     (async () => {
@@ -426,9 +430,10 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
         setNotesCountByEvent(counts);
       });
   }, [account?.id, meetingNoteEvent]);
-  // Sort contacts A-Z by first name (fall back to full name)
-  const accContacts = contacts
-    .filter(c => c.accountId === account.id)
+  // Sort contacts A-Z by first name (fall back to full name).
+  // If this is a pseudo-account (no real id), don't list any contacts —
+  // 'no accountId' would otherwise match every unlinked contact.
+  const accContacts = (!account.id ? [] : contacts.filter(c => c.accountId === account.id))
     .slice()
     .sort((a, b) => {
       // Former contacts to the bottom
@@ -437,7 +442,7 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
       const fb = (b.first_name || (b.name || '').split(' ')[0] || '').toLowerCase();
       return fa.localeCompare(fb);
     });
-  const accDeals = deals.filter(d => d.accountId === account.id);
+  const accDeals = !account.id ? [] : deals.filter(d => d.accountId === account.id);
   const openDeals = accDeals.filter(d => ['qualify', 'develop', 'proposal', 'close'].includes(d.stage));
   const activeDeals = accDeals.filter(d => ['onboarding', 'active'].includes(d.stage));
   // Merge DB comms + Graph emails matched to this account via contact email or website domain
@@ -477,7 +482,7 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
       hasAttach: !!e.hasAttachments,
       accountId: account.id,
     }));
-  const allComms = [...(comms || []).filter(c => c.accountId === account.id), ...matchedGraph];
+  const allComms = !account.id ? [] : [...(comms || []).filter(c => c.accountId === account.id), ...matchedGraph];
   // Dedupe by id and sort
   const seen = new Set();
   const accComms = allComms
@@ -504,7 +509,7 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
       owners: row.owners || [],
     }));
   }, [sharedEvents]);
-  const accTasks = tasks.filter(t => t.accountId === account.id);
+  const accTasks = !account.id ? [] : tasks.filter(t => t.accountId === account.id);
   const openTasks = accTasks.filter(t => !t.done);
 
   const runHighlightAction = (action) => {
