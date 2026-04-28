@@ -66,7 +66,7 @@ export default function AccountsLane({ context, accounts, contacts, deals, rawIt
     return [...(events || []), ...visibleGraph.filter(e => !ids.has(e.id))];
   }, [events, graphEvents]);
 
-  const resolved = useMemo(() => resolveContext(context, { accounts, contacts, deals, comms, events: allEvents, tasks }), [context, accounts, contacts, deals, comms, allEvents, tasks]);
+  const resolved = useMemo(() => resolveContext(context, { accounts, contacts, deals, comms, graphEmails, events: allEvents, tasks }), [context, accounts, contacts, deals, comms, graphEmails, allEvents, tasks]);
   const [showAddAccount, setShowAddAccount] = useState(false);
 
   if (!resolved) {
@@ -95,13 +95,37 @@ export default function AccountsLane({ context, accounts, contacts, deals, rawIt
 
 function resolveContext(context, data) {
   if (!context) return null;
-  const { accounts, contacts, deals, comms, events, tasks } = data;
+  const { accounts, contacts, deals, comms, graphEmails, events, tasks } = data;
   if (context.type === 'account') {
     const acc = accounts.find(a => a.id === context.id);
     return acc ? { account: acc, highlight: null } : null;
   }
   if (context.type === 'comm') {
-    const c = comms.find(x => x.id === context.id);
+    // Look in DB comms first, then in live Graph emails. Graph emails resolve
+    // their accountId via the sender's email matching a CRM contact.
+    let c = comms.find(x => x.id === context.id);
+    if (!c) {
+      const g = (graphEmails || []).find(x => x.id === context.id);
+      if (g) {
+        const sender = (g.fromAddress || '').toLowerCase();
+        const contact = sender ? (contacts || []).find(ct => (ct.email || '').toLowerCase() === sender) : null;
+        // Domain-based fallback to the company's website domain
+        let acc = contact ? accounts.find(a => a.id === contact.accountId) : null;
+        if (!acc && sender) {
+          const dom = (sender.split('@')[1] || '').toLowerCase();
+          if (dom) {
+            acc = (accounts || []).find(a => {
+              const wd = (a.website || '').toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
+              return wd && (wd === dom || dom.endsWith('.' + wd));
+            });
+          }
+        }
+        c = {
+          id: g.id, subject: g.subject, preview: g.bodyPreview || g.preview || '',
+          from: g.from, accountId: acc?.id || null,
+        };
+      }
+    }
     if (!c) return null;
     const acc = accounts.find(a => a.id === c.accountId);
     return acc ? { account: acc, highlight: { kind: 'comm', item: c, title: c.subject, body: c.preview, actions: [{ label: 'Reply', kind: 'reply', commId: c.id }] } } : null;
