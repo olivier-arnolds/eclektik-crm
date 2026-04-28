@@ -73,6 +73,13 @@ export default function SearchResultsPanel({
     return () => document.removeEventListener('keydown', handler);
   }, [onClose]);
 
+  // Per-group "show all" toggle (collapsed by default at 6)
+  const [expanded, setExpanded] = useState(new Set());
+  const toggle = (key) => setExpanded(prev => {
+    const n = new Set(prev); if (n.has(key)) n.delete(key); else n.add(key); return n;
+  });
+  const visible = (list, key) => expanded.has(key) ? list : list.slice(0, 6);
+
   const totalCount =
     results.accounts.length + results.contacts.length +
     results.deals.length + results.meetings.length + results.tasks.length;
@@ -122,7 +129,7 @@ export default function SearchResultsPanel({
         )}
 
         <ResultGroup title="Accounts" count={results.accounts.length}>
-          {results.accounts.slice(0, 6).map(a => (
+          {visible(results.accounts, 'accounts').map(a => (
             <ResultRow key={a.id} onClick={() => { onPickAccount(a); onClose(); }}>
               <AccountMark account={a} size={22} />
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -136,11 +143,11 @@ export default function SearchResultsPanel({
               {a.owner && <OwnerDot id={a.owner} />}
             </ResultRow>
           ))}
-          {results.accounts.length > 6 && <MoreRow count={results.accounts.length - 6} />}
+          {results.accounts.length > 6 && <MoreRow count={results.accounts.length - 6} expanded={expanded.has('accounts')} onClick={() => toggle('accounts')} />}
         </ResultGroup>
 
         <ResultGroup title="Contacts" count={results.contacts.length}>
-          {results.contacts.slice(0, 6).map(c => (
+          {visible(results.contacts, 'contacts').map(c => (
             <ResultRow key={c.id} onClick={() => { onOpenContact(c.id); }}>
               <div style={{ width: 22, height: 22, borderRadius: 11, background: c.avatarBg || 'var(--fill-2)', color: c.avatarColor || 'var(--text-2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 600, flexShrink: 0 }}>
                 {c.initials || (c.name || '?').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()}
@@ -155,11 +162,11 @@ export default function SearchResultsPanel({
               </div>
             </ResultRow>
           ))}
-          {results.contacts.length > 6 && <MoreRow count={results.contacts.length - 6} />}
+          {results.contacts.length > 6 && <MoreRow count={results.contacts.length - 6} expanded={expanded.has('contacts')} onClick={() => toggle('contacts')} />}
         </ResultGroup>
 
         <ResultGroup title="Deals" count={results.deals.length}>
-          {results.deals.slice(0, 6).map(d => (
+          {visible(results.deals, 'deals').map(d => (
             <ResultRow key={d.id} onClick={() => { onOpenDeal(d); onClose(); }}>
               <span className="stage-pill" style={{
                 background: `oklch(92% 0.05 ${STAGE_TINT[d.stage]?.hue || 220})`,
@@ -178,11 +185,11 @@ export default function SearchResultsPanel({
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-2)' }}>{fmtMoney(d.value)}</span>
             </ResultRow>
           ))}
-          {results.deals.length > 6 && <MoreRow count={results.deals.length - 6} />}
+          {results.deals.length > 6 && <MoreRow count={results.deals.length - 6} expanded={expanded.has('deals')} onClick={() => toggle('deals')} />}
         </ResultGroup>
 
         <ResultGroup title="Meetings" count={results.meetings.length}>
-          {results.meetings.slice(0, 6).map(e => (
+          {visible(results.meetings, 'meetings').map(e => (
             <ResultRow key={e.id} onClick={() => { onSelectEvent(e); onClose(); }}>
               {e.channel === 'teams' ? <ChannelIcon ch="teams" size={14} /> : <I.calendar />}
               <div style={{ flex: 1, minWidth: 0 }}>
@@ -196,11 +203,11 @@ export default function SearchResultsPanel({
               )}
             </ResultRow>
           ))}
-          {results.meetings.length > 6 && <MoreRow count={results.meetings.length - 6} />}
+          {results.meetings.length > 6 && <MoreRow count={results.meetings.length - 6} expanded={expanded.has('meetings')} onClick={() => toggle('meetings')} />}
         </ResultGroup>
 
         <ResultGroup title="Tasks" count={results.tasks.length}>
-          {results.tasks.slice(0, 6).map(t => (
+          {visible(results.tasks, 'tasks').map(t => (
             <ResultRow key={t.id} onClick={() => { /* no-op for now, tasks are viewed inline */ }}>
               <span className={`task-check ${t.done ? 'task-check-on' : ''}`} style={{ flexShrink: 0 }}>
                 {t.done && <I.check />}
@@ -211,7 +218,7 @@ export default function SearchResultsPanel({
               </div>
             </ResultRow>
           ))}
-          {results.tasks.length > 6 && <MoreRow count={results.tasks.length - 6} />}
+          {results.tasks.length > 6 && <MoreRow count={results.tasks.length - 6} expanded={expanded.has('tasks')} onClick={() => toggle('tasks')} />}
         </ResultGroup>
       </div>
     </div>
@@ -260,11 +267,20 @@ function ResultRow({ onClick, children }) {
   );
 }
 
-function MoreRow({ count }) {
+function MoreRow({ count, expanded, onClick }) {
   return (
-    <div style={{ padding: '4px 14px', fontSize: 10, color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>
-      +{count} more
-    </div>
+    <button onClick={onClick}
+      style={{
+        width: '100%', textAlign: 'left',
+        padding: '6px 14px', fontSize: 10,
+        color: 'var(--accent)', fontFamily: 'var(--font-mono)',
+        background: 'transparent', border: 'none', cursor: 'pointer',
+        textTransform: 'uppercase', letterSpacing: '0.06em',
+      }}
+      onMouseEnter={e => e.currentTarget.style.background = 'var(--fill-1)'}
+      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+      {expanded ? '↑ show less' : `+${count} more — click to show all`}
+    </button>
   );
 }
 
