@@ -221,7 +221,8 @@ export default function DealDetailModal({ deal, accounts, contacts, rawItems, on
               )}
             </F>
             <F label="Product line">
-              <span style={{ fontSize: 12 }}>{deal.dealType || '—'}</span>
+              <ProductLinePicker value={deal.dealType}
+                onSave={(v) => updateField('product_line', v || null)} />
             </F>
             <F label="Eclectik team">
               <TeamEditor deal={deal} onSave={(team) => updateField('team', team)} />
@@ -274,6 +275,58 @@ export default function DealDetailModal({ deal, accounts, contacts, rawItems, on
         <PlaybookEnrollModal contact={primaryContact} deal={deal}
           onClose={() => setShowEnroll(false)}
           onEnrolled={() => { /* keep open for multiple enrollments */ }} />
+      )}
+    </div>
+  );
+}
+
+// Click-to-pick product line for a deal. Chip dropdown.
+function ProductLinePicker({ value, onSave }) {
+  const [open, setOpen] = useState(false);
+  const opts = ['Glint', 'People Science', 'AI Transformation', 'ROI', 'Technical', 'Other'];
+  const current = value || '';
+  return (
+    <div style={{ position: 'relative', display: 'inline-block' }}>
+      <button onClick={() => setOpen(o => !o)}
+        style={{
+          background: 'transparent', border: 'none', padding: '2px 0', cursor: 'pointer',
+          fontSize: 12, color: current ? 'var(--text-1)' : 'var(--text-3)',
+          fontFamily: 'inherit',
+        }}>
+        {current || '— pick'} <span style={{ fontSize: 9, color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>▾</span>
+      </button>
+      {open && (
+        <div style={{
+          position: 'absolute', top: '100%', left: 0, marginTop: 2, zIndex: 10,
+          background: 'var(--bg-1)', border: '0.5px solid var(--sep)',
+          borderRadius: 6, boxShadow: 'var(--shadow-2)',
+          minWidth: 160, padding: 4,
+        }}>
+          {opts.map(o => (
+            <div key={o}
+              onClick={() => { onSave(o); setOpen(false); }}
+              style={{
+                padding: '6px 8px', fontSize: 12, cursor: 'pointer',
+                borderRadius: 4,
+                background: o === current ? 'var(--accent-tint)' : 'transparent',
+                color: o === current ? 'var(--accent)' : 'var(--text-1)',
+              }}
+              onMouseEnter={e => { if (o !== current) e.currentTarget.style.background = 'var(--fill-1)'; }}
+              onMouseLeave={e => { if (o !== current) e.currentTarget.style.background = 'transparent'; }}>
+              {o}{o === current && ' ✓'}
+            </div>
+          ))}
+          {current && (
+            <div onClick={() => { onSave(null); setOpen(false); }}
+              style={{
+                padding: '6px 8px', fontSize: 11, cursor: 'pointer',
+                borderTop: '0.5px solid var(--sep)', marginTop: 4,
+                color: 'var(--danger)', fontFamily: 'var(--font-mono)',
+              }}>
+              × Clear
+            </div>
+          )}
+        </div>
       )}
     </div>
   );
