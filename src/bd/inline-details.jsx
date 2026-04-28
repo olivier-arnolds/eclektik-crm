@@ -732,6 +732,16 @@ export function InlineDealDetail({ deal, rawItems, onCompose, onOpenModal, refet
             <I.arrow /> Full deal actions (convert / disqualify / enroll)
           </button>
         )}
+        <button className="btn-ghost tiny" style={{ marginLeft: 'auto', color: 'var(--danger)' }}
+          onClick={async () => {
+            const label = `${deal.title || 'this deal'} (${deal.stage})`;
+            if (!confirm(`Delete ${label}?\n\nThis permanently removes the ${deal.table === 'opportunities' ? 'opportunity' : 'lead'} from the database.`)) return;
+            const { error } = await supabase.from(deal.table).delete().eq('id', deal.id);
+            if (error) { alert('Delete failed: ' + error.message); return; }
+            if (refetch) refetch();
+          }}>
+          🗑 Delete
+        </button>
       </div>
     </div>
   );
