@@ -200,12 +200,27 @@ export default function BDApp() {
                 onEnrich={() => setShowEnrich(true)} />
         <div className="lanes">
           <TasksView accounts={accounts} contacts={contacts}
-            onSelectTask={(t) => {
-              // Switch to the workspace and focus the task in Account 360
-              setView('workspace');
-              setLeftLane('calendar');
-              setRightContext({ type: 'task', id: t.id });
-            }} />
+            onSelectTask={(t) => setRightContext({ type: 'task', id: t.id })}
+            onPickAccount={pickAccount} />
+          <AccountsLane
+            context={rightContext}
+            accounts={accounts}
+            contacts={contacts}
+            deals={deals}
+            rawItems={rawAllItems}
+            comms={comms}
+            graphEmails={graphEmails}
+            events={events}
+            graphEvents={graphEvents}
+            tasks={tasks}
+            onPickAccount={pickAccount}
+            onCompose={openCompose}
+            onOpenDeal={selectDeal}
+            onSelectComm={selectCommHandler}
+            search={search}
+            refetch={refetch}
+            refetchGraph={fetchGraphData}
+          />
         </div>
         <Statusbar userName={userName} unreadCount={unreadCount} openDeals={openDealsCount} totalValue={totalValue} />
       </div>

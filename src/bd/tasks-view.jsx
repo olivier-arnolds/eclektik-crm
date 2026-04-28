@@ -5,13 +5,14 @@ import { supabase } from '../supabase';
 // All-tasks overview (Dynamics-style table). Click a row to open the
 // linked account on the right pane (the same wiring as calendar tasks).
 // Columns: Regarding · Subject · Description · Priority · Start Date.
-export default function TasksView({ accounts, contacts, onSelectTask }) {
+export default function TasksView({ accounts, contacts, onSelectTask, onPickAccount }) {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showDone, setShowDone] = useState(false);
   const [sortBy, setSortBy] = useState('due_date');
   const [sortDir, setSortDir] = useState('asc');
   const [query, setQuery] = useState('');
+  const [expanded, setExpanded] = useState(false); // shows extra columns when true
 
   useEffect(() => {
     setLoading(true);
@@ -79,8 +80,18 @@ export default function TasksView({ accounts, contacts, onSelectTask }) {
     return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
   };
 
+  // Column definitions; some only render when expanded
+  const allColumns = [
+    { key: 'regarding',   label: 'Regarding',   width: 220, alwaysShow: true },
+    { key: 'subject',     label: 'Subject',     width: 360, alwaysShow: true },
+    { key: 'description', label: 'Description', width: 420, alwaysShow: false },
+    { key: 'priority',    label: 'Priority',    width: 100, alwaysShow: false },
+    { key: 'due_date',    label: 'Start Date',  width: 140, alwaysShow: true },
+  ];
+  const cols = allColumns.filter(c => expanded || c.alwaysShow);
+
   return (
-    <div style={{
+    <div className="lane" style={{
       flex: 1, display: 'flex', flexDirection: 'column',
       padding: 14, overflow: 'hidden',
     }}>
@@ -100,6 +111,10 @@ export default function TasksView({ accounts, contacts, onSelectTask }) {
             <input type="checkbox" checked={showDone} onChange={e => setShowDone(e.target.checked)} />
             Show completed
           </label>
+          <button className="btn-ghost tiny" onClick={() => setExpanded(e => !e)}
+            title={expanded ? 'Collapse: hide Description and Priority' : 'Expand: show Description and Priority'}>
+            {expanded ? '‹ Compact' : 'Expand ›'}
+          </button>
         </div>
       </div>
 
@@ -111,13 +126,7 @@ export default function TasksView({ accounts, contacts, onSelectTask }) {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
           <thead style={{ position: 'sticky', top: 0, zIndex: 1, background: 'var(--bg-2)' }}>
             <tr>
-              {[
-                ['regarding',  'Regarding',  220],
-                ['subject',    'Subject',    360],
-                ['description','Description',420],
-                ['priority',   'Priority',   100],
-                ['due_date',   'Start Date', 140],
-              ].map(([key, label, w]) => (
+              {cols.map(({ key, label, width }) => (
                 <th key={key} onClick={() => toggleSort(key)}
                   style={{
                     padding: '10px 12px', textAlign: 'left', cursor: 'pointer',
@@ -125,7 +134,7 @@ export default function TasksView({ accounts, contacts, onSelectTask }) {
                     fontSize: 11, fontWeight: 500, color: 'var(--text-2)',
                     fontFamily: 'var(--font-mono)', textTransform: 'uppercase',
                     letterSpacing: '0.06em', whiteSpace: 'nowrap',
-                    width: w,
+                    width,
                   }}>
                   {label}{sortBy === key ? (sortDir === 'asc' ? ' ↑' : ' ↓') : ' ▾'}
                 </th>
@@ -134,10 +143,10 @@ export default function TasksView({ accounts, contacts, onSelectTask }) {
           </thead>
           <tbody>
             {loading && (
-              <tr><td colSpan={5} style={{ padding: 24, textAlign: 'center', color: 'var(--text-3)' }}>Loading…</td></tr>
+              <tr><td colSpan={cols.length} style={{ padding: 24, textAlign: 'center', color: 'var(--text-3)' }}>Loading…</td></tr>
             )}
             {!loading && filtered.length === 0 && (
-              <tr><td colSpan={5} style={{ padding: 24, textAlign: 'center', color: 'var(--text-3)' }}>No tasks</td></tr>
+              <tr><td colSpan={cols.length} style={{ padding: 24, textAlign: 'center', color: 'var(--text-3)' }}>No tasks</td></tr>
             )}
             {filtered.map(t => {
               const acc = t.company_id ? accById.get(t.company_id) : null;
@@ -145,6 +154,8 @@ export default function TasksView({ accounts, contacts, onSelectTask }) {
               const regarding = acc?.name || contact?.name || '—';
               const priority = (t.priority || 'Normal').replace(/^\w/, c => c.toUpperCase());
               const overdue = t.due_date && new Date(t.due_date) < new Date(new Date().toDateString());
+              const showDescription = cols.some(c => c.key === 'description');
+              const showPriority    = cols.some(c => c.key === 'priority');
               return (
                 <tr key={t.id}
                   onClick={() => onSelectTask && onSelectTask(t)}
@@ -155,25 +166,37 @@ export default function TasksView({ accounts, contacts, onSelectTask }) {
                   }}
                   onMouseEnter={e => e.currentTarget.style.background = 'var(--fill-1)'}
                   onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                  <td style={{ padding: '8px 12px', color: 'var(--accent)' }}>
-                    {regarding}
+                  <td style={{ padding: '8px 12px' }}>
+                    {acc && onPickAccount ? (
+                      <span
+                        onClick={(e) => { e.stopPropagation(); onPickAccount(acc); }}
+                        style={{ color: 'var(--accent)', cursor: 'pointer', textDecoration: 'underline dotted', textUnderlineOffset: 2 }}>
+                        {regarding}
+                      </span>
+                    ) : (
+                      <span style={{ color: 'var(--text-2)' }}>{regarding}</span>
+                    )}
                   </td>
-                  <td style={{ padding: '8px 12px', color: 'var(--accent)', textDecoration: t.status === 'done' ? 'line-through' : 'none' }}>
+                  <td style={{ padding: '8px 12px', color: 'var(--text-1)', textDecoration: t.status === 'done' ? 'line-through' : 'none' }}>
                     {t.title || '(untitled)'}
                   </td>
-                  <td style={{ padding: '8px 12px', color: 'var(--text-2)', maxWidth: 420, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {(t.description || '').replace(/\s+/g, ' ').slice(0, 200)}
-                  </td>
-                  <td style={{ padding: '8px 12px' }}>
-                    <span style={{
-                      fontSize: 10, padding: '2px 6px', borderRadius: 3,
-                      background: priority === 'High' ? 'var(--warn-tint)' : priority === 'Low' ? 'var(--fill-2)' : 'var(--fill-1)',
-                      color: priority === 'High' ? 'var(--warn)' : 'var(--text-2)',
-                      fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '0.04em',
-                    }}>
-                      {priority}
-                    </span>
-                  </td>
+                  {showDescription && (
+                    <td style={{ padding: '8px 12px', color: 'var(--text-2)', maxWidth: 420, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {(t.description || '').replace(/\s+/g, ' ').slice(0, 200)}
+                    </td>
+                  )}
+                  {showPriority && (
+                    <td style={{ padding: '8px 12px' }}>
+                      <span style={{
+                        fontSize: 10, padding: '2px 6px', borderRadius: 3,
+                        background: priority === 'High' ? 'var(--warn-tint)' : priority === 'Low' ? 'var(--fill-2)' : 'var(--fill-1)',
+                        color: priority === 'High' ? 'var(--warn)' : 'var(--text-2)',
+                        fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '0.04em',
+                      }}>
+                        {priority}
+                      </span>
+                    </td>
+                  )}
                   <td style={{ padding: '8px 12px', fontFamily: 'var(--font-mono)', color: overdue && t.status !== 'done' ? 'var(--danger)' : 'var(--text-2)' }}>
                     {fmtDate(t.due_date)}
                   </td>
