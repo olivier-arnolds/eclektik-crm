@@ -10,6 +10,55 @@ import AccountLinksSection from './account-links-section';
 import LinkExistingContactModal from './link-existing-contact-modal';
 import DuplicateContactsModal from './duplicate-contacts-modal';
 
+// Inline rename for a deal directly in the collapsed Account-360 deal row.
+// Click the pencil → input replaces title; Enter saves, Esc cancels.
+function EditableDealTitle({ deal, refetch }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(deal.title || '');
+  useEffect(() => { setDraft(deal.title || ''); }, [deal.title]);
+
+  const save = async () => {
+    const next = draft.trim();
+    setEditing(false);
+    if (!next || next === deal.title) return;
+    const field = deal.table === 'opportunities' ? 'topic' : 'full_name';
+    await supabase.from(deal.table).update({ [field]: next }).eq('id', deal.id);
+    if (refetch) refetch();
+  };
+
+  if (editing) {
+    return (
+      <input autoFocus value={draft} onClick={e => e.stopPropagation()}
+        onChange={e => setDraft(e.target.value)}
+        onBlur={save}
+        onKeyDown={e => {
+          if (e.key === 'Enter') save();
+          if (e.key === 'Escape') { setDraft(deal.title || ''); setEditing(false); }
+        }}
+        style={{
+          flex: 1, fontSize: 13, fontWeight: 500,
+          background: 'var(--fill-1)', color: 'var(--text-1)',
+          border: '0.5px solid var(--accent)', borderRadius: 4,
+          padding: '2px 6px', outline: 'none', minWidth: 0,
+        }} />
+    );
+  }
+  return (
+    <>
+      <span className="deal-row-title">{deal.title}</span>
+      <button onClick={(e) => { e.stopPropagation(); setEditing(true); }}
+        title="Rename deal"
+        style={{
+          background: 'transparent', border: 'none', cursor: 'pointer',
+          color: 'var(--text-3)', fontSize: 11, padding: '0 4px',
+          fontFamily: 'var(--font-mono)',
+        }}>
+        ✎
+      </button>
+    </>
+  );
+}
+
 // Drag-handle on the left edge of the Accounts lane to resize its width.
 // Persists to localStorage and applies via CSS var on document root.
 function LaneResizer() {
@@ -691,7 +740,7 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
                   <div className="deal-row">
                     <div className="deal-row-left">
                       <span className={`stage-pill stage-${stageClass(d.stage)}`}>{STAGE_TINT[d.stage]?.label || d.stage}</span>
-                      <span className="deal-row-title">{d.title}</span>
+                      <EditableDealTitle deal={d} refetch={refetch} />
                     </div>
                     <div className="deal-row-right">
                       <TeamDots deal={d} />
@@ -720,7 +769,7 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
                     <div className="deal-row">
                       <div className="deal-row-left">
                         <span className={`stage-pill stage-${stageClass(d.stage)}`}>{STAGE_TINT[d.stage]?.label || d.stage}</span>
-                        <span className="deal-row-title">{d.title}</span>
+                        <EditableDealTitle deal={d} refetch={refetch} />
                       </div>
                       <div className="deal-row-right">
                         <TeamDots deal={d} />
