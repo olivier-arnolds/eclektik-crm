@@ -424,29 +424,38 @@ export async function getChatMessages(chatId, max = 200) {
 
   if (isChannel) {
     const [, teamId, channelId] = chatId.split(':');
-    // $expand=replies pulls threaded replies in the same call (no N+1)
-    // NB: Graph caps $top at 20 when $expand=replies is used (returns 400 otherwise).
-    const baseUrl = `/teams/${teamId}/channels/${channelId}/messages?$top=20&$expand=replies`;
+    // $expand=replies is unreliable under delegated auth (returns 400 even
+    // with $top=20). Fetch top-level messages first, then replies per
+    // message in parallel batches.
+    const baseUrl = `/teams/${teamId}/channels/${channelId}/messages?$top=50`;
 
-    const all = [];
+    const tops = [];
     let page = await graphGet(baseUrl);
     if (page && !page.value && page.error) {
       console.warn('[channel messages]', page.error);
+      return [];
     }
     while (page?.value?.length) {
-      all.push(...page.value);
-      if (all.length >= max || !page['@odata.nextLink']) break;
+      tops.push(...page.value);
+      if (tops.length >= max || !page['@odata.nextLink']) break;
       try {
         const r = await fetch(page['@odata.nextLink'], { headers: { 'Authorization': 'Bearer ' + token } });
         page = await r.json();
       } catch (e) { break; }
     }
 
-    // Flatten parent + replies, then sort chronologically
+    // Fetch replies per message (parallel batches of 6)
+    const concurrency = 6;
     const flat = [];
-    for (const m of all) {
-      flat.push(m);
-      if (Array.isArray(m.replies)) flat.push(...m.replies);
+    for (let i = 0; i < tops.length; i += concurrency) {
+      const slice = tops.slice(i, i + concurrency);
+      const replyLists = await Promise.all(slice.map(async m => {
+        try {
+          const r = await graphGet(`/teams/${teamId}/channels/${channelId}/messages/${m.id}/replies?$top=50`);
+          return r?.value || [];
+        } catch { return []; }
+      }));
+      slice.forEach((m, idx) => { flat.push(m, ...replyLists[idx]); });
     }
     return flat
       .map(m => ({
