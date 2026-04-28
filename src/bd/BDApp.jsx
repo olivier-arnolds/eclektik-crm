@@ -130,12 +130,17 @@ export default function BDApp() {
                           .reduce((s, d) => s + d.value, 0);
 
   const pickAccount = (acc) => {
-    if (!acc) { setRightContext(null); return; }
+    if (!acc) { setRightContext(null); setAccountScope(null); return; }
     setRightContext({ type: 'account', id: acc.id });
+    // Auto-filter Comms to this account: matching emails (by contact / domain)
+    // and explicitly linked Teams chats only.
+    setAccountScope(acc.id);
   };
   const selectDeal = (d) => {
     setSelectedDeal(d);
     setRightContext({ type: 'deal', id: d.id });
+    // Auto-filter Comms to the deal's account if linked, otherwise clear scope
+    setAccountScope(d.accountId || null);
     // Popup is suppressed when the deal has an account (Account 360 covers it).
     // Open the modal if either:
     //  - the deal has no account at all (typical qualify-stage lead), or
