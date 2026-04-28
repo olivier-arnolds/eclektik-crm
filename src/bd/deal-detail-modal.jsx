@@ -22,9 +22,18 @@ export default function DealDetailModal({ deal, accounts, contacts, rawItems, on
     if (account) return [];
     const haystack = `${deal.title || ''} ${deal.description || ''} ${deal.notes || ''}`.toLowerCase();
     if (!haystack.trim()) return [];
+    // Strip ALL regex-special chars from words (including parens). Simpler
+    // and safer than escaping; account names with '(' / '[' previously
+    // produced an invalid regex and crashed the whole app.
+    const escapeRe = (s) => s.replace(/[\\^$.*+?()[\]{}|]/g, '');
     return (accounts || []).filter(a => {
-      const words = (a.name || '').toLowerCase().split(/[\s\-,&\/]+/).filter(w => w.length >= 3);
-      return words.some(w => new RegExp(`\\b${w.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')}\\b`).test(haystack));
+      const words = (a.name || '').toLowerCase().split(/[\s\-,&/()[\]]+/)
+        .map(escapeRe)
+        .filter(w => w.length >= 3);
+      return words.some(w => {
+        try { return new RegExp(`\\b${w}\\b`).test(haystack); }
+        catch { return false; }
+      });
     }).slice(0, 4);
   })();
 

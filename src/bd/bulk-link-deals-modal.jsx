@@ -7,7 +7,12 @@ import { supabase } from '../supabase';
 const STOPWORDS = new Set(['inc','llc','ltd','bv','sa','ag','plc','nv','co','corp','group','company','holding','holdings','international','global','solutions','services','technologies','technology','software','systems','consulting','advisory','the','and','for']);
 
 function wordsFor(name) {
-  return (name || '').toLowerCase().split(/[\s\-,&/]+/).filter(w => w.length >= 3 && !STOPWORDS.has(w));
+  // Split AND strip regex-special chars, otherwise account names with
+  // '(' / '[' / '|' build invalid regexes and crash the search.
+  return (name || '').toLowerCase()
+    .split(/[\s\-,&/()[\]]+/)
+    .map(w => w.replace(/[\\^$.*+?()[\]{}|]/g, ''))
+    .filter(w => w.length >= 3 && !STOPWORDS.has(w));
 }
 
 function findMatch(text, accounts) {
@@ -16,7 +21,10 @@ function findMatch(text, accounts) {
   for (const a of accounts) {
     const ws = wordsFor(a.name);
     if (!ws.length) continue;
-    const hits = ws.filter(w => new RegExp(`\\b${w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`).test(text));
+    const hits = ws.filter(w => {
+      try { return new RegExp(`\\b${w}\\b`).test(text); }
+      catch { return false; }
+    });
     if (!hits.length) continue;
     const score = hits.length / ws.length;
     if (score >= 0.5 || (ws.length === 1 && hits.length === 1)) {
