@@ -326,15 +326,17 @@ function ReadingPane({ comm, accounts, contacts, refetch, refetchGraph, onCompos
     setChatMessages(null);
     if (!comm) return;
 
-    // Teams chat: fetch full message thread
-    if (comm.channel === 'teams' && isGraphMessage) {
+    // Teams chat: fetch full message thread.
+    // Chat IDs (e.g. "19:abc...@thread.v2") don't match the email-message
+    // regex, so we trigger purely on channel === 'teams'.
+    if (comm.channel === 'teams' && comm.id) {
       setLoadingBody(true);
       getChatMessages(comm.id, 50)
         .then(msgs => {
           // Graph returns newest-first; show oldest-first like a normal chat
           setChatMessages((msgs || []).slice().reverse());
         })
-        .catch(() => setChatMessages([]))
+        .catch(err => { console.error('chat fetch failed', err); setChatMessages([]); })
         .finally(() => setLoadingBody(false));
       return;
     }
