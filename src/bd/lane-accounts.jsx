@@ -87,7 +87,7 @@ function LaneResizer() {
   return <div className="lane-accounts-resizer" onMouseDown={onMouseDown} title="Drag to resize" />;
 }
 import ExpandableRow from './expandable-row';
-import { InlineContactDetail, InlineMeetingDetail, InlineDealDetail, InlineAccountDetails } from './inline-details';
+import { InlineContactDetail, InlineMeetingDetail, InlineDealDetail, InlineAccountDetails, InlineTaskDetail } from './inline-details';
 import { supabase } from '../supabase';
 import { syncMyCalendar, getSharedEventsForAccount, buildDedupKey } from './sync-events';
 import { useAuth } from '../lib/auth';
@@ -263,7 +263,12 @@ function resolveContext(context, data) {
     const t = tasks.find(x => x.id === context.id);
     if (!t) return null;
     const acc = accounts.find(a => a.id === t.accountId);
-    return acc ? { account: acc, highlight: { kind: 'task', item: t, title: t.title, body: t.dueLabel } } : null;
+    if (acc) return { account: acc, highlight: { kind: 'task', item: t, title: t.title, body: t.dueLabel } };
+    // No linked account → still show a pseudo-account so user can edit the task
+    return {
+      account: { id: null, name: t.title || '(Task)', type: 'Task (no account)', logoHue: 280 },
+      highlight: { kind: 'task', item: t, title: t.title, body: t.dueLabel },
+    };
   }
   return null;
 }
@@ -558,7 +563,9 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
       owners: row.owners || [],
     }));
   }, [sharedEvents]);
-  const accTasks = !account.id ? [] : tasks.filter(t => t.accountId === account.id);
+  const accTasks = !account.id
+    ? (highlight?.kind === 'task' && highlight.item ? [highlight.item] : [])
+    : tasks.filter(t => t.accountId === account.id);
   const openTasks = accTasks.filter(t => !t.done);
 
   const runHighlightAction = (action) => {
@@ -875,10 +882,17 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
           ) : (
             <div className="actions-list">
               {openTasks.map(t => (
-                <div key={t.id} className="action-row">
-                  <span className={`task-check ${t.done ? 'task-check-on' : ''}`}>{t.done && <I.check />}</span>
-                  <span>{t.title}</span>
-                </div>
+                <ExpandableRow key={t.id} accent="var(--accent)"
+                  defaultOpen={highlight?.kind === 'task' && highlight?.item?.id === t.id}
+                  collapsed={() => (
+                    <div className="action-row" style={{ width: '100%' }}>
+                      <span className={`task-check ${t.done ? 'task-check-on' : ''}`}>{t.done && <I.check />}</span>
+                      <span style={{ flex: 1 }}>{t.title}</span>
+                      {t.dueLabel && <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-3)' }}>{t.dueLabel}</span>}
+                    </div>
+                  )}
+                  expanded={() => <InlineTaskDetail taskId={t.id} refetch={refetch} />}
+                />
               ))}
             </div>
           )}

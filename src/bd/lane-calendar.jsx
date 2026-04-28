@@ -69,7 +69,7 @@ const localDateStr = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padSt
 
 const fmtHour = (h) => `${String(Math.floor(h)).padStart(2, '0')}:${String(Math.round((h - Math.floor(h)) * 60)).padStart(2, '0')}`;
 
-export default function CalendarLane({ events: dbEvents, tasks: dbTasks, deals, accounts, contacts, graphEvents: rawGraphEvents, refetch, refetchGraph, onSelectEvent, expanded, onToggleExpand }) {
+export default function CalendarLane({ events: dbEvents, tasks: dbTasks, deals, accounts, contacts, graphEvents: rawGraphEvents, refetch, refetchGraph, onSelectEvent, onSelectTask, expanded, onToggleExpand }) {
   const [week, setWeek] = useState(0);
   const [overlay, setOverlay] = useState({ OA: false, YK: false });
   const [addTaskDay, setAddTaskDay] = useState(null);
@@ -271,7 +271,10 @@ export default function CalendarLane({ events: dbEvents, tasks: dbTasks, deals, 
                 draggable
                 onDragStart={(e) => { e.dataTransfer.setData('text/task-id', t.id); setDraggingTaskId(t.id); }}
                 onDragEnd={() => setDraggingTaskId(null)}
-                onClick={() => setOpenTaskId(t.id)}
+                onClick={() => {
+                  if (onSelectTask) onSelectTask(t);
+                  else setOpenTaskId(t.id);
+                }}
                 style={{ cursor: 'pointer', opacity: draggingTaskId === t.id ? 0.5 : 1 }}>
                 <span className={`task-check ${t.done ? 'task-check-on' : ''}`} onClick={(e) => { e.stopPropagation(); toggleTaskDone(t); }}>
                   {t.done && <I.check />}

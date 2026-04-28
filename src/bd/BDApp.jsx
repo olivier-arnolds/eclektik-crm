@@ -213,6 +213,7 @@ export default function BDApp() {
             refetch={refetch}
             refetchGraph={fetchGraphData}
             onSelectEvent={(e) => setRightContext({ type: 'event', id: e.id })}
+            onSelectTask={(t) => setRightContext({ type: 'task', id: t.id, focusTaskId: t.id })}
             expanded={expandedLane === 'left'}
             onToggleExpand={() => setExpandedLane(expandedLane === 'left' ? null : 'left')}
           />

@@ -786,3 +786,50 @@ export function InlineDealDetail({ deal, rawItems, onCompose, onOpenModal, refet
     </div>
   );
 }
+
+// Inline expandable task editor — shown in the Tasks section of Account 360
+export function InlineTaskDetail({ taskId, refetch }) {
+  const [row, setRow] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!taskId) return;
+    setLoading(true);
+    supabase.from('tasks').select('*').eq('id', taskId).single()
+      .then(({ data }) => { setRow(data); setLoading(false); });
+  }, [taskId]);
+
+  const update = async (patch) => {
+    const { error } = await supabase.from('tasks').update(patch).eq('id', taskId);
+    if (error) { alert('Save failed: ' + error.message); return; }
+    setRow(r => ({ ...r, ...patch }));
+    if (refetch) refetch();
+  };
+
+  if (loading || !row) return <div style={{ fontSize: 11, color: 'var(--text-3)' }}>Loading…</div>;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <InlineField label="Title" value={row.title} onSave={v => update({ title: v || row.title })} colspan={2} />
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+        <InlineField label="Due date" value={row.due_date} type="date" onSave={v => update({ due_date: v || null })} />
+        <InlineField label="Owner" value={row.owner} onSave={v => update({ owner: v || null })} />
+      </div>
+      <InlineField label="Notes" value={row.description} type="textarea" onSave={v => update({ description: v || null })} colspan={2} />
+      <div style={{ display: 'flex', gap: 4, borderTop: '0.5px solid var(--sep)', paddingTop: 8 }}>
+        <button className="btn-ghost tiny"
+          onClick={() => update({ status: row.status === 'done' ? 'pending' : 'done' })}>
+          {row.status === 'done' ? '↻ Mark as open' : '✓ Mark as done'}
+        </button>
+        <button className="btn-ghost tiny" style={{ marginLeft: 'auto', color: 'var(--danger)' }}
+          onClick={async () => {
+            if (!confirm(`Delete task "${row.title || ''}"?`)) return;
+            await supabase.from('tasks').delete().eq('id', taskId);
+            if (refetch) refetch();
+          }}>
+          🗑 Delete
+        </button>
+      </div>
+    </div>
+  );
+}
