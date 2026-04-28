@@ -7,7 +7,7 @@ import BulkLinkDealsModal from './bulk-link-deals-modal';
 
 const toggle = (arr, v) => arr.includes(v) ? arr.filter(x => x !== v) : [...arr, v];
 
-export default function FunnelLane({ deals, accounts, contacts, filters, setFilters, onSelectDeal, onClose, refetch, search, expanded, onToggleExpand }) {
+export default function FunnelLane({ deals, accounts, contacts, filters, setFilters, onSelectDeal, onEditDeal, onClose, refetch, search, expanded, onToggleExpand }) {
   const [collapsed, setCollapsed] = useState(false);
   const [draggingId, setDraggingId] = useState(null);
   const [overStage, setOverStage] = useState(null);
@@ -171,7 +171,8 @@ export default function FunnelLane({ deals, accounts, contacts, filters, setFilt
                       dragging={draggingId === d.id}
                       onDragStart={() => setDraggingId(d.id)}
                       onDragEnd={() => setDraggingId(null)}
-                      onClick={() => onSelectDeal && onSelectDeal(d)} />
+                      onClick={() => onSelectDeal && onSelectDeal(d)}
+                      onEdit={onEditDeal} />
                   ))}
                   {sDeals.length === 0 && <div className="swimlane-empty">No deals</div>}
                 </div>
@@ -257,7 +258,7 @@ export default function FunnelLane({ deals, accounts, contacts, filters, setFilt
   );
 }
 
-function DealCard({ deal, accounts, dragging, onDragStart, onDragEnd, onClick }) {
+function DealCard({ deal, accounts, dragging, onDragStart, onDragEnd, onClick, onEdit }) {
   const account = accounts.find(a => a.id === deal.accountId);
   return (
     <div className={`deal-card ${dragging ? 'deal-card-dragging' : ''}`}
@@ -269,6 +270,18 @@ function DealCard({ deal, accounts, dragging, onDragStart, onDragEnd, onClick })
         <AccountMark account={account} size={14} />
         <span className="deal-card-account">{account?.name || deal.account}</span>
         <OwnerDot id={deal.owner} />
+        {onEdit && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onEdit(deal); }}
+            title="Edit deal"
+            style={{
+              background: 'transparent', border: 'none', cursor: 'pointer',
+              padding: '0 2px', color: 'var(--text-3)', fontSize: 12, lineHeight: 1,
+              fontFamily: 'var(--font-mono)',
+            }}>
+            ✎
+          </button>
+        )}
       </div>
       <div className="deal-card-title">{deal.title}</div>
       {deal.contact && (

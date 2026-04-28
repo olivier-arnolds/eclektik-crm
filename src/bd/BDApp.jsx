@@ -197,6 +197,7 @@ export default function BDApp() {
             setFilters={setFilters}
             search={search}
             onSelectDeal={selectDeal}
+            onEditDeal={(d) => setOpenDeal(d)}
             refetch={refetch}
             expanded={expandedLane === 'left'}
             onToggleExpand={() => setExpandedLane(expandedLane === 'left' ? null : 'left')}

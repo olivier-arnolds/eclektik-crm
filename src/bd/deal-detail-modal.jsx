@@ -60,7 +60,18 @@ export default function DealDetailModal({ deal, accounts, contacts, rawItems, on
         <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <AccountMark account={account} size={26} />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{deal.title}</div>
+            {editingField === 'title' ? (
+              <input autoFocus defaultValue={deal.title}
+                onBlur={(e) => updateField(deal.table === 'opportunities' ? 'topic' : 'full_name', e.target.value || deal.title)}
+                onKeyDown={(e) => { if (e.key === 'Enter') updateField(deal.table === 'opportunities' ? 'topic' : 'full_name', e.target.value || deal.title); if (e.key === 'Escape') setEditingField(null); }}
+                style={{ width: '100%', padding: '2px 4px', borderRadius: 4, border: '0.5px solid var(--accent)', background: 'var(--fill-1)', fontSize: 14, fontWeight: 600, boxSizing: 'border-box' }} />
+            ) : (
+              <div onClick={() => setEditingField('title')}
+                style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'pointer' }}
+                title="Click to rename">
+                {deal.title}
+              </div>
+            )}
             <div style={{ fontSize: 10, color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>
               {account?.name ? (
                 <span>{account.name}</span>
