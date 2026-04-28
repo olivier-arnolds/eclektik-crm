@@ -2,6 +2,18 @@ import { useEffect, useMemo, useState } from 'react';
 import { I } from './atoms';
 import { supabase } from '../supabase';
 import { graphGet } from '../lib/graph';
+import { useAuth } from '../lib/auth';
+
+// First names of CRM users (extend if more team members onboard).
+const TEAM = ['Marco', 'Olivier', 'Yasmine'];
+
+function firstNameFromSession(session) {
+  const full = session?.user?.user_metadata?.full_name || '';
+  if (full) return full.split(' ')[0];
+  const email = session?.user?.email || '';
+  const local = email.split('@')[0];
+  return local ? local.charAt(0).toUpperCase() + local.slice(1) : '';
+}
 
 // "Create task with AI suggestion" modal.
 // Workflow:
@@ -10,6 +22,12 @@ import { graphGet } from '../lib/graph';
 //  3. Pre-fill an editable form with the suggestion + a pre-resolved account.
 //  4. User reviews/edits → Save inserts into tasks.
 export default function SuggestTaskModal({ comm, accounts, contacts, onClose, onCreated }) {
+  const { session } = useAuth();
+  const defaultOwner = useMemo(() => {
+    const name = firstNameFromSession(session);
+    return TEAM.includes(name) ? name : (TEAM[0] || '');
+  }, [session]);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -17,6 +35,7 @@ export default function SuggestTaskModal({ comm, accounts, contacts, onClose, on
   const [description, setDescription] = useState('');
   const [priority, setPriority] = useState('Normal');
   const [dueDate, setDueDate] = useState('');
+  const [owner, setOwner] = useState(defaultOwner);
 
   // Account: prefer comm.accountId (already matched), else try sender domain.
   const matchedAccount = useMemo(() => {
@@ -96,7 +115,6 @@ export default function SuggestTaskModal({ comm, accounts, contacts, onClose, on
 
   const save = async () => {
     if (!title.trim()) { alert('Title required'); return; }
-    const owner = (typeof window !== 'undefined' && localStorage.getItem('user_email')) || null;
     const { error: err } = await supabase.from('tasks').insert({
       title: title.trim(),
       description: description.trim() || null,
@@ -105,7 +123,7 @@ export default function SuggestTaskModal({ comm, accounts, contacts, onClose, on
       due_date: dueDate || null,
       company_id: accountId || null,
       contact_id: matchedContact?.id || null,
-      owner,
+      owner: owner || null,
     });
     if (err) { alert('Save failed: ' + err.message); return; }
     if (onCreated) onCreated();
@@ -151,7 +169,7 @@ export default function SuggestTaskModal({ comm, accounts, contacts, onClose, on
                   placeholder="Task title…" style={inputStyle} />
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 8 }}>
                 <div>
                   <div style={lblStyle}>Due date</div>
                   <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)} style={inputStyle} />
@@ -162,6 +180,12 @@ export default function SuggestTaskModal({ comm, accounts, contacts, onClose, on
                     <option value="Low">Low</option>
                     <option value="Normal">Normal</option>
                     <option value="High">High</option>
+                  </select>
+                </div>
+                <div>
+                  <div style={lblStyle}>For</div>
+                  <select value={owner} onChange={e => setOwner(e.target.value)} style={inputStyle}>
+                    {TEAM.map(n => <option key={n} value={n}>{n}</option>)}
                   </select>
                 </div>
                 <div>

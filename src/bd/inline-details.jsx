@@ -811,9 +811,23 @@ export function InlineTaskDetail({ taskId, refetch }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       <InlineField label="Title" value={row.title} onSave={v => update({ title: v || row.title })} colspan={2} />
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 6 }}>
         <InlineField label="Due date" value={row.due_date} type="date" onSave={v => update({ due_date: v || null })} />
-        <InlineField label="Owner" value={row.owner} onSave={v => update({ owner: v || null })} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>For</div>
+          <select value={row.owner || ''} onChange={e => update({ owner: e.target.value || null })}
+            style={{
+              padding: '4px 6px', borderRadius: 4, border: '0.5px solid var(--sep)',
+              background: 'var(--fill-1)', color: 'var(--text-1)', fontSize: 12,
+              fontFamily: 'var(--font)', outline: 'none',
+            }}>
+            <option value="">—</option>
+            {['Marco', 'Olivier', 'Yasmine'].map(n => <option key={n} value={n}>{n}</option>)}
+            {row.owner && !['Marco', 'Olivier', 'Yasmine'].includes(row.owner) && (
+              <option value={row.owner}>{row.owner}</option>
+            )}
+          </select>
+        </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>Priority</div>
           <select value={row.priority || 'Normal'} onChange={e => update({ priority: e.target.value })}
@@ -826,6 +840,12 @@ export function InlineTaskDetail({ taskId, refetch }) {
             <option value="Normal">Normal</option>
             <option value="High">High</option>
           </select>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>Status</div>
+          <div style={{ fontSize: 12, padding: '4px 6px', color: row.status === 'done' ? 'var(--good)' : 'var(--text-2)' }}>
+            {row.status === 'done' ? '✓ Done' : '○ Open'}
+          </div>
         </div>
       </div>
       <InlineField label="Notes" value={row.description} type="textarea" onSave={v => update({ description: v || null })} colspan={2} />

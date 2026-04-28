@@ -53,6 +53,7 @@ export default function TasksView({ accounts, contacts, onSelectTask, onPickAcco
         : sortBy === 'subject' ? (r.title || '').toLowerCase()
         : sortBy === 'description' ? (r.description || '').toLowerCase()
         : sortBy === 'priority' ? (r.priority || 'normal')
+        : sortBy === 'owner' ? (r.owner || '').toLowerCase()
         : sortBy === 'completed_at' ? (r.completed_at || '')
         : (r.due_date || '');
       const va = valFor(a);
@@ -79,8 +80,9 @@ export default function TasksView({ accounts, contacts, onSelectTask, onPickAcco
   // Column definitions; some only render when expanded
   const allColumns = [
     { key: 'regarding',    label: 'Regarding',  width: 200, alwaysShow: true },
-    { key: 'subject',      label: 'Subject',    width: 320, alwaysShow: true },
-    { key: 'description',  label: 'Description',width: 380, alwaysShow: false },
+    { key: 'subject',      label: 'Subject',    width: 300, alwaysShow: true },
+    { key: 'owner',        label: 'For',        width: 90,  alwaysShow: true },
+    { key: 'description',  label: 'Description',width: 360, alwaysShow: false },
     { key: 'priority',     label: 'Priority',   width: 90,  alwaysShow: false },
     { key: 'due_date',     label: 'Start Date', width: 120, alwaysShow: true },
     { key: 'completed_at', label: 'Completed',  width: 120, alwaysShow: true },
@@ -178,6 +180,9 @@ export default function TasksView({ accounts, contacts, onSelectTask, onPickAcco
                   </td>
                   <td style={{ padding: '6px 10px', color: 'var(--text-1)', textDecoration: t.status === 'done' ? 'line-through' : 'none' }}>
                     {t.title || '(untitled)'}
+                  </td>
+                  <td style={{ padding: '6px 10px', color: 'var(--text-2)' }}>
+                    {t.owner || <span style={{ color: 'var(--text-3)', fontStyle: 'italic' }}>—</span>}
                   </td>
                   {showDescription && (
                     <td style={{ padding: '6px 10px', color: 'var(--text-2)', maxWidth: 420, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
