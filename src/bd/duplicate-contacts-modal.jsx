@@ -111,6 +111,7 @@ export default function DuplicateContactsModal({ onClose, onDone }) {
       // Inactivate losers
       for (const l of losers) {
         const { error } = await supabase.from('contacts').update({
+          stage: 'Inactive',
           inactive_reason: 'duplicate',
           inactivated_at: new Date().toISOString(),
         }).eq('id', l.id);
