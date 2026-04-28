@@ -458,7 +458,14 @@ function ReadingPane({ comm, accounts, contacts, refetch, refetchGraph, onCompos
   };
 
   return (
-    <div className="reading-pane">
+    <div className="reading-pane"
+      onContextMenu={(e) => {
+        const sel = window.getSelection();
+        const txt = sel ? sel.toString().trim() : '';
+        if (!txt) { setCtxMenu(null); return; } // no selection → native menu
+        e.preventDefault();
+        setCtxMenu({ x: e.clientX, y: e.clientY, text: txt });
+      }}>
       <div className="rp-head">
         <div className="rp-actions">
           <button className="btn-ghost tiny" onClick={() => onCompose && onCompose({ replyTo: comm })}>
@@ -540,14 +547,7 @@ function ReadingPane({ comm, accounts, contacts, refetch, refetchGraph, onCompos
         )}
       </div>
 
-      <div className="rp-body"
-        onContextMenu={(e) => {
-          const sel = window.getSelection();
-          const txt = sel ? sel.toString().trim() : '';
-          if (!txt) { setCtxMenu(null); return; } // no selection → native menu
-          e.preventDefault();
-          setCtxMenu({ x: e.clientX, y: e.clientY, text: txt });
-        }}>
+      <div className="rp-body">
         {loadingBody && <div style={{ color: 'var(--text-3)' }}>Loading message…</div>}
         {comm.channel === 'teams' && chatMessages ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
