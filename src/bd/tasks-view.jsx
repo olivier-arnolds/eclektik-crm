@@ -48,18 +48,15 @@ export default function TasksView({ accounts, contacts, onSelectTask, onPickAcco
     // Sort
     const dir = sortDir === 'asc' ? 1 : -1;
     out = [...out].sort((a, b) => {
-      const va = sortBy === 'regarding'
-        ? (accById.get(a.company_id)?.name || '').toLowerCase()
-        : sortBy === 'subject' ? (a.title || '').toLowerCase()
-        : sortBy === 'description' ? (a.description || '').toLowerCase()
-        : sortBy === 'priority' ? (a.priority || 'normal')
-        : (a.due_date || '');
-      const vb = sortBy === 'regarding'
-        ? (accById.get(b.company_id)?.name || '').toLowerCase()
-        : sortBy === 'subject' ? (b.title || '').toLowerCase()
-        : sortBy === 'description' ? (b.description || '').toLowerCase()
-        : sortBy === 'priority' ? (b.priority || 'normal')
-        : (b.due_date || '');
+      const valFor = (r) => sortBy === 'regarding'
+        ? (accById.get(r.company_id)?.name || '').toLowerCase()
+        : sortBy === 'subject' ? (r.title || '').toLowerCase()
+        : sortBy === 'description' ? (r.description || '').toLowerCase()
+        : sortBy === 'priority' ? (r.priority || 'normal')
+        : sortBy === 'completed_at' ? (r.completed_at || '')
+        : (r.due_date || '');
+      const va = valFor(a);
+      const vb = valFor(b);
       if (va < vb) return -1 * dir;
       if (va > vb) return  1 * dir;
       return 0;
@@ -81,11 +78,12 @@ export default function TasksView({ accounts, contacts, onSelectTask, onPickAcco
 
   // Column definitions; some only render when expanded
   const allColumns = [
-    { key: 'regarding',   label: 'Regarding',   width: 220, alwaysShow: true },
-    { key: 'subject',     label: 'Subject',     width: 360, alwaysShow: true },
-    { key: 'description', label: 'Description', width: 420, alwaysShow: false },
-    { key: 'priority',    label: 'Priority',    width: 100, alwaysShow: false },
-    { key: 'due_date',    label: 'Start Date',  width: 140, alwaysShow: true },
+    { key: 'regarding',    label: 'Regarding',  width: 200, alwaysShow: true },
+    { key: 'subject',      label: 'Subject',    width: 320, alwaysShow: true },
+    { key: 'description',  label: 'Description',width: 380, alwaysShow: false },
+    { key: 'priority',     label: 'Priority',   width: 90,  alwaysShow: false },
+    { key: 'due_date',     label: 'Start Date', width: 120, alwaysShow: true },
+    { key: 'completed_at', label: 'Completed',  width: 120, alwaysShow: false },
   ];
   const cols = allColumns.filter(c => expanded || c.alwaysShow);
 
@@ -201,6 +199,11 @@ export default function TasksView({ accounts, contacts, onSelectTask, onPickAcco
                   <td style={{ padding: '6px 10px', fontFamily: 'var(--font-mono)', color: overdue && t.status !== 'done' ? 'var(--danger)' : 'var(--text-2)' }}>
                     {fmtDate(t.due_date)}
                   </td>
+                  {cols.some(c => c.key === 'completed_at') && (
+                    <td style={{ padding: '6px 10px', fontFamily: 'var(--font-mono)', color: 'var(--good)' }}>
+                      {t.completed_at ? fmtDate(t.completed_at) : ''}
+                    </td>
+                  )}
                 </tr>
               );
             })}

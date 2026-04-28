@@ -831,7 +831,10 @@ export function InlineTaskDetail({ taskId, refetch }) {
       <InlineField label="Notes" value={row.description} type="textarea" onSave={v => update({ description: v || null })} colspan={2} />
       <div style={{ display: 'flex', gap: 4, borderTop: '0.5px solid var(--sep)', paddingTop: 8 }}>
         <button className="btn-ghost tiny"
-          onClick={() => update({ status: row.status === 'done' ? 'pending' : 'done' })}>
+          onClick={() => {
+            const nowDone = row.status !== 'done';
+            update({ status: nowDone ? 'done' : 'pending', completed_at: nowDone ? new Date().toISOString() : null });
+          }}>
           {row.status === 'done' ? '↻ Mark as open' : '✓ Mark as done'}
         </button>
         <button className="btn-ghost tiny" style={{ marginLeft: 'auto', color: 'var(--danger)' }}

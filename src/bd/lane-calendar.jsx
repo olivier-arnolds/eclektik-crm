@@ -150,7 +150,11 @@ export default function CalendarLane({ events: dbEvents, tasks: dbTasks, deals, 
   }, []);
 
   const toggleTaskDone = async (task) => {
-    await supabase.from('tasks').update({ status: task.done ? 'pending' : 'done' }).eq('id', task.id);
+    const nowDone = !task.done;
+    await supabase.from('tasks').update({
+      status: nowDone ? 'done' : 'pending',
+      completed_at: nowDone ? new Date().toISOString() : null,
+    }).eq('id', task.id);
     if (refetch) refetch();
   };
 

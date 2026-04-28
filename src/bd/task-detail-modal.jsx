@@ -58,7 +58,10 @@ export default function TaskDetailModal({ taskId, accounts, onClose, refetch }) 
           <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {/* Done toggle + title */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <button onClick={() => update({ status: row.status === 'done' ? 'pending' : 'done' })}
+              <button onClick={() => {
+                const nowDone = row.status !== 'done';
+                update({ status: nowDone ? 'done' : 'pending', completed_at: nowDone ? new Date().toISOString() : null });
+              }}
                 style={{
                   width: 22, height: 22, borderRadius: 4,
                   border: '0.5px solid var(--sep)',
