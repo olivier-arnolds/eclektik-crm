@@ -169,8 +169,10 @@ export default function SearchResultsPanel({
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={rowTitle}>{highlight(d.title, q)}</div>
                 <div style={rowMeta}>
-                  {d.account && <span>{d.account}</span>}
-                  {d.contact && <><span>·</span><span>{d.contact}</span></>}
+                  <span style={{ color: d.account ? undefined : 'var(--text-3)', fontStyle: d.account ? undefined : 'italic' }}>
+                    {d.account || '(no account)'}
+                  </span>
+                  {d.contact && d.contact !== d.title && <><span>·</span><span>{d.contact}</span></>}
                 </div>
               </div>
               <span style={{ fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-2)' }}>{fmtMoney(d.value)}</span>
