@@ -3,7 +3,7 @@ import './styles.css';
 import { useLocal } from './atoms';
 import { useAuth } from '../lib/auth';
 import { useBDData } from './useBDData';
-import { getInboxEmails, getAllMailFolders, getCalendarEventsRange, getTeamsConversations } from '../lib/graph';
+import { getInboxEmails, getAllMailFolders, getCalendarEventsRange, getTeamsConversations, getTeamsChannelConversations } from '../lib/graph';
 import { syncMyCalendar } from './sync-events';
 import { supabase } from '../supabase';
 import Topbar from './topbar';
@@ -77,9 +77,10 @@ export default function BDApp() {
     // Fetch Inbox + Sent + Archived + Teams chats in parallel.
     // All merged into one comms list; folder/channel tags drive UI filtering.
     try {
-      const [mails, teams] = await Promise.all([
+      const [mails, teams, channels] = await Promise.all([
         getAllMailFolders(1000).catch(e => { console.warn('mail:', e); return { inbox: [], sent: [], archived: [] }; }),
-        getTeamsConversations(50).catch(e => { console.warn('teams:', e); return []; }),
+        getTeamsConversations(500).catch(e => { console.warn('teams chats:', e); return []; }),
+        getTeamsChannelConversations().catch(e => { console.warn('teams channels:', e); return []; }),
       ]);
       const { inbox, sent, archived } = mails;
       const merged = [
@@ -87,6 +88,7 @@ export default function BDApp() {
         ...sent.map(e => ({ ...e, dir: 'out', archived: false })),
         ...archived.map(e => ({ ...e, dir: 'in', archived: true })),
         ...teams,
+        ...channels,
       ];
       setGraphEmails(merged);
     } catch (e) { console.warn('Graph fetch failed:', e); }

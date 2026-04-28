@@ -283,7 +283,7 @@ export async function getMyChats(top = 30) {
 // Fetch recent 1:1 and group chats as a flat list of "conversation threads",
 // one row per chat with the latest message preview. For use in the Comms lane.
 // Returns an array compatible with our email shape (folder, dir, from, etc.).
-export async function getTeamsConversations(limit = 30) {
+export async function getTeamsConversations(limit = 500) {
   const token = localStorage.getItem('graph_token');
   if (!token) return [];
   // Also need my email to determine direction (who sent the last message)
@@ -296,11 +296,20 @@ export async function getTeamsConversations(limit = 30) {
     myId = meData.id;
   } catch {}
 
-  const data = await graphGet(`/me/chats?$top=${limit}&$expand=members&$orderby=lastMessagePreview/createdDateTime desc`);
-  if (!data?.value) return [];
+  // Paginate: Graph caps $top at 50 for chats. Walk @odata.nextLink up to `limit`.
+  const all = [];
+  let page = await graphGet(`/me/chats?$top=50&$expand=members&$orderby=lastMessagePreview/createdDateTime desc`);
+  while (page?.value?.length) {
+    all.push(...page.value);
+    if (all.length >= limit || !page['@odata.nextLink']) break;
+    try {
+      const next = await fetch(page['@odata.nextLink'], { headers: { 'Authorization': 'Bearer ' + token } });
+      page = await next.json();
+    } catch (e) { break; }
+  }
 
   // Chats can be 'oneOnOne', 'group', or 'meeting'. Filter out meetings (those come through calendar).
-  const chats = data.value.filter(c => c.chatType !== 'meeting');
+  const chats = all.filter(c => c.chatType !== 'meeting');
 
   return chats.map(c => {
     const members = c.members || [];
@@ -340,9 +349,83 @@ export async function getTeamsConversations(limit = 30) {
   });
 }
 
-// Get messages in a chat
-export async function getChatMessages(chatId, top = 20) {
-  const data = await graphGet(`/me/chats/${chatId}/messages?$top=${top}`);
+// Fetch all team channels the user has access to and surface each channel
+// as one 'conversation' row with the latest message preview. Requires the
+// admin-consent scopes (Team.ReadBasic.All, Channel.ReadBasic.All,
+// ChannelMessage.Read.All); without them, returns [].
+export async function getTeamsChannelConversations() {
+  const token = localStorage.getItem('graph_token');
+  if (!token) return [];
+  let myEmail = '';
+  try {
+    const r = await fetch('https://graph.microsoft.com/v1.0/me?$select=mail,userPrincipalName', { headers: { 'Authorization': 'Bearer ' + token } });
+    const j = await r.json();
+    myEmail = (j.mail || j.userPrincipalName || '').toLowerCase();
+  } catch {}
+
+  let teams;
+  try {
+    const t = await graphGet('/me/joinedTeams?$select=id,displayName');
+    teams = t?.value || [];
+  } catch (e) {
+    console.warn('joinedTeams scope missing:', e?.message || e);
+    return [];
+  }
+
+  const out = [];
+  for (const team of teams) {
+    let channels = [];
+    try {
+      const c = await graphGet(`/teams/${team.id}/channels?$select=id,displayName,description`);
+      channels = c?.value || [];
+    } catch (e) { continue; }
+
+    for (const ch of channels) {
+      // Newest message preview
+      let last = null;
+      try {
+        const m = await graphGet(`/teams/${team.id}/channels/${ch.id}/messages?$top=1`);
+        last = m?.value?.[0] || null;
+      } catch (e) { /* skip channels without read */ }
+      const preview = last ? (last.body?.content || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 200) : '';
+      const fromName = last?.from?.user?.displayName || '';
+      out.push({
+        id: `channel:${team.id}:${ch.id}`,
+        teamId: team.id,
+        channelId: ch.id,
+        channel: 'teams',
+        chatType: 'channel',
+        topic: `${team.displayName} / ${ch.displayName}`,
+        subject: `${team.displayName} / ${ch.displayName}`,
+        from: fromName || team.displayName,
+        fromAddress: '',
+        to: '',
+        toAddresses: [],
+        bodyPreview: preview,
+        date: last?.createdDateTime || last?.lastModifiedDateTime || '',
+        isRead: true,
+        dir: 'in',
+        folder: 'Inbox',
+        archived: false,
+        participantEmails: myEmail ? [myEmail] : [],
+      });
+    }
+  }
+  return out;
+}
+
+// Get messages in a chat (1:1 / group) OR in a team channel.
+// For channels, pass the synthetic 'channel:teamId:channelId' id we generate
+// in getTeamsChannelConversations.
+export async function getChatMessages(chatId, top = 50) {
+  let url;
+  if (chatId.startsWith('channel:')) {
+    const [, teamId, channelId] = chatId.split(':');
+    url = `/teams/${teamId}/channels/${channelId}/messages?$top=${top}`;
+  } else {
+    url = `/me/chats/${chatId}/messages?$top=${top}`;
+  }
+  const data = await graphGet(url);
   if (!data?.value) return [];
   return data.value.map(m => ({
     id: m.id,
