@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { I, ChannelIcon, Avatar, fmtRelative, fmtFull } from './atoms';
-import { graphGet, getEmailAttachments } from '../lib/graph';
+import { graphGet, getEmailAttachments, getChatMessages } from '../lib/graph';
 import { supabase } from '../supabase';
 import DOMPurify from 'dompurify';
 import TaskFromEmailModal from './task-from-email-modal';
@@ -294,6 +294,7 @@ function parseAccountFromText(text) {
 function ReadingPane({ comm, accounts, contacts, refetch, refetchGraph, onCompose }) {
   const [fullBody, setFullBody] = useState(null);
   const [loadingBody, setLoadingBody] = useState(false);
+  const [chatMessages, setChatMessages] = useState(null); // for Teams chats
   const [attachments, setAttachments] = useState([]);
   const [loadingAtt, setLoadingAtt] = useState(false);
   const [showTaskModal, setShowTaskModal] = useState(false);
@@ -322,7 +323,23 @@ function ReadingPane({ comm, accounts, contacts, refetch, refetchGraph, onCompos
   useEffect(() => {
     setFullBody(null);
     setAttachments([]);
-    if (!comm || comm.channel !== 'email' || !isGraphMessage) return;
+    setChatMessages(null);
+    if (!comm) return;
+
+    // Teams chat: fetch full message thread
+    if (comm.channel === 'teams' && isGraphMessage) {
+      setLoadingBody(true);
+      getChatMessages(comm.id, 50)
+        .then(msgs => {
+          // Graph returns newest-first; show oldest-first like a normal chat
+          setChatMessages((msgs || []).slice().reverse());
+        })
+        .catch(() => setChatMessages([]))
+        .finally(() => setLoadingBody(false));
+      return;
+    }
+
+    if (comm.channel !== 'email' || !isGraphMessage) return;
     setLoadingBody(true);
     graphGet(`/me/messages/${comm.id}?$select=body,from,toRecipients,subject,hasAttachments`)
       .then(res => setFullBody(res?.body?.content || null))
@@ -337,7 +354,7 @@ function ReadingPane({ comm, accounts, contacts, refetch, refetchGraph, onCompos
         .catch(() => {})
         .finally(() => setLoadingAtt(false));
     }
-  }, [comm?.id, isGraphMessage, comm?.hasAttach]);
+  }, [comm?.id, comm?.channel, isGraphMessage, comm?.hasAttach]);
 
   if (!comm) {
     return (
@@ -435,7 +452,27 @@ function ReadingPane({ comm, accounts, contacts, refetch, refetchGraph, onCompos
           setCtxMenu({ x: e.clientX, y: e.clientY, text: txt });
         }}>
         {loadingBody && <div style={{ color: 'var(--text-3)' }}>Loading message…</div>}
-        {fullBody ? (
+        {comm.channel === 'teams' && chatMessages ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {chatMessages.length === 0 && (
+              <p className="rp-p" style={{ color: 'var(--text-3)' }}>No messages in this chat.</p>
+            )}
+            {chatMessages.map(m => (
+              <div key={m.id} style={{
+                padding: 10, borderRadius: 6, background: 'var(--fill-1)',
+                border: '0.5px solid var(--sep)',
+              }}>
+                <div style={{ fontSize: 11, color: 'var(--text-3)', fontFamily: 'var(--font-mono)', marginBottom: 6, display: 'flex', gap: 8 }}>
+                  <b style={{ color: 'var(--text-1)' }}>{m.from}</b>
+                  <span>{m.date ? new Date(m.date).toLocaleString('nl-NL', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''}</span>
+                </div>
+                {m.contentType === 'html'
+                  ? <div style={{ fontSize: 13, lineHeight: 1.5 }} dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(m.body) }} />
+                  : <div style={{ fontSize: 13, lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>{m.body}</div>}
+              </div>
+            ))}
+          </div>
+        ) : fullBody ? (
           <div dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(fullBody) }} />
         ) : (
           <>
