@@ -108,17 +108,19 @@ function resolveContext(context, data) {
       const g = (graphEmails || []).find(x => x.id === context.id);
       if (g) {
         const sender = (g.fromAddress || '').toLowerCase();
+        const senderDom = (sender.split('@')[1] || '').toLowerCase();
+        const domMatchesWeb = (a) => {
+          const wd = (a?.website || '').toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
+          return wd && senderDom && (wd === senderDom || senderDom.endsWith('.' + wd));
+        };
+        // Try contact lookup first, but only trust the link if the contact's
+        // company has a matching website domain (filters out leaked partners).
         const contact = sender ? (contacts || []).find(ct => (ct.email || '').toLowerCase() === sender) : null;
-        // Domain-based fallback to the company's website domain
         let acc = contact ? accounts.find(a => a.id === contact.accountId) : null;
-        if (!acc && sender) {
-          const dom = (sender.split('@')[1] || '').toLowerCase();
-          if (dom) {
-            acc = (accounts || []).find(a => {
-              const wd = (a.website || '').toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
-              return wd && (wd === dom || dom.endsWith('.' + wd));
-            });
-          }
+        if (acc && acc.website && !domMatchesWeb(acc)) acc = null;
+        // Domain-based fallback
+        if (!acc && senderDom) {
+          acc = (accounts || []).find(domMatchesWeb);
         }
         c = {
           id: g.id, subject: g.subject, preview: g.bodyPreview || g.preview || '',
@@ -436,9 +438,22 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
   const accDeals = deals.filter(d => d.accountId === account.id);
   const openDeals = accDeals.filter(d => ['qualify', 'develop', 'proposal', 'close'].includes(d.stage));
   const activeDeals = accDeals.filter(d => ['onboarding', 'active'].includes(d.stage));
-  // Merge DB comms + Graph emails matched to this account via contact email
-  const accountContactEmails = new Set((contacts || []).filter(c => c.accountId === account.id && c.email).map(c => c.email.toLowerCase()));
+  // Merge DB comms + Graph emails matched to this account via contact email or website domain
   const webDomain = ((account.website || '').toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0]) || null;
+  // Only count a contact's email as belonging to this account if their email
+  // domain matches the account's website domain. Otherwise (e.g. partners or
+  // mis-imported contacts with @microsoft.com / @eclectik.co linked to a
+  // customer record), every inbound from that domain would leak in.
+  const accountContactEmails = new Set(
+    (contacts || [])
+      .filter(c => {
+        if (c.accountId !== account.id || !c.email) return false;
+        if (!webDomain) return true; // no website → trust the link
+        const dom = (c.email.split('@')[1] || '').toLowerCase();
+        return dom === webDomain || dom.endsWith('.' + webDomain);
+      })
+      .map(c => c.email.toLowerCase())
+  );
   const matchedGraph = (graphEmails || [])
     .filter(e => {
       const from = (e.fromAddress || '').toLowerCase();
