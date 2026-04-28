@@ -273,6 +273,12 @@ function resolveContext(context, data) {
   return null;
 }
 
+const sectionLabel = {
+  fontSize: 9, fontFamily: 'var(--font-mono)', textTransform: 'uppercase',
+  letterSpacing: '0.08em', color: 'var(--text-3)',
+  padding: '8px 12px 4px',
+};
+
 function AccountsList({ accounts, contacts, deals, onPickAccount, search, onAddAccount }) {
   const q = (search || '').toLowerCase();
   const [typeFilters, setTypeFilters] = useState([]);
@@ -337,6 +343,27 @@ function AccountsList({ accounts, contacts, deals, onPickAccount, search, onAddA
     if (typeFilters.length) list = list.filter(a => typeFilters.includes(a.type));
     return [...list].sort((a, b) => a.name.localeCompare(b.name));
   }, [accounts, contacts, deals, q, typeFilters, nameFilter]);
+
+  // Direct contact / deal matches for the active query (whichever is set).
+  // Used to render dedicated rows above the accounts grid so users can pick
+  // a person/deal directly instead of having to expand a company first.
+  const activeQuery = (nameFilter.trim() || q || '').toLowerCase();
+  const matchedContacts = useMemo(() => {
+    if (!activeQuery) return [];
+    return (contacts || []).filter(c =>
+      (c.name || '').toLowerCase().includes(activeQuery)
+      || (c.email || '').toLowerCase().includes(activeQuery)
+      || (c.role || '').toLowerCase().includes(activeQuery)
+    ).slice(0, 50);
+  }, [contacts, activeQuery]);
+  const matchedDeals = useMemo(() => {
+    if (!activeQuery) return [];
+    return (deals || []).filter(d =>
+      (d.title || '').toLowerCase().includes(activeQuery)
+      || (d.dealType || '').toLowerCase().includes(activeQuery)
+      || (d.description || '').toLowerCase().includes(activeQuery)
+    ).slice(0, 50);
+  }, [deals, activeQuery]);
 
   return (
     <div className="lane lane-accounts">
@@ -409,6 +436,66 @@ function AccountsList({ accounts, contacts, deals, onPickAccount, search, onAddA
       </div>
 
       <div className="accounts-grid">
+        {activeQuery && matchedContacts.length > 0 && (
+          <>
+            <div style={sectionLabel}>Contacts · {matchedContacts.length}</div>
+            {matchedContacts.map(c => {
+              const acc = (accounts || []).find(a => a.id === c.accountId);
+              return (
+                <div key={'c:' + c.id} className="account-card"
+                  onClick={() => acc && onPickAccount && onPickAccount(acc)}
+                  style={{ cursor: acc ? 'pointer' : 'default', opacity: acc ? 1 : 0.6 }}>
+                  <div style={{
+                    width: 24, height: 24, borderRadius: 12,
+                    background: c.avatarBg || 'var(--fill-2)', color: c.avatarColor || 'var(--text-2)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 10, fontWeight: 600, flexShrink: 0,
+                  }}>
+                    {c.initials || (c.name || '?').split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="account-card-name">{c.name}</div>
+                    <div className="account-card-meta">
+                      {acc ? <span>{acc.name}</span> : <span style={{ fontStyle: 'italic' }}>(no account)</span>}
+                      {c.role && <><span className="sep">·</span><span>{c.role}</span></>}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </>
+        )}
+
+        {activeQuery && matchedDeals.length > 0 && (
+          <>
+            <div style={sectionLabel}>Deals · {matchedDeals.length}</div>
+            {matchedDeals.map(d => {
+              const acc = (accounts || []).find(a => a.id === d.accountId);
+              return (
+                <div key={'d:' + d.id} className="account-card"
+                  onClick={() => acc && onPickAccount && onPickAccount(acc)}
+                  style={{ cursor: acc ? 'pointer' : 'default', opacity: acc ? 1 : 0.6 }}>
+                  <span className={`stage-pill stage-${(d.stage || '').toLowerCase()}`} style={{ fontSize: 9, flexShrink: 0 }}>
+                    {(d.stage || '').toUpperCase()}
+                  </span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="account-card-name">{d.title || '(untitled)'}</div>
+                    <div className="account-card-meta">
+                      {acc ? <span>{acc.name}</span> : <span style={{ fontStyle: 'italic' }}>(no account)</span>}
+                      {d.dealType && <><span className="sep">·</span><span>{d.dealType}</span></>}
+                    </div>
+                  </div>
+                  {d.value > 0 && <span style={{ fontFamily: 'var(--font-mono)', fontSize: 10, color: 'var(--text-3)' }}>{fmtMoney(d.value)}</span>}
+                </div>
+              );
+            })}
+          </>
+        )}
+
+        {activeQuery && (matchedContacts.length > 0 || matchedDeals.length > 0) && filtered.length > 0 && (
+          <div style={sectionLabel}>Accounts · {filtered.length}</div>
+        )}
+
         {filtered.map(a => (
           <div key={a.id} className="account-card" onClick={() => onPickAccount && onPickAccount(a)}>
             <AccountMark account={a} size={24} />
