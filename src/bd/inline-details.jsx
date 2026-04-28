@@ -91,6 +91,7 @@ export function InlineContactDetail({ contactId, onCompose, refetch }) {
   const [saving, setSaving] = useState({});
   const [loading, setLoading] = useState(true);
   const [allAccounts, setAllAccounts] = useState([]);
+  const [linkedAccounts, setLinkedAccounts] = useState([]); // [{ id, link_type, account: { id, name, type } }]
 
   useEffect(() => {
     if (!contactId) return;
@@ -99,6 +100,11 @@ export function InlineContactDetail({ contactId, onCompose, refetch }) {
       .then(({ data }) => { setRow(data); setLoading(false); });
     supabase.from('companies').select('id,name,type').neq('stage', 'Inactive').order('name')
       .then(({ data }) => setAllAccounts(data || []));
+    // Other accounts this contact is linked to (as partner or eclectik team)
+    supabase.from('account_links')
+      .select('id, link_type, account_id, role, companies:account_id(id, name, type)')
+      .eq('contact_id', contactId)
+      .then(({ data }) => setLinkedAccounts((data || []).filter(l => l.companies)));
   }, [contactId]);
 
   const saveField = async (field, value) => {
@@ -161,6 +167,34 @@ export function InlineContactDetail({ contactId, onCompose, refetch }) {
         <InlineField label="" value={row.linkedin_url} type="url" onSave={v => saveField('linkedin_url', v)} />
       </div>
       <InlineField label="Notes" value={row.notes} onSave={v => saveField('notes', v)} type="textarea" colspan={2} />
+
+      {linkedAccounts.length > 0 && (
+        <div style={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>
+            Also linked to · {linkedAccounts.length}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            {linkedAccounts.map(l => (
+              <div key={l.id} style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                padding: '5px 8px', borderRadius: 5,
+                border: '0.5px solid var(--sep)', background: 'var(--fill-1)',
+                fontSize: 12,
+              }}>
+                <span style={{ flex: 1, color: 'var(--text-1)' }}>{l.companies.name}</span>
+                <span style={{
+                  fontSize: 9, fontFamily: 'var(--font-mono)', textTransform: 'uppercase',
+                  letterSpacing: '0.06em', color: 'var(--text-3)',
+                  padding: '1px 5px', borderRadius: 3, background: 'var(--bg-2)',
+                }}>
+                  {l.link_type === 'partner' ? 'partner' : l.link_type === 'eclectik_team' ? 'eclectik' : l.link_type}
+                </span>
+                {l.companies.type && <span style={{ fontSize: 9, fontFamily: 'var(--font-mono)', color: 'var(--text-3)' }}>{l.companies.type}</span>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       <div style={{ gridColumn: 'span 2', marginTop: 4, display: 'flex', gap: 6, alignItems: 'center', borderTop: '0.5px solid var(--sep)', paddingTop: 8 }}>
         {row.email && onCompose && (
           <button className="btn-primary tiny" onClick={() => onCompose({ to: row.email, contact: row })}>
