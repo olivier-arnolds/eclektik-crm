@@ -7,6 +7,7 @@ import TaskFromEmailModal from './task-from-email-modal';
 import AddAccountModal from './add-account-modal';
 import AddContactModal from './add-contact-modal';
 import CreateNoteModal from './create-note-modal';
+import LinkChatModal from './link-chat-modal';
 
 const CHANNEL_OPTIONS = ['all', 'email', 'teams'];
 
@@ -14,6 +15,21 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
   const [channel, setChannel] = useState('all');
   const [folder, setFolder] = useState('inbox');
   const [localSearch, setLocalSearch] = useState('');
+  const [chatLinks, setChatLinks] = useState([]); // [{ chat_id, company_id }]
+  const [linkChatTarget, setLinkChatTarget] = useState(null);
+
+  // Fetch chat→account links once (and refetch via reloadChatLinks)
+  const reloadChatLinks = useMemo(() => () => {
+    supabase.from('chat_account_links').select('chat_id, company_id')
+      .then(({ data }) => setChatLinks(data || []));
+  }, []);
+  useEffect(() => { reloadChatLinks(); }, [reloadChatLinks]);
+
+  const chatLinkByChatId = useMemo(() => {
+    const m = new Map();
+    for (const l of chatLinks) m.set(l.chat_id, l.company_id);
+    return m;
+  }, [chatLinks]);
 
   // Adapt graphEmails from BDApp into internal shape with account linkage
   const graphEmails = useMemo(() => {
@@ -39,16 +55,21 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
     }));
     const contactByEmail = new Map((contacts || []).filter(c => c.email).map(c => [c.email.toLowerCase(), c]));
     mapped.forEach(m => {
-      // For incoming: match on sender. For sent: match on recipients.
-      // For Teams chats: check all participants (excluding me).
-      let candidates;
+      // Teams chats: trust an explicit chat_account_link first; otherwise
+      // we don't auto-match (a chat can include many random people).
       if (m.channel === 'teams') {
-        candidates = (m.participantEmails || []).map(a => (a || '').toLowerCase());
-      } else if (m.dir === 'out') {
-        candidates = (m.toAddresses || []).map(a => (a || '').toLowerCase());
-      } else {
-        candidates = [(m.fromAddress || '').toLowerCase()];
+        const linkedAccId = chatLinkByChatId.get(m.id);
+        if (linkedAccId) {
+          m.accountId = linkedAccId;
+          const acc = (accounts || []).find(a => a.id === linkedAccId);
+          if (acc) m.account = acc.name;
+        }
+        return;
       }
+      // For incoming email: match on sender. For sent: match on recipients.
+      const candidates = m.dir === 'out'
+        ? (m.toAddresses || []).map(a => (a || '').toLowerCase())
+        : [(m.fromAddress || '').toLowerCase()];
       for (const addr of candidates) {
         if (!addr) continue;
         const contact = contactByEmail.get(addr);
@@ -61,7 +82,7 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
       }
     });
     return mapped;
-  }, [rawGraphEmails, contacts, accounts]);
+  }, [rawGraphEmails, contacts, accounts, chatLinkByChatId]);
 
   // Merge DB comms + Graph emails (dedupe by id)
   const allComms = useMemo(() => {
@@ -184,11 +205,24 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
                 </div>
                 <div className="comm-subject">{c.subject}</div>
                 {c.preview && <div className="comm-preview">{c.preview}</div>}
-                {c.account && (
-                  <div className="comm-row-bottom">
-                    <span className="comm-account">{c.account}</span>
-                  </div>
-                )}
+                <div className="comm-row-bottom" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {c.account && <span className="comm-account">{c.account}</span>}
+                  {c.channel === 'teams' && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setLinkChatTarget(c); }}
+                      title={c.accountId ? 'Change linked account' : 'Link this chat to an account'}
+                      style={{
+                        marginLeft: c.account ? 0 : 'auto',
+                        background: 'transparent', border: '0.5px solid var(--sep)',
+                        borderRadius: 3, padding: '1px 6px', cursor: 'pointer',
+                        fontSize: 9, fontFamily: 'var(--font-mono)',
+                        color: c.accountId ? 'var(--accent)' : 'var(--text-3)',
+                        textTransform: 'uppercase', letterSpacing: '0.04em',
+                      }}>
+                      {c.accountId ? '↻ relink' : '+ link account'}
+                    </button>
+                  )}
+                </div>
               </div>
             ))
           )}
@@ -196,6 +230,19 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
 
         <ReadingPane comm={selected} accounts={accounts} contacts={contacts} refetch={refetch} refetchGraph={refetchGraph} onCompose={onCompose} />
       </div>
+
+      {linkChatTarget && (
+        <LinkChatModal
+          chat={linkChatTarget}
+          currentLink={linkChatTarget.accountId ? {
+            accountId: linkChatTarget.accountId,
+            accountName: (accounts.find(a => a.id === linkChatTarget.accountId) || {}).name,
+          } : null}
+          accounts={accounts}
+          onClose={() => setLinkChatTarget(null)}
+          onSaved={() => { setLinkChatTarget(null); reloadChatLinks(); }}
+        />
+      )}
     </div>
   );
 }
