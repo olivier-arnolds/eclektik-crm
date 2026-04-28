@@ -666,8 +666,14 @@ export function InlineDealDetail({ deal, rawItems, onCompose, onOpenModal, refet
     if (refetch) refetch();
   };
 
+  // Title field: opportunities → topic, leads → full_name
+  const titleField = deal.table === 'opportunities' ? 'topic' : 'full_name';
+  const titleValue = rawRow?.topic || rawRow?.full_name || deal.title;
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <InlineField label="Deal name" value={titleValue}
+        onSave={v => updateField(titleField, v || titleValue)} colspan={2} />
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
         <InlineField label="Value (€)" value={rawRow?.est_revenue} type="number"
           onSave={v => updateField('est_revenue', Number(v) || 0)} />
