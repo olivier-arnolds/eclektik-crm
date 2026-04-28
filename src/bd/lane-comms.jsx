@@ -8,6 +8,7 @@ import AddAccountModal from './add-account-modal';
 import AddContactModal from './add-contact-modal';
 import CreateNoteModal from './create-note-modal';
 import LinkChatModal from './link-chat-modal';
+import SuggestTaskModal from './suggest-task-modal';
 
 const CHANNEL_OPTIONS = ['all', 'email', 'teams'];
 
@@ -17,6 +18,8 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
   const [localSearch, setLocalSearch] = useState('');
   const [chatLinks, setChatLinks] = useState([]); // [{ chat_id, company_id }]
   const [linkChatTarget, setLinkChatTarget] = useState(null);
+  const [suggestTaskComm, setSuggestTaskComm] = useState(null);
+  const [listCtxMenu, setListCtxMenu] = useState(null); // { x, y, comm }
 
   // Fetch chat→account links once (and refetch via reloadChatLinks)
   const reloadChatLinks = useMemo(() => () => {
@@ -24,6 +27,19 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
       .then(({ data }) => setChatLinks(data || []));
   }, []);
   useEffect(() => { reloadChatLinks(); }, [reloadChatLinks]);
+
+  // Close list-row context menu on outside click / scroll / Escape
+  useEffect(() => {
+    if (!listCtxMenu) return;
+    const handler = () => setListCtxMenu(null);
+    document.addEventListener('click', handler);
+    document.addEventListener('scroll', handler, true);
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') setListCtxMenu(null); });
+    return () => {
+      document.removeEventListener('click', handler);
+      document.removeEventListener('scroll', handler, true);
+    };
+  }, [listCtxMenu]);
 
   const chatLinkByChatId = useMemo(() => {
     const m = new Map();
@@ -191,7 +207,12 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
             filtered.map(c => (
               <div key={c.id}
                 className={`comm-row ${c.unread ? 'comm-row-unread' : ''} ${selectedId === c.id ? 'comm-row-on' : ''}`}
-                onClick={() => onSelect && onSelect(c.id)}>
+                onClick={() => onSelect && onSelect(c.id)}
+                onContextMenu={(e) => {
+                  if (c.channel !== 'email') return; // chats handled differently
+                  e.preventDefault();
+                  setListCtxMenu({ x: e.clientX, y: e.clientY, comm: c });
+                }}>
                 <div className="comm-row-top">
                   <div className="comm-row-left">
                     {c.unread && <span className="unread-dot" />}
@@ -241,6 +262,37 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
           accounts={accounts}
           onClose={() => setLinkChatTarget(null)}
           onSaved={() => { setLinkChatTarget(null); reloadChatLinks(); }}
+        />
+      )}
+
+      {listCtxMenu && (
+        <div style={{
+          position: 'fixed', top: listCtxMenu.y, left: listCtxMenu.x,
+          background: 'var(--bg-1)', border: '0.5px solid var(--sep)',
+          borderRadius: 8, boxShadow: 'var(--shadow-2)',
+          padding: 4, minWidth: 220, zIndex: 1000,
+        }}>
+          <button
+            onMouseDown={(e) => {
+              e.stopPropagation();
+              setSuggestTaskComm(listCtxMenu.comm);
+              setListCtxMenu(null);
+            }}
+            style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 12px', background: 'transparent', border: 'none', fontSize: 12, color: 'var(--text-1)', cursor: 'pointer', fontFamily: 'inherit', borderRadius: 4 }}
+            onMouseEnter={e => e.currentTarget.style.background = 'var(--fill-1)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+            ✨ Create task (AI suggestion)
+          </button>
+        </div>
+      )}
+
+      {suggestTaskComm && (
+        <SuggestTaskModal
+          comm={suggestTaskComm}
+          accounts={accounts}
+          contacts={contacts}
+          onClose={() => setSuggestTaskComm(null)}
+          onCreated={() => { setSuggestTaskComm(null); if (refetch) refetch(); }}
         />
       )}
     </div>
@@ -346,6 +398,7 @@ function ReadingPane({ comm, accounts, contacts, refetch, refetchGraph, onCompos
   const [attachments, setAttachments] = useState([]);
   const [loadingAtt, setLoadingAtt] = useState(false);
   const [showTaskModal, setShowTaskModal] = useState(false);
+  const [showSuggestTask, setShowSuggestTask] = useState(false);
   const [showAddAccount, setShowAddAccount] = useState(false);
   const [showAddContact, setShowAddContact] = useState(false);
   const [pendingAccountForContact, setPendingAccountForContact] = useState(null);
@@ -474,8 +527,8 @@ function ReadingPane({ comm, accounts, contacts, refetch, refetchGraph, onCompos
           <button className="btn-ghost tiny" onClick={() => onCompose && onCompose({ forwardOf: comm })}>
             <I.forward /> Forward
           </button>
-          <button className="btn-ghost tiny" onClick={() => setShowTaskModal(true)} title="Create task from this email">
-            <I.check /> Task
+          <button className="btn-ghost tiny" onClick={() => setShowSuggestTask(true)} title="Create task from this email — AI drafts a suggestion you can edit">
+            ✨ Task
           </button>
           <button className="btn-ghost tiny" onClick={archive}>
             <I.archive /> {comm.archived ? 'Unarchive' : 'Archive'}
@@ -630,6 +683,16 @@ function ReadingPane({ comm, accounts, contacts, refetch, refetchGraph, onCompos
         />
       )}
 
+      {showSuggestTask && (
+        <SuggestTaskModal
+          comm={comm}
+          accounts={accounts}
+          contacts={contacts}
+          onClose={() => setShowSuggestTask(false)}
+          onCreated={() => { setShowSuggestTask(false); if (refetch) refetch(); }}
+        />
+      )}
+
       {showAddAccount && (
         <AddAccountModal
           initialName={suggestedCompany.name}
@@ -697,6 +760,17 @@ function ReadingPane({ comm, accounts, contacts, refetch, refetchGraph, onCompos
             onMouseEnter={e => e.currentTarget.style.background = 'var(--fill-1)'}
             onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
             📝 Create note on {account ? account.name : 'account…'}
+          </button>
+          <button
+            onMouseDown={(e) => {
+              e.stopPropagation();
+              setShowSuggestTask(true);
+              setCtxMenu(null);
+            }}
+            style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 12px', background: 'transparent', border: 'none', fontSize: 12, color: 'var(--text-1)', cursor: 'pointer', fontFamily: 'inherit', borderRadius: 4 }}
+            onMouseEnter={e => e.currentTarget.style.background = 'var(--fill-1)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+            ✨ Create task (AI suggestion)
           </button>
         </div>
       )}
