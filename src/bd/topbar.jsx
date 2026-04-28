@@ -7,7 +7,6 @@ export default function Topbar({ theme, setTheme, view, setView, leftLane, setLe
   const userInitials = (userName || '?').split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase();
 
   const toggleTheme = () => setTheme(theme === 'light' ? 'dark' : 'light');
-  const toggleLayout = () => setLayout(layout === 'fixed' ? 'focused' : 'fixed');
 
   return (
     <div className="topbar">
@@ -30,11 +29,10 @@ export default function Topbar({ theme, setTheme, view, setView, leftLane, setLe
         <button className={view === 'playbooks' ? 'on' : ''} onClick={() => setView('playbooks')} title="Playbooks">
           <I.sparkle /> Playbooks
         </button>
+        <button className={view === 'tasks' ? 'on' : ''} onClick={() => setView('tasks')} title="All open tasks">
+          <I.check /> Tasks
+        </button>
       </div>
-
-      <button className="btn-ghost" onClick={toggleLayout} title="Toggle focus layout">
-        {layout === 'fixed' ? 'Focus' : 'Fixed'}
-      </button>
 
       <div className="topbar-search">
         <div className="searchfield">

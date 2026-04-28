@@ -19,6 +19,7 @@ import SearchResultsPanel from './search-results-panel';
 import EnrichModal from '../components/forms/EnrichModal';
 import PlaybooksList from '../components/playbooks/PlaybooksList';
 import PlaybookDetail from '../components/playbooks/PlaybookDetail';
+import TasksView from './tasks-view';
 
 export default function BDApp() {
   const [theme, setTheme] = useLocal('bd_theme', 'light');
@@ -174,6 +175,27 @@ export default function BDApp() {
               <PlaybooksList onSelectPlaybook={setSelectedPlaybook} />
             )}
           </div>
+        </div>
+        <Statusbar userName={userName} unreadCount={unreadCount} openDeals={openDealsCount} totalValue={totalValue} />
+      </div>
+    );
+  }
+
+  if (view === 'tasks') {
+    return (
+      <div className={`app theme-${theme}`} data-layout={layout}>
+        <Topbar theme={theme} setTheme={setTheme} view={view} setView={setView}
+                leftLane={leftLane} setLeftLane={setLeftLane}
+                layout={layout} setLayout={setLayout} search={search} setSearch={setSearch}
+                onEnrich={() => setShowEnrich(true)} />
+        <div className="lanes">
+          <TasksView accounts={accounts} contacts={contacts}
+            onSelectTask={(t) => {
+              // Switch to the workspace and focus the task in Account 360
+              setView('workspace');
+              setLeftLane('calendar');
+              setRightContext({ type: 'task', id: t.id });
+            }} />
         </div>
         <Statusbar userName={userName} unreadCount={unreadCount} openDeals={openDealsCount} totalValue={totalValue} />
       </div>
