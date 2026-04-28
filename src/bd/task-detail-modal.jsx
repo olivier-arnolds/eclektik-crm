@@ -82,8 +82,8 @@ export default function TaskDetailModal({ taskId, accounts, onClose, refetch }) 
                 }} />
             </div>
 
-            {/* Due date + owner */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            {/* Due date + owner + priority */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
               <div>
                 <div style={fieldLabel}>Due date</div>
                 <input type="date" value={row.due_date || ''}
@@ -96,6 +96,15 @@ export default function TaskDetailModal({ taskId, accounts, onClose, refetch }) 
                   onBlur={e => update({ owner: e.target.value || null })}
                   placeholder="MVG / OA / YK"
                   style={fieldInput} />
+              </div>
+              <div>
+                <div style={fieldLabel}>Priority</div>
+                <select value={row.priority || 'Normal'} onChange={e => update({ priority: e.target.value })}
+                  style={fieldInput}>
+                  <option value="Low">Low</option>
+                  <option value="Normal">Normal</option>
+                  <option value="High">High</option>
+                </select>
               </div>
             </div>
 

@@ -811,9 +811,22 @@ export function InlineTaskDetail({ taskId, refetch }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       <InlineField label="Title" value={row.title} onSave={v => update({ title: v || row.title })} colspan={2} />
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
         <InlineField label="Due date" value={row.due_date} type="date" onSave={v => update({ due_date: v || null })} />
         <InlineField label="Owner" value={row.owner} onSave={v => update({ owner: v || null })} />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>Priority</div>
+          <select value={row.priority || 'Normal'} onChange={e => update({ priority: e.target.value })}
+            style={{
+              padding: '4px 6px', borderRadius: 4, border: '0.5px solid var(--sep)',
+              background: 'var(--fill-1)', color: 'var(--text-1)', fontSize: 12,
+              fontFamily: 'var(--font)', outline: 'none',
+            }}>
+            <option value="Low">Low</option>
+            <option value="Normal">Normal</option>
+            <option value="High">High</option>
+          </select>
+        </div>
       </div>
       <InlineField label="Notes" value={row.description} type="textarea" onSave={v => update({ description: v || null })} colspan={2} />
       <div style={{ display: 'flex', gap: 4, borderTop: '0.5px solid var(--sep)', paddingTop: 8 }}>
