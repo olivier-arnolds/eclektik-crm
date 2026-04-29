@@ -283,7 +283,7 @@ export default function DealDetailModal({ deal, accounts, contacts, rawItems, on
 // Click-to-pick product line for a deal. Chip dropdown.
 function ProductLinePicker({ value, onSave }) {
   const [open, setOpen] = useState(false);
-  const opts = ['Glint', 'People Science', 'AI Transformation', 'ROI', 'Technical', 'Other'];
+  const opts = ['Glint', 'ROI', 'ROE', 'Other'];
   const current = value || '';
   return (
     <div style={{ position: 'relative', display: 'inline-block' }}>

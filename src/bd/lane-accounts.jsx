@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { I, fmtMoney, fmtRelative, AccountMark, OwnerDot, OwnerChip, ChannelIcon, STAGE_TINT } from './atoms';
 import AddAccountModal from './add-account-modal';
 import AddContactModal from './add-contact-modal';
@@ -56,6 +56,75 @@ function EditableDealTitle({ deal, refetch }) {
         ✎
       </button>
     </>
+  );
+}
+
+// Click-to-pick deal type (product line) chip used in the collapsed deal row.
+function DealTypePill({ deal, refetch }) {
+  const [open, setOpen] = useState(false);
+  const opts = ['Glint', 'ROI', 'ROE', 'Other'];
+  const ref = useRef(null);
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  const pick = async (v) => {
+    setOpen(false);
+    await supabase.from(deal.table).update({ product_line: v || null }).eq('id', deal.id);
+    if (refetch) refetch();
+  };
+
+  return (
+    <span ref={ref} style={{ position: 'relative', display: 'inline-block' }}>
+      <button
+        onClick={(e) => { e.stopPropagation(); setOpen(o => !o); }}
+        title="Click to change type"
+        style={{
+          fontSize: 9, fontFamily: 'var(--font-mono)', textTransform: 'uppercase',
+          letterSpacing: '0.06em',
+          padding: '2px 6px', borderRadius: 3,
+          background: deal.dealType ? 'var(--accent-tint)' : 'var(--fill-2)',
+          color: deal.dealType ? 'var(--accent)' : 'var(--text-3)',
+          border: '0.5px solid ' + (deal.dealType ? 'var(--accent)' : 'var(--sep)'),
+          cursor: 'pointer',
+        }}>
+        {deal.dealType || '+ type'} ▾
+      </button>
+      {open && (
+        <div style={{
+          position: 'absolute', top: '100%', left: 0, marginTop: 4, zIndex: 20,
+          background: 'var(--bg-1)', border: '0.5px solid var(--sep)',
+          borderRadius: 6, boxShadow: 'var(--shadow-2)', minWidth: 130, padding: 4,
+        }}
+          onClick={(e) => e.stopPropagation()}>
+          {opts.map(o => (
+            <div key={o} onClick={() => pick(o)}
+              style={{
+                padding: '5px 8px', fontSize: 12, cursor: 'pointer', borderRadius: 4,
+                background: o === deal.dealType ? 'var(--accent-tint)' : 'transparent',
+                color: o === deal.dealType ? 'var(--accent)' : 'var(--text-1)',
+              }}
+              onMouseEnter={e => { if (o !== deal.dealType) e.currentTarget.style.background = 'var(--fill-1)'; }}
+              onMouseLeave={e => { if (o !== deal.dealType) e.currentTarget.style.background = 'transparent'; }}>
+              {o}{o === deal.dealType && ' ✓'}
+            </div>
+          ))}
+          {deal.dealType && (
+            <div onClick={() => pick(null)}
+              style={{
+                padding: '5px 8px', fontSize: 11, cursor: 'pointer',
+                color: 'var(--danger)', borderTop: '0.5px solid var(--sep)', marginTop: 4,
+                fontFamily: 'var(--font-mono)',
+              }}>
+              × Clear
+            </div>
+          )}
+        </div>
+      )}
+    </span>
   );
 }
 
@@ -853,6 +922,7 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
                   <div className="deal-row">
                     <div className="deal-row-left">
                       <span className={`stage-pill stage-${stageClass(d.stage)}`}>{STAGE_TINT[d.stage]?.label || d.stage}</span>
+                      <DealTypePill deal={d} refetch={refetch} />
                       <EditableDealTitle deal={d} refetch={refetch} />
                     </div>
                     <div className="deal-row-right">
@@ -882,6 +952,7 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
                     <div className="deal-row">
                       <div className="deal-row-left">
                         <span className={`stage-pill stage-${stageClass(d.stage)}`}>{STAGE_TINT[d.stage]?.label || d.stage}</span>
+                        <DealTypePill deal={d} refetch={refetch} />
                         <EditableDealTitle deal={d} refetch={refetch} />
                       </div>
                       <div className="deal-row-right">

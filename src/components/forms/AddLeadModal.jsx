@@ -40,7 +40,7 @@ const btnBase = {
   border: 'none',
 };
 
-const LEAD_TYPES = ['Glint', 'People Science', 'AI Transformation', 'ROI', 'Technical', 'Other'];
+const LEAD_TYPES = ['Glint', 'ROI', 'ROE', 'Other'];
 
 const EMPTY = {
   title: '', company_name: '', contact_name: '', email: '', linkedin_url: '',

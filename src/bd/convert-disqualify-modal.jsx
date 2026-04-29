@@ -98,10 +98,8 @@ export function ConvertLeadModal({ deal, accounts, rawItems, onClose, onDone }) 
             <select style={fieldStyle} value={productLine} onChange={e => setProductLine(e.target.value)}>
               <option value="">—</option>
               <option value="Glint">Glint</option>
-              <option value="People Science">People Science</option>
-              <option value="AI Transformation">AI Transformation</option>
               <option value="ROI">ROI</option>
-              <option value="Technical">Technical</option>
+              <option value="ROE">ROE</option>
               <option value="Other">Other</option>
             </select>
           </div>

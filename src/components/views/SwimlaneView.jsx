@@ -23,7 +23,7 @@ export default function SwimlaneView({ onSelectItem, search, allItems, accounts,
   const totalVal = activeItems.reduce((s,i)=>s+i.value,0);
   const stageLabelMap = { lead:'Leads', opportunity:'Opportunities', onboarding:'Onboarding', active:'Active clients', inactive:'Inactive', past:'Past clients' };
   const stageLabel = stageFilter && stageFilter !== 'all' ? (stageLabelMap[stageFilter] || stageFilter) : 'Pipeline';
-  const productLines = ['All types', 'Glint', 'People Science', 'AI Transformation', 'ROI', 'Technical', 'Other'];
+  const productLines = ['All types', 'Glint', 'ROI', 'ROE', 'Other'];
   const stageMatchedCols = COLS.filter(col => col.funnelStages.includes(stageFilter));
   const visibleCols = (!stageFilter || stageFilter === 'all' || stageMatchedCols.length === 0) ? COLS : stageMatchedCols;
 
