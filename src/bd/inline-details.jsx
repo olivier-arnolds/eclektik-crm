@@ -676,6 +676,33 @@ export function InlineDealDetail({ deal, rawItems, onCompose, onOpenModal, refet
   const rawRow = (rawItems || []).find(i => i.id === deal.id);
   const [noteDraft, setNoteDraft] = useState('');
   const [saving, setSaving] = useState(false);
+  const [linkOpen, setLinkOpen] = useState(false);
+  const [linkQuery, setLinkQuery] = useState('');
+  const [accountsList, setAccountsList] = useState([]);
+
+  // Lazily load active accounts when the picker opens
+  useEffect(() => {
+    if (!linkOpen || accountsList.length) return;
+    supabase.from('companies').select('id,name,type').neq('stage', 'Inactive').order('name')
+      .then(({ data }) => setAccountsList(data || []));
+  }, [linkOpen, accountsList.length]);
+
+  const filteredLink = linkQuery.trim()
+    ? accountsList.filter(a => (a.name || '').toLowerCase().includes(linkQuery.trim().toLowerCase())).slice(0, 12)
+    : accountsList.slice(0, 50);
+
+  const linkAccount = async (newAccId) => {
+    await updateRow(deal.table, deal.id, { company_id: newAccId });
+    setLinkOpen(false);
+    setLinkQuery('');
+    if (refetch) refetch();
+  };
+
+  const unlink = async () => {
+    if (!confirm(`Unlink "${deal.title}" from ${deal.account || 'this account'}?\n\nThe ${deal.table === 'opportunities' ? 'opportunity' : 'lead'} stays in the CRM but is no longer attached to any account.`)) return;
+    await updateRow(deal.table, deal.id, { company_id: null });
+    if (refetch) refetch();
+  };
 
   const entries = parseDatedNotes(rawRow?.notes || '');
 
@@ -769,7 +796,18 @@ export function InlineDealDetail({ deal, rawItems, onCompose, onOpenModal, refet
         )}
         {onOpenModal && (
           <button className="btn-ghost tiny" onClick={onOpenModal}>
-            <I.arrow /> Full deal actions (convert / disqualify / enroll)
+            <I.arrow /> Full deal actions
+          </button>
+        )}
+        <button className="btn-ghost tiny" onClick={() => setLinkOpen(o => !o)}
+          title={deal.accountId ? 'Move this deal to another account' : 'Link this deal to an account'}>
+          ↪ {deal.accountId ? 'Relink to other account' : '+ Link account'}
+        </button>
+        {deal.accountId && (
+          <button className="btn-ghost tiny" style={{ color: 'var(--danger)' }}
+            onClick={unlink}
+            title="Remove the account link (keeps the deal)">
+            × Unlink
           </button>
         )}
         <button className="btn-ghost tiny" style={{ marginLeft: 'auto', color: 'var(--danger)' }}
@@ -783,6 +821,29 @@ export function InlineDealDetail({ deal, rawItems, onCompose, onOpenModal, refet
           🗑 Delete
         </button>
       </div>
+
+      {linkOpen && (
+        <div style={{ padding: 8, border: '0.5px solid var(--accent)', borderRadius: 6, background: 'var(--fill-1)' }}>
+          <input autoFocus value={linkQuery} onChange={e => setLinkQuery(e.target.value)}
+            placeholder="Search account…" style={fieldInputStyle} />
+          <div style={{ marginTop: 6, maxHeight: 220, overflowY: 'auto' }}>
+            {filteredLink.length === 0 && (
+              <div style={{ fontSize: 11, color: 'var(--text-3)', fontStyle: 'italic', padding: 6 }}>
+                {accountsList.length ? 'No matches' : 'Loading accounts…'}
+              </div>
+            )}
+            {filteredLink.map(a => (
+              <div key={a.id} onClick={() => linkAccount(a.id)}
+                style={{ padding: '5px 8px', cursor: 'pointer', borderRadius: 4, fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}
+                onMouseEnter={e => e.currentTarget.style.background = 'var(--fill-2)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                <span style={{ flex: 1 }}>{a.name}</span>
+                {a.type && <span style={{ fontSize: 10, color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>{a.type}</span>}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
