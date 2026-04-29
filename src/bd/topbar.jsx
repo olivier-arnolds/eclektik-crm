@@ -13,6 +13,12 @@ export default function Topbar({ theme, setTheme, view, setView, leftLane, setLe
       <div className="topbar-brand">
         <div className="brand-mark">E</div>
         <span>Eclectik BD</span>
+        <span style={{
+          marginLeft: 6, fontSize: 10, fontFamily: 'var(--font-mono)',
+          padding: '2px 6px', borderRadius: 3,
+          background: 'var(--accent-tint)', color: 'var(--accent)',
+          textTransform: 'uppercase', letterSpacing: '0.06em',
+        }}>BabyDee 1.0</span>
       </div>
 
       <div className="topbar-sep" />
