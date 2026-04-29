@@ -1161,12 +1161,17 @@ em { font-style: normal; }
   position: relative;
 }
 .lane-accounts .acc-scroll { scrollbar-gutter: stable; }
+/* Sit on the inside of the lane's left edge — placing it outside (left: -3px)
+   was getting clipped by the lane's overflow:hidden, so the bar was
+   invisible and unreachable. */
 .lane-accounts-resizer {
-  position: absolute; top: 0; left: -3px; width: 6px; height: 100%;
-  cursor: col-resize; z-index: 5; background: transparent;
+  position: absolute; top: 0; left: 0; width: 8px; height: 100%;
+  cursor: col-resize; z-index: 10; background: transparent;
 }
 .lane-accounts-resizer:hover,
-.lane-accounts-resizer.dragging { background: var(--accent); opacity: 0.4; }
+.lane-accounts-resizer.dragging {
+  background: var(--accent); opacity: 0.35;
+}
 
 /* Scrollbars */
 ::-webkit-scrollbar { width: 10px; height: 10px; }

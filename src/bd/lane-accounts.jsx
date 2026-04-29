@@ -80,9 +80,14 @@ function DealTypePill({ deal, refetch }) {
   return (
     <span ref={ref} style={{ position: 'relative', display: 'inline-block' }}>
       <button
-        className="btn-primary tiny"
         onClick={(e) => { e.stopPropagation(); setOpen(o => !o); }}
-        title="Click to change type">
+        title="Click to change type"
+        style={{
+          padding: '3px 8px', borderRadius: 6, fontSize: 11,
+          background: 'var(--accent)', color: '#fff', fontWeight: 500,
+          border: 'none', cursor: 'pointer',
+          fontFamily: 'inherit', whiteSpace: 'nowrap',
+        }}>
         {deal.dealType || '+ type'} ▾
       </button>
       {open && (
