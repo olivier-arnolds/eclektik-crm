@@ -1,8 +1,43 @@
 // Unipile API proxy — handles LinkedIn messaging, profile lookup, and posts
 // Routes: POST /api/unipile?action=send-message|start-chat|get-profile|get-posts
 
+import { createClient } from '@supabase/supabase-js';
+
 const DSN = process.env.UNIPILE_BASE_URL || process.env.UNIPILE_DSN;
 const TOKEN = process.env.UNIPILE_API_KEY || process.env.UNIPILE_TOKEN;
+
+const supabase = (process.env.VITE_SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY)
+  ? createClient(process.env.VITE_SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY)
+  : null;
+
+// Map Unipile's LinkedIn company response to our `companies` schema.
+// Returns only fields that have a value, so we don't blank existing data.
+function mapUnipileCompanyToDb(c) {
+  const updates = {};
+  if (c.name) updates.name = c.name;
+  if (c.website) updates.website = c.website;
+  if (c.profile_url) updates.linkedin_url = c.profile_url;
+  if (Array.isArray(c.industry) && c.industry[0]) updates.industry = c.industry[0];
+  if (c.description) updates.description = c.description;
+  if (c.employee_count) updates.employee_count = String(c.employee_count);
+  if (c.foundation_date) {
+    const m = String(c.foundation_date).match(/(\d{4})/);
+    if (m) updates.founded_year = m[1];
+  }
+  if (Array.isArray(c.locations)) {
+    const hq = c.locations.find(l => l && l.is_headquarter) || c.locations[0];
+    if (hq) {
+      const street = Array.isArray(hq.street) ? hq.street.filter(Boolean).join(', ') : '';
+      const parts = [street, hq.postalCode, hq.city, hq.area].filter(Boolean);
+      if (parts.length) updates.address = parts.join(', ');
+      if (hq.country) updates.country = hq.country;
+    }
+  }
+  if (Array.isArray(c.hashtags) && c.hashtags.length > 0) {
+    updates.specialities = c.hashtags.map(h => h.title).filter(Boolean).join(', ');
+  }
+  return updates;
+}
 
 async function unipileRequest(method, path, body, isFormData) {
   const url = `https://${DSN}/api/v1${path}`;
@@ -293,6 +328,44 @@ export default async function handler(req, res) {
         return res.status(200).json({ success: true, data: { relation: status, network_distance: distance, is_relationship: isRelationship } });
       }
       return res.status(result.error ? 400 : 200).json(result);
+    }
+
+    // ── ENRICH COMPANY (replaces Surfe) ──
+    // Pulls LinkedIn company data and writes mapped fields to Supabase.
+    // Body: { company_id, linkedin_url }
+    if (action === 'enrich-company' && req.method === 'POST') {
+      if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+      const { company_id, linkedin_url } = req.body || {};
+      if (!company_id || !linkedin_url) {
+        return res.status(400).json({ error: 'company_id and linkedin_url required' });
+      }
+      const slugMatch = linkedin_url.match(/linkedin\.com\/company\/([^\/\?]+)/);
+      if (!slugMatch) return res.status(400).json({ error: 'invalid LinkedIn company URL' });
+      const slug = slugMatch[1];
+
+      // Need an account_id for the LinkedIn provider call
+      const acctsResp = await unipileRequest('GET', '/accounts');
+      const liAcc = (acctsResp.data?.items || []).find(a => (a.type || '').toUpperCase() === 'LINKEDIN');
+      if (!liAcc) return res.status(400).json({ error: 'No LinkedIn account connected in Unipile' });
+
+      const lookup = await unipileRequest('GET', `/linkedin/company/${encodeURIComponent(slug)}?account_id=${liAcc.id}`);
+      if (lookup.error || !lookup.data) {
+        return res.status(400).json({ error: lookup.error || 'company not found', details: lookup.details });
+      }
+
+      const updates = mapUnipileCompanyToDb(lookup.data);
+      updates.last_enriched_at = new Date().toISOString();
+      updates.updated_at = updates.last_enriched_at;
+
+      const { error: dbErr } = await supabase.from('companies').update(updates).eq('id', company_id);
+      if (dbErr) return res.status(500).json({ error: dbErr.message });
+
+      return res.status(200).json({
+        success: true,
+        company_id,
+        fieldsUpdated: Object.keys(updates).filter(k => k !== 'updated_at' && k !== 'last_enriched_at'),
+        updates,
+      });
     }
 
     // ── REGISTER WEBHOOK ──
