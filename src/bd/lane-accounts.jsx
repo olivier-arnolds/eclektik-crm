@@ -9,6 +9,25 @@ import MeetingNoteModal from './meeting-note-modal';
 import AccountLinksSection from './account-links-section';
 import LinkExistingContactModal from './link-existing-contact-modal';
 import DuplicateContactsModal from './duplicate-contacts-modal';
+import { useLinkedInPosts } from '../hooks/useLinkedInPosts';
+
+function PostText({ text }) {
+  const [expanded, setExpanded] = useState(false);
+  const isLong = text.length > 300;
+  return (
+    <div>
+      <div style={{ fontSize: 12, color: 'var(--text-1)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
+        {isLong && !expanded ? text.substring(0, 300) + '…' : text}
+      </div>
+      {isLong && (
+        <button onClick={() => setExpanded(!expanded)}
+          style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: 11, cursor: 'pointer', padding: '4px 0', fontFamily: 'inherit' }}>
+          {expanded ? 'Show less' : 'Show more'}
+        </button>
+      )}
+    </div>
+  );
+}
 
 // Inline rename for a deal directly in the collapsed Account-360 deal row.
 // Click the pencil → input replaces title; Enter saves, Esc cancels.
@@ -629,6 +648,15 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
     return () => { cancelled = true; };
   }, [account?.id, userEmail, userName]);
 
+  // LinkedIn posts (fetched live from Unipile + cached in Supabase)
+  const {
+    fetchedPosts,
+    fetching: fetchingPosts,
+    fetchError,
+    hasFetched,
+    fetchPosts: fetchLinkedInPosts,
+  } = useLinkedInPosts(account, contacts, { enabled: !!account?.id });
+
   // Track which events have notes (📝 indicator)
   const [notesCountByEvent, setNotesCountByEvent] = useState({});
   useEffect(() => {
@@ -1049,6 +1077,90 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
             </div>
           )}
         </Section>
+
+        {account.id && (
+          <Section label={`LinkedIn posts${fetchedPosts.length ? ` · ${fetchedPosts.length}` : ''}`}
+            actions={
+              <>
+                {account.linkedin_url && (
+                  <button className="btn-ghost tiny"
+                    onClick={() => {
+                      const url = account.linkedin_url.replace(/\/$/, '');
+                      window.open(url + '/posts/?feedView=all', '_blank', 'noopener,noreferrer');
+                    }}
+                    title="Open the company's LinkedIn posts feed in a new tab">
+                    Open on LinkedIn ↗
+                  </button>
+                )}
+                <button className="btn-primary tiny" onClick={fetchLinkedInPosts} disabled={fetchingPosts}
+                  title="Pull recent posts from this company and its contacts via Unipile">
+                  {fetchingPosts ? 'Fetching…' : hasFetched ? 'Refresh' : 'Fetch posts'}
+                </button>
+              </>
+            }>
+            {fetchError && (
+              <div style={{ background: 'var(--danger-tint)', border: '0.5px solid var(--danger)', borderRadius: 6, padding: '6px 10px', marginBottom: 8, fontSize: 11, color: 'var(--danger)' }}>
+                {fetchError}
+              </div>
+            )}
+            {!hasFetched && !fetchingPosts && fetchedPosts.length === 0 && (
+              <div className="empty" style={{ padding: '8px 0', textAlign: 'left' }}>
+                Click <b>Fetch posts</b> to pull recent posts from this company and its contacts.
+              </div>
+            )}
+            {fetchedPosts.length > 0 && (
+              <div className="acc-comms" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {fetchedPosts.map((post, idx) => {
+                  const text = post.text || post.content || post.commentary || '';
+                  const authorName = post._contactName || post.author?.name || (post.author?.first_name ? `${post.author?.first_name || ''} ${post.author?.last_name || ''}`.trim() : '');
+                  const postDate = post.parsed_datetime || post.date || post.created_at;
+                  const likes = post.reaction_counter ?? post.likes_count ?? post.reactions_count;
+                  const comments = post.comment_counter ?? post.comments_count;
+                  const reposts = post.repost_counter;
+                  const postUrl = post.share_url || post.url || post.post_url;
+                  return (
+                    <div key={post.social_id || post.id || idx}
+                      style={{ background: 'var(--bg-1)', border: '0.5px solid var(--sep)', borderRadius: 8, padding: '10px 12px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 6 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: 9, padding: '2px 7px', borderRadius: 10,
+                            background: post._isCompanyPost ? 'var(--warn-tint)' : 'var(--accent-tint)',
+                            color: post._isCompanyPost ? 'var(--warn)' : 'var(--accent)',
+                            border: `0.5px solid ${post._isCompanyPost ? 'var(--warn)' : 'var(--accent)'}`,
+                            fontWeight: 600 }}>
+                            {post._isCompanyPost ? 'Company' : 'Contact'}
+                          </span>
+                          {authorName && <span style={{ fontSize: 12, fontWeight: 500 }}>{authorName}</span>}
+                          {postDate && (
+                            <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
+                              {typeof postDate === 'string' && /^\d/.test(postDate) && postDate.length < 6
+                                ? postDate
+                                : new Date(postDate).toLocaleDateString('en', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </span>
+                          )}
+                        </div>
+                        {postUrl && (
+                          <a href={postUrl} target="_blank" rel="noopener noreferrer"
+                            style={{ fontSize: 10, color: 'var(--accent)', textDecoration: 'none', whiteSpace: 'nowrap' }}>
+                            Open ↗
+                          </a>
+                        )}
+                      </div>
+                      {text && <PostText text={text} />}
+                      {(likes != null || comments != null || reposts != null) && (
+                        <div style={{ display: 'flex', gap: 12, marginTop: 8, fontSize: 11, color: 'var(--text-3)' }}>
+                          {likes != null && <span>{likes} reaction{likes !== 1 ? 's' : ''}</span>}
+                          {comments != null && <span>{comments} comment{comments !== 1 ? 's' : ''}</span>}
+                          {reposts != null && reposts > 0 && <span>{reposts} repost{reposts !== 1 ? 's' : ''}</span>}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </Section>
+        )}
 
         <Section label={`Tasks · ${openTasks.length}`}>
           {openTasks.length === 0 ? (
