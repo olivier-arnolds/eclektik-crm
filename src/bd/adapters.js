@@ -69,6 +69,7 @@ export function adaptAccount(row) {
     flag: row.flag || '',
     phone: row.phone || '',
     email: row.email || '',
+    linkedin_url: row.linkedin_url || '',
   };
 }
 
@@ -88,6 +89,7 @@ export function adaptContact(row, adaptedAccounts) {
     initials: row.initials,
     isPrimary: !!row.isPrimary,
     isFormer: !!row.isFormer,
+    linkedin_url: row.linkedin_url || '',
   };
 }
 
