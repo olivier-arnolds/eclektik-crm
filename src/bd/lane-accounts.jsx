@@ -1108,6 +1108,11 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
                 Click <b>Fetch posts</b> to pull recent posts from this company and its contacts.
               </div>
             )}
+            {hasFetched && !fetchingPosts && !fetchError && fetchedPosts.length === 0 && (
+              <div className="empty" style={{ padding: '8px 0', textAlign: 'left' }}>
+                No original posts from the last 2 months.
+              </div>
+            )}
             {fetchedPosts.length > 0 && (
               <div className="acc-comms" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {fetchedPosts.map((post, idx) => {

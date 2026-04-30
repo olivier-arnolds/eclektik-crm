@@ -83,15 +83,23 @@ export function useLinkedInPosts(account, contacts, { enabled }) {
         }
       }
 
-      allPosts.sort((a, b) =>
-        (b.date || b.timestamp || b.created_at || '').localeCompare(
-          a.date || a.timestamp || a.created_at || ''
+      // Keep only original posts from the last 2 months — drops reposts/reshares
+      // and old activity that's no longer relevant for outreach.
+      const cutoffMs = Date.now() - 60 * 24 * 60 * 60 * 1000;
+      const filtered = allPosts.filter((p) => {
+        if (p.is_repost) return false;
+        const ts = p.parsed_datetime ? new Date(p.parsed_datetime).getTime() : 0;
+        return ts >= cutoffMs;
+      });
+      filtered.sort((a, b) =>
+        (b.parsed_datetime || b.date || b.timestamp || b.created_at || '').localeCompare(
+          a.parsed_datetime || a.date || a.timestamp || a.created_at || ''
         )
       );
-      setFetchedPosts(allPosts);
+      setFetchedPosts(filtered);
       setHasFetched(true);
 
-      for (const post of allPosts) {
+      for (const post of filtered) {
         const postUrl = post.share_url || post.url || post.post_url || '';
         const postText = post.text || post.content || '';
         if (!postText) continue;
