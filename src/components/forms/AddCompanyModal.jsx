@@ -31,37 +31,15 @@ export default function AddCompanyModal({ open, onClose, refetch }) {
     });
     setSaving(false);
 
-    // Auto-enrich if we have a website (via Surfe) or LinkedIn URL (via Unipile)
-    if (newCompany?.id && (form.website || form.linkedin_url)) {
+    // Auto-enrich via Unipile if we have a LinkedIn URL
+    if (newCompany?.id && form.linkedin_url) {
       setEnriching(true);
       try {
-        // Try Surfe enrichment if website is available
-        if (form.website) {
-          const enrichResp = await fetch('/api/surfe-enrich', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ type: 'companies', ids: [newCompany.id] }),
-          });
-          const enrichData = await enrichResp.json();
-          if (enrichData.surfeResponse?.enrichmentID) {
-            // Poll for results
-            await new Promise(r => setTimeout(r, 5000));
-            await fetch(`/api/surfe-poll?enrichmentID=${enrichData.surfeResponse.enrichmentID}&type=companies`);
-          }
-        }
-        // Try Unipile enrichment if LinkedIn URL is available
-        if (form.linkedin_url) {
-          const match = form.linkedin_url.match(/linkedin\.com\/company\/([^\/\?]+)/);
-          if (match) {
-            const accResp = await fetch('/api/unipile?action=list-accounts');
-            const accData = await accResp.json();
-            const liAcc = accData.data?.items?.find(a => (a.account_type || '').includes('LINKEDIN'));
-            if (liAcc) {
-              const companyResp = await fetch(`/api/unipile?action=get-profile&account_id=${liAcc.id}&linkedin_url=${encodeURIComponent(form.linkedin_url)}`);
-              // Company data will be fetched on next view
-            }
-          }
-        }
+        await fetch('/api/unipile?action=enrich-company', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ company_id: newCompany.id, linkedin_url: form.linkedin_url }),
+        });
       } catch (e) { /* enrichment is best-effort */ }
       setEnriching(false);
     }

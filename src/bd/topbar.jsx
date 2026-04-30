@@ -55,7 +55,7 @@ export default function Topbar({ theme, setTheme, view, setView, leftLane, setLe
 
       <div className="topbar-right">
         {onEnrich && (
-          <button className="btn-ghost tiny" onClick={onEnrich} title="Enrich via Surfe">
+          <button className="btn-ghost tiny" onClick={onEnrich} title="Enrich companies via LinkedIn">
             ◈ Enrich
           </button>
         )}

@@ -128,21 +128,16 @@ export default function AddAccountModal({ onClose, onCreated, initialName, initi
       return;
     }
 
-    if (newCompany?.id) {
-      setStatus('Enriching via Surfe…');
+    if (newCompany?.id && newCompany.linkedin_url) {
+      setStatus('Enriching via LinkedIn…');
       try {
-        const enrichResp = await fetch('/api/surfe-enrich', {
+        await fetch('/api/unipile?action=enrich-company', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type: 'companies', ids: [newCompany.id] }),
+          body: JSON.stringify({ company_id: newCompany.id, linkedin_url: newCompany.linkedin_url }),
         });
-        const enrichData = await enrichResp.json();
-        if (enrichData.surfeResponse?.enrichmentID) {
-          await new Promise(r => setTimeout(r, 4000));
-          await fetch(`/api/surfe-poll?enrichmentID=${enrichData.surfeResponse.enrichmentID}&type=companies`);
-        }
       } catch (e) {
-        console.warn('Auto-enrich failed (background job will catch up):', e);
+        console.warn('Auto-enrich failed:', e);
       }
     }
 

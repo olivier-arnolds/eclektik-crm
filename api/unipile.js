@@ -24,14 +24,18 @@ function mapUnipileCompanyToDb(c) {
     const m = String(c.foundation_date).match(/(\d{4})/);
     if (m) updates.founded_year = m[1];
   }
-  if (Array.isArray(c.locations)) {
-    const hq = c.locations.find(l => l && l.is_headquarter) || c.locations[0];
-    if (hq) {
-      const street = Array.isArray(hq.street) ? hq.street.filter(Boolean).join(', ') : '';
-      const parts = [street, hq.postalCode, hq.city, hq.area].filter(Boolean);
-      if (parts.length) updates.address = parts.join(', ');
-      if (hq.country) updates.country = hq.country;
-    }
+  if (Array.isArray(c.locations) && c.locations.length > 0) {
+    const formatLoc = (loc) => {
+      const street = Array.isArray(loc.street) ? loc.street.filter(Boolean).join(', ') : '';
+      return [street, loc.postalCode, loc.city, loc.area].filter(Boolean).join(', ');
+    };
+    // Prefer HQ; if HQ has no concrete address, fall back to the first location with data.
+    const hq = c.locations.find(l => l && l.is_headquarter);
+    const detailed = c.locations.find(l => formatLoc(l));
+    const pickAddr = formatLoc(hq) || formatLoc(detailed);
+    if (pickAddr) updates.address = pickAddr;
+    const country = (hq && hq.country) || (detailed && detailed.country);
+    if (country) updates.country = country;
   }
   if (Array.isArray(c.hashtags) && c.hashtags.length > 0) {
     updates.specialities = c.hashtags.map(h => h.title).filter(Boolean).join(', ');

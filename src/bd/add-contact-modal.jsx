@@ -85,24 +85,6 @@ export default function AddContactModal({ account, onClose, onCreated, initialNa
       return;
     }
 
-    if (inserted?.id && (linkedinUrl.trim() || email.trim())) {
-      setStatus('Enriching via LinkedIn/Surfe…');
-      try {
-        const enrichResp = await fetch('/api/surfe-enrich', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type: 'contacts', ids: [inserted.id] }),
-        });
-        const enrichData = await enrichResp.json();
-        if (enrichData.surfeResponse?.enrichmentID) {
-          await new Promise(r => setTimeout(r, 4000));
-          await fetch(`/api/surfe-poll?enrichmentID=${enrichData.surfeResponse.enrichmentID}&type=contacts`);
-        }
-      } catch (e) {
-        console.warn('Auto-enrich failed:', e);
-      }
-    }
-
     setSaving(false);
     if (onCreated) onCreated(inserted);
   };
@@ -214,9 +196,6 @@ export default function AddContactModal({ account, onClose, onCreated, initialNa
             </div>
             <input style={fieldStyle} value={linkedinUrl} onChange={e => setLinkedinUrl(e.target.value)}
               placeholder="https://linkedin.com/in/jane-doe" />
-          </div>
-          <div style={{ fontSize: 11, color: 'var(--text-3)', fontStyle: 'italic' }}>
-            After saving, extra data (email if missing, profile details) is fetched automatically via LinkedIn/Surfe.
           </div>
           {status && <div style={{ fontSize: 11, color: 'var(--accent)' }}>⟳ {status}</div>}
         </div>

@@ -2,31 +2,30 @@ import { useState, useMemo } from 'react';
 import { getInitials, avatarColorFromName } from '../../lib/constants';
 import Avatar from '../atoms/Avatar';
 
-export default function EnrichModal({ open, onClose, contacts, accounts, refetch }) {
+// Unipile rate-limit guard — at most 80 enrich calls per modal run, leaving
+// 20 of the daily 100 budget for everything else.
+const ENRICH_BATCH_CAP = 80;
+// Spacing between calls (ms). Unipile recommends randomizing during work hours;
+// we keep it simple with a fixed gap that's gentle on the LinkedIn account.
+const ENRICH_DELAY_MS = 2000;
+
+export default function EnrichModal({ open, onClose, accounts, refetch }) {
   const [selected, setSelected] = useState(new Set());
   const [enriching, setEnriching] = useState(false);
   const [result, setResult] = useState(null);
-  const [tab, setTab] = useState('contacts');
+  const [progress, setProgress] = useState({ done: 0, total: 0 });
   const [search, setSearch] = useState('');
 
   if (!open) return null;
 
-  const enrichableContacts = contacts.filter(c => c.linkedin_url || (c.name && c.company_name));
-  const enrichableCompanies = accounts.filter(a => a.linkedin_url || a.website || a.name);
+  // Only LinkedIn-URL companies can be enriched via Unipile
+  const enrichableCompanies = accounts.filter(a => a.linkedin_url);
 
-  const filteredContacts = enrichableContacts.filter(c => {
-    if (!search) return true;
-    const t = search.toLowerCase();
-    return c.name?.toLowerCase().includes(t) || c.email?.toLowerCase().includes(t) || (c.company_name || '').toLowerCase().includes(t);
-  });
-
-  const filteredCompanies = enrichableCompanies.filter(a => {
+  const items = enrichableCompanies.filter(a => {
     if (!search) return true;
     const t = search.toLowerCase();
     return a.name?.toLowerCase().includes(t) || (a.industry || '').toLowerCase().includes(t);
   });
-
-  const items = tab === 'contacts' ? filteredContacts : filteredCompanies;
 
   const toggleAll = () => {
     if (selected.size === items.length) {
@@ -64,44 +63,35 @@ export default function EnrichModal({ open, onClose, contacts, accounts, refetch
 
   const handleEnrich = async () => {
     if (selected.size === 0) return;
+    const ids = Array.from(selected).slice(0, ENRICH_BATCH_CAP);
+    const skipped = selected.size - ids.length;
     setEnriching(true);
     setResult(null);
-    try {
-      // Step 1: Start enrichment
-      const resp = await fetch('/api/surfe-enrich', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: tab, ids: Array.from(selected) }),
-      });
-      const data = await resp.json();
+    setProgress({ done: 0, total: ids.length });
 
-      if (data.surfeResponse?.enrichmentID) {
-        // Step 2: Poll for results (try 5 times, 3s apart)
-        setResult({ success: true, count: data.count, polling: true });
-        const enrichmentID = data.surfeResponse.enrichmentID;
-        const enrichType = tab === 'companies' ? 'companies' : 'contacts';
-
-        for (let i = 0; i < 5; i++) {
-          await new Promise(r => setTimeout(r, 3000));
-          const pollResp = await fetch(`/api/surfe-poll?enrichmentID=${enrichmentID}&type=${enrichType}`);
-          const pollData = await pollResp.json();
-          if (pollData.success && pollData.updated > 0) {
-            setResult({ success: true, count: pollData.updated, done: true });
-            if (refetch) refetch();
-            break;
-          }
-          if (i === 4) {
-            setResult({ success: true, count: data.count, done: true });
-            if (refetch) refetch();
-          }
-        }
-      } else {
-        setResult({ success: true, count: data.count || selected.size });
-        if (refetch) refetch();
+    let succeeded = 0;
+    let failed = 0;
+    for (let i = 0; i < ids.length; i++) {
+      const id = ids[i];
+      const acc = accounts.find(a => a.id === id);
+      if (!acc?.linkedin_url) { failed++; setProgress({ done: i + 1, total: ids.length }); continue; }
+      try {
+        const resp = await fetch('/api/unipile?action=enrich-company', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ company_id: id, linkedin_url: acc.linkedin_url }),
+        });
+        const data = await resp.json();
+        if (data.success) succeeded++; else failed++;
+      } catch {
+        failed++;
       }
-    } catch (e) {
-      setResult({ success: false, error: e.message });
+      setProgress({ done: i + 1, total: ids.length });
+      if (i < ids.length - 1) await new Promise(r => setTimeout(r, ENRICH_DELAY_MS));
     }
+
+    setResult({ success: true, count: succeeded, failed, skipped, done: true });
+    if (refetch) refetch();
     setEnriching(false);
   };
 
@@ -112,20 +102,11 @@ export default function EnrichModal({ open, onClose, contacts, accounts, refetch
         {/* Header */}
         <div style={{ padding: "20px 24px 0", flexShrink: 0 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <div style={{ fontSize: 16, fontWeight: 500 }}>{tab === 'contacts' ? '◈ Enrich contacts via Surfe' : '🏢 Enrich companies via Surfe'}</div>
+            <div style={{ fontSize: 16, fontWeight: 500 }}>🏢 Enrich companies via LinkedIn</div>
             <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", fontSize: 18, color: "#888780" }}>×</button>
           </div>
-
-          {/* Tabs */}
-          <div style={{ display: "flex", gap: 4, marginBottom: 12 }}>
-            <button onClick={() => { setTab('contacts'); setSelected(new Set()); }}
-              style={{ padding: "5px 12px", borderRadius: 6, border: "0.5px solid", borderColor: tab === 'contacts' ? "#185FA5" : "#D3D1C7", background: tab === 'contacts' ? "#E6F1FB" : "transparent", color: tab === 'contacts' ? "#0C447C" : "#888780", cursor: "pointer", fontFamily: "inherit", fontSize: 12 }}>
-              Contacts ({enrichableContacts.length})
-            </button>
-            <button onClick={() => { setTab('companies'); setSelected(new Set()); }}
-              style={{ padding: "5px 12px", borderRadius: 6, border: "0.5px solid", borderColor: tab === 'companies' ? "#185FA5" : "#D3D1C7", background: tab === 'companies' ? "#E6F1FB" : "transparent", color: tab === 'companies' ? "#0C447C" : "#888780", cursor: "pointer", fontFamily: "inherit", fontSize: 12 }}>
-              Companies ({enrichableCompanies.length})
-            </button>
+          <div style={{ fontSize: 11, color: "#888780", marginBottom: 12 }}>
+            Pulls company name, industry, description, employee count, address and more from LinkedIn for the selected accounts. Limit: {ENRICH_BATCH_CAP} per run.
           </div>
 
           {/* Search + Select all */}
@@ -142,9 +123,8 @@ export default function EnrichModal({ open, onClose, contacts, accounts, refetch
           <div style={{ display: "flex", padding: "0 0 6px", borderBottom: "0.5px solid #D3D1C7", fontSize: 10, fontWeight: 500, color: "#888780", textTransform: "uppercase", letterSpacing: "0.06em" }}>
             <div style={{ width: 28 }}></div>
             <div style={{ flex: 1 }}>Name</div>
-            <div style={{ width: 140 }}>{tab === 'contacts' ? 'Company' : 'Industry'}</div>
+            <div style={{ width: 180 }}>Industry</div>
             <div style={{ width: 90, textAlign: "center" }}>Last enriched</div>
-            <div style={{ width: 60, textAlign: "center" }}>Email</div>
             <div style={{ width: 60, textAlign: "center" }}>LinkedIn</div>
           </div>
         </div>
@@ -156,12 +136,8 @@ export default function EnrichModal({ open, onClose, contacts, accounts, refetch
               {search ? 'No results' : 'No enrichable items (LinkedIn URL or name+company required)'}
             </div>
           ) : items.map(item => {
-            const isContact = tab === 'contacts';
             const isSelected = selected.has(item.id);
             const enrichDate = item.last_enriched_at;
-            const hasEmail = isContact ? !!item.email : !!item.email;
-            const hasLinkedin = !!item.linkedin_url;
-
             return (
               <div key={item.id} onClick={() => toggle(item.id)}
                 style={{ display: "flex", alignItems: "center", padding: "8px 0", borderBottom: "0.5px solid #F1EFE8", cursor: "pointer", background: isSelected ? "#F0F7FF" : "transparent" }}>
@@ -172,10 +148,9 @@ export default function EnrichModal({ open, onClose, contacts, accounts, refetch
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 12, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{item.name}</div>
-                  {isContact && <div style={{ fontSize: 10, color: "#888780" }}>{item.role}</div>}
                 </div>
-                <div style={{ width: 140, fontSize: 11, color: "#888780", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {isContact ? (item.company_name || '') : (item.industry || '')}
+                <div style={{ width: 180, fontSize: 11, color: "#888780", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {item.industry || ''}
                 </div>
                 <div style={{ width: 90, textAlign: "center" }}>
                   <span style={{ fontSize: 10, color: staleness(enrichDate), fontWeight: 500 }}>
@@ -183,16 +158,7 @@ export default function EnrichModal({ open, onClose, contacts, accounts, refetch
                   </span>
                 </div>
                 <div style={{ width: 60, textAlign: "center" }}>
-                  {hasEmail
-                    ? <span style={{ fontSize: 10, color: "#1D9E75" }}>✓</span>
-                    : <span style={{ fontSize: 10, color: "#B4B2A9" }}>—</span>
-                  }
-                </div>
-                <div style={{ width: 60, textAlign: "center" }}>
-                  {hasLinkedin
-                    ? <span style={{ fontSize: 10, color: "#1D9E75" }}>✓</span>
-                    : <span style={{ fontSize: 10, color: "#B4B2A9" }}>—</span>
-                  }
+                  <span style={{ fontSize: 10, color: "#1D9E75" }}>✓</span>
                 </div>
               </div>
             );
@@ -202,20 +168,22 @@ export default function EnrichModal({ open, onClose, contacts, accounts, refetch
         {/* Footer */}
         <div style={{ padding: "12px 24px", borderTop: "0.5px solid #D3D1C7", display: "flex", justifyContent: "space-between", alignItems: "center", flexShrink: 0 }}>
           <div style={{ fontSize: 11, color: "#888780" }}>
-            {selected.size} selected · {selected.size} credit{selected.size !== 1 ? 's' : ''} needed
+            {enriching
+              ? `⟳ ${progress.done}/${progress.total} processed`
+              : `${selected.size} selected${selected.size > ENRICH_BATCH_CAP ? ` · only first ${ENRICH_BATCH_CAP} will run` : ''}`}
           </div>
           <div style={{ display: "flex", gap: 8 }}>
-            {result && (
-              <span style={{ fontSize: 11, color: result.success ? "#1D9E75" : "#dc2626", alignSelf: "center" }}>
-                {result.success
-                  ? (result.polling && !result.done ? `⟳ Enriching ${result.count}, fetching...` : `✓ ${result.count} updated`)
-                  : `✗ ${result.error}`}
+            {result && result.done && (
+              <span style={{ fontSize: 11, color: "#1D9E75", alignSelf: "center" }}>
+                ✓ {result.count} updated
+                {result.failed ? `, ${result.failed} failed` : ''}
+                {result.skipped ? `, ${result.skipped} skipped (cap)` : ''}
               </span>
             )}
             <button onClick={onClose} style={{ padding: "7px 16px", borderRadius: 7, border: "0.5px solid #D3D1C7", fontSize: 12, cursor: "pointer", background: "#fff", color: "#2C2C2A", fontFamily: "inherit" }}>Cancel</button>
             <button onClick={handleEnrich} disabled={enriching || selected.size === 0}
               style={{ padding: "7px 16px", borderRadius: 7, border: "none", fontSize: 12, cursor: selected.size > 0 ? "pointer" : "not-allowed", background: selected.size > 0 ? "#042C53" : "#D3D1C7", color: selected.size > 0 ? "#B5D4F4" : "#888780", fontFamily: "inherit", fontWeight: 500 }}>
-              {enriching ? '⟳ Processing...' : tab === 'contacts' ? `◈ Enrich ${selected.size} contact${selected.size !== 1 ? 's' : ''}` : `🏢 Enrich ${selected.size} compan${selected.size !== 1 ? 'ies' : 'y'}`}
+              {enriching ? '⟳ Processing…' : `🏢 Enrich ${selected.size} compan${selected.size !== 1 ? 'ies' : 'y'}`}
             </button>
           </div>
         </div>
