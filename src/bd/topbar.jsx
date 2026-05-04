@@ -1,7 +1,7 @@
 import { useAuth } from '../lib/auth';
 import { I } from './atoms';
 
-export default function Topbar({ theme, setTheme, view, setView, leftLane, setLeftLane, layout, setLayout, search, setSearch, onOpenTweaks, onEnrich }) {
+export default function Topbar({ theme, setTheme, view, setView, leftLane, setLeftLane, layout, setLayout, search, setSearch, onOpenTweaks, onEnrich, onRefreshGraph, graphLoading }) {
   const { session, logout, reconnectMicrosoft, hasGraphToken } = useAuth();
   const userName = session?.user?.user_metadata?.full_name || session?.user?.email || '';
   const userInitials = (userName || '?').split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase();
@@ -67,6 +67,16 @@ export default function Topbar({ theme, setTheme, view, setView, leftLane, setLe
           title={hasGraphToken ? 'Microsoft connected — click to re-authenticate' : 'Microsoft not connected — click to authenticate'}>
           {hasGraphToken ? '● MS' : '⚠ Reconnect MS'}
         </button>
+        {onRefreshGraph && hasGraphToken && (
+          <button className="icon-btn" onClick={onRefreshGraph} disabled={graphLoading}
+            title={graphLoading ? 'Refreshing email & calendar…' : 'Refresh email & calendar (auto every 10 min)'}
+            style={{ cursor: graphLoading ? 'wait' : 'pointer' }}>
+            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.3"
+              style={graphLoading ? { animation: 'spin 0.8s linear infinite' } : {}}>
+              <path d="M13.5 8a5.5 5.5 0 11-1.6-3.9M13.5 2v3h-3"/>
+            </svg>
+          </button>
+        )}
         <button className="icon-btn" onClick={toggleTheme} title="Toggle theme">
           {theme === 'light' ? <I.moon /> : <I.sun />}
         </button>

@@ -124,6 +124,18 @@ export default function BDApp() {
 
   useEffect(() => { fetchGraphData(); }, [fetchGraphData]);
 
+  // Auto-refresh Graph data every 10 minutes while the tab is visible.
+  // Skips silently when the tab is in the background — Chrome throttles
+  // setInterval there anyway and we shouldn't burn Graph quota for an
+  // unattended session.
+  useEffect(() => {
+    const REFRESH_MS = 10 * 60 * 1000;
+    const id = setInterval(() => {
+      if (document.visibilityState === 'visible') fetchGraphData();
+    }, REFRESH_MS);
+    return () => clearInterval(id);
+  }, [fetchGraphData]);
+
   const unreadCount = comms.filter(c => c.unread && !c.archived).length + graphEmails.filter(e => !e.isRead).length;
   const openDealsCount = deals.filter(d => ['qualify', 'develop', 'proposal', 'close'].includes(d.stage)).length;
   const totalValue = deals.filter(d => ['qualify', 'develop', 'proposal', 'close'].includes(d.stage))
@@ -161,7 +173,8 @@ export default function BDApp() {
         <Topbar theme={theme} setTheme={setTheme} view={view} setView={setView}
                 leftLane={leftLane} setLeftLane={setLeftLane}
                 layout={layout} setLayout={setLayout} search={search} setSearch={setSearch}
-                onEnrich={() => setShowEnrich(true)} />
+                onEnrich={() => setShowEnrich(true)}
+                onRefreshGraph={fetchGraphData} graphLoading={graphLoading} />
         <div className="lanes" style={{ alignItems: 'center', justifyContent: 'center', color: 'var(--text-3)' }}>
           Loading…
         </div>
@@ -176,7 +189,8 @@ export default function BDApp() {
         <Topbar theme={theme} setTheme={setTheme} view={view} setView={setView}
                 leftLane={leftLane} setLeftLane={setLeftLane}
                 layout={layout} setLayout={setLayout} search={search} setSearch={setSearch}
-                onEnrich={() => setShowEnrich(true)} />
+                onEnrich={() => setShowEnrich(true)}
+                onRefreshGraph={fetchGraphData} graphLoading={graphLoading} />
         <div className="lanes">
           <div className="lane" style={{ flex: 1, overflowY: 'auto' }}>
             {selectedPlaybook ? (
@@ -197,7 +211,8 @@ export default function BDApp() {
         <Topbar theme={theme} setTheme={setTheme} view={view} setView={setView}
                 leftLane={leftLane} setLeftLane={setLeftLane}
                 layout={layout} setLayout={setLayout} search={search} setSearch={setSearch}
-                onEnrich={() => setShowEnrich(true)} />
+                onEnrich={() => setShowEnrich(true)}
+                onRefreshGraph={fetchGraphData} graphLoading={graphLoading} />
         <div className="lanes">
           <TasksView accounts={accounts} contacts={contacts}
             onSelectTask={(t) => {
@@ -256,7 +271,8 @@ export default function BDApp() {
       <Topbar theme={theme} setTheme={setTheme} view={view} setView={setView}
               leftLane={leftLane} setLeftLane={setLeftLane}
               layout={layout} setLayout={setLayout} search={search} setSearch={setSearch}
-              onEnrich={() => setShowEnrich(true)} />
+              onEnrich={() => setShowEnrich(true)}
+              onRefreshGraph={fetchGraphData} graphLoading={graphLoading} />
       <div className="lanes">
         {/* LEFT LANE: Calendar OR Funnel */}
         {leftLane === 'funnel' ? (
