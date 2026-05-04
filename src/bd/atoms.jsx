@@ -138,6 +138,7 @@ export const I = {
   search: (p={}) => <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.3" {...p}><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/></svg>,
   plus: (p={}) => <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.3" {...p}><path d="M8 3v10M3 8h10"/></svg>,
   close: (p={}) => <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.3" {...p}><path d="M4 4l8 8M12 4l-8 8"/></svg>,
+  trash: (p={}) => <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.3" {...p}><path d="M3 4h10M6 4V2.5h4V4M4.5 4l.8 9.5h5.4l.8-9.5M7 6.5v5M9 6.5v5"/></svg>,
   send: (p={}) => <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.3" {...p}><path d="M2 8l12-5-4 12-2-5-6-2z"/></svg>,
   sparkle: (p={}) => <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.3" {...p}><path d="M8 2l1.4 3.6L13 7l-3.6 1.4L8 12 6.6 8.4 3 7l3.6-1.4L8 2zM13 11l.6 1.4L15 13l-1.4.6L13 15l-.6-1.4L11 13l1.4-.6z"/></svg>,
   paperclip: (p={}) => <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.3" {...p}><path d="M13 7l-5 5a3 3 0 01-4-4l5-5a2 2 0 013 3l-5 5a1 1 0 01-1-1l4-4"/></svg>,

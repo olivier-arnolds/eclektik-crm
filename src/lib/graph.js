@@ -75,6 +75,22 @@ export async function getCalendarEventsRange(startISO, endISO) {
   });
 }
 
+// DELETE on a Graph message moves it to the user's Deleted Items folder
+// (Outlook's normal "soft delete"). Same UX as right-click → Delete in Outlook.
+export async function deleteEmail(messageId) {
+  const token = localStorage.getItem('graph_token');
+  if (!token) throw new Error('No Microsoft token. Please reconnect.');
+  const resp = await fetch(`https://graph.microsoft.com/v1.0/me/messages/${messageId}`, {
+    method: 'DELETE',
+    headers: { 'Authorization': 'Bearer ' + token },
+  });
+  if (resp.status === 204 || resp.ok) return { success: true };
+  if (resp.status === 401) { localStorage.removeItem('graph_token'); throw new Error('Token expired'); }
+  let msg = 'Delete failed';
+  try { const data = await resp.json(); msg = data?.error?.message || msg; } catch {}
+  throw new Error(msg);
+}
+
 export async function deleteCalendarEvent(eventId) {
   const token = localStorage.getItem('graph_token');
   if (!token) throw new Error('No Microsoft token. Please reconnect.');

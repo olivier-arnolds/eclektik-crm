@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { I, ChannelIcon, Avatar, fmtRelative, fmtFull } from './atoms';
-import { graphGet, getEmailAttachments, getChatMessages } from '../lib/graph';
+import { graphGet, getEmailAttachments, getChatMessages, deleteEmail } from '../lib/graph';
 import { supabase } from '../supabase';
 import { useAuth } from '../lib/auth';
 import DOMPurify from 'dompurify';
@@ -266,7 +266,7 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
           )}
         </div>
 
-        <ReadingPane comm={selected} accounts={accounts} contacts={contacts} refetch={refetch} refetchGraph={refetchGraph} onCompose={onCompose} />
+        <ReadingPane comm={selected} accounts={accounts} contacts={contacts} refetch={refetch} refetchGraph={refetchGraph} onCompose={onCompose} onSelect={onSelect} />
       </div>
 
       {linkChatTarget && (
@@ -407,7 +407,7 @@ function parseAccountFromText(text) {
   return out;
 }
 
-function ReadingPane({ comm, accounts, contacts, refetch, refetchGraph, onCompose }) {
+function ReadingPane({ comm, accounts, contacts, refetch, refetchGraph, onCompose, onSelect }) {
   const [fullBody, setFullBody] = useState(null);
   const [loadingBody, setLoadingBody] = useState(false);
   const [chatMessages, setChatMessages] = useState(null); // for Teams chats
@@ -527,6 +527,25 @@ function ReadingPane({ comm, accounts, contacts, refetch, refetchGraph, onCompos
     }
   };
 
+  const handleDelete = async () => {
+    if (!confirm(`Delete this message?\n\n"${comm.subject || '(no subject)'}"\n\n${isGraphMessage ? 'It will be moved to your Outlook Deleted Items folder.' : 'It will be removed from this CRM.'}`)) return;
+    try {
+      if (isGraphMessage) {
+        // Graph IDs may be prefixed (e.g. "graph:..."); strip if present
+        const id = String(comm.id).replace(/^graph:/, '');
+        await deleteEmail(id);
+        if (refetchGraph) refetchGraph();
+      } else {
+        await supabase.from('comms').delete().eq('id', comm.id);
+        if (refetch) refetch();
+      }
+      // Clear current selection so the now-deleted item doesn't linger in the pane
+      if (typeof onSelect === 'function') onSelect(null);
+    } catch (e) {
+      alert('Delete failed: ' + e.message);
+    }
+  };
+
   return (
     <div className="reading-pane"
       onContextMenu={(e) => {
@@ -549,6 +568,11 @@ function ReadingPane({ comm, accounts, contacts, refetch, refetchGraph, onCompos
           </button>
           <button className="btn-ghost tiny" onClick={archive}>
             <I.archive /> {comm.archived ? 'Unarchive' : 'Archive'}
+          </button>
+          <button className="btn-ghost tiny" onClick={handleDelete}
+            style={{ color: 'var(--danger)' }}
+            title={isGraphMessage ? 'Move to Outlook Deleted Items' : 'Remove from CRM'}>
+            <I.trash /> Delete
           </button>
         </div>
         <div className="rp-subject">{comm.subject}</div>
