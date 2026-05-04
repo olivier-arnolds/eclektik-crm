@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { I, ChannelIcon, Avatar, fmtRelative, fmtFull } from './atoms';
 import { graphGet, getEmailAttachments, getChatMessages } from '../lib/graph';
 import { supabase } from '../supabase';
+import { useAuth } from '../lib/auth';
 import DOMPurify from 'dompurify';
 import TaskFromEmailModal from './task-from-email-modal';
 import AddAccountModal from './add-account-modal';
@@ -13,6 +14,7 @@ import SuggestTaskModal from './suggest-task-modal';
 const CHANNEL_OPTIONS = ['all', 'email', 'teams'];
 
 export default function CommsLane({ comms, accounts, contacts, graphEmails: rawGraphEmails, refetch, refetchGraph, onCompose, selectedId, onSelect, accountScope, onClearScope, search: globalSearch }) {
+  const { hasGraphToken, reconnectMicrosoft } = useAuth();
   const [channel, setChannel] = useState('all');
   const [folder, setFolder] = useState('inbox');
   const [localSearch, setLocalSearch] = useState('');
@@ -151,10 +153,10 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
       <div className="lane-header">
         <div className="lane-title">
           <span className="lane-title-label">Comms</span>
-          <span className="lane-title-count">{filtered.length} items</span>
+          {hasGraphToken && <span className="lane-title-count">{filtered.length} items</span>}
         </div>
         <div className="lane-actions">
-          {onCompose && (
+          {onCompose && hasGraphToken && (
             <button className="btn-primary tiny" onClick={() => onCompose({})}>
               <I.plus /> New
             </button>
@@ -162,35 +164,39 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
         </div>
       </div>
 
-      <div className="comms-searchrow">
-        <div className="searchfield">
-          <I.search />
-          <input value={localSearch} onChange={e => setLocalSearch(e.target.value)} placeholder="Search comms…" />
-        </div>
-      </div>
+      {hasGraphToken && (
+        <>
+          <div className="comms-searchrow">
+            <div className="searchfield">
+              <I.search />
+              <input value={localSearch} onChange={e => setLocalSearch(e.target.value)} placeholder="Search comms…" />
+            </div>
+          </div>
 
-      <div className="comms-channelrow">
-        {CHANNEL_OPTIONS.map(c => (
-          <button key={c}
-            className={`chip ${channel === c ? 'chip-on' : ''}`}
-            style={{ fontSize: 11, textTransform: 'capitalize' }}
-            onClick={() => setChannel(c)}>
-            {c !== 'all' && <ChannelIcon ch={c} size={10} />}
-            {c}
-          </button>
-        ))}
-      </div>
+          <div className="comms-channelrow">
+            {CHANNEL_OPTIONS.map(c => (
+              <button key={c}
+                className={`chip ${channel === c ? 'chip-on' : ''}`}
+                style={{ fontSize: 11, textTransform: 'capitalize' }}
+                onClick={() => setChannel(c)}>
+                {c !== 'all' && <ChannelIcon ch={c} size={10} />}
+                {c}
+              </button>
+            ))}
+          </div>
 
-      <div className="comms-folders">
-        {['inbox', 'sent', 'archived'].map(f => (
-          <button key={f}
-            className={`folder ${folder === f ? 'folder-on' : ''}`}
-            onClick={() => setFolder(f)}>
-            <span style={{ textTransform: 'capitalize' }}>{f}</span>
-            <span className="folder-count">{counts[f] || 0}</span>
-          </button>
-        ))}
-      </div>
+          <div className="comms-folders">
+            {['inbox', 'sent', 'archived'].map(f => (
+              <button key={f}
+                className={`folder ${folder === f ? 'folder-on' : ''}`}
+                onClick={() => setFolder(f)}>
+                <span style={{ textTransform: 'capitalize' }}>{f}</span>
+                <span className="folder-count">{counts[f] || 0}</span>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
 
       {accountScope && (
         <div className="scope-banner">
@@ -201,7 +207,18 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
 
       <div className="comms-split">
         <div className="comms-list">
-          {filtered.length === 0 ? (
+          {!hasGraphToken ? (
+            <div style={{ padding: '24px 18px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+              <div style={{ fontSize: 20, color: 'var(--text-3)' }}>✉</div>
+              <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-1)' }}>Microsoft is not connected</div>
+              <div style={{ fontSize: 11, color: 'var(--text-3)', maxWidth: 280, lineHeight: 1.5 }}>
+                Connect your Microsoft account to see your inbox, sent items and Teams chats here.
+              </div>
+              <button className="btn-primary tiny" onClick={reconnectMicrosoft} style={{ marginTop: 4 }}>
+                Connect Microsoft
+              </button>
+            </div>
+          ) : filtered.length === 0 ? (
             <div className="empty">No messages</div>
           ) : (
             filtered.map(c => (
