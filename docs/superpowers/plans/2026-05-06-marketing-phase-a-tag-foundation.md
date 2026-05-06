@@ -87,6 +87,30 @@ SELECT count(*) FROM contact_tags;
 ```
 Expected: 0.
 
+- [ ] **Step 5: Add RLS policies (Supabase enables RLS by default on new tables, deny-all without policies)**
+
+Run in the SQL editor:
+```sql
+ALTER TABLE tags ENABLE ROW LEVEL SECURITY;
+ALTER TABLE contact_tags ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "auth users full access on tags" ON tags
+  FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+CREATE POLICY "auth users full access on contact_tags" ON contact_tags
+  FOR ALL TO authenticated USING (true) WITH CHECK (true);
+```
+
+This grants any logged-in CRM user full CRUD on both tables — matching how the rest of this internal tool treats authenticated access. Without this step the front-end queries return zero rows silently and tag chips never appear.
+
+- [ ] **Step 6: Verify policies are in effect**
+
+Run:
+```sql
+SELECT count(*) FROM tags;
+```
+Expected: 4. If 0, policies didn't apply — check that you ran the ALTER + CREATE POLICY block above as a logged-in user via the SQL editor.
+
 ---
 
 ### Task A.2 — Fetch tags + contact_tags in `usePipelineData`
