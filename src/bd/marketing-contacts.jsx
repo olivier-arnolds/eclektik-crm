@@ -8,6 +8,8 @@ import { useAuth } from '../lib/auth';
 // Layout: filter sidebar (left, ~260px) + list (right, fills)
 export default function MarketingContacts({ contacts, accounts, deals, allTags, refetch }) {
   const [selectedTagIds, setSelectedTagIds] = useState(new Set());
+  const [selectedAccountTypes, setSelectedAccountTypes] = useState(new Set());
+  const [searchText, setSearchText] = useState('');
   const [hasGlintDeal, setHasGlintDeal] = useState(false);
   const [hasAnyDeal, setHasAnyDeal] = useState(false);
   const [hasEmail, setHasEmail] = useState(false);
@@ -15,6 +17,20 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
   const [showBulkTag, setShowBulkTag] = useState(false);
   const { session } = useAuth();
   const userEmail = session?.user?.email || '';
+
+  // Quick lookup: account.id → account.type
+  const accountTypeById = useMemo(() => {
+    const m = new Map();
+    for (const a of (accounts || [])) m.set(a.id, a.type || '');
+    return m;
+  }, [accounts]);
+
+  // Unique account types present in the data, sorted
+  const accountTypes = useMemo(() => {
+    const set = new Set();
+    for (const a of (accounts || [])) if (a.type) set.add(a.type);
+    return [...set].sort();
+  }, [accounts]);
 
   // Per-tag count: how many contacts carry tag X
   const tagCounts = useMemo(() => {
@@ -38,6 +54,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
   }, [deals]);
 
   const filtered = useMemo(() => {
+    const q = searchText.trim().toLowerCase();
     return contacts.filter(c => {
       if (activeOnly && c.isFormer) return false;
       if (hasEmail && !c.email) return false;
@@ -47,9 +64,17 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
         const ids = (c.tags || []).map(t => t.id);
         if (!ids.some(id => selectedTagIds.has(id))) return false;
       }
+      if (selectedAccountTypes.size > 0) {
+        const t = accountTypeById.get(c.accountId);
+        if (!t || !selectedAccountTypes.has(t)) return false;
+      }
+      if (q) {
+        const hay = [c.name, c.role, c.account, c.email].filter(Boolean).join(' ').toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
       return true;
     });
-  }, [contacts, activeOnly, hasEmail, hasGlintDeal, hasAnyDeal, accountsWithGlintDeal, accountsWithAnyDeal, selectedTagIds]);
+  }, [contacts, activeOnly, hasEmail, hasGlintDeal, hasAnyDeal, accountsWithGlintDeal, accountsWithAnyDeal, selectedTagIds, selectedAccountTypes, accountTypeById, searchText]);
 
   const [selected, setSelected] = useState(new Set());
 
@@ -57,6 +82,12 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
     const next = new Set(selectedTagIds);
     if (next.has(tagId)) next.delete(tagId); else next.add(tagId);
     setSelectedTagIds(next);
+  };
+
+  const toggleAccountType = (type) => {
+    const next = new Set(selectedAccountTypes);
+    if (next.has(type)) next.delete(type); else next.add(type);
+    setSelectedAccountTypes(next);
   };
 
   const toggleRow = (id) => {
@@ -95,6 +126,18 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
           Has any deal
         </label>
 
+        {accountTypes.length > 0 && (
+          <>
+            <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '12px 0 6px' }}>Account status</div>
+            {accountTypes.map(type => (
+              <label key={type} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, padding: '3px 0', cursor: 'pointer' }}>
+                <input type="checkbox" checked={selectedAccountTypes.has(type)} onChange={() => toggleAccountType(type)} />
+                {type}
+              </label>
+            ))}
+          </>
+        )}
+
         <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '12px 0 6px' }}>Status</div>
         <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, padding: '3px 0', cursor: 'pointer' }}>
           <input type="checkbox" checked={hasEmail} onChange={() => setHasEmail(v => !v)} />
@@ -108,6 +151,16 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
 
       {/* Contact list */}
       <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ marginBottom: 8 }}>
+          <input type="text" value={searchText} onChange={e => setSearchText(e.target.value)}
+            placeholder="Search by name, role, account, or email…"
+            style={{
+              width: '100%', padding: '8px 12px', borderRadius: 8,
+              border: '0.5px solid var(--sep)', background: 'var(--bg-1)',
+              fontSize: 13, fontFamily: 'inherit', outline: 'none',
+              boxSizing: 'border-box',
+            }} />
+        </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--text-3)', cursor: 'pointer' }}>
             <input type="checkbox"
