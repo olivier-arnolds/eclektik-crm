@@ -90,6 +90,7 @@ export function adaptContact(row, adaptedAccounts) {
     isPrimary: !!row.isPrimary,
     isFormer: !!row.isFormer,
     linkedin_url: row.linkedin_url || '',
+    tags: Array.isArray(row.tags) ? row.tags : [],
   };
 }
 
