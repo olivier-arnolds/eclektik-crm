@@ -189,6 +189,7 @@ function adaptCalEvent(row) {
 export function usePipelineData() {
   const [accounts, setAccounts] = useState([])
   const [contacts, setContacts] = useState([])
+  const [allTags, setAllTags] = useState([])
   const [allItems, setAllItems] = useState([])
   const [followUps, setFollowUps] = useState([])
   const [tasks, setTasks] = useState([])
@@ -207,6 +208,8 @@ export function usePipelineData() {
       { data: tasksRaw },
       { data: commsRaw },
       { data: calRaw },
+      { data: tagsRaw },
+      { data: contactTagsRaw },
     ] = await Promise.all([
       supabase.from('companies').select('*').limit(1000),
       supabase.from('contacts').select('*').limit(1000),
@@ -216,10 +219,27 @@ export function usePipelineData() {
       supabase.from('tasks').select('*').order('due_date', { ascending: false }).limit(500),
       supabase.from('comms').select('*').order('sent_at', { ascending: false }).limit(1000),
       supabase.from('calendar_events').select('*').order('start_at', { ascending: false }).limit(500),
+      supabase.from('tags').select('*'),
+      supabase.from('contact_tags').select('contact_id, tag_id'),
     ])
 
     const adaptedAccounts = (companiesRaw || []).map(adaptCompany)
-    const adaptedContacts = (contactsRaw || []).map(c => adaptContact(c, adaptedAccounts))
+
+    // Map contact_id → array of full tag objects
+    const tagsById = new Map((tagsRaw || []).map(t => [t.id, t]))
+    const tagsByContactId = new Map()
+    for (const link of (contactTagsRaw || [])) {
+      const tag = tagsById.get(link.tag_id)
+      if (!tag) continue
+      const arr = tagsByContactId.get(link.contact_id) || []
+      arr.push(tag)
+      tagsByContactId.set(link.contact_id, arr)
+    }
+
+    const adaptedContacts = (contactsRaw || []).map(c => {
+      const withTags = { ...c, tags: tagsByContactId.get(c.id) || [] }
+      return adaptContact(withTags, adaptedAccounts)
+    })
 
     const leadItems = (leadsRaw || []).map(adaptLead)
     const oppItems = (oppsRaw || []).map(adaptOpportunity)
@@ -232,6 +252,7 @@ export function usePipelineData() {
     setTasks((tasksRaw || []).map(adaptTask))
     setComms((commsRaw || []).map(adaptComm))
     setCalEvents((calRaw || []).map(adaptCalEvent))
+    setAllTags(tagsRaw || [])
     setLoading(false)
   }, [])
 
@@ -240,6 +261,7 @@ export function usePipelineData() {
   return {
     accounts,
     contacts,
+    allTags,
     allItems,
     followUps,
     tasks,
