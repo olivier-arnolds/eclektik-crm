@@ -38,6 +38,10 @@ export default function Topbar({ theme, setTheme, view, setView, leftLane, setLe
         <button className={view === 'tasks' ? 'on' : ''} onClick={() => setView('tasks')} title="All open tasks">
           <I.check /> Tasks
         </button>
+        <button className={view === 'marketing' ? 'on' : ''}
+          onClick={() => setView('marketing')} title="Marketing — segment & campaign">
+          <I.send /> Marketing
+        </button>
       </div>
 
       <div className="topbar-search">

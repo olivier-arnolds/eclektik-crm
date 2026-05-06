@@ -20,6 +20,7 @@ import EnrichModal from '../components/forms/EnrichModal';
 import PlaybooksList from '../components/playbooks/PlaybooksList';
 import PlaybookDetail from '../components/playbooks/PlaybookDetail';
 import TasksView from './tasks-view';
+import MarketingView from './marketing-view';
 
 export default function BDApp() {
   const [theme, setTheme] = useLocal('bd_theme', 'light');
@@ -199,6 +200,28 @@ export default function BDApp() {
               <PlaybooksList onSelectPlaybook={setSelectedPlaybook} />
             )}
           </div>
+        </div>
+        <Statusbar userName={userName} unreadCount={unreadCount} openDeals={openDealsCount} totalValue={totalValue} />
+      </div>
+    );
+  }
+
+  if (view === 'marketing') {
+    return (
+      <div className={`app theme-${theme}`} data-layout={layout}>
+        <Topbar theme={theme} setTheme={setTheme} view={view} setView={setView}
+                leftLane={leftLane} setLeftLane={setLeftLane}
+                layout={layout} setLayout={setLayout} search={search} setSearch={setSearch}
+                onEnrich={() => setShowEnrich(true)}
+                onRefreshGraph={fetchGraphData} graphLoading={graphLoading} />
+        <div className="lanes" style={{ display: 'block', overflow: 'auto' }}>
+          <MarketingView
+            contacts={contacts}
+            accounts={accounts}
+            deals={deals}
+            allTags={allTags}
+            refetch={refetch}
+          />
         </div>
         <Statusbar userName={userName} unreadCount={unreadCount} openDeals={openDealsCount} totalValue={totalValue} />
       </div>
