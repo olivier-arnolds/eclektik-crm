@@ -46,10 +46,25 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
     });
   }, [contacts, activeOnly, hasEmail, hasGlintDeal, hasAnyDeal, accountsWithGlintDeal, accountsWithAnyDeal, selectedTagIds]);
 
+  const [selected, setSelected] = useState(new Set());
+
   const toggleTagFilter = (tagId) => {
     const next = new Set(selectedTagIds);
     if (next.has(tagId)) next.delete(tagId); else next.add(tagId);
     setSelectedTagIds(next);
+  };
+
+  const toggleRow = (id) => {
+    const next = new Set(selected);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    setSelected(next);
+  };
+  const toggleAll = () => {
+    if (selected.size === filtered.length && filtered.length > 0) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(filtered.map(c => c.id)));
+    }
   };
 
   return (
@@ -88,12 +103,35 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
 
       {/* Contact list */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 8 }}>
-          {filtered.length} of {contacts.length} contacts
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--text-3)', cursor: 'pointer' }}>
+            <input type="checkbox"
+              checked={selected.size > 0 && selected.size === filtered.length}
+              ref={el => { if (el) el.indeterminate = selected.size > 0 && selected.size < filtered.length; }}
+              onChange={toggleAll} />
+            Select all
+          </label>
+          <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
+            {filtered.length} of {contacts.length} contacts
+            {selected.size > 0 && ` · ${selected.size} selected`}
+          </span>
         </div>
         <div style={{ background: 'var(--bg-1)', border: '0.5px solid var(--sep)', borderRadius: 8 }}>
           {filtered.map(c => (
-            <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderBottom: '0.5px solid var(--sep)' }}>
+            <div key={c.id}
+              onClick={() => toggleRow(c.id)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px',
+                borderBottom: '0.5px solid var(--sep)',
+                cursor: 'pointer',
+                background: selected.has(c.id) ? 'var(--accent-tint)' : 'transparent',
+              }}>
+              <input
+                type="checkbox"
+                checked={selected.has(c.id)}
+                onChange={() => toggleRow(c.id)}
+                onClick={e => e.stopPropagation()}
+                style={{ flexShrink: 0 }} />
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 12, fontWeight: 500 }}>{c.name}</div>
                 <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{c.role}{c.account ? ` · ${c.account}` : ''}</div>
