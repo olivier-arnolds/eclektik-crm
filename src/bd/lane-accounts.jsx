@@ -8,6 +8,7 @@ import ContactDetailModal from './contact-detail-modal';
 import MeetingNoteModal from './meeting-note-modal';
 import AccountLinksSection from './account-links-section';
 import LinkExistingContactModal from './link-existing-contact-modal';
+import TagChip from './tag-chip';
 import DuplicateContactsModal from './duplicate-contacts-modal';
 import { useLinkedInPosts } from '../hooks/useLinkedInPosts';
 
@@ -877,6 +878,11 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
                         )}
                       </div>
                       {c.role && <div className="contact-role" style={c.isFormer ? { textDecoration: 'line-through', color: 'var(--text-3)' } : {}}>{c.role}</div>}
+                      {Array.isArray(c.tags) && c.tags.length > 0 && (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
+                          {c.tags.map(t => <TagChip key={t.id} tag={t} small />)}
+                        </div>
+                      )}
                     </div>
                     <button className="btn-ghost tiny"
                       onClick={async (e) => {
