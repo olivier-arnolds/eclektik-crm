@@ -237,7 +237,26 @@ alongside existing chips (`role`, `account`, `source`), coloured per
 row — the `[+]` opens a small popover for adding tags from BD context (no need
 to switch to Marketing).
 
-### 4.6 Manage tags mini-UI
+### 4.6 Campaign history on contact-detail
+
+A new section on the inline contact-detail (in BD) lists campaigns that were
+sent to this contact, queried by `campaign_sends.contact_id`. Per row:
+campaign name, sent date, opened (yes/no/count), clicked (yes/no/count),
+bounced/unsubscribed flags. Single-line per send, ordered newest-first.
+
+```
+CAMPAIGNS · 3
+─────────────────────────────────────────────────────────────────
+Glint newsletter mei 2026     6 may 2026   ●Opened (3×)   ●Clicked
+ROI Q1 update                  14 apr 2026  ●Opened       —
+Welcome flow part 1            12 mar 2026  —             —
+```
+
+This makes the engagement-data immediately visible from the BD-flow without
+having to switch to the Marketing view. Lands in Phase C alongside the rest
+of the Resend integration.
+
+### 4.7 Manage tags mini-UI
 
 `Manage tags →` button (top-right of Marketing view) opens a modal with:
 
@@ -347,15 +366,17 @@ contacts in one click).
 - `marketing-webhook` API endpoint with HMAC validation.
 - Campaigns history + per-campaign engagement detail.
 - Test send + Send-to-audience flows.
+- Campaign-history section on BD contact-detail (§4.6).
 
-**Value:** first real newsletter can ship.
+**Value:** first real newsletter can ship; engagement-data already visible
+per contact from day one.
 
 ### Phase D — Polish
 
 - Retry failed recipients action.
 - Edit audience round-trip.
-- Per-contact email-history section in BD contact-detail
-  ("Marco opened Glint newsletter 3× on 6 May").
+- Richer per-contact engagement timeline (event-by-event: sent, delivered,
+  opened, clicked, bounced) on top of the Phase C list.
 
 **Value:** comfortable day-to-day usage.
 
