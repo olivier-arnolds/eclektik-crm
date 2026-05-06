@@ -32,5 +32,6 @@ export function useBDData() {
     rawContacts: data.activeRawContacts,
     rawAccountsAll: raw.accounts,
     rawContactsAll: raw.contacts,
+    allTags: raw.allTags || [],
   };
 }

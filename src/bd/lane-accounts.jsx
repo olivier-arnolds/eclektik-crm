@@ -178,7 +178,7 @@ import { supabase } from '../supabase';
 import { syncMyCalendar, getSharedEventsForAccount, buildDedupKey } from './sync-events';
 import { useAuth } from '../lib/auth';
 
-export default function AccountsLane({ context, accounts, contacts, deals, rawItems, comms, graphEmails, events, graphEvents, tasks, onPickAccount, onCompose, onOpenDeal, onSelectComm, search, refetch, refetchGraph }) {
+export default function AccountsLane({ context, accounts, contacts, deals, rawItems, comms, graphEmails, events, graphEvents, tasks, onPickAccount, onCompose, onOpenDeal, onSelectComm, search, refetch, refetchGraph, allTags }) {
   // Merge DB events + graph events for context resolution
   const allEvents = useMemo(() => {
     const mappedGraph = (graphEvents || []).map(e => ({
@@ -225,7 +225,7 @@ export default function AccountsLane({ context, accounts, contacts, deals, rawIt
   }
 
   return <AccountDetail {...resolved} accounts={accounts} contacts={contacts} deals={deals} rawItems={rawItems} comms={comms} graphEmails={graphEmails} events={allEvents} tasks={tasks}
-    onPickAccount={onPickAccount} onCompose={onCompose} onOpenDeal={onOpenDeal} onSelectComm={onSelectComm} refetch={refetch} />;
+    onPickAccount={onPickAccount} onCompose={onCompose} onOpenDeal={onOpenDeal} onSelectComm={onSelectComm} refetch={refetch} allTags={allTags} />;
 }
 
 function resolveContext(context, data) {
@@ -601,7 +601,7 @@ function AccountsList({ accounts, contacts, deals, onPickAccount, search, onAddA
   );
 }
 
-function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems, comms, graphEmails, events, tasks, onPickAccount, onCompose, onOpenDeal, onSelectComm, refetch }) {
+function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems, comms, graphEmails, events, tasks, onPickAccount, onCompose, onOpenDeal, onSelectComm, refetch, allTags }) {
   const [showAddContact, setShowAddContact] = useState(false);
   const [showSearchContact, setShowSearchContact] = useState(false);
   const [showLinkExisting, setShowLinkExisting] = useState(false);
@@ -916,7 +916,7 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
                   </div>
                 )}
                 expanded={() => (
-                  <InlineContactDetail contactId={c.id} onCompose={onCompose} refetch={refetch} />
+                  <InlineContactDetail contactId={c.id} onCompose={onCompose} refetch={refetch} allTags={allTags} onTagsChange={refetch} />
                 )}
               />
             ))}

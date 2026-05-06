@@ -67,7 +67,7 @@ export default function BDApp() {
 
   const { session } = useAuth();
   const userName = session?.user?.user_metadata?.full_name || session?.user?.email || '';
-  const { deals, accounts, contacts, comms, events, tasks, loading, refetch, rawAllItems, rawAccounts, rawContacts } = useBDData();
+  const { deals, accounts, contacts, comms, events, tasks, loading, refetch, rawAllItems, rawAccounts, rawContacts, allTags } = useBDData();
 
   // ---- Graph fetches (once, cached in state) ----
   const fetchGraphData = useCallback(async () => {
@@ -259,6 +259,7 @@ export default function BDApp() {
             search={search}
             refetch={refetch}
             refetchGraph={fetchGraphData}
+            allTags={allTags}
           />
         </div>
         <Statusbar userName={userName} unreadCount={unreadCount} openDeals={openDealsCount} totalValue={totalValue} />
@@ -349,6 +350,7 @@ export default function BDApp() {
           onCompose={openCompose}
           onOpenDeal={selectDeal}
           onSelectComm={selectCommHandler}
+          allTags={allTags}
         />
 
         {/* Global search results overlay (only when user is typing ≥2 chars) */}
