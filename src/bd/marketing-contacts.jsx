@@ -1,5 +1,7 @@
 import { useState, useMemo } from 'react';
 import TagChip from './tag-chip';
+import BulkTagModal from './marketing-bulk-tag-modal';
+import { useAuth } from '../lib/auth';
 
 // Marketing → Contacts tab
 // Props: contacts, accounts, deals, allTags, refetch
@@ -10,6 +12,9 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
   const [hasAnyDeal, setHasAnyDeal] = useState(false);
   const [hasEmail, setHasEmail] = useState(false);
   const [activeOnly, setActiveOnly] = useState(true);
+  const [showBulkTag, setShowBulkTag] = useState(false);
+  const { session } = useAuth();
+  const userEmail = session?.user?.email || '';
 
   // Per-tag count: how many contacts carry tag X
   const tagCounts = useMemo(() => {
@@ -116,6 +121,17 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
             {selected.size > 0 && ` · ${selected.size} selected`}
           </span>
         </div>
+        {selected.size > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'var(--accent-tint)', borderRadius: 8, marginBottom: 8 }}>
+            <span style={{ fontSize: 12, fontWeight: 500 }}>{selected.size} selected</span>
+            <button className="btn-primary tiny" onClick={() => setShowBulkTag(true)}>
+              Tag selected
+            </button>
+            <button className="btn-ghost tiny" onClick={() => setSelected(new Set())}>
+              Clear
+            </button>
+          </div>
+        )}
         <div style={{ background: 'var(--bg-1)', border: '0.5px solid var(--sep)', borderRadius: 8 }}>
           {filtered.map(c => (
             <div key={c.id}
@@ -153,6 +169,15 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
           )}
         </div>
       </div>
+      {showBulkTag && (
+        <BulkTagModal
+          contactIds={selected}
+          allTags={allTags}
+          userEmail={userEmail}
+          onClose={() => setShowBulkTag(false)}
+          onComplete={() => { setSelected(new Set()); if (refetch) refetch(); }}
+        />
+      )}
     </div>
   );
 }
