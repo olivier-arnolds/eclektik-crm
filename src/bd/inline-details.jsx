@@ -4,6 +4,9 @@ import { supabase } from '../supabase';
 import DOMPurify from 'dompurify';
 import { updateRow } from '../hooks/useSupabase';
 import TypePicker from './type-picker';
+import { useAuth } from '../lib/auth';
+import TagChip from './tag-chip';
+import TagPopover from './tag-popover';
 
 // Inline editable field — click to edit, blur/Enter to save.
 export function InlineField({ label, value, onSave, type = 'text', colspan }) {
@@ -86,12 +89,16 @@ const fieldInputStyle = {
 };
 
 // Inline expand contents for a contact
-export function InlineContactDetail({ contactId, onCompose, refetch }) {
+export function InlineContactDetail({ contactId, onCompose, refetch, allTags, onTagsChange }) {
   const [row, setRow] = useState(null);
   const [saving, setSaving] = useState({});
   const [loading, setLoading] = useState(true);
   const [allAccounts, setAllAccounts] = useState([]);
   const [linkedAccounts, setLinkedAccounts] = useState([]); // [{ id, link_type, account: { id, name, type } }]
+  const [showTagPopover, setShowTagPopover] = useState(false);
+  const [contactTagIds, setContactTagIds] = useState([]);
+  const { session } = useAuth();
+  const userEmail = session?.user?.email || '';
 
   useEffect(() => {
     if (!contactId) return;
@@ -106,6 +113,21 @@ export function InlineContactDetail({ contactId, onCompose, refetch }) {
       .eq('contact_id', contactId)
       .then(({ data }) => setLinkedAccounts((data || []).filter(l => l.companies)));
   }, [contactId]);
+
+  useEffect(() => {
+    if (!contactId) return;
+    supabase.from('contact_tags').select('tag_id').eq('contact_id', contactId)
+      .then(({ data }) => setContactTagIds((data || []).map(r => r.tag_id)));
+  }, [contactId]);
+
+  const refreshContactTags = () => {
+    if (!contactId) return;
+    supabase.from('contact_tags').select('tag_id').eq('contact_id', contactId)
+      .then(({ data }) => setContactTagIds((data || []).map(r => r.tag_id)));
+    if (onTagsChange) onTagsChange();
+  };
+
+  const contactTags = (allTags || []).filter(t => contactTagIds.includes(t.id));
 
   const saveField = async (field, value) => {
     setSaving(s => ({ ...s, [field]: true }));
@@ -165,6 +187,34 @@ export function InlineContactDetail({ contactId, onCompose, refetch }) {
           </span>
         </div>
         <InlineField label="" value={row.linkedin_url} type="url" onSave={v => saveField('linkedin_url', v)} />
+      </div>
+      <div style={{ gridColumn: 'span 2' }}>
+        <div style={{ position: 'relative', marginTop: 8 }}>
+          <div style={{ fontSize: 10, color: 'var(--text-3)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'var(--font-mono)' }}>
+            Tags
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, alignItems: 'center' }}>
+            {contactTags.map(t => <TagChip key={t.id} tag={t} />)}
+            <button onClick={() => setShowTagPopover(v => !v)}
+              style={{
+                fontSize: 11, padding: '2px 8px', borderRadius: 10,
+                border: '0.5px dashed var(--text-3)', background: 'transparent',
+                color: 'var(--text-3)', cursor: 'pointer', fontFamily: 'inherit',
+              }}>
+              + Tag
+            </button>
+          </div>
+          {showTagPopover && (
+            <TagPopover
+              contactId={contactId}
+              currentTags={contactTags}
+              allTags={allTags}
+              userEmail={userEmail}
+              onClose={() => setShowTagPopover(false)}
+              onChange={refreshContactTags}
+            />
+          )}
+        </div>
       </div>
       <InlineField label="Notes" value={row.notes} onSave={v => saveField('notes', v)} type="textarea" colspan={2} />
 
