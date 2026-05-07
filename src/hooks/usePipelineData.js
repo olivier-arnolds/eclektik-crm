@@ -43,6 +43,7 @@ function adaptContact(row, companies) {
     source: row.event_source || '',
     isPrimary: !!row.is_primary,
     isFormer: !!row.former,
+    isInactive: (row.stage || '').toLowerCase() === 'inactive',
   }
 }
 

@@ -88,7 +88,10 @@ export function adaptContact(row, adaptedAccounts) {
     avatarColor: row.avatarColor,
     initials: row.initials,
     isPrimary: !!row.isPrimary,
-    isFormer: !!row.isFormer,
+    // Inactivated contacts coalesce into isFormer so existing strike-through
+    // styling on contact rows just works without extra wiring.
+    isFormer: !!row.isFormer || !!row.isInactive,
+    isInactive: !!row.isInactive,
     linkedin_url: row.linkedin_url || '',
     tags: Array.isArray(row.tags) ? row.tags : [],
   };
