@@ -6,7 +6,7 @@ import { useAuth } from '../lib/auth';
 // Marketing → Contacts tab
 // Props: contacts, accounts, deals, allTags, refetch
 // Layout: filter sidebar (left, ~260px) + list (right, fills)
-export default function MarketingContacts({ contacts, accounts, deals, allTags, refetch }) {
+export default function MarketingContacts({ contacts, accounts, deals, allTags, refetch, onComposeCampaign }) {
   const [selectedTagIds, setSelectedTagIds] = useState(new Set());
   const [selectedAccountTypes, setSelectedAccountTypes] = useState(new Set());
   const [searchText, setSearchText] = useState('');
@@ -179,6 +179,10 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
             <span style={{ fontSize: 12, fontWeight: 500 }}>{selected.size} selected</span>
             <button className="btn-primary tiny" onClick={() => setShowBulkTag(true)}>
               Tag selected
+            </button>
+            <button className="btn-primary tiny" disabled={!onComposeCampaign}
+              onClick={() => onComposeCampaign && onComposeCampaign(filtered.filter(c => selected.has(c.id)))}>
+              Send campaign to {selected.size}
             </button>
             <button className="btn-ghost tiny" onClick={() => setSelected(new Set())}>
               Clear
