@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { I } from './atoms';
 import { supabase } from '../supabase';
+import { useAuth } from '../lib/auth';
 
 // Creates a task based on an email. Pre-fills title from subject, notes
 // from the preview/body, due date (default tomorrow), and auto-links to
@@ -18,6 +19,8 @@ export default function TaskFromEmailModal({ comm, contacts, accounts, onClose, 
   const [dueDate, setDueDate] = useState(tomorrow.toISOString().split('T')[0]);
   const [accountId, setAccountId] = useState(defaultAccount);
   const [saving, setSaving] = useState(false);
+  const { session } = useAuth();
+  const ownerFirstName = (session?.user?.user_metadata?.full_name || session?.user?.email || '').split(/[ @]/)[0] || null;
 
   const handleSave = async () => {
     if (!title.trim()) return;
@@ -28,6 +31,8 @@ export default function TaskFromEmailModal({ comm, contacts, accounts, onClose, 
       due_date: dueDate,
       status: 'pending',
       company_id: accountId || null,
+      // Default owner to the creator; user can re-assign in task-detail.
+      owner: ownerFirstName,
     };
     const { error } = await supabase.from('tasks').insert(row);
     setSaving(false);

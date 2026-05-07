@@ -448,6 +448,8 @@ function AddTaskModal({ day, dayDate, accounts, deals, onClose, onCreated }) {
   const [accountId, setAccountId] = useState('');
   const [dealId, setDealId] = useState('');
   const [saving, setSaving] = useState(false);
+  const { session } = useAuth();
+  const ownerFirstName = (session?.user?.user_metadata?.full_name || session?.user?.email || '').split(/[ @]/)[0] || null;
 
   const accountDeals = accountId ? deals.filter(d => d.accountId === accountId) : [];
 
@@ -461,6 +463,8 @@ function AddTaskModal({ day, dayDate, accounts, deals, onClose, onCreated }) {
       status: 'pending',
       company_id: accountId || null,
       [deal?.table === 'opportunities' ? 'opportunity_id' : 'lead_id']: dealId || null,
+      // Default owner to the creator; user can re-assign in task-detail.
+      owner: ownerFirstName,
     };
     const { error } = await supabase.from('tasks').insert(row);
     setSaving(false);
