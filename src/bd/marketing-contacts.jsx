@@ -91,15 +91,26 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
     setSelectedAccountTypes(next);
   };
 
+  // Optimistic removal: hide the chip locally immediately, then delete the
+  // row in the background. No confirm prompt and no full refetch — both
+  // would jolt the list and clear the user's checkbox/selection focus.
+  // On the next genuine refetch (e.g. browser reload, or an action that
+  // does refresh), the cache catches up automatically.
+  const [hiddenPairs, setHiddenPairs] = useState(new Set()); // 'contactId:tagId'
+  const isHidden = (contactId, tagId) => hiddenPairs.has(`${contactId}:${tagId}`);
+
   const removeTagFromContact = async (contact, tag) => {
-    if (!confirm(`Remove "${tag.name}" from ${contact.name}?`)) return;
+    const key = `${contact.id}:${tag.id}`;
+    setHiddenPairs(prev => new Set(prev).add(key));
     const { error } = await supabase
       .from('contact_tags')
       .delete()
       .eq('contact_id', contact.id)
       .eq('tag_id', tag.id);
-    if (error) { alert('Failed: ' + error.message); return; }
-    if (refetch) refetch();
+    if (error) {
+      setHiddenPairs(prev => { const n = new Set(prev); n.delete(key); return n; });
+      alert('Failed: ' + error.message);
+    }
   };
 
   const toggleRow = (id) => {
@@ -221,14 +232,18 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
                 <div style={{ fontSize: 12, fontWeight: 500 }}>{c.name}</div>
                 <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{c.role}{c.account ? ` · ${c.account}` : ''}</div>
               </div>
-              {(c.tags || []).length > 0 && (
-                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                  {(c.tags || []).map(t => (
-                    <TagChip key={t.id} tag={t} small
-                      onClick={(tag) => removeTagFromContact(c, tag)} />
-                  ))}
-                </div>
-              )}
+              {(() => {
+                const visibleTags = (c.tags || []).filter(t => !isHidden(c.id, t.id));
+                if (visibleTags.length === 0) return null;
+                return (
+                  <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                    {visibleTags.map(t => (
+                      <TagChip key={t.id} tag={t} small
+                        onClick={(tag) => removeTagFromContact(c, tag)} />
+                    ))}
+                  </div>
+                );
+              })()}
               <span style={{ fontSize: 10, color: c.email ? 'var(--good)' : 'var(--text-4)', minWidth: 18, textAlign: 'center' }}>
                 {c.email ? '✉' : '—'}
               </span>
