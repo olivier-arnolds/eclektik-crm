@@ -143,7 +143,12 @@ export function InlineContactDetail({ contactId, onCompose, refetch, allTags, on
     setSaving(s => ({ ...s, [field]: true }));
     const { error } = await supabase.from('contacts').update({ [field]: value }).eq('id', contactId);
     setSaving(s => ({ ...s, [field]: false }));
-    if (!error) setRow(r => ({ ...r, [field]: value }));
+    if (!error) {
+      setRow(r => ({ ...r, [field]: value }));
+      // Push the change up so the parent contact card / list reflects it
+      // immediately when the user collapses the slide-out.
+      if (refetch) refetch();
+    }
   };
 
   const moveToAccount = async (newCompanyId) => {
