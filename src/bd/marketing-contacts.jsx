@@ -59,7 +59,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
 
   const filtered = useMemo(() => {
     const q = searchText.trim().toLowerCase();
-    return contacts.filter(c => {
+    const matches = contacts.filter(c => {
       if (activeOnly && c.isFormer) return false;
       if (hasEmail && !c.email) return false;
       if (hasGlintDeal && !accountsWithGlintDeal.has(c.accountId)) return false;
@@ -77,6 +77,16 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
         if (!hay.includes(q)) return false;
       }
       return true;
+    });
+    // Sort by company A-Z, then by contact name as tiebreaker.
+    // Contacts without an account land at the bottom.
+    return matches.slice().sort((a, b) => {
+      const acoEmpty = !a.account;
+      const bcoEmpty = !b.account;
+      if (acoEmpty !== bcoEmpty) return acoEmpty ? 1 : -1;
+      const cmp = (a.account || '').toLowerCase().localeCompare((b.account || '').toLowerCase());
+      if (cmp !== 0) return cmp;
+      return (a.name || '').toLowerCase().localeCompare((b.name || '').toLowerCase());
     });
   }, [contacts, activeOnly, hasEmail, hasGlintDeal, hasAnyDeal, accountsWithGlintDeal, accountsWithAnyDeal, selectedTagIds, selectedAccountTypes, accountTypeById, searchText, hiddenPairs]);
 
