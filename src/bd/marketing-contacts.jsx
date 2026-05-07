@@ -16,6 +16,9 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
   const [hasEmail, setHasEmail] = useState(false);
   const [activeOnly, setActiveOnly] = useState(true);
   const [showBulkTag, setShowBulkTag] = useState(false);
+  // Optimistic-removed (contact_id:tag_id) pairs — see removeTagFromContact
+  const [hiddenPairs, setHiddenPairs] = useState(new Set());
+  const isHidden = (contactId, tagId) => hiddenPairs.has(`${contactId}:${tagId}`);
   const { session } = useAuth();
   const userEmail = session?.user?.email || '';
 
@@ -62,7 +65,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
       if (hasGlintDeal && !accountsWithGlintDeal.has(c.accountId)) return false;
       if (hasAnyDeal && !accountsWithAnyDeal.has(c.accountId)) return false;
       if (selectedTagIds.size > 0) {
-        const ids = (c.tags || []).map(t => t.id);
+        const ids = (c.tags || []).filter(t => !hiddenPairs.has(`${c.id}:${t.id}`)).map(t => t.id);
         if (!ids.some(id => selectedTagIds.has(id))) return false;
       }
       if (selectedAccountTypes.size > 0) {
@@ -75,7 +78,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
       }
       return true;
     });
-  }, [contacts, activeOnly, hasEmail, hasGlintDeal, hasAnyDeal, accountsWithGlintDeal, accountsWithAnyDeal, selectedTagIds, selectedAccountTypes, accountTypeById, searchText]);
+  }, [contacts, activeOnly, hasEmail, hasGlintDeal, hasAnyDeal, accountsWithGlintDeal, accountsWithAnyDeal, selectedTagIds, selectedAccountTypes, accountTypeById, searchText, hiddenPairs]);
 
   const [selected, setSelected] = useState(new Set());
 
@@ -96,9 +99,6 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
   // would jolt the list and clear the user's checkbox/selection focus.
   // On the next genuine refetch (e.g. browser reload, or an action that
   // does refresh), the cache catches up automatically.
-  const [hiddenPairs, setHiddenPairs] = useState(new Set()); // 'contactId:tagId'
-  const isHidden = (contactId, tagId) => hiddenPairs.has(`${contactId}:${tagId}`);
-
   const removeTagFromContact = async (contact, tag) => {
     const key = `${contact.id}:${tag.id}`;
     setHiddenPairs(prev => new Set(prev).add(key));
