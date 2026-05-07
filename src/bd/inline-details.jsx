@@ -97,6 +97,7 @@ export function InlineContactDetail({ contactId, onCompose, refetch, allTags, on
   const [linkedAccounts, setLinkedAccounts] = useState([]); // [{ id, link_type, account: { id, name, type } }]
   const [showTagPopover, setShowTagPopover] = useState(false);
   const [contactTagIds, setContactTagIds] = useState([]);
+  const [campaignHistory, setCampaignHistory] = useState([]);
   const { session } = useAuth();
   const userEmail = session?.user?.email || '';
 
@@ -118,6 +119,15 @@ export function InlineContactDetail({ contactId, onCompose, refetch, allTags, on
     if (!contactId) return;
     supabase.from('contact_tags').select('tag_id').eq('contact_id', contactId)
       .then(({ data }) => setContactTagIds((data || []).map(r => r.tag_id)));
+  }, [contactId]);
+
+  useEffect(() => {
+    if (!contactId) return;
+    supabase.from('campaign_sends')
+      .select('id, status, sent_at, first_opened_at, open_count, first_clicked_at, click_count, bounce_reason, campaigns(id, name, subject, sent_at)')
+      .eq('contact_id', contactId)
+      .order('sent_at', { ascending: false, nullsFirst: false })
+      .then(({ data }) => setCampaignHistory(data || []));
   }, [contactId]);
 
   const refreshContactTags = () => {
@@ -216,6 +226,35 @@ export function InlineContactDetail({ contactId, onCompose, refetch, allTags, on
           )}
         </div>
       </div>
+      {campaignHistory.length > 0 && (
+        <div style={{ gridColumn: 'span 2', marginTop: 12 }}>
+          <div style={{ fontSize: 10, color: 'var(--text-3)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'var(--font-mono)' }}>
+            Campaigns · {campaignHistory.length}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {campaignHistory.map(s => {
+              const c = s.campaigns || {};
+              const opened = s.open_count > 0;
+              const clicked = s.click_count > 0;
+              return (
+                <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '4px 0', fontSize: 11 }}>
+                  <div style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name || c.subject}</div>
+                  <span style={{ color: 'var(--text-3)', fontSize: 10 }}>
+                    {s.sent_at ? new Date(s.sent_at).toLocaleDateString('en', { day: 'numeric', month: 'short', year: 'numeric' }) : ''}
+                  </span>
+                  <span style={{ color: opened ? 'var(--good)' : 'var(--text-3)', fontSize: 10 }} title={`${s.open_count} opens`}>
+                    {opened ? `●Opened${s.open_count > 1 ? ` (${s.open_count}×)` : ''}` : '—'}
+                  </span>
+                  <span style={{ color: clicked ? 'var(--good)' : 'var(--text-3)', fontSize: 10 }} title={`${s.click_count} clicks`}>
+                    {clicked ? `●Clicked${s.click_count > 1 ? ` (${s.click_count}×)` : ''}` : '—'}
+                  </span>
+                  {s.status === 'bounced' && <span style={{ color: 'var(--danger)', fontSize: 10 }} title={s.bounce_reason}>bounced</span>}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
       <InlineField label="Notes" value={row.notes} onSave={v => saveField('notes', v)} type="textarea" colspan={2} />
 
       {linkedAccounts.length > 0 && (
