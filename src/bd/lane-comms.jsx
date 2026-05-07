@@ -469,11 +469,11 @@ function ReadingPane({ comm, accounts, contacts, refetch, refetchGraph, onCompos
       setLoadingBody(true);
       getChatMessages(comm.id, 200)
         .then(msgs => {
-          // Always render oldest-first. graph.js returns chats newest-first
-          // but channels already sorted oldest-first.
+          // Render newest-first. Graph already returns chats newest-first
+          // but channels arrive oldest-first, so flip those.
           const list = (msgs || []).slice();
           const isChannel = comm.id.startsWith('channel:');
-          const ordered = isChannel ? list : list.reverse();
+          const ordered = isChannel ? list.reverse() : list;
           setChatMessages(ordered);
         })
         .catch(err => { console.error('chat fetch failed', err); setChatMessages([]); })
