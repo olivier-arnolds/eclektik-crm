@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import { useAuth } from '../lib/auth';
 import { renderTemplate, varsForContact, KNOWN_VARS } from '../lib/template-vars';
 
@@ -16,8 +16,20 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
   const [replyTo, setReplyTo] = useState('');
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState(null);
+  const fileInputRef = useRef(null);
   const { session } = useAuth();
   const sentBy = session?.user?.email || '';
+
+  const loadHtmlFromFile = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setHtmlBody(String(reader.result || ''));
+    reader.onerror = () => alert('Failed to read file: ' + (reader.error?.message || 'unknown error'));
+    reader.readAsText(file);
+    // Reset so the same file can be re-picked later
+    e.target.value = '';
+  };
 
   // Live preview — render with the first recipient's vars (or empty)
   const previewVars = useMemo(() => varsForContact(recipients?.[0] || {}), [recipients]);
@@ -108,8 +120,16 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
       </div>
 
       <div>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4 }}>
-          <div style={{ fontSize: 10, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>HTML body</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4, gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ fontSize: 10, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>HTML body</div>
+            <button type="button" className="btn-ghost tiny" onClick={() => fileInputRef.current?.click()}>
+              📁 Open file…
+            </button>
+            <input ref={fileInputRef} type="file" accept=".html,.htm,text/html"
+              onChange={loadHtmlFromFile}
+              style={{ display: 'none' }} />
+          </div>
           <div style={{ fontSize: 10, color: 'var(--text-3)' }}>
             Variables: {KNOWN_VARS.map(v => `{{${v}}}`).join(', ')}
           </div>
