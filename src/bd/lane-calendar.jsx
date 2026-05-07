@@ -1,5 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { I, fmtMoney, OwnerDot, ChannelIcon, OWNERS } from './atoms';
+import { useAuth } from '../lib/auth';
+import { ownerIdFromName } from './adapters';
 import { supabase } from '../supabase';
 import { deleteCalendarEvent } from '../lib/graph';
 import NewMeetingModal from './new-meeting-modal';
@@ -78,6 +80,12 @@ export default function CalendarLane({ events: dbEvents, tasks: dbTasks, deals, 
   const scrollRef = useRef(null);
   const didScrollRef = useRef(false);
 
+  // Identify the logged-in user so we can keep the calendar private.
+  // Tasks are filtered to current-user-only (or unassigned). Other users'
+  // calendar EVENTS still surface via the explicit OA/YK overlay chips.
+  const { session } = useAuth();
+  const currentOwner = ownerIdFromName(session?.user?.user_metadata?.full_name || '');
+
   // Adapt graphEvents from BDApp into our internal shape.
   // Split into (a) all-day events — shown as chips at top of each day,
   // and (b) timed events — rendered in the hour-grid.
@@ -125,11 +133,14 @@ export default function CalendarLane({ events: dbEvents, tasks: dbTasks, deals, 
     return [...(dbEvents || []), ...timedGraphEvents.filter(e => !dbIds.has(e.id))];
   }, [dbEvents, timedGraphEvents]);
 
-  // Tasks grouped by day in this week
+  // Tasks grouped by day in this week.
+  // Filter to only the current user's tasks (or unassigned). Other users'
+  // tasks live in their own calendar — surfacing them here was a privacy leak.
   const tasksByDay = useMemo(() => {
     const map = [[], [], [], [], []];
     (dbTasks || []).forEach(t => {
       if (!t.dueDate) return;
+      if (t.owner && currentOwner && t.owner !== currentOwner) return;
       const d = new Date(t.dueDate);
       const dayIdx = (d.getDay() + 6) % 7;
       if (dayIdx > 4) return;
@@ -139,7 +150,7 @@ export default function CalendarLane({ events: dbEvents, tasks: dbTasks, deals, 
       }
     });
     return map;
-  }, [dbTasks, weekStart.getTime()]);
+  }, [dbTasks, weekStart.getTime(), currentOwner]);
 
   // Auto-scroll to 8AM on mount
   useEffect(() => {

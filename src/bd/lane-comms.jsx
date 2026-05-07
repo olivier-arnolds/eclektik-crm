@@ -14,7 +14,7 @@ import SuggestTaskModal from './suggest-task-modal';
 const CHANNEL_OPTIONS = ['all', 'email', 'teams'];
 
 export default function CommsLane({ comms, accounts, contacts, graphEmails: rawGraphEmails, refetch, refetchGraph, onCompose, selectedId, onSelect, accountScope, onClearScope, search: globalSearch }) {
-  const { hasGraphToken, reconnectMicrosoft } = useAuth();
+  const { hasGraphToken, reconnectMicrosoft, session } = useAuth();
   const [channel, setChannel] = useState('all');
   const [folder, setFolder] = useState('inbox');
   const [localSearch, setLocalSearch] = useState('');
@@ -102,11 +102,32 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
     return mapped;
   }, [rawGraphEmails, contacts, accounts, chatLinkByChatId]);
 
-  // Merge DB comms + Graph emails (dedupe by id)
+  // Merge DB comms + Graph emails (dedupe by id). DB-side comms are
+  // shared across team members; Graph emails are per-user. To keep
+  // each colleague's inbox/sent private, hide DB rows that belong
+  // to someone else: anything where `from` or `fromAddress` matches
+  // a different teammate's address.
+  const userEmail = (session?.user?.email || '').toLowerCase();
+  const otherTeamEmails = useMemo(() => {
+    return new Set([
+      'marco@eclectik.co',
+      'olivier@eclectik.co',
+      'yasmine@eclectik.co',
+    ].filter(e => e !== userEmail));
+  }, [userEmail]);
+
   const allComms = useMemo(() => {
     const ids = new Set((comms || []).map(c => c.id));
-    return [...(comms || []), ...graphEmails.filter(e => !ids.has(e.id))];
-  }, [comms, graphEmails]);
+    const ownComms = (comms || []).filter(c => {
+      const fromAddr = (c.fromAddress || c.from || '').toLowerCase();
+      // Drop any DB-stored comm whose sender is another teammate
+      for (const other of otherTeamEmails) {
+        if (fromAddr.includes(other)) return false;
+      }
+      return true;
+    });
+    return [...ownComms, ...graphEmails.filter(e => !ids.has(e.id))];
+  }, [comms, graphEmails, otherTeamEmails]);
 
   const q = (localSearch || globalSearch || '').toLowerCase();
 
