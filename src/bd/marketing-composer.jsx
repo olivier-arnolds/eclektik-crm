@@ -24,12 +24,44 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => setHtmlBody(String(reader.result || ''));
+    reader.onload = () => {
+      const text = String(reader.result || '');
+      setHtmlBody(text);
+
+      // Auto-fill subject from <title>… (only if empty so user-typed values stay)
+      const titleMatch = text.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+      if (titleMatch && !subject.trim()) {
+        setSubject(decodeHtmlEntities(titleMatch[1]).trim());
+      }
+
+      // Auto-fill preheader from the first hidden div (display:none convention)
+      const preheaderMatch = text.match(/<div[^>]*style="[^"]*display\s*:\s*none[^"]*"[^>]*>([\s\S]*?)<\/div>/i);
+      if (preheaderMatch && !preheader.trim()) {
+        const cleaned = preheaderMatch[1].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+        setPreheader(decodeHtmlEntities(cleaned));
+      }
+
+      // Auto-fill campaign name from the filename (strip .html / .htm)
+      if (!name.trim()) {
+        setName(file.name.replace(/\.(html?|htm)$/i, ''));
+      }
+    };
     reader.onerror = () => alert('Failed to read file: ' + (reader.error?.message || 'unknown error'));
     reader.readAsText(file);
     // Reset so the same file can be re-picked later
     e.target.value = '';
   };
+
+  // Decode the most common HTML entities found in <title> / preheader text.
+  function decodeHtmlEntities(s) {
+    return s
+      .replace(/&amp;/g, '&')
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&nbsp;/g, ' ');
+  }
 
   // Live preview — render with the first recipient's vars (or empty)
   const previewVars = useMemo(() => varsForContact(recipients?.[0] || {}), [recipients]);
