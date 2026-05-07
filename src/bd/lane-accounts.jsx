@@ -757,6 +757,7 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
     ? (highlight?.kind === 'task' && highlight.item ? [highlight.item] : [])
     : tasks.filter(t => t.accountId === account.id);
   const openTasks = accTasks.filter(t => !t.done);
+  const doneTasks = accTasks.filter(t => t.done);
 
   const runHighlightAction = (action) => {
     if (action.kind === 'reply' && onCompose) {
@@ -1194,6 +1195,25 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
             </div>
           )}
         </Section>
+
+        {doneTasks.length > 0 && (
+          <Section label={`Completed tasks · ${doneTasks.length}`} defaultOpen={false}>
+            <div className="actions-list">
+              {doneTasks.map(t => (
+                <ExpandableRow key={t.id} accent="var(--good)"
+                  collapsed={() => (
+                    <div className="action-row" style={{ width: '100%', opacity: 0.7 }}>
+                      <span className="task-check task-check-on"><I.check /></span>
+                      <span style={{ flex: 1, textDecoration: 'line-through', color: 'var(--text-3)' }}>{t.title}</span>
+                      {t.dueLabel && <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-3)' }}>{t.dueLabel}</span>}
+                    </div>
+                  )}
+                  expanded={() => <InlineTaskDetail taskId={t.id} refetch={refetch} />}
+                />
+              ))}
+            </div>
+          </Section>
+        )}
       </div>
 
       {showAddContact && (
@@ -1272,8 +1292,8 @@ function TeamDots({ deal }) {
   );
 }
 
-function Section({ label, actions, children }) {
-  const [open, setOpen] = useState(true);
+function Section({ label, actions, children, defaultOpen = true }) {
+  const [open, setOpen] = useState(defaultOpen);
   return (
     <div className="acc-section">
       <div style={{ display: 'flex', alignItems: 'center' }}>
