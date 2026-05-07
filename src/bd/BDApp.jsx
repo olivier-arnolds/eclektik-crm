@@ -202,6 +202,9 @@ export default function BDApp() {
           </div>
         </div>
         <Statusbar userName={userName} unreadCount={unreadCount} openDeals={openDealsCount} totalValue={totalValue} />
+        {showEnrich && (
+          <EnrichModal open={showEnrich} onClose={() => setShowEnrich(false)} accounts={rawAccounts} refetch={refetch} />
+        )}
       </div>
     );
   }
@@ -224,6 +227,9 @@ export default function BDApp() {
           />
         </div>
         <Statusbar userName={userName} unreadCount={unreadCount} openDeals={openDealsCount} totalValue={totalValue} />
+        {showEnrich && (
+          <EnrichModal open={showEnrich} onClose={() => setShowEnrich(false)} accounts={rawAccounts} refetch={refetch} />
+        )}
       </div>
     );
   }
@@ -286,6 +292,9 @@ export default function BDApp() {
           />
         </div>
         <Statusbar userName={userName} unreadCount={unreadCount} openDeals={openDealsCount} totalValue={totalValue} />
+        {showEnrich && (
+          <EnrichModal open={showEnrich} onClose={() => setShowEnrich(false)} accounts={rawAccounts} refetch={refetch} />
+        )}
       </div>
     );
   }
