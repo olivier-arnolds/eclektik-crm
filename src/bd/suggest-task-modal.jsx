@@ -5,7 +5,7 @@ import { graphGet } from '../lib/graph';
 import { useAuth } from '../lib/auth';
 
 // First names of CRM users (extend if more team members onboard).
-const TEAM = ['Marco', 'Olivier', 'Yasmine'];
+const TEAM = ['Marco', 'Olivier', 'Yarmilla'];
 
 function firstNameFromSession(session) {
   const full = session?.user?.user_metadata?.full_name || '';

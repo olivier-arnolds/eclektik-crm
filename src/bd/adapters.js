@@ -1,7 +1,7 @@
 // Adapter functions: map Supabase rows (via usePipelineData) to the shape the BD lanes expect.
 
 // Owner: our DB stores owner as name string; BD uses MVG/OA/YK codes.
-const OWNER_ID = { 'Marco van Gelder': 'MVG', 'Olivier Arnolds': 'OA', 'Yasmine Karkach': 'YK' };
+const OWNER_ID = { 'Marco van Gelder': 'MVG', 'Olivier Arnolds': 'OA', 'Yarmilla Koenders': 'YK' };
 export function ownerIdFromName(name) {
   if (!name) return '';
   if (OWNER_ID[name]) return OWNER_ID[name];

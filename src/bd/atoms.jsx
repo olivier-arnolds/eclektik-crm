@@ -6,7 +6,7 @@ import { useState, useEffect } from 'react';
 export const OWNERS = {
   MVG: { id: 'MVG', name: 'Marco van Gelder', color: '#0a66c2', initials: 'MVG' },
   OA:  { id: 'OA',  name: 'Olivier Arnolds', color: '#30b47a', initials: 'OA' },
-  YK:  { id: 'YK',  name: 'Yasmine Karkach', color: '#d68a00', initials: 'YK' },
+  YK:  { id: 'YK',  name: 'Yarmilla Koenders', color: '#d68a00', initials: 'YK' },
 };
 
 // ---------- Time helpers ----------

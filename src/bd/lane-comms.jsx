@@ -112,7 +112,7 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
     return new Set([
       'marco@eclectik.co',
       'olivier@eclectik.co',
-      'yasmine@eclectik.co',
+      'yarmilla@eclectik.co',
     ].filter(e => e !== userEmail));
   }, [userEmail]);
 

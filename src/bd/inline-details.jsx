@@ -972,8 +972,8 @@ export function InlineTaskDetail({ taskId, refetch }) {
               fontFamily: 'var(--font)', outline: 'none',
             }}>
             <option value="">—</option>
-            {['Marco', 'Olivier', 'Yasmine'].map(n => <option key={n} value={n}>{n}</option>)}
-            {row.owner && !['Marco', 'Olivier', 'Yasmine'].includes(row.owner) && (
+            {['Marco', 'Olivier', 'Yarmilla'].map(n => <option key={n} value={n}>{n}</option>)}
+            {row.owner && !['Marco', 'Olivier', 'Yarmilla'].includes(row.owner) && (
               <option value={row.owner}>{row.owner}</option>
             )}
           </select>
