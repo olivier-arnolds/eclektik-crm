@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import TagChip from './tag-chip';
 import BulkTagModal from './marketing-bulk-tag-modal';
 import { useAuth } from '../lib/auth';
+import { supabase } from '../supabase';
 
 // Marketing → Contacts tab
 // Props: contacts, accounts, deals, allTags, refetch
@@ -88,6 +89,17 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
     const next = new Set(selectedAccountTypes);
     if (next.has(type)) next.delete(type); else next.add(type);
     setSelectedAccountTypes(next);
+  };
+
+  const removeTagFromContact = async (contact, tag) => {
+    if (!confirm(`Remove "${tag.name}" from ${contact.name}?`)) return;
+    const { error } = await supabase
+      .from('contact_tags')
+      .delete()
+      .eq('contact_id', contact.id)
+      .eq('tag_id', tag.id);
+    if (error) { alert('Failed: ' + error.message); return; }
+    if (refetch) refetch();
   };
 
   const toggleRow = (id) => {
@@ -211,7 +223,10 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
               </div>
               {(c.tags || []).length > 0 && (
                 <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                  {(c.tags || []).map(t => <TagChip key={t.id} tag={t} small />)}
+                  {(c.tags || []).map(t => (
+                    <TagChip key={t.id} tag={t} small
+                      onClick={(tag) => removeTagFromContact(c, tag)} />
+                  ))}
                 </div>
               )}
               <span style={{ fontSize: 10, color: c.email ? 'var(--good)' : 'var(--text-4)', minWidth: 18, textAlign: 'center' }}>

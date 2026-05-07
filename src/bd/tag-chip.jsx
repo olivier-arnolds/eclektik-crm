@@ -1,13 +1,18 @@
 // Small coloured chip representing one tag.
 // `tag` shape: { id, name, color, type }
-// Optional `onRemove` shows an × button.
-export default function TagChip({ tag, onRemove, small }) {
+// Optional `onRemove` shows an × button (called with the tag object).
+// Optional `onClick` makes the whole chip clickable (also called with the
+// tag object). Use either or both — events stopPropagation so a chip
+// inside a clickable row won't bubble.
+export default function TagChip({ tag, onRemove, onClick, small }) {
   if (!tag) return null;
   const padding = small ? '1px 6px' : '2px 8px';
   const fontSize = small ? 9 : 10;
+  const interactive = !!onClick;
   return (
     <span
-      title={tag.description || tag.name}
+      title={interactive ? `Click to remove ${tag.name}` : (tag.description || tag.name)}
+      onClick={interactive ? (e) => { e.stopPropagation(); onClick(tag); } : undefined}
       style={{
         display: 'inline-flex',
         alignItems: 'center',
@@ -21,6 +26,7 @@ export default function TagChip({ tag, onRemove, small }) {
         border: `0.5px solid ${tag.color}66`, // 40% opacity border
         whiteSpace: 'nowrap',
         lineHeight: 1.2,
+        cursor: interactive ? 'pointer' : 'default',
       }}>
       {tag.name}
       {onRemove && (
