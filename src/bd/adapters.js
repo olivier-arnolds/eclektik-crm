@@ -168,7 +168,8 @@ export function adaptTask(row, rawItems, rawAccounts) {
     deal: item?.id,
     accountId: acc?.id,
     company_id: row.company_id,
-    owner: ownerIdFromName(item?.owner),
+    // Prefer task-level owner; fall back to parent deal's owner.
+    owner: ownerIdFromName(row.rawOwner) || ownerIdFromName(item?.owner),
   };
 }
 

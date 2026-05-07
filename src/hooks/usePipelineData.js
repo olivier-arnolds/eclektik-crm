@@ -142,6 +142,7 @@ function adaptTask(row) {
     dueDate: row.due_date || '',
     overdue: isOverdue,
     done: row.status === 'done',
+    rawOwner: row.owner || '',  // direct task-level owner, used by BD adapter
   }
 }
 

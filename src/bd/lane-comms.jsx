@@ -103,31 +103,28 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
   }, [rawGraphEmails, contacts, accounts, chatLinkByChatId]);
 
   // Merge DB comms + Graph emails (dedupe by id). DB-side comms are
-  // shared across team members; Graph emails are per-user. To keep
-  // each colleague's inbox/sent private, hide DB rows that belong
-  // to someone else: anything where `from` or `fromAddress` matches
-  // a different teammate's address.
-  const userEmail = (session?.user?.email || '').toLowerCase();
-  const otherTeamEmails = useMemo(() => {
-    return new Set([
-      'marco@eclectik.co',
-      'olivier@eclectik.co',
-      'yarmilla@eclectik.co',
-    ].filter(e => e !== userEmail));
-  }, [userEmail]);
+  // shared across team members and identify their sender by NAME (not
+  // email — see usePipelineData.adaptComm where from = row.owner).
+  // Match teammate first names case-insensitively to filter out other
+  // colleagues' rows. Graph emails are already per-user (Olivier's
+  // mailbox, Marco's mailbox, etc.) so they stay untouched.
+  const userFirstName = ((session?.user?.user_metadata?.full_name || session?.user?.email || '').split(/[ @]/)[0] || '').toLowerCase();
+  const otherFirstNames = useMemo(() => {
+    return ['marco', 'olivier', 'yarmilla'].filter(n => n !== userFirstName);
+  }, [userFirstName]);
 
   const allComms = useMemo(() => {
     const ids = new Set((comms || []).map(c => c.id));
     const ownComms = (comms || []).filter(c => {
-      const fromAddr = (c.fromAddress || c.from || '').toLowerCase();
-      // Drop any DB-stored comm whose sender is another teammate
-      for (const other of otherTeamEmails) {
-        if (fromAddr.includes(other)) return false;
+      const fromName = (c.from || '').toLowerCase();
+      // Drop any DB-stored comm whose sender name matches another teammate
+      for (const other of otherFirstNames) {
+        if (fromName.includes(other)) return false;
       }
       return true;
     });
     return [...ownComms, ...graphEmails.filter(e => !ids.has(e.id))];
-  }, [comms, graphEmails, otherTeamEmails]);
+  }, [comms, graphEmails, otherFirstNames]);
 
   const q = (localSearch || globalSearch || '').toLowerCase();
 
