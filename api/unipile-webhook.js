@@ -43,7 +43,8 @@ export default async function handler(req, res) {
         if (data?.length > 0) contactId = data[0].id;
       }
 
-      // Store in comms table
+      // Store in comms table. chat_id is the Unipile thread identifier so
+      // multiple messages in the same conversation can be grouped in the UI.
       await supabase.from('comms').insert({
         contact_id: contactId,
         channel: 'linkedin',
@@ -53,6 +54,7 @@ export default async function handler(req, res) {
         is_read: false,
         sent_at: timestamp || new Date().toISOString(),
         external_id: message_id,
+        chat_id: chat_id || null,
         owner: senderName,
       });
 
