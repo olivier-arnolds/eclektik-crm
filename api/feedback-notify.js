@@ -4,7 +4,9 @@
 // Fire-and-forget from the submit modal — never blocks the user.
 import { createClient } from '@supabase/supabase-js';
 
-const ADMIN_EMAILS = ['olivier@eclectik.co', 'marco@eclectik.co'];
+// Feedback notifications only go to Olivier — he triages incoming requests
+// before they're routed/queued elsewhere.
+const ADMIN_EMAILS = ['olivier@eclectik.co'];
 
 const supabase = (process.env.VITE_SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY)
   ? createClient(process.env.VITE_SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY)
