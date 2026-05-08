@@ -51,8 +51,7 @@ export default function FunnelLane({ deals, accounts, contacts, filters, setFilt
 
   const doMove = async (dealId, toStage, winStatus) => {
     const deal = deals.find(d => d.id === dealId);
-    if (!deal) return;
-    setConfirmMove(null);
+    if (!deal) { setConfirmMove(null); return; }
     const updates = stageUpdates(toStage, deal.table);
     // If winStatus provided, also update the opportunity status
     if (winStatus) {
@@ -63,7 +62,27 @@ export default function FunnelLane({ deals, accounts, contacts, filters, setFilt
         updates.sub_status = null;
       }
     }
-    await updateRow(deal.table, dealId, updates);
+    // Moving OUT of close into active/onboarding for a previously-Lost deal
+    // (stage='past') reanimates it. Clear the Lost status so the row no
+    // longer sits in the funnel-Lost bucket.
+    if (deal.table === 'opportunities'
+        && (toStage === 'active' || toStage === 'onboarding')
+        && (deal.funnelStage === 'past' || deal.funnelStage === 'inactive')) {
+      updates.status = null;
+      updates.status_reason = null;
+    }
+    try {
+      const { error: upErr } = await updateRow(deal.table, dealId, updates);
+      if (upErr) {
+        alert('Move failed: ' + upErr.message);
+        setConfirmMove(null);
+        return;
+      }
+    } catch (e) {
+      alert('Move failed: ' + (e.message || String(e)));
+      setConfirmMove(null);
+      return;
+    }
     // Auto-promote Prospect → Customer on a win or when moving into delivery:
     //   - Any explicit 'Won' status
     //   - Proposal → Onboarding (new customer moving into delivery, implicit won)
@@ -76,6 +95,7 @@ export default function FunnelLane({ deals, accounts, contacts, filters, setFilt
         await updateRow('companies', deal.accountId, { type: 'Customer' });
       }
     }
+    setConfirmMove(null);
     if (refetch) refetch();
   };
 
