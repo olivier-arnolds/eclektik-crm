@@ -1,10 +1,15 @@
 import { useAuth } from '../lib/auth';
 import { I } from './atoms';
 
+// Email allow-list for the Admin tab. Hard-coded for now; move to a roles
+// system if/when the team grows.
+const ADMIN_EMAILS = new Set(['olivier@eclectik.co', 'marco@eclectik.co']);
+
 export default function Topbar({ theme, setTheme, view, setView, leftLane, setLeftLane, layout, setLayout, search, setSearch, onOpenTweaks, onEnrich, onRefreshGraph, graphLoading }) {
   const { session, logout, reconnectMicrosoft, hasGraphToken } = useAuth();
   const userName = session?.user?.user_metadata?.full_name || session?.user?.email || '';
   const userInitials = (userName || '?').split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase();
+  const isAdmin = ADMIN_EMAILS.has((session?.user?.email || '').toLowerCase());
 
   const toggleTheme = () => setTheme(theme === 'light' ? 'dark' : 'light');
 
@@ -42,6 +47,12 @@ export default function Topbar({ theme, setTheme, view, setView, leftLane, setLe
           onClick={() => setView('marketing')} title="Marketing — segment & campaign">
           <I.send /> Marketing
         </button>
+        {isAdmin && (
+          <button className={view === 'admin' ? 'on' : ''}
+            onClick={() => setView('admin')} title="Admin — recurring jobs & exports">
+            <I.dots /> Admin
+          </button>
+        )}
       </div>
 
       <div className="topbar-search">

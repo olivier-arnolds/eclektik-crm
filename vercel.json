@@ -8,12 +8,12 @@
   ],
   "crons": [
     {
-      "path": "/api/surfe-enrich",
-      "schedule": "0 7 * * *"
-    },
-    {
       "path": "/api/playbook-execute",
       "schedule": "0 8 * * 1-5"
+    },
+    {
+      "path": "/api/admin-weekly-export?cron=1",
+      "schedule": "0 6 * * 1"
     }
   ]
 }
