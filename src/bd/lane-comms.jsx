@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { I, ChannelIcon, Avatar, fmtRelative, fmtFull } from './atoms';
-import { graphGet, getEmailAttachments, getChatMessages, deleteEmail } from '../lib/graph';
+import { graphGet, getEmailAttachments, getChatMessages, sendChatMessage, deleteEmail } from '../lib/graph';
 import { supabase } from '../supabase';
 import { useAuth } from '../lib/auth';
 import DOMPurify from 'dompurify';
@@ -387,7 +387,18 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
         </div>
 
         {isGroupableChannel ? (
-          <ChatThreadPane chat={selectedChat} channel={channel} localMessages={selectedChatMessages} userFirstName={userFirstName} />
+          <ChatThreadPane
+            chat={selectedChat}
+            channel={channel}
+            localMessages={selectedChatMessages}
+            userFirstName={userFirstName}
+            onSent={() => {
+              // Refresh underlying data after a successful send so the
+              // newly-sent message arrives via the normal refetch path.
+              if (channel === 'teams' && refetchGraph) refetchGraph();
+              if (channel === 'linkedin' && refetch) refetch();
+            }}
+          />
         ) : (
           <ReadingPane comm={selected} accounts={accounts} contacts={contacts} refetch={refetch} refetchGraph={refetchGraph} onCompose={onCompose} onSelect={onSelect} />
         )}
@@ -555,9 +566,16 @@ function parseAccountFromText(text) {
 // from allComms in the parent).
 // Teams: this component fetches the thread itself via getChatMessages
 // because Graph chats don't sit in our DB.
-function ChatThreadPane({ chat, channel, localMessages, userFirstName }) {
+function ChatThreadPane({ chat, channel, localMessages, userFirstName, onSent }) {
   const [teamsMessages, setTeamsMessages] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [replyText, setReplyText] = useState('');
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState(null);
+  const [optimistic, setOptimistic] = useState([]); // locally-appended pending sends
+
+  // Reset reply box + optimistic queue when switching chats
+  useEffect(() => { setReplyText(''); setSendError(null); setOptimistic([]); }, [chat?.key]);
 
   useEffect(() => {
     if (!chat || channel !== 'teams') { setTeamsMessages(null); return; }
@@ -582,6 +600,54 @@ function ChatThreadPane({ chat, channel, localMessages, userFirstName }) {
       .finally(() => setLoading(false));
   }, [chat, channel]);
 
+  const canReply = chat && (
+    (channel === 'linkedin' && chat.chatId)  // need real chat_id to send via Unipile
+    || (channel === 'teams' && chat.chatId)
+  );
+
+  const sendReply = async () => {
+    const text = replyText.trim();
+    if (!text || !chat || sending) return;
+    setSending(true);
+    setSendError(null);
+    const tempId = `optim-${Date.now()}`;
+    // Optimistic bubble
+    setOptimistic(prev => [...prev, {
+      id: tempId,
+      from: 'You',
+      preview: text,
+      ts: new Date().toISOString(),
+      dir: 'out',
+      pending: true,
+    }]);
+    try {
+      let result;
+      if (channel === 'linkedin') {
+        const resp = await fetch('/api/unipile?action=send-message', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chat_id: chat.chatId, text }),
+        });
+        result = await resp.json();
+        if (!resp.ok || result.error) throw new Error(result.error || `Send failed (${resp.status})`);
+      } else if (channel === 'teams') {
+        const r = await sendChatMessage(chat.chatId, text);
+        if (r.error) throw new Error(r.error);
+        result = r.data;
+      }
+      setReplyText('');
+      // Mark optimistic as sent
+      setOptimistic(prev => prev.map(m => m.id === tempId ? { ...m, pending: false } : m));
+      if (onSent) onSent();
+    } catch (e) {
+      setSendError(e.message || String(e));
+      // Roll back optimistic bubble on failure
+      setOptimistic(prev => prev.filter(m => m.id !== tempId));
+    } finally {
+      setSending(false);
+    }
+  };
+
   if (!chat) {
     return (
       <div className="reading-pane reading-empty">
@@ -590,7 +656,8 @@ function ChatThreadPane({ chat, channel, localMessages, userFirstName }) {
     );
   }
 
-  const messages = channel === 'teams' ? (teamsMessages || []) : (localMessages || []);
+  const baseMessages = channel === 'teams' ? (teamsMessages || []) : (localMessages || []);
+  const messages = [...baseMessages, ...optimistic];
 
   const isOutbound = (m) => {
     if (m.dir === 'out') return true;
@@ -635,9 +702,47 @@ function ChatThreadPane({ chat, channel, localMessages, userFirstName }) {
                 <span>{fmtFull ? fmtFull(m.ts) : m.ts}</span>
               </div>
               <div>{m.preview || m.subject || '(empty message)'}</div>
+              {m.pending && <div style={{ fontSize: 9, opacity: 0.7, marginTop: 2 }}>sending…</div>}
             </div>
           );
         })}
+      </div>
+      {/* Reply composer */}
+      <div style={{ borderTop: '0.5px solid var(--sep)', padding: 10, background: 'var(--bg-1)' }}>
+        {sendError && (
+          <div style={{ fontSize: 11, color: 'var(--danger)', marginBottom: 6 }}>{sendError}</div>
+        )}
+        {!canReply && (
+          <div style={{ fontSize: 10, color: 'var(--text-3)', marginBottom: 6 }}>
+            {channel === 'linkedin' && !chat.chatId
+              ? 'Cannot reply — this conversation pre-dates chat_id tracking. Reply via LinkedIn directly.'
+              : 'Reply not available for this conversation.'}
+          </div>
+        )}
+        <div style={{ display: 'flex', gap: 6, alignItems: 'flex-end' }}>
+          <textarea
+            value={replyText}
+            onChange={e => setReplyText(e.target.value)}
+            onKeyDown={e => {
+              // Cmd/Ctrl+Enter sends
+              if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); sendReply(); }
+            }}
+            placeholder={canReply ? `Message ${chat.contactName}…  (⌘↵ to send)` : 'Reply unavailable'}
+            disabled={!canReply || sending}
+            rows={2}
+            style={{
+              flex: 1, padding: '6px 8px', borderRadius: 6,
+              border: '0.5px solid var(--sep)', background: 'var(--bg-2)',
+              fontSize: 13, fontFamily: 'inherit', outline: 'none', resize: 'vertical',
+              opacity: canReply ? 1 : 0.5,
+            }} />
+          <button
+            className="btn-primary tiny"
+            onClick={sendReply}
+            disabled={!canReply || sending || !replyText.trim()}>
+            {sending ? '…' : 'Send'}
+          </button>
+        </div>
       </div>
     </div>
   );

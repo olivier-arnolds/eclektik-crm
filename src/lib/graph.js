@@ -128,6 +128,24 @@ export async function createCalendarEvent({ subject, startTime, endTime, attende
   } catch (e) { return { error: e.message }; }
 }
 
+// Post a message to a Teams chat (1:1 or group). Body is plain text;
+// Graph wraps it as HTML on the wire.
+export async function sendChatMessage(chatId, text) {
+  const token = localStorage.getItem('graph_token');
+  if (!token) return { error: 'No token' };
+  try {
+    const resp = await fetch(`https://graph.microsoft.com/v1.0/me/chats/${chatId}/messages`, {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ body: { contentType: 'text', content: text } }),
+    });
+    if (resp.ok) { const data = await resp.json(); return { success: true, data }; }
+    if (resp.status === 401) { localStorage.removeItem('graph_token'); return { error: 'Token expired' }; }
+    const err = await resp.json().catch(() => ({}));
+    return { error: err?.error?.message || `Send failed (${resp.status})` };
+  } catch (e) { return { error: e.message }; }
+}
+
 export async function replyToEmail(messageId, body) {
   const token = localStorage.getItem('graph_token');
   if (!token) return { error: 'No token' };
