@@ -128,7 +128,7 @@ export function adaptComm(row, rawItems, rawAccounts) {
   return {
     id: row.id,
     channel,
-    dir: row.dir || 'in',
+    dir: row.direction === 'outbound' ? 'out' : (row.dir || 'in'),
     from: row.from || '',
     subject: row.sub || '',
     preview: row.preview || '',
@@ -136,6 +136,8 @@ export function adaptComm(row, rawItems, rawAccounts) {
     ts: row.date,
     account: acc?.name || '',
     accountId: acc?.id,
+    contactId: row.contactId || null,
+    chatId: row.chatId || null,
     deal: item?.id,
     hasAttach: !!row.hasAttach,
     flagged: !!row.flagged,

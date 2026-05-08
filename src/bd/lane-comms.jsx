@@ -158,6 +158,57 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
 
   const selected = allComms.find(c => c.id === selectedId);
 
+  // ---------- LinkedIn conversation grouping ----------
+  // For the LinkedIn channel we collapse the flat message list into one row
+  // per chat. Group key is chat_id (set by the Unipile webhook); for the 49
+  // legacy rows that pre-date the chat_id column we fall back to contact_id
+  // so the same person's messages still cluster.
+  const chatKey = (c) => c.chatId || (c.contactId ? `c:${c.contactId}` : `f:${c.from}`);
+
+  const linkedinChats = useMemo(() => {
+    if (channel !== 'linkedin') return [];
+    const groups = new Map();
+    for (const c of filtered) {
+      if (c.channel !== 'linkedin') continue;
+      const key = chatKey(c);
+      let g = groups.get(key);
+      if (!g) {
+        const contact = c.contactId ? (contacts || []).find(x => x.id === c.contactId) : null;
+        g = {
+          key,
+          chatId: c.chatId,
+          contactId: c.contactId,
+          contactName: contact?.name || c.from || 'Unknown',
+          contactRole: contact?.role || '',
+          accountId: c.accountId,
+          account: c.account,
+          lastMessage: c, // filtered is sorted desc by ts; first wins
+          unreadCount: 0,
+          messageCount: 0,
+        };
+        groups.set(key, g);
+      }
+      g.unreadCount += c.unread ? 1 : 0;
+      g.messageCount += 1;
+    }
+    return [...groups.values()].sort((a, b) =>
+      new Date(b.lastMessage.ts || 0) - new Date(a.lastMessage.ts || 0)
+    );
+  }, [filtered, channel, contacts]);
+
+  const [selectedChatKey, setSelectedChatKey] = useState(null);
+  // Reset selected chat when the user switches channels
+  useEffect(() => { if (channel !== 'linkedin') setSelectedChatKey(null); }, [channel]);
+
+  const selectedChatMessages = useMemo(() => {
+    if (!selectedChatKey || channel !== 'linkedin') return [];
+    return (allComms || [])
+      .filter(c => c.channel === 'linkedin' && chatKey(c) === selectedChatKey)
+      .sort((a, b) => new Date(a.ts || 0) - new Date(b.ts || 0)); // oldest first
+  }, [allComms, channel, selectedChatKey]);
+
+  const selectedChat = linkedinChats.find(g => g.key === selectedChatKey);
+
   const counts = useMemo(() => {
     const matchFolder = (c, target) => {
       if (target === 'inbox') return c.folder === 'Inbox' || (!c.folder && !c.archived && c.dir !== 'out');
@@ -242,6 +293,35 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
                 Connect Microsoft
               </button>
             </div>
+          ) : channel === 'linkedin' ? (
+            // ---------- LinkedIn: conversation list (one row per chat) ----------
+            linkedinChats.length === 0 ? (
+              <div className="empty">No LinkedIn conversations</div>
+            ) : linkedinChats.map(g => (
+              <div key={g.key}
+                className={`comm-row ${g.unreadCount > 0 ? 'comm-row-unread' : ''} ${selectedChatKey === g.key ? 'comm-row-on' : ''}`}
+                onClick={() => setSelectedChatKey(g.key)}>
+                <div className="comm-row-top">
+                  <div className="comm-row-left">
+                    {g.unreadCount > 0 && <span className="unread-dot" />}
+                    <ChannelIcon ch="linkedin" size={11} />
+                    <span className="comm-from">{g.contactName}</span>
+                  </div>
+                  <div className="comm-row-right">
+                    <span className="comm-time">{fmtRelative(g.lastMessage.ts)}</span>
+                  </div>
+                </div>
+                {g.contactRole && <div className="comm-subject" style={{ fontWeight: 400, color: 'var(--text-2)' }}>{g.contactRole}</div>}
+                {g.lastMessage.preview && <div className="comm-preview">{g.lastMessage.preview}</div>}
+                <div className="comm-row-bottom" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {g.account && <span className="comm-account">{g.account}</span>}
+                  <span style={{ marginLeft: 'auto', fontSize: 10, color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>
+                    {g.messageCount} msg{g.messageCount === 1 ? '' : 's'}
+                    {g.unreadCount > 0 && ` · ${g.unreadCount} unread`}
+                  </span>
+                </div>
+              </div>
+            ))
           ) : filtered.length === 0 ? (
             <div className="empty">No messages</div>
           ) : (
@@ -290,7 +370,11 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
           )}
         </div>
 
-        <ReadingPane comm={selected} accounts={accounts} contacts={contacts} refetch={refetch} refetchGraph={refetchGraph} onCompose={onCompose} onSelect={onSelect} />
+        {channel === 'linkedin' ? (
+          <LinkedInThreadPane chat={selectedChat} messages={selectedChatMessages} userFirstName={userFirstName} />
+        ) : (
+          <ReadingPane comm={selected} accounts={accounts} contacts={contacts} refetch={refetch} refetchGraph={refetchGraph} onCompose={onCompose} onSelect={onSelect} />
+        )}
       </div>
 
       {linkChatTarget && (
@@ -442,6 +526,71 @@ function parseAccountFromText(text) {
   if (addressLines.length) out.address = addressLines.join(', ').slice(0, 200);
 
   return out;
+}
+
+// ---------- LinkedIn threaded chat view ----------
+// Renders the right pane when a user clicks a LinkedIn conversation in the
+// list. Messages are sorted oldest-first (top) → newest-last (bottom).
+// Outbound messages (sent by us, identified by direction='outbound' or by
+// the from-name matching the logged-in user's first name) align right with
+// an accent background; inbound messages align left.
+function LinkedInThreadPane({ chat, messages, userFirstName }) {
+  if (!chat) {
+    return (
+      <div className="reading-pane reading-empty">
+        <div className="empty">Select a conversation to view the thread</div>
+      </div>
+    );
+  }
+
+  const isOutbound = (m) => {
+    if (m.dir === 'out') return true;
+    // Heuristic fallback for legacy rows with dir='in' but the user's first
+    // name in the from-field (Marco's outgoing messages tagged inbound by
+    // the early Unipile webhook).
+    const f = (m.from || '').toLowerCase();
+    return userFirstName && f.includes(userFirstName);
+  };
+
+  return (
+    <div className="reading-pane" style={{ display: 'flex', flexDirection: 'column' }}>
+      <div style={{ padding: '12px 16px', borderBottom: '0.5px solid var(--sep)', background: 'var(--bg-1)' }}>
+        <div style={{ fontSize: 14, fontWeight: 500 }}>{chat.contactName}</div>
+        {chat.contactRole && <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{chat.contactRole}</div>}
+        {chat.account && <div style={{ fontSize: 11, color: 'var(--text-2)' }}>{chat.account}</div>}
+      </div>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {messages.length === 0 && (
+          <div className="empty">No messages in this thread</div>
+        )}
+        {messages.map(m => {
+          const out = isOutbound(m);
+          return (
+            <div key={m.id}
+              style={{
+                alignSelf: out ? 'flex-end' : 'flex-start',
+                maxWidth: '78%',
+                background: out ? 'var(--accent)' : 'var(--bg-2)',
+                color: out ? 'white' : 'var(--text-1)',
+                padding: '8px 12px',
+                borderRadius: 12,
+                fontSize: 13,
+                lineHeight: 1.4,
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word',
+                border: out ? 'none' : '0.5px solid var(--sep)',
+              }}>
+              <div style={{ fontSize: 10, opacity: 0.75, marginBottom: 2, display: 'flex', justifyContent: 'space-between', gap: 8 }}>
+                <span>{m.from || (out ? 'You' : 'Unknown')}</span>
+                <span>{fmtFull ? fmtFull(m.ts) : m.ts}</span>
+              </div>
+              <div>{m.preview || m.subject || '(empty message)'}</div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 }
 
 function ReadingPane({ comm, accounts, contacts, refetch, refetchGraph, onCompose, onSelect }) {
