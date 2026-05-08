@@ -11,7 +11,8 @@ import CreateNoteModal from './create-note-modal';
 import LinkChatModal from './link-chat-modal';
 import SuggestTaskModal from './suggest-task-modal';
 
-const CHANNEL_OPTIONS = ['all', 'email', 'teams'];
+const CHANNEL_OPTIONS = ['all', 'email', 'teams', 'linkedin'];
+const CHANNEL_LABELS = { all: 'All', email: 'Email', teams: 'Teams', linkedin: 'LinkedIn' };
 
 export default function CommsLane({ comms, accounts, contacts, graphEmails: rawGraphEmails, refetch, refetchGraph, onCompose, selectedId, onSelect, accountScope, onClearScope, search: globalSearch }) {
   const { hasGraphToken, reconnectMicrosoft, session } = useAuth();
@@ -195,10 +196,10 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
             {CHANNEL_OPTIONS.map(c => (
               <button key={c}
                 className={`chip ${channel === c ? 'chip-on' : ''}`}
-                style={{ fontSize: 11, textTransform: 'capitalize' }}
+                style={{ fontSize: 11 }}
                 onClick={() => setChannel(c)}>
                 {c !== 'all' && <ChannelIcon ch={c} size={10} />}
-                {c}
+                {CHANNEL_LABELS[c] || c}
               </button>
             ))}
           </div>
