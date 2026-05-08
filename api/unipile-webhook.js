@@ -43,11 +43,19 @@ export default async function handler(req, res) {
         if (data?.length > 0) contactId = data[0].id;
       }
 
-      // Map Unipile account_id → CRM user email so the right team member
-      // sees their own LinkedIn inbox in the UI.
-      // TODO: when a second Unipile account is connected, replace this
-      // hardcode with a unipile_accounts mapping table or env var.
-      const UNIPILE_ACCOUNT_OWNER = process.env.UNIPILE_ACCOUNT_OWNER || 'marco@eclectik.co';
+      // Map Unipile account_id → CRM user email so each team member sees
+      // their own LinkedIn inbox in the UI. account_ids come from the
+      // Unipile workspace (visible via /api/unipile?action=list-accounts).
+      // Update this map when a new account is connected.
+      const UNIPILE_ACCOUNT_OWNERS = {
+        'KYq2oN8JSPiAQSrcIfT5Ew': 'marco@eclectik.co',
+        'j9-n2jeNTtGUxemfjlBsZA': 'yarmilla@eclectik.co',
+        'tC2o50tiTBiRCt9xAnio3w': 'olivier@eclectik.co',
+      };
+      const unipileUser = UNIPILE_ACCOUNT_OWNERS[account_id] || null;
+      if (!unipileUser) {
+        console.warn(`Unknown Unipile account_id: ${account_id} — message will have unipile_user=NULL and won't appear in any user's inbox`);
+      }
 
       // Store in comms table. chat_id is the Unipile thread identifier so
       // multiple messages in the same conversation can be grouped in the UI.
@@ -63,7 +71,7 @@ export default async function handler(req, res) {
         sent_at: timestamp || new Date().toISOString(),
         external_id: message_id,
         chat_id: chat_id || null,
-        unipile_user: UNIPILE_ACCOUNT_OWNER,
+        unipile_user: unipileUser,
         owner: senderName,
       });
 
