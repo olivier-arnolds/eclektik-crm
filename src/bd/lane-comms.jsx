@@ -118,10 +118,18 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
     return ['marco', 'olivier', 'yarmilla'].filter(n => n !== userFirstName);
   }, [userFirstName]);
 
+  const userEmail = (session?.user?.email || '').toLowerCase();
+
   const allComms = useMemo(() => {
     const ids = new Set((comms || []).map(c => c.id));
     const ownComms = (comms || []).filter(c => {
-      // Only apply the teammate-name privacy filter to email
+      // LinkedIn: per-user — only show messages whose Unipile account
+      // belongs to the logged-in user. Until Olivier connects his own
+      // LinkedIn his view here is empty (Marco sees all of his).
+      if (c.channel === 'linkedin') {
+        return userEmail && c.unipileUser && c.unipileUser.toLowerCase() === userEmail;
+      }
+      // Email privacy filter: drop teammates' mailboxes
       if (c.channel !== 'email') return true;
       const fromName = (c.from || '').toLowerCase();
       for (const other of otherFirstNames) {
@@ -130,7 +138,7 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
       return true;
     });
     return [...ownComms, ...graphEmails.filter(e => !ids.has(e.id))];
-  }, [comms, graphEmails, otherFirstNames]);
+  }, [comms, graphEmails, otherFirstNames, userEmail]);
 
   const q = (localSearch || globalSearch || '').toLowerCase();
 

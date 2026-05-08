@@ -43,8 +43,16 @@ export default async function handler(req, res) {
         if (data?.length > 0) contactId = data[0].id;
       }
 
+      // Map Unipile account_id → CRM user email so the right team member
+      // sees their own LinkedIn inbox in the UI.
+      // TODO: when a second Unipile account is connected, replace this
+      // hardcode with a unipile_accounts mapping table or env var.
+      const UNIPILE_ACCOUNT_OWNER = process.env.UNIPILE_ACCOUNT_OWNER || 'marco@eclectik.co';
+
       // Store in comms table. chat_id is the Unipile thread identifier so
       // multiple messages in the same conversation can be grouped in the UI.
+      // unipile_user is the CRM user whose connected LinkedIn account this
+      // message belongs to (drives per-user inbox filtering).
       await supabase.from('comms').insert({
         contact_id: contactId,
         channel: 'linkedin',
@@ -55,6 +63,7 @@ export default async function handler(req, res) {
         sent_at: timestamp || new Date().toISOString(),
         external_id: message_id,
         chat_id: chat_id || null,
+        unipile_user: UNIPILE_ACCOUNT_OWNER,
         owner: senderName,
       });
 

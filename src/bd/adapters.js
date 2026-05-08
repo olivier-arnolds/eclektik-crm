@@ -138,6 +138,7 @@ export function adaptComm(row, rawItems, rawAccounts) {
     accountId: acc?.id,
     contactId: row.contactId || null,
     chatId: row.chatId || null,
+    unipileUser: row.unipileUser || null,
     deal: item?.id,
     hasAttach: !!row.hasAttach,
     flagged: !!row.flagged,

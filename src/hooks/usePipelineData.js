@@ -158,6 +158,7 @@ function adaptComm(row) {
     companyId: row.company_id || null,
     contactId: row.contact_id || null,
     chatId: row.chat_id || null,
+    unipileUser: row.unipile_user || null,
     icon: channelIcons[row.channel] || '✉',
     channel: row.channel || 'email',
     direction: row.direction || 'inbound',
