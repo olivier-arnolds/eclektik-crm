@@ -269,7 +269,20 @@ export default function ComposeModal({ ctx, onClose, onSent, accounts, contacts,
               <button className="btn-ghost tiny" onClick={copy} disabled={streaming}><I.archive /> Copy</button>
             </div>
             <div className="draft-body">
-              <pre>{draft}{streaming && <span className="draft-cursor">▍</span>}</pre>
+              {streaming ? (
+                <pre>{draft}<span className="draft-cursor">▍</span></pre>
+              ) : (
+                <textarea
+                  value={draft}
+                  onChange={e => setDraft(e.target.value)}
+                  spellCheck
+                  style={{
+                    width: '100%', minHeight: 320, padding: 12, border: 'none',
+                    outline: 'none', resize: 'vertical', fontFamily: 'inherit',
+                    fontSize: 13, lineHeight: 1.5, background: 'transparent',
+                    color: 'var(--text-1)', boxSizing: 'border-box',
+                  }} />
+              )}
             </div>
             <div className="draft-actions">
               <button className="btn-ghost" onClick={onClose}>Cancel</button>
