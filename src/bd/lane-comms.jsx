@@ -566,6 +566,8 @@ function parseAccountFromText(text) {
 // from allComms in the parent).
 // Teams: this component fetches the thread itself via getChatMessages
 // because Graph chats don't sit in our DB.
+const PAGE_SIZE = 50;
+
 function ChatThreadPane({ chat, channel, localMessages, userFirstName, onSent }) {
   const [teamsMessages, setTeamsMessages] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -573,9 +575,15 @@ function ChatThreadPane({ chat, channel, localMessages, userFirstName, onSent })
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState(null);
   const [optimistic, setOptimistic] = useState([]); // locally-appended pending sends
+  const [displayLimit, setDisplayLimit] = useState(PAGE_SIZE);
 
-  // Reset reply box + optimistic queue when switching chats
-  useEffect(() => { setReplyText(''); setSendError(null); setOptimistic([]); }, [chat?.key]);
+  // Reset reply box + optimistic queue + paging when switching chats
+  useEffect(() => {
+    setReplyText('');
+    setSendError(null);
+    setOptimistic([]);
+    setDisplayLimit(PAGE_SIZE);
+  }, [chat?.key]);
 
   useEffect(() => {
     if (!chat || channel !== 'teams') { setTeamsMessages(null); return; }
@@ -657,7 +665,12 @@ function ChatThreadPane({ chat, channel, localMessages, userFirstName, onSent })
   }
 
   const baseMessages = channel === 'teams' ? (teamsMessages || []) : (localMessages || []);
-  const messages = [...baseMessages, ...optimistic];
+  // Show only the most recent `displayLimit` messages; older ones revealed
+  // via "Load earlier 50" button. Optimistic sends always appear at the bottom.
+  const totalCount = baseMessages.length;
+  const displayedBase = baseMessages.slice(Math.max(0, totalCount - displayLimit));
+  const hasOlder = totalCount > displayLimit;
+  const messages = [...displayedBase, ...optimistic];
 
   const isOutbound = (m) => {
     if (m.dir === 'out') return true;
@@ -679,6 +692,15 @@ function ChatThreadPane({ chat, channel, localMessages, userFirstName, onSent })
         {loading && <div className="empty">Loading thread…</div>}
         {!loading && messages.length === 0 && (
           <div className="empty">No messages in this thread</div>
+        )}
+        {hasOlder && (
+          <button
+            type="button"
+            className="btn-ghost tiny"
+            onClick={() => setDisplayLimit(n => n + PAGE_SIZE)}
+            style={{ alignSelf: 'center', margin: '4px 0' }}>
+            Load earlier {Math.min(PAGE_SIZE, totalCount - displayLimit)} of {totalCount - displayLimit} older messages
+          </button>
         )}
         {messages.map(m => {
           const out = isOutbound(m);
