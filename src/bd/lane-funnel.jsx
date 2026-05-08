@@ -39,38 +39,15 @@ export default function FunnelLane({ deals, accounts, contacts, filters, setFilt
   // Some transitions need a Won/Lost decision before we can save.
   // Specifically, anything that moves INTO 'close' or 'active' from an
   // earlier/non-final stage should ask the user.
-  const needsWonLost = (fromStage, toStage) => {
-    if (!fromStage || !toStage) return false;
-    if (fromStage === toStage) return false;
-    // Closing a deal from Proposal or Onboarding
-    if (toStage === 'close' && ['proposal', 'onboarding'].includes(fromStage)) return true;
-    // Moving from Onboarding into Active (project started — won) or not (lost)
-    if (toStage === 'active' && fromStage === 'onboarding') return true;
-    return false;
-  };
+  // Won-side stages: deals here are "won" (positive outcome).
+  // Used to auto-promote Prospect→Customer when first entering this side.
+  const WON_STAGES = ['onboarding', 'active', 'sleeping'];
 
-  const doMove = async (dealId, toStage, winStatus) => {
+  const doMove = async (dealId, toStage) => {
     const deal = deals.find(d => d.id === dealId);
     if (!deal) { setConfirmMove(null); return; }
+
     const updates = stageUpdates(toStage, deal.table);
-    // If winStatus provided, also update the opportunity status
-    if (winStatus) {
-      updates.status = winStatus; // 'Won' or 'Lost'
-      if (winStatus === 'Lost' && deal.table === 'opportunities') {
-        // Lost deals are stored as past/inactive funnelStage in our data model
-        updates.stage = 'past';
-        updates.sub_status = null;
-      }
-    }
-    // Moving OUT of close into active/onboarding for a previously-Lost deal
-    // (stage='past') reanimates it. Clear the Lost status so the row no
-    // longer sits in the funnel-Lost bucket.
-    if (deal.table === 'opportunities'
-        && (toStage === 'active' || toStage === 'onboarding')
-        && (deal.funnelStage === 'past' || deal.funnelStage === 'inactive')) {
-      updates.status = null;
-      updates.status_reason = null;
-    }
     try {
       const { error: upErr } = await updateRow(deal.table, dealId, updates);
       if (upErr) {
@@ -83,13 +60,11 @@ export default function FunnelLane({ deals, accounts, contacts, filters, setFilt
       setConfirmMove(null);
       return;
     }
-    // Auto-promote Prospect → Customer on a win or when moving into delivery:
-    //   - Any explicit 'Won' status
-    //   - Proposal → Onboarding (new customer moving into delivery, implicit won)
-    const implicitWin = !winStatus
-      && toStage === 'onboarding'
-      && deal.stage === 'proposal';
-    if ((winStatus === 'Won' || implicitWin) && deal.accountId) {
+
+    // First entry into the won-side (onboarding/active/sleeping) means the
+    // deal was won — promote the parent account from Prospect to Customer.
+    const enteringWonSide = WON_STAGES.includes(toStage) && !WON_STAGES.includes(deal.stage);
+    if (enteringWonSide && deal.accountId) {
       const acc = (accounts || []).find(a => a.id === deal.accountId);
       if (acc && (acc.type || '').toLowerCase() === 'prospect') {
         await updateRow('companies', deal.accountId, { type: 'Customer' });
@@ -233,42 +208,21 @@ export default function FunnelLane({ deals, accounts, contacts, filters, setFilt
 
       {confirmMove && (() => {
         const mvDeal = deals.find(d => d.id === confirmMove.dealId);
-        const askWonLost = mvDeal ? needsWonLost(mvDeal.stage, confirmMove.toStage) : false;
         return (
         <div className="modal-backdrop" onClick={() => setConfirmMove(null)}>
           <div className="modal" onClick={e => e.stopPropagation()}>
             <div className="modal-title">
-              {askWonLost
-                ? `Close deal — won or lost?`
-                : `Move deal to ${STAGE_TINT[confirmMove.toStage]?.label || confirmMove.toStage}?`}
+              Move deal to {STAGE_TINT[confirmMove.toStage]?.label || confirmMove.toStage}?
             </div>
             <div className="modal-body">
               <div className="modal-body-strong">{mvDeal?.title}</div>
               <div className="modal-body-sub">
                 From <b>{STAGE_TINT[mvDeal?.stage]?.label}</b> → <b>{STAGE_TINT[confirmMove.toStage]?.label}</b>
               </div>
-              {askWonLost && (
-                <div className="modal-body-sub" style={{ marginTop: 8 }}>
-                  Mark this deal as <b>Won</b> or <b>Lost</b>.
-                </div>
-              )}
             </div>
             <div className="modal-actions">
               <button className="btn-ghost" onClick={() => setConfirmMove(null)}>Cancel</button>
-              {askWonLost ? (
-                <>
-                  <button className="btn-ghost tiny" style={{ color: 'var(--danger)' }}
-                    onClick={() => doMove(confirmMove.dealId, confirmMove.toStage, 'Lost')}>
-                    Lost
-                  </button>
-                  <button className="btn-primary" style={{ background: 'var(--good)' }}
-                    onClick={() => doMove(confirmMove.dealId, confirmMove.toStage, 'Won')}>
-                    ✓ Won
-                  </button>
-                </>
-              ) : (
-                <button className="btn-primary" onClick={() => doMove(confirmMove.dealId, confirmMove.toStage)}>Confirm</button>
-              )}
+              <button className="btn-primary" onClick={() => doMove(confirmMove.dealId, confirmMove.toStage)}>Confirm</button>
             </div>
           </div>
         </div>

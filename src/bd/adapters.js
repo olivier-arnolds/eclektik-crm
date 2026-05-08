@@ -211,15 +211,42 @@ export const STAGES = [
   { id: 'sleeping',   label: 'Sleeping',   hue: 270 },
 ];
 
-// Convert a drop-target stage back to Supabase updates
+// Convert a drop-target stage back to Supabase updates.
+// Handles all 7 BD stages with the correct combination of stage / sub_status
+// / status / status_reason fields. NOTE: 'leads' has no `stage` column, so
+// any drop targeting onboarding/active/sleeping on a lead must be intercepted
+// upstream by the lead→opportunity auto-promote in doMove (see commit 3).
 export function stageUpdates(targetStage, dealTable) {
   const updates = {};
-  if (['onboarding', 'active'].includes(targetStage)) {
+  const isOpp = dealTable === 'opportunities';
+
+  if (targetStage === 'sleeping') {
+    // Completed-won project, parked but revivable
+    updates.stage = 'past';
+    updates.sub_status = null;
+    updates.status = 'Won';
+    updates.status_reason = null;
+  } else if (targetStage === 'close') {
+    // Closed-lost
+    updates.sub_status = 'close';
+    updates.status = 'Lost';
+    if (isOpp) updates.stage = 'past';
+  } else if (['onboarding', 'active'].includes(targetStage)) {
     updates.stage = targetStage;
     updates.sub_status = null;
+    // Reanimation: clear any leftover Won/Lost from a previous past/sleeping state
+    if (isOpp) {
+      updates.status = null;
+      updates.status_reason = null;
+    }
   } else {
+    // qualify / develop / proposal
     updates.sub_status = targetStage;
-    if (dealTable === 'opportunities') updates.stage = 'opportunity';
+    if (isOpp) {
+      updates.stage = 'opportunity';
+      updates.status = null;
+      updates.status_reason = null;
+    }
   }
   return updates;
 }
