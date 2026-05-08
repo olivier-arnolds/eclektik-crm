@@ -1316,6 +1316,7 @@ function stageClass(stage) {
     close: 'negotiation',
     onboarding: 'won',
     active: 'won',
+    sleeping: 'won',
   };
   return map[stage] || 'lead';
 }

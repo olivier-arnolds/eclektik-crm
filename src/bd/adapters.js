@@ -17,14 +17,22 @@ function hueFromString(s) {
 
 // ---------- Deal (lead or opportunity) ----------
 // Our model: funnelStage (lead/opportunity/onboarding/active/inactive/past) + subStatus (qualify/develop/proposal/close)
-// BD display stage: qualify/develop/proposal/close/onboarding/active (6 columns)
+// BD display stage: qualify/develop/proposal/close/onboarding/active/sleeping (7 columns)
+//   - qualify/develop/proposal: pre-deal phase (lead OR opportunity)
+//   - close: lost deals (any stage that ended in 'Lost')
+//   - onboarding: won deals starting delivery
+//   - active: in-progress projects
+//   - sleeping: completed projects (revivable on customer request)
 export function adaptDeal(item, rawAccounts, rawContacts) {
   const acc = (rawAccounts || []).find(a => a.id === item.accountId);
   const contact = (rawContacts || []).find(c => item.contactIds?.includes(c.id));
 
   let stage;
   if (['onboarding', 'active'].includes(item.funnelStage)) stage = item.funnelStage;
-  else if (['inactive', 'past'].includes(item.funnelStage)) stage = 'close'; // treat closed as end-of-pipeline
+  else if (['inactive', 'past'].includes(item.funnelStage)) {
+    // Past/inactive: disambiguate sleeping (won/finished) vs close (lost) via status
+    stage = item.status === 'Won' ? 'sleeping' : 'close';
+  }
   else stage = item.subStatus || 'qualify';
 
   return {
@@ -190,14 +198,17 @@ export function adaptFollowUp(row, rawItems, rawAccounts) {
   };
 }
 
-// ---------- Stage definitions (our 6-column model) ----------
+// ---------- Stage definitions (our 7-column model) ----------
+// Order matters: this drives the column layout in lane-funnel.jsx.
+// qualify → develop → proposal → close (lost) → onboarding (won) → active → sleeping (finished)
 export const STAGES = [
   { id: 'qualify',    label: 'Qualify',    hue: 220 },
   { id: 'develop',    label: 'Develop',    hue: 200 },
   { id: 'proposal',   label: 'Proposal',   hue: 260 },
-  { id: 'onboarding', label: 'Onboarding', hue: 150 },
   { id: 'close',      label: 'Close',      hue: 40 },
+  { id: 'onboarding', label: 'Onboarding', hue: 150 },
   { id: 'active',     label: 'Active',     hue: 140 },
+  { id: 'sleeping',   label: 'Sleeping',   hue: 270 },
 ];
 
 // Convert a drop-target stage back to Supabase updates

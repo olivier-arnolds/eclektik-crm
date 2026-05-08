@@ -60,6 +60,8 @@ function adaptLead(row) {
     id: row.id,
     funnelStage: 'lead',
     subStatus: row.sub_status || row.status || 'qualify',
+    // Expose raw status so adaptDeal can disambiguate (e.g. won-leads stuck in close)
+    status: row.status || '',
     sortDate: (row.updated_at || row.created_at || '').split('T')[0],
     title: row.full_name || row.topic || 'Untitled lead',
     accountId: row.company_id,

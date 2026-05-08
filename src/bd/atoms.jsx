@@ -123,7 +123,7 @@ export function StaleDot({ days }) {
   return <span title={`${d}d since activity`} style={{ width:6, height:6, borderRadius:'50%', background:color, display:'inline-block' }}/>;
 }
 
-// ---------- Stage colors (our 6 stages) ----------
+// ---------- Stage colors (our 7 stages) ----------
 export const STAGE_TINT = {
   qualify:    { hue: 220, label: 'Qualify' },
   develop:    { hue: 200, label: 'Develop' },
@@ -131,6 +131,7 @@ export const STAGE_TINT = {
   close:      { hue: 40,  label: 'Close' },
   onboarding: { hue: 150, label: 'Onboarding' },
   active:     { hue: 140, label: 'Active' },
+  sleeping:   { hue: 270, label: 'Sleeping' },
 };
 
 // ---------- Icon set ----------
