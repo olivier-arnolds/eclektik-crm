@@ -259,6 +259,14 @@ export default async function handler(req, res) {
       return res.status(result.error ? 400 : 200).json(result);
     }
 
+    // ── GET CHAT ATTENDEES (for resolving display names) ──
+    if (action === 'get-chat-attendees') {
+      const { chat_id } = req.query;
+      if (!chat_id) return res.status(400).json({ error: 'chat_id required' });
+      const result = await unipileRequest('GET', `/chats/${chat_id}/attendees`);
+      return res.status(result.error ? 400 : 200).json(result);
+    }
+
     // ── SEND INVITATION ──
     if (action === 'send-invite' && req.method === 'POST') {
       const { account_id, attendee_id, message } = req.body;

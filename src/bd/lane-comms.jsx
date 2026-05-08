@@ -188,6 +188,7 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
   // ----- LinkedIn live fetch via Unipile -----
   const myUnipileAccountId = USER_TO_UNIPILE_ACCOUNT[userEmail] || null;
   const [liveLinkedInChats, setLiveLinkedInChats] = useState([]);
+  const [chatAttendeeNames, setChatAttendeeNames] = useState({}); // chatId → display name
   const [loadingLi, setLoadingLi] = useState(false);
   const [liError, setLiError] = useState(null);
 
@@ -204,13 +205,33 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
       .then(r => r.json())
       .then(j => {
         if (j.error) throw new Error(j.error);
-        setLiveLinkedInChats(j.data?.items || []);
+        const items = j.data?.items || [];
+        setLiveLinkedInChats(items);
+
+        // Fetch attendee names per chat in parallel (best-effort — skip
+        // failures silently so a single broken chat doesn't blank the list).
+        Promise.all(items.map(async chat => {
+          try {
+            const r = await fetch(`/api/unipile?action=get-chat-attendees&chat_id=${chat.id}`);
+            const data = await r.json();
+            const attendees = data.data?.items || [];
+            // Pick the first attendee whose provider_id is NOT the logged-in user
+            const other = attendees.find(a => a.provider_id !== chat.account_id_owner_provider_id) || attendees[0];
+            return [chat.id, other?.name || null];
+          } catch { return [chat.id, null]; }
+        })).then(pairs => {
+          const map = {};
+          for (const [id, name] of pairs) if (name) map[id] = name;
+          setChatAttendeeNames(map);
+        });
       })
       .catch(e => setLiError(e.message || String(e)))
       .finally(() => setLoadingLi(false));
   }, [channel, myUnipileAccountId]);
 
-  // Map Unipile attendee_provider_id → known contact via linkedin_url substring
+  // Map Unipile attendee_provider_id → known contact via linkedin_url substring.
+  // Falls back to the live attendee name fetched per chat so the user always
+  // sees a real name instead of "LinkedIn user".
   const linkedInChatRows = useMemo(() => {
     if (channel !== 'linkedin') return [];
     return liveLinkedInChats.map(c => {
@@ -218,11 +239,12 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
       const contact = providerId
         ? (contacts || []).find(x => x.linkedin_url && x.linkedin_url.includes(providerId))
         : null;
+      const liveName = chatAttendeeNames[c.id];
       return {
         key: c.id,
         chatId: c.id,
         contactId: contact?.id || null,
-        contactName: contact?.name || c.name || 'LinkedIn user',
+        contactName: contact?.name || liveName || c.name || 'LinkedIn user',
         contactRole: contact?.role || '',
         accountId: contact?.accountId || null,
         account: '',
@@ -231,7 +253,7 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
         lastMessage: { ts: c.timestamp, preview: '' },
       };
     });
-  }, [liveLinkedInChats, channel, contacts]);
+  }, [liveLinkedInChats, channel, contacts, chatAttendeeNames]);
 
   // Teams grouping (DB-driven, unchanged)
   const teamsChats = useMemo(() => {
