@@ -106,9 +106,13 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
   // Merge DB comms + Graph emails (dedupe by id). DB-side comms are
   // shared across team members and identify their sender by NAME (not
   // email — see usePipelineData.adaptComm where from = row.owner).
-  // Match teammate first names case-insensitively to filter out other
-  // colleagues' rows. Graph emails are already per-user (Olivier's
-  // mailbox, Marco's mailbox, etc.) so they stay untouched.
+  //
+  // Privacy filter: for EMAIL only, drop comms whose 'from' name matches
+  // another teammate (Olivier shouldn't see Marco's mailbox, etc.).
+  // LinkedIn / Teams / phone / note channels are shared at team level —
+  // any teammate can act on them — so they bypass this filter.
+  // (Earlier filter dropped 45 of 49 LinkedIn rows because the Unipile
+  // webhook stored owner='Marco van Gelder' on Marco's outgoing chats.)
   const userFirstName = ((session?.user?.user_metadata?.full_name || session?.user?.email || '').split(/[ @]/)[0] || '').toLowerCase();
   const otherFirstNames = useMemo(() => {
     return ['marco', 'olivier', 'yarmilla'].filter(n => n !== userFirstName);
@@ -117,8 +121,9 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
   const allComms = useMemo(() => {
     const ids = new Set((comms || []).map(c => c.id));
     const ownComms = (comms || []).filter(c => {
+      // Only apply the teammate-name privacy filter to email
+      if (c.channel !== 'email') return true;
       const fromName = (c.from || '').toLowerCase();
-      // Drop any DB-stored comm whose sender name matches another teammate
       for (const other of otherFirstNames) {
         if (fromName.includes(other)) return false;
       }
