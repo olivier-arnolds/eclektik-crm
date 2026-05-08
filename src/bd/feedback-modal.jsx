@@ -1,10 +1,15 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { supabase } from '../supabase';
 import { useAuth } from '../lib/auth';
 
 // Submit feedback / feature request modal.
 // Anyone signed-in can submit. Anonymous-but-authenticated; submitter
 // email is captured from the session.
+//
+// Screenshot can be added via:
+//   - File picker (📁 Choose file)
+//   - Cmd/Ctrl+V paste from clipboard (image/* MIME types)
+//   - Drag & drop is not handled — paste covers the common workflow.
 export default function FeedbackModal({ open, onClose, onSubmitted }) {
   const { session } = useAuth();
   const [type, setType] = useState('bug');
@@ -14,6 +19,34 @@ export default function FeedbackModal({ open, onClose, onSubmitted }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const fileRef = useRef(null);
+
+  // Live thumbnail preview URL — created lazily, revoked on cleanup.
+  const previewUrl = useMemo(() => (file ? URL.createObjectURL(file) : null), [file]);
+  useEffect(() => () => { if (previewUrl) URL.revokeObjectURL(previewUrl); }, [previewUrl]);
+
+  // Paste-from-clipboard support. Listener is bound to window when the modal
+  // is open so it works even if the focus is on the body / a non-input.
+  useEffect(() => {
+    if (!open) return;
+    const onPaste = (e) => {
+      const items = e.clipboardData?.items || [];
+      for (const item of items) {
+        if (item.kind === 'file' && item.type.startsWith('image/')) {
+          const blob = item.getAsFile();
+          if (blob) {
+            // Wrap blob in File so we can give it a friendly name with extension
+            const ext = (item.type.split('/')[1] || 'png').split(';')[0];
+            const named = new File([blob], `pasted-${Date.now()}.${ext}`, { type: item.type });
+            setFile(named);
+            e.preventDefault();
+            return;
+          }
+        }
+      }
+    };
+    window.addEventListener('paste', onPaste);
+    return () => window.removeEventListener('paste', onPaste);
+  }, [open]);
 
   if (!open) return null;
 
@@ -103,19 +136,33 @@ export default function FeedbackModal({ open, onClose, onSubmitted }) {
 
         <div style={{ marginBottom: 12 }}>
           <div style={lbl}>Screenshot (optional)</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             <button type="button" className="btn-ghost tiny" onClick={() => fileRef.current?.click()}>
               📁 {file ? 'Change file' : 'Choose file'}
             </button>
+            <span style={{ fontSize: 10, color: 'var(--text-3)' }}>
+              or paste with ⌘V
+            </span>
             {file && (
-              <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
-                {file.name} ({Math.round(file.size / 1024)} KB)
-              </span>
+              <button type="button" className="btn-ghost tiny" onClick={() => setFile(null)}
+                style={{ color: 'var(--danger)' }}>
+                ✕ Remove
+              </button>
             )}
             <input ref={fileRef} type="file" accept="image/*"
               onChange={e => setFile(e.target.files?.[0] || null)}
               style={{ display: 'none' }} />
           </div>
+          {file && previewUrl && (
+            <div style={{ marginTop: 8, display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+              <img src={previewUrl} alt="screenshot preview"
+                style={{ maxWidth: 200, maxHeight: 140, borderRadius: 6, border: '0.5px solid var(--sep)' }} />
+              <div style={{ fontSize: 11, color: 'var(--text-3)', lineHeight: 1.4 }}>
+                {file.name}<br />
+                {Math.round(file.size / 1024)} KB
+              </div>
+            </div>
+          )}
         </div>
 
         <div style={{ fontSize: 10, color: 'var(--text-3)', marginBottom: 12 }}>
