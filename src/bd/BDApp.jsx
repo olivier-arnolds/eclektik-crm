@@ -336,7 +336,8 @@ export default function BDApp() {
               leftLane={leftLane} setLeftLane={setLeftLane}
               layout={layout} setLayout={setLayout} search={search} setSearch={setSearch}
               onEnrich={() => setShowEnrich(true)}
-              onRefreshGraph={fetchGraphData} graphLoading={graphLoading} />
+              onRefreshGraph={fetchGraphData} graphLoading={graphLoading}
+              onOpenFeedback={() => setShowFeedback(true)} />
       <div className="lanes">
         {/* LEFT LANE: Calendar OR Funnel */}
         {leftLane === 'funnel' ? (
@@ -478,6 +479,8 @@ export default function BDApp() {
           onCompose={openCompose}
         />
       )}
+
+      <FeedbackModal open={showFeedback} onClose={() => setShowFeedback(false)} />
     </div>
   );
 }
