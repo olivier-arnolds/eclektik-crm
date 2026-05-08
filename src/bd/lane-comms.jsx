@@ -56,6 +56,9 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
       id: e.id,
       // channel comes from the fetch: 'email' for mail, 'teams' for chats
       channel: e.channel || 'email',
+      // For Teams items, e.id IS the Graph chat-id — surface it as chatId
+      // so the unified grouping logic can key off the same field as LinkedIn.
+      chatId: (e.channel === 'teams') ? e.id : null,
       dir: e.dir || 'in',
       from: e.from,
       fromAddress: e.fromAddress,
@@ -166,18 +169,20 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
 
   const selected = allComms.find(c => c.id === selectedId);
 
-  // ---------- LinkedIn conversation grouping ----------
-  // For the LinkedIn channel we collapse the flat message list into one row
-  // per chat. Group key is chat_id (set by the Unipile webhook); for the 49
-  // legacy rows that pre-date the chat_id column we fall back to contact_id
-  // so the same person's messages still cluster.
+  // ---------- Unified chat grouping (LinkedIn + Teams) ----------
+  // Both channels collapse a flat message stream into one row per chat.
+  // Group key is chat_id (LinkedIn: set by Unipile webhook; Teams: Graph
+  // chat id surfaced as chatId in graphEmails). Fallback to contact_id
+  // for legacy LinkedIn rows that pre-date the chat_id column.
+  const GROUPABLE_CHANNELS = ['linkedin', 'teams'];
+  const isGroupableChannel = GROUPABLE_CHANNELS.includes(channel);
   const chatKey = (c) => c.chatId || (c.contactId ? `c:${c.contactId}` : `f:${c.from}`);
 
-  const linkedinChats = useMemo(() => {
-    if (channel !== 'linkedin') return [];
+  const groupedChats = useMemo(() => {
+    if (!isGroupableChannel) return [];
     const groups = new Map();
     for (const c of filtered) {
-      if (c.channel !== 'linkedin') continue;
+      if (c.channel !== channel) continue;
       const key = chatKey(c);
       let g = groups.get(key);
       if (!g) {
@@ -202,12 +207,15 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
     return [...groups.values()].sort((a, b) =>
       new Date(b.lastMessage.ts || 0) - new Date(a.lastMessage.ts || 0)
     );
-  }, [filtered, channel, contacts]);
+  }, [filtered, channel, contacts, isGroupableChannel]);
 
   const [selectedChatKey, setSelectedChatKey] = useState(null);
   // Reset selected chat when the user switches channels
-  useEffect(() => { if (channel !== 'linkedin') setSelectedChatKey(null); }, [channel]);
+  useEffect(() => { if (!isGroupableChannel) setSelectedChatKey(null); }, [channel, isGroupableChannel]);
 
+  // For LinkedIn we have all messages already in allComms — derive the
+  // selected chat thread locally. For Teams the messages live behind a
+  // Graph fetch, so the ThreadPane fetches them itself when selected.
   const selectedChatMessages = useMemo(() => {
     if (!selectedChatKey || channel !== 'linkedin') return [];
     return (allComms || [])
@@ -215,7 +223,7 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
       .sort((a, b) => new Date(a.ts || 0) - new Date(b.ts || 0)); // oldest first
   }, [allComms, channel, selectedChatKey]);
 
-  const selectedChat = linkedinChats.find(g => g.key === selectedChatKey);
+  const selectedChat = groupedChats.find(g => g.key === selectedChatKey);
 
   const counts = useMemo(() => {
     const matchFolder = (c, target) => {
@@ -301,18 +309,18 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
                 Connect Microsoft
               </button>
             </div>
-          ) : channel === 'linkedin' ? (
-            // ---------- LinkedIn: conversation list (one row per chat) ----------
-            linkedinChats.length === 0 ? (
-              <div className="empty">No LinkedIn conversations</div>
-            ) : linkedinChats.map(g => (
+          ) : isGroupableChannel ? (
+            // ---------- LinkedIn / Teams: conversation list (one row per chat) ----------
+            groupedChats.length === 0 ? (
+              <div className="empty">No {CHANNEL_LABELS[channel] || channel} conversations</div>
+            ) : groupedChats.map(g => (
               <div key={g.key}
                 className={`comm-row ${g.unreadCount > 0 ? 'comm-row-unread' : ''} ${selectedChatKey === g.key ? 'comm-row-on' : ''}`}
                 onClick={() => setSelectedChatKey(g.key)}>
                 <div className="comm-row-top">
                   <div className="comm-row-left">
                     {g.unreadCount > 0 && <span className="unread-dot" />}
-                    <ChannelIcon ch="linkedin" size={11} />
+                    <ChannelIcon ch={channel} size={11} />
                     <span className="comm-from">{g.contactName}</span>
                   </div>
                   <div className="comm-row-right">
@@ -378,8 +386,8 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
           )}
         </div>
 
-        {channel === 'linkedin' ? (
-          <LinkedInThreadPane chat={selectedChat} messages={selectedChatMessages} userFirstName={userFirstName} />
+        {isGroupableChannel ? (
+          <ChatThreadPane chat={selectedChat} channel={channel} localMessages={selectedChatMessages} userFirstName={userFirstName} />
         ) : (
           <ReadingPane comm={selected} accounts={accounts} contacts={contacts} refetch={refetch} refetchGraph={refetchGraph} onCompose={onCompose} onSelect={onSelect} />
         )}
@@ -536,13 +544,44 @@ function parseAccountFromText(text) {
   return out;
 }
 
-// ---------- LinkedIn threaded chat view ----------
-// Renders the right pane when a user clicks a LinkedIn conversation in the
-// list. Messages are sorted oldest-first (top) → newest-last (bottom).
-// Outbound messages (sent by us, identified by direction='outbound' or by
-// the from-name matching the logged-in user's first name) align right with
-// an accent background; inbound messages align left.
-function LinkedInThreadPane({ chat, messages, userFirstName }) {
+// ---------- Unified threaded chat view (LinkedIn + Teams) ----------
+// Renders the right pane when a user clicks a conversation in the list.
+// Messages are sorted oldest-first (top) → newest-last (bottom).
+// Outbound messages (sent by us — direction='outbound' or from-name matches
+// the logged-in user's first name) align right with an accent background;
+// inbound messages align left.
+//
+// LinkedIn: messages come pre-loaded via the `localMessages` prop (derived
+// from allComms in the parent).
+// Teams: this component fetches the thread itself via getChatMessages
+// because Graph chats don't sit in our DB.
+function ChatThreadPane({ chat, channel, localMessages, userFirstName }) {
+  const [teamsMessages, setTeamsMessages] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!chat || channel !== 'teams') { setTeamsMessages(null); return; }
+    setLoading(true);
+    setTeamsMessages(null);
+    getChatMessages(chat.chatId, 200)
+      .then(msgs => {
+        // Normalize Graph message shape to the same fields as our LinkedIn comms.
+        const normalized = (msgs || []).map(m => ({
+          id: m.id,
+          from: m.from?.user?.displayName || m.from?.application?.displayName || 'Unknown',
+          // Graph body is HTML — strip tags for the simple bubble view.
+          preview: (m.body?.content || '').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim(),
+          subject: '',
+          ts: m.createdDateTime,
+          dir: 'in', // direction is decided per-render via userFirstName heuristic
+        }));
+        normalized.sort((a, b) => new Date(a.ts || 0) - new Date(b.ts || 0));
+        setTeamsMessages(normalized);
+      })
+      .catch(err => { console.error('teams chat fetch failed', err); setTeamsMessages([]); })
+      .finally(() => setLoading(false));
+  }, [chat, channel]);
+
   if (!chat) {
     return (
       <div className="reading-pane reading-empty">
@@ -551,11 +590,13 @@ function LinkedInThreadPane({ chat, messages, userFirstName }) {
     );
   }
 
+  const messages = channel === 'teams' ? (teamsMessages || []) : (localMessages || []);
+
   const isOutbound = (m) => {
     if (m.dir === 'out') return true;
     // Heuristic fallback for legacy rows with dir='in' but the user's first
-    // name in the from-field (Marco's outgoing messages tagged inbound by
-    // the early Unipile webhook).
+    // name in the from-field (Marco's outgoing LinkedIn messages tagged
+    // inbound by the early Unipile webhook; Teams messages from "me").
     const f = (m.from || '').toLowerCase();
     return userFirstName && f.includes(userFirstName);
   };
@@ -568,7 +609,8 @@ function LinkedInThreadPane({ chat, messages, userFirstName }) {
         {chat.account && <div style={{ fontSize: 11, color: 'var(--text-2)' }}>{chat.account}</div>}
       </div>
       <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {messages.length === 0 && (
+        {loading && <div className="empty">Loading thread…</div>}
+        {!loading && messages.length === 0 && (
           <div className="empty">No messages in this thread</div>
         )}
         {messages.map(m => {
