@@ -23,7 +23,9 @@ export default async function handler(req, res) {
   const { data: row } = await supabase.from('feature_requests').select('*').eq('id', id).single();
   if (!row) return res.status(404).json({ error: 'not found' });
 
-  const fromName = process.env.MARKETING_FROM_NAME || 'Eclectik CRM';
+  // Hardcoded sender name — feedback mails should not inherit the
+  // 'Marketing' brand used for outbound marketing campaigns.
+  const fromName = 'Eclectik CRM Feedback';
   const fromEmail = process.env.MARKETING_FROM_EMAIL;
   if (!fromEmail) return res.status(500).json({ error: 'MARKETING_FROM_EMAIL not configured' });
 
