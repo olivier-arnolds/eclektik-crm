@@ -307,6 +307,19 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
           borderRadius: 8, boxShadow: 'var(--shadow-2)',
           padding: 4, minWidth: 220, zIndex: 1000,
         }}>
+          {onCompose && (
+            <button
+              onMouseDown={(e) => {
+                e.stopPropagation();
+                onCompose({ replyTo: listCtxMenu.comm });
+                setListCtxMenu(null);
+              }}
+              style={{ display: 'block', width: '100%', textAlign: 'left', padding: '8px 12px', background: 'transparent', border: 'none', fontSize: 12, color: 'var(--text-1)', cursor: 'pointer', fontFamily: 'inherit', borderRadius: 4 }}
+              onMouseEnter={e => e.currentTarget.style.background = 'var(--fill-1)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+              ↩ Send reply
+            </button>
+          )}
           <button
             onMouseDown={(e) => {
               e.stopPropagation();
