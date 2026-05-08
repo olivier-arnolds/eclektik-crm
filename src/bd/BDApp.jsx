@@ -22,6 +22,7 @@ import PlaybookDetail from '../components/playbooks/PlaybookDetail';
 import TasksView from './tasks-view';
 import MarketingView from './marketing-view';
 import AdminView from './admin-view';
+import FeedbackModal from './feedback-modal';
 
 export default function BDApp() {
   const [theme, setTheme] = useLocal('bd_theme', 'light');
@@ -56,6 +57,7 @@ export default function BDApp() {
   const [rightContext, setRightContext] = useState(null);
   const [composeCtx, setComposeCtx] = useState(null);
   const [showEnrich, setShowEnrich] = useState(false);
+  const [showFeedback, setShowFeedback] = useState(false);
   const [selectedPlaybook, setSelectedPlaybook] = useState(null);
   const [openContactId, setOpenContactId] = useState(null);
   const [searchPanelDismissed, setSearchPanelDismissed] = useState(false);
@@ -176,7 +178,8 @@ export default function BDApp() {
                 leftLane={leftLane} setLeftLane={setLeftLane}
                 layout={layout} setLayout={setLayout} search={search} setSearch={setSearch}
                 onEnrich={() => setShowEnrich(true)}
-                onRefreshGraph={fetchGraphData} graphLoading={graphLoading} />
+                onRefreshGraph={fetchGraphData} graphLoading={graphLoading}
+                onOpenFeedback={() => setShowFeedback(true)} />
         <div className="lanes" style={{ alignItems: 'center', justifyContent: 'center', color: 'var(--text-3)' }}>
           Loading…
         </div>
@@ -192,7 +195,8 @@ export default function BDApp() {
                 leftLane={leftLane} setLeftLane={setLeftLane}
                 layout={layout} setLayout={setLayout} search={search} setSearch={setSearch}
                 onEnrich={() => setShowEnrich(true)}
-                onRefreshGraph={fetchGraphData} graphLoading={graphLoading} />
+                onRefreshGraph={fetchGraphData} graphLoading={graphLoading}
+                onOpenFeedback={() => setShowFeedback(true)} />
         <div className="lanes">
           <div className="lane" style={{ flex: 1, overflowY: 'auto' }}>
             {selectedPlaybook ? (
@@ -206,6 +210,7 @@ export default function BDApp() {
         {showEnrich && (
           <EnrichModal open={showEnrich} onClose={() => setShowEnrich(false)} accounts={rawAccounts} refetch={refetch} />
         )}
+        <FeedbackModal open={showFeedback} onClose={() => setShowFeedback(false)} />
       </div>
     );
   }
@@ -217,7 +222,8 @@ export default function BDApp() {
                 leftLane={leftLane} setLeftLane={setLeftLane}
                 layout={layout} setLayout={setLayout} search={search} setSearch={setSearch}
                 onEnrich={() => setShowEnrich(true)}
-                onRefreshGraph={fetchGraphData} graphLoading={graphLoading} />
+                onRefreshGraph={fetchGraphData} graphLoading={graphLoading}
+                onOpenFeedback={() => setShowFeedback(true)} />
         <div className="lanes" style={{ display: 'block', overflow: 'auto' }}>
           <AdminView />
         </div>
@@ -225,6 +231,7 @@ export default function BDApp() {
         {showEnrich && (
           <EnrichModal open={showEnrich} onClose={() => setShowEnrich(false)} accounts={rawAccounts} refetch={refetch} />
         )}
+        <FeedbackModal open={showFeedback} onClose={() => setShowFeedback(false)} />
       </div>
     );
   }
@@ -236,7 +243,8 @@ export default function BDApp() {
                 leftLane={leftLane} setLeftLane={setLeftLane}
                 layout={layout} setLayout={setLayout} search={search} setSearch={setSearch}
                 onEnrich={() => setShowEnrich(true)}
-                onRefreshGraph={fetchGraphData} graphLoading={graphLoading} />
+                onRefreshGraph={fetchGraphData} graphLoading={graphLoading}
+                onOpenFeedback={() => setShowFeedback(true)} />
         <div className="lanes" style={{ display: 'block', overflow: 'auto' }}>
           <MarketingView
             contacts={contacts}
@@ -250,6 +258,7 @@ export default function BDApp() {
         {showEnrich && (
           <EnrichModal open={showEnrich} onClose={() => setShowEnrich(false)} accounts={rawAccounts} refetch={refetch} />
         )}
+        <FeedbackModal open={showFeedback} onClose={() => setShowFeedback(false)} />
       </div>
     );
   }
@@ -261,7 +270,8 @@ export default function BDApp() {
                 leftLane={leftLane} setLeftLane={setLeftLane}
                 layout={layout} setLayout={setLayout} search={search} setSearch={setSearch}
                 onEnrich={() => setShowEnrich(true)}
-                onRefreshGraph={fetchGraphData} graphLoading={graphLoading} />
+                onRefreshGraph={fetchGraphData} graphLoading={graphLoading}
+                onOpenFeedback={() => setShowFeedback(true)} />
         <div className="lanes">
           <TasksView accounts={accounts} contacts={contacts}
             onSelectTask={(t) => {
@@ -315,6 +325,7 @@ export default function BDApp() {
         {showEnrich && (
           <EnrichModal open={showEnrich} onClose={() => setShowEnrich(false)} accounts={rawAccounts} refetch={refetch} />
         )}
+        <FeedbackModal open={showFeedback} onClose={() => setShowFeedback(false)} />
       </div>
     );
   }

@@ -1,10 +1,29 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
+import { useAuth } from '../lib/auth';
 
-// Admin view — list of recurring jobs (admin_jobs table) with toggle,
-// recipient editing, last-run status, and a manual "Run now" button.
+// Admin view — two tabs: recurring jobs and feature-request inbox.
 // Visible only to users on the admin email list (gated in topbar).
 export default function AdminView() {
+  const [tab, setTab] = useState('jobs');
+
+  return (
+    <div style={{ padding: '16px 24px', maxWidth: 1000, margin: '0 auto' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16, borderBottom: '0.5px solid var(--sep)', paddingBottom: 8 }}>
+        <button className={tab === 'jobs' ? 'btn-primary tiny' : 'btn-ghost tiny'} onClick={() => setTab('jobs')}>
+          Recurring jobs
+        </button>
+        <button className={tab === 'feedback' ? 'btn-primary tiny' : 'btn-ghost tiny'} onClick={() => setTab('feedback')}>
+          Feedback inbox
+        </button>
+      </div>
+      {tab === 'jobs' && <JobsPanel />}
+      {tab === 'feedback' && <FeedbackInbox />}
+    </div>
+  );
+}
+
+function JobsPanel() {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -20,11 +39,11 @@ export default function AdminView() {
   if (loading) return <div style={{ padding: 24, color: 'var(--text-3)' }}>Loading…</div>;
 
   return (
-    <div style={{ padding: '16px 24px', maxWidth: 1000, margin: '0 auto' }}>
+    <div>
       <div style={{ marginBottom: 16 }}>
-        <div style={{ fontSize: 18, fontWeight: 500 }}>Admin — recurring jobs</div>
+        <div style={{ fontSize: 14, fontWeight: 500 }}>Recurring jobs</div>
         <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 4 }}>
-          Schedule and manage automated tasks. Toggle to enable, edit recipients, or run on demand.
+          Toggle to enable, edit recipients, or run on demand.
         </div>
       </div>
 
@@ -36,6 +55,144 @@ export default function AdminView() {
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {jobs.map(j => <JobRow key={j.id} job={j} onChange={reload} />)}
+      </div>
+    </div>
+  );
+}
+
+function FeedbackInbox() {
+  const [items, setItems] = useState([]);
+  const [filter, setFilter] = useState('new'); // new | approved | done | all
+  const [loading, setLoading] = useState(true);
+  const { session } = useAuth();
+  const adminEmail = session?.user?.email || '';
+
+  const reload = async () => {
+    setLoading(true);
+    let q = supabase.from('feature_requests').select('*').order('created_at', { ascending: false }).limit(200);
+    if (filter !== 'all') q = q.eq('status', filter);
+    const { data } = await q;
+    setItems(data || []);
+    setLoading(false);
+  };
+
+  useEffect(() => { reload(); }, [filter]);
+
+  const updateStatus = async (id, status, decision_notes) => {
+    const patch = { status, decided_at: new Date().toISOString(), decided_by: adminEmail };
+    if (decision_notes !== undefined) patch.decision_notes = decision_notes;
+    const { error } = await supabase.from('feature_requests').update(patch).eq('id', id);
+    if (error) { alert('Failed: ' + error.message); return; }
+    reload();
+  };
+
+  return (
+    <div>
+      <div style={{ marginBottom: 12 }}>
+        <div style={{ fontSize: 14, fontWeight: 500 }}>Feedback inbox</div>
+        <div style={{ fontSize: 12, color: 'var(--text-3)', marginTop: 4 }}>
+          Bug reports, feature requests, and questions submitted via the 💡 Feedback button.
+        </div>
+      </div>
+
+      <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+        {['new', 'approved', 'in_progress', 'done', 'rejected', 'all'].map(s => (
+          <button key={s} className={filter === s ? 'btn-primary tiny' : 'btn-ghost tiny'} onClick={() => setFilter(s)}>
+            {s.replace('_', ' ')}
+          </button>
+        ))}
+      </div>
+
+      {loading && <div style={{ padding: 24, color: 'var(--text-3)' }}>Loading…</div>}
+
+      {!loading && items.length === 0 && (
+        <div style={{ padding: 32, textAlign: 'center', color: 'var(--text-3)', background: 'var(--bg-1)', border: '0.5px solid var(--sep)', borderRadius: 8 }}>
+          No items in <code>{filter}</code>.
+        </div>
+      )}
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {items.map(it => <FeedbackRow key={it.id} item={it} onAction={updateStatus} />)}
+      </div>
+    </div>
+  );
+}
+
+function FeedbackRow({ item, onAction }) {
+  const [showFull, setShowFull] = useState(false);
+  const [busy, setBusy] = useState(false);
+
+  const stamp = item.created_at ? new Date(item.created_at).toLocaleString() : '';
+  const typeIcon = { bug: '🐛', feature: '✨', question: '❓' }[item.type] || '•';
+  const statusColor = {
+    new: 'var(--accent)', approved: 'var(--good)', in_progress: 'var(--warn)',
+    done: 'var(--text-3)', rejected: 'var(--danger)', need_info: 'var(--warn)',
+  }[item.status] || 'var(--text-3)';
+
+  const wrap = async (s) => {
+    setBusy(true);
+    await onAction(item.id, s);
+    setBusy(false);
+  };
+
+  return (
+    <div style={{ background: 'var(--bg-1)', border: '0.5px solid var(--sep)', borderRadius: 8, padding: '12px 14px' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 13, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span>{typeIcon}</span>
+            <span>{item.title}</span>
+            <span style={{ fontSize: 9, padding: '2px 7px', borderRadius: 10, background: 'var(--fill-1)', color: statusColor, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              {item.status.replace('_', ' ')}
+            </span>
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>
+            {item.submitter_email} · {stamp}{item.page_path ? ` · ${item.page_path}` : ''}
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--text-1)', marginTop: 8, whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
+            {showFull || item.description.length < 200 ? item.description : item.description.slice(0, 200) + '…'}
+            {item.description.length >= 200 && (
+              <button onClick={() => setShowFull(v => !v)}
+                style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: 11, marginLeft: 6, padding: 0, fontFamily: 'inherit' }}>
+                {showFull ? 'less' : 'more'}
+              </button>
+            )}
+          </div>
+          {item.screenshot_url && (
+            <a href={item.screenshot_url} target="_blank" rel="noopener noreferrer"
+              style={{ display: 'inline-block', marginTop: 8 }}>
+              <img src={item.screenshot_url} alt="screenshot"
+                style={{ maxWidth: 280, maxHeight: 160, border: '0.5px solid var(--sep)', borderRadius: 6 }} />
+            </a>
+          )}
+          {item.decision_notes && (
+            <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 6, fontStyle: 'italic' }}>
+              Note: {item.decision_notes}
+            </div>
+          )}
+          {item.commit_sha && (
+            <div style={{ fontSize: 11, color: 'var(--good)', marginTop: 6 }}>
+              ✓ Implemented in commit <code>{item.commit_sha}</code>
+            </div>
+          )}
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flexShrink: 0 }}>
+          {item.status === 'new' && (
+            <>
+              <button className="btn-primary tiny" onClick={() => wrap('approved')} disabled={busy}>✓ Approve</button>
+              <button className="btn-ghost tiny" style={{ color: 'var(--danger)' }}
+                onClick={() => {
+                  const reason = prompt('Reason (optional):', '');
+                  if (reason === null) return;
+                  onAction(item.id, 'rejected', reason || null);
+                }} disabled={busy}>✗ Reject</button>
+            </>
+          )}
+          {item.status === 'approved' && (
+            <button className="btn-ghost tiny" onClick={() => wrap('new')} disabled={busy}>← Move to new</button>
+          )}
+        </div>
       </div>
     </div>
   );

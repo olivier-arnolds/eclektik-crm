@@ -5,7 +5,7 @@ import { I } from './atoms';
 // system if/when the team grows.
 const ADMIN_EMAILS = new Set(['olivier@eclectik.co', 'marco@eclectik.co']);
 
-export default function Topbar({ theme, setTheme, view, setView, leftLane, setLeftLane, layout, setLayout, search, setSearch, onOpenTweaks, onEnrich, onRefreshGraph, graphLoading }) {
+export default function Topbar({ theme, setTheme, view, setView, leftLane, setLeftLane, layout, setLayout, search, setSearch, onOpenTweaks, onEnrich, onRefreshGraph, graphLoading, onOpenFeedback }) {
   const { session, logout, reconnectMicrosoft, hasGraphToken } = useAuth();
   const userName = session?.user?.user_metadata?.full_name || session?.user?.email || '';
   const userInitials = (userName || '?').split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase();
@@ -90,6 +90,11 @@ export default function Topbar({ theme, setTheme, view, setView, leftLane, setLe
               style={graphLoading ? { animation: 'spin 0.8s linear infinite' } : {}}>
               <path d="M13.5 8a5.5 5.5 0 11-1.6-3.9M13.5 2v3h-3"/>
             </svg>
+          </button>
+        )}
+        {onOpenFeedback && (
+          <button className="btn-ghost tiny" onClick={onOpenFeedback} title="Submit feedback or feature request">
+            💡 Feedback
           </button>
         )}
         <button className="icon-btn" onClick={toggleTheme} title="Toggle theme">
