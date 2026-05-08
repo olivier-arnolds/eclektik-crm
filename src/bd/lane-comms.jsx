@@ -14,6 +14,14 @@ import SuggestTaskModal from './suggest-task-modal';
 const CHANNEL_OPTIONS = ['all', 'email', 'teams', 'linkedin'];
 const CHANNEL_LABELS = { all: 'All', email: 'Email', teams: 'Teams', linkedin: 'LinkedIn' };
 
+// CRM user email → Unipile account_id. Mirrors the mapping in
+// api/unipile-webhook.js. Update when a new account is connected.
+const USER_TO_UNIPILE_ACCOUNT = {
+  'marco@eclectik.co':    'KYq2oN8JSPiAQSrcIfT5Ew',
+  'yarmilla@eclectik.co': 'j9-n2jeNTtGUxemfjlBsZA',
+  'olivier@eclectik.co':  'tC2o50tiTBiRCt9xAnio3w',
+};
+
 export default function CommsLane({ comms, accounts, contacts, graphEmails: rawGraphEmails, refetch, refetchGraph, onCompose, selectedId, onSelect, accountScope, onClearScope, search: globalSearch }) {
   const { hasGraphToken, reconnectMicrosoft, session } = useAuth();
   const [channel, setChannel] = useState('all');
@@ -170,19 +178,67 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
   const selected = allComms.find(c => c.id === selectedId);
 
   // ---------- Unified chat grouping (LinkedIn + Teams) ----------
-  // Both channels collapse a flat message stream into one row per chat.
-  // Group key is chat_id (LinkedIn: set by Unipile webhook; Teams: Graph
-  // chat id surfaced as chatId in graphEmails). Fallback to contact_id
-  // for legacy LinkedIn rows that pre-date the chat_id column.
+  // Teams: groups derived from graphEmails (already one item per chat).
+  // LinkedIn: chats are fetched live from Unipile API per the logged-in
+  // user's account_id, so the right pane always shows fresh data.
   const GROUPABLE_CHANNELS = ['linkedin', 'teams'];
   const isGroupableChannel = GROUPABLE_CHANNELS.includes(channel);
   const chatKey = (c) => c.chatId || (c.contactId ? `c:${c.contactId}` : `f:${c.from}`);
 
-  const groupedChats = useMemo(() => {
-    if (!isGroupableChannel) return [];
+  // ----- LinkedIn live fetch via Unipile -----
+  const myUnipileAccountId = USER_TO_UNIPILE_ACCOUNT[userEmail] || null;
+  const [liveLinkedInChats, setLiveLinkedInChats] = useState([]);
+  const [loadingLi, setLoadingLi] = useState(false);
+  const [liError, setLiError] = useState(null);
+
+  useEffect(() => {
+    if (channel !== 'linkedin') return;
+    if (!myUnipileAccountId) {
+      setLiveLinkedInChats([]);
+      setLiError('No Unipile LinkedIn account linked for this user');
+      return;
+    }
+    setLoadingLi(true);
+    setLiError(null);
+    fetch(`/api/unipile?action=get-chats&account_id=${myUnipileAccountId}&limit=50`)
+      .then(r => r.json())
+      .then(j => {
+        if (j.error) throw new Error(j.error);
+        setLiveLinkedInChats(j.data?.items || []);
+      })
+      .catch(e => setLiError(e.message || String(e)))
+      .finally(() => setLoadingLi(false));
+  }, [channel, myUnipileAccountId]);
+
+  // Map Unipile attendee_provider_id → known contact via linkedin_url substring
+  const linkedInChatRows = useMemo(() => {
+    if (channel !== 'linkedin') return [];
+    return liveLinkedInChats.map(c => {
+      const providerId = c.attendee_provider_id || '';
+      const contact = providerId
+        ? (contacts || []).find(x => x.linkedin_url && x.linkedin_url.includes(providerId))
+        : null;
+      return {
+        key: c.id,
+        chatId: c.id,
+        contactId: contact?.id || null,
+        contactName: contact?.name || c.name || 'LinkedIn user',
+        contactRole: contact?.role || '',
+        accountId: contact?.accountId || null,
+        account: '',
+        unreadCount: c.unread_count || 0,
+        messageCount: 0, // unknown until messages fetched
+        lastMessage: { ts: c.timestamp, preview: '' },
+      };
+    });
+  }, [liveLinkedInChats, channel, contacts]);
+
+  // Teams grouping (DB-driven, unchanged)
+  const teamsChats = useMemo(() => {
+    if (channel !== 'teams') return [];
     const groups = new Map();
     for (const c of filtered) {
-      if (c.channel !== channel) continue;
+      if (c.channel !== 'teams') continue;
       const key = chatKey(c);
       let g = groups.get(key);
       if (!g) {
@@ -195,7 +251,7 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
           contactRole: contact?.role || '',
           accountId: c.accountId,
           account: c.account,
-          lastMessage: c, // filtered is sorted desc by ts; first wins
+          lastMessage: c,
           unreadCount: 0,
           messageCount: 0,
         };
@@ -207,21 +263,18 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
     return [...groups.values()].sort((a, b) =>
       new Date(b.lastMessage.ts || 0) - new Date(a.lastMessage.ts || 0)
     );
-  }, [filtered, channel, contacts, isGroupableChannel]);
+  }, [filtered, channel, contacts]);
+
+  const groupedChats = channel === 'linkedin' ? linkedInChatRows : teamsChats;
 
   const [selectedChatKey, setSelectedChatKey] = useState(null);
   // Reset selected chat when the user switches channels
   useEffect(() => { if (!isGroupableChannel) setSelectedChatKey(null); }, [channel, isGroupableChannel]);
 
-  // For LinkedIn we have all messages already in allComms — derive the
-  // selected chat thread locally. For Teams the messages live behind a
-  // Graph fetch, so the ThreadPane fetches them itself when selected.
-  const selectedChatMessages = useMemo(() => {
-    if (!selectedChatKey || channel !== 'linkedin') return [];
-    return (allComms || [])
-      .filter(c => c.channel === 'linkedin' && chatKey(c) === selectedChatKey)
-      .sort((a, b) => new Date(a.ts || 0) - new Date(b.ts || 0)); // oldest first
-  }, [allComms, channel, selectedChatKey]);
+  // For Teams, ChatThreadPane fetches its own messages on selection.
+  // For LinkedIn (live), ChatThreadPane likewise fetches via Unipile.
+  // Local-derived messages are no longer needed for either channel.
+  const selectedChatMessages = [];
 
   const selectedChat = groupedChats.find(g => g.key === selectedChatKey);
 
@@ -311,7 +364,16 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
             </div>
           ) : isGroupableChannel ? (
             // ---------- LinkedIn / Teams: conversation list (one row per chat) ----------
-            groupedChats.length === 0 ? (
+            channel === 'linkedin' && !myUnipileAccountId ? (
+              <div className="empty" style={{ padding: '16px', lineHeight: 1.5 }}>
+                No LinkedIn account linked for {userEmail}.<br />
+                Connect via Unipile to see your inbox here.
+              </div>
+            ) : channel === 'linkedin' && loadingLi ? (
+              <div className="empty">Loading LinkedIn conversations…</div>
+            ) : channel === 'linkedin' && liError ? (
+              <div className="empty" style={{ color: 'var(--danger)' }}>Failed to load: {liError}</div>
+            ) : groupedChats.length === 0 ? (
               <div className="empty">No {CHANNEL_LABELS[channel] || channel} conversations</div>
             ) : groupedChats.map(g => (
               <div key={g.key}
@@ -392,11 +454,12 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
             channel={channel}
             localMessages={selectedChatMessages}
             userFirstName={userFirstName}
+            myUnipileAccountId={myUnipileAccountId}
             onSent={() => {
-              // Refresh underlying data after a successful send so the
-              // newly-sent message arrives via the normal refetch path.
+              // For Teams the refetchGraph rehydrates the list; for LinkedIn
+              // the live fetch in ChatThreadPane re-runs when the chat is
+              // reselected, so a parent refetch isn't strictly required.
               if (channel === 'teams' && refetchGraph) refetchGraph();
-              if (channel === 'linkedin' && refetch) refetch();
             }}
           />
         ) : (
@@ -568,8 +631,8 @@ function parseAccountFromText(text) {
 // because Graph chats don't sit in our DB.
 const PAGE_SIZE = 50;
 
-function ChatThreadPane({ chat, channel, localMessages, userFirstName, onSent }) {
-  const [teamsMessages, setTeamsMessages] = useState(null);
+function ChatThreadPane({ chat, channel, localMessages, userFirstName, myUnipileAccountId, onSent }) {
+  const [fetchedMessages, setFetchedMessages] = useState(null);
   const [loading, setLoading] = useState(false);
   const [replyText, setReplyText] = useState('');
   const [sending, setSending] = useState(false);
@@ -585,28 +648,59 @@ function ChatThreadPane({ chat, channel, localMessages, userFirstName, onSent })
     setDisplayLimit(PAGE_SIZE);
   }, [chat?.key]);
 
+  // Fetch the message thread for the selected chat. Both LinkedIn and Teams
+  // pull live from their respective APIs — DB cache is no longer consulted.
   useEffect(() => {
-    if (!chat || channel !== 'teams') { setTeamsMessages(null); return; }
+    if (!chat) { setFetchedMessages(null); return; }
     setLoading(true);
-    setTeamsMessages(null);
-    getChatMessages(chat.chatId, 200)
-      .then(msgs => {
-        // Normalize Graph message shape to the same fields as our LinkedIn comms.
-        const normalized = (msgs || []).map(m => ({
-          id: m.id,
-          from: m.from?.user?.displayName || m.from?.application?.displayName || 'Unknown',
-          // Graph body is HTML — strip tags for the simple bubble view.
-          preview: (m.body?.content || '').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim(),
-          subject: '',
-          ts: m.createdDateTime,
-          dir: 'in', // direction is decided per-render via userFirstName heuristic
-        }));
-        normalized.sort((a, b) => new Date(a.ts || 0) - new Date(b.ts || 0));
-        setTeamsMessages(normalized);
-      })
-      .catch(err => { console.error('teams chat fetch failed', err); setTeamsMessages([]); })
-      .finally(() => setLoading(false));
-  }, [chat, channel]);
+    setFetchedMessages(null);
+
+    if (channel === 'teams') {
+      getChatMessages(chat.chatId, 200)
+        .then(msgs => {
+          const normalized = (msgs || []).map(m => ({
+            id: m.id,
+            from: m.from?.user?.displayName || m.from?.application?.displayName || 'Unknown',
+            preview: (m.body?.content || '').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim(),
+            subject: '',
+            ts: m.createdDateTime,
+            dir: 'in',
+          }));
+          normalized.sort((a, b) => new Date(a.ts || 0) - new Date(b.ts || 0));
+          setFetchedMessages(normalized);
+        })
+        .catch(err => { console.error('teams chat fetch failed', err); setFetchedMessages([]); })
+        .finally(() => setLoading(false));
+      return;
+    }
+
+    if (channel === 'linkedin') {
+      fetch(`/api/unipile?action=get-messages&chat_id=${chat.chatId}`)
+        .then(r => r.json())
+        .then(j => {
+          if (j.error) throw new Error(j.error);
+          const items = j.data?.items || [];
+          const normalized = items.map(m => {
+            const isMine = m.is_sender === 1 || m.sender_id === myUnipileAccountId;
+            return {
+              id: m.id,
+              from: isMine ? 'You' : (m.sender_attendee_id || 'LinkedIn user'),
+              preview: m.text || m.subject || '',
+              subject: '',
+              ts: m.timestamp,
+              dir: isMine ? 'out' : 'in',
+            };
+          });
+          normalized.sort((a, b) => new Date(a.ts || 0) - new Date(b.ts || 0));
+          setFetchedMessages(normalized);
+        })
+        .catch(err => { console.error('linkedin chat fetch failed', err); setFetchedMessages([]); })
+        .finally(() => setLoading(false));
+      return;
+    }
+
+    setLoading(false);
+  }, [chat, channel, myUnipileAccountId]);
 
   const canReply = chat && (
     (channel === 'linkedin' && chat.chatId)  // need real chat_id to send via Unipile
@@ -664,7 +758,7 @@ function ChatThreadPane({ chat, channel, localMessages, userFirstName, onSent })
     );
   }
 
-  const baseMessages = channel === 'teams' ? (teamsMessages || []) : (localMessages || []);
+  const baseMessages = fetchedMessages || [];
   // Show only the most recent `displayLimit` messages; older ones revealed
   // via "Load earlier 50" button. Optimistic sends always appear at the bottom.
   const totalCount = baseMessages.length;
