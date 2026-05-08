@@ -4,6 +4,39 @@ import BulkTagModal from './marketing-bulk-tag-modal';
 import { useAuth } from '../lib/auth';
 import { supabase } from '../supabase';
 
+// CSV escaping: wrap in double-quotes, double-up internal quotes.
+// Excel-compatible — newlines / commas / quotes inside fields preserved.
+function csvEscape(v) {
+  const s = v == null ? '' : String(v);
+  if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
+function exportContactsToCSV(contacts) {
+  const headers = ['Full name', 'Email', 'Phone', 'Company', 'Role', 'LinkedIn URL', 'Tags'];
+  const rows = contacts.map(c => [
+    c.name || '',
+    c.email || '',
+    c.phone || '',
+    c.account || '',
+    c.role || '',
+    c.linkedin_url || '',
+    (c.tags || []).map(t => t.name || t.label || '').filter(Boolean).join(', '),
+  ]);
+  const csv = [headers, ...rows].map(r => r.map(csvEscape).join(',')).join('\r\n');
+  // Prepend BOM so Excel detects UTF-8 (otherwise é/ü etc. show as garbled)
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `contacts-${today}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
 // Marketing → Contacts tab
 // Props: contacts, accounts, deals, allTags, refetch
 // Layout: filter sidebar (left, ~260px) + list (right, fills)
@@ -206,6 +239,20 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
             {filtered.length} of {contacts.length} contacts
             {selected.size > 0 && ` · ${selected.size} selected`}
           </span>
+          <button className="btn-ghost tiny"
+            style={{ marginLeft: 'auto' }}
+            disabled={filtered.length === 0}
+            title={selected.size > 0
+              ? `Export ${selected.size} selected contact${selected.size === 1 ? '' : 's'} as CSV`
+              : `Export ${filtered.length} visible contact${filtered.length === 1 ? '' : 's'} as CSV`}
+            onClick={() => {
+              const subset = selected.size > 0
+                ? filtered.filter(c => selected.has(c.id))
+                : filtered;
+              exportContactsToCSV(subset);
+            }}>
+            📥 Export CSV ({selected.size > 0 ? selected.size : filtered.length})
+          </button>
         </div>
         {selected.size > 0 && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'var(--accent-tint)', borderRadius: 8, marginBottom: 8 }}>
