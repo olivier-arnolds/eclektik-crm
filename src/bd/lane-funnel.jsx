@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { I, fmtMoney, OwnerDot, AccountMark, StaleDot, OWNERS, STAGE_TINT } from './atoms';
 import { STAGES, stageUpdates } from './adapters';
 import { updateRow } from '../hooks/useSupabase';
+import { promoteLeadToOpportunity } from './lead-promote';
 import NewDealModal from './new-deal-modal';
 import BulkLinkDealsModal from './bulk-link-deals-modal';
 
@@ -36,24 +37,27 @@ export default function FunnelLane({ deals, accounts, contacts, filters, setFilt
     deals: filteredDeals.filter(d => d.stage === s.id),
   }));
 
-  // Some transitions need a Won/Lost decision before we can save.
-  // Specifically, anything that moves INTO 'close' or 'active' from an
-  // earlier/non-final stage should ask the user.
   // Won-side stages: deals here are "won" (positive outcome).
   // Used to auto-promote Prospect→Customer when first entering this side.
   const WON_STAGES = ['onboarding', 'active', 'sleeping'];
+  // Stages that only opportunities can occupy. A lead dragged onto one of
+  // these is auto-promoted into the opportunities table first.
+  const OPP_ONLY_STAGES = ['develop', 'proposal', 'onboarding', 'active', 'sleeping'];
 
   const doMove = async (dealId, toStage) => {
     const deal = deals.find(d => d.id === dealId);
     if (!deal) { setConfirmMove(null); return; }
 
-    const updates = stageUpdates(toStage, deal.table);
     try {
-      const { error: upErr } = await updateRow(deal.table, dealId, updates);
-      if (upErr) {
-        alert('Move failed: ' + upErr.message);
-        setConfirmMove(null);
-        return;
+      // Lead → opportunity auto-promote: leads have no `stage` column, so
+      // any drop on an opp-only stage requires moving the row to the
+      // opportunities table first.
+      if (deal.table === 'leads' && OPP_ONLY_STAGES.includes(toStage)) {
+        await promoteLeadToOpportunity(dealId, toStage);
+      } else {
+        const updates = stageUpdates(toStage, deal.table);
+        const { error: upErr } = await updateRow(deal.table, dealId, updates);
+        if (upErr) throw new Error(upErr.message);
       }
     } catch (e) {
       alert('Move failed: ' + (e.message || String(e)));
