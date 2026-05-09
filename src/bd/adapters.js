@@ -191,6 +191,9 @@ export function adaptTask(row, rawItems, rawAccounts) {
     company_id: row.company_id,
     // Prefer task-level owner; fall back to parent deal's owner.
     owner: ownerIdFromName(row.rawOwner) || ownerIdFromName(item?.owner),
+    // Full owner name string (for display next to the due date in the
+    // Account 360 view; the short MVG/OA/YK code lives in `owner`).
+    ownerRaw: row.rawOwner || item?.owner || '',
   };
 }
 

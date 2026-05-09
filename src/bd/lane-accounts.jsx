@@ -1186,7 +1186,12 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
                     <div className="action-row" style={{ width: '100%' }}>
                       <span className={`task-check ${t.done ? 'task-check-on' : ''}`}>{t.done && <I.check />}</span>
                       <span style={{ flex: 1 }}>{t.title}</span>
-                      {t.dueLabel && <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-3)' }}>{t.dueLabel}</span>}
+                      {(t.dueLabel || t.ownerRaw) && (
+                        <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1 }}>
+                          {t.dueLabel && <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-3)' }}>{t.dueLabel}</span>}
+                          {t.ownerRaw && <span style={{ fontSize: 9, color: 'var(--text-3)' }}>{t.ownerRaw}</span>}
+                        </span>
+                      )}
                     </div>
                   )}
                   expanded={() => <InlineTaskDetail taskId={t.id} refetch={refetch} />}
@@ -1205,7 +1210,12 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
                     <div className="action-row" style={{ width: '100%', opacity: 0.7 }}>
                       <span className="task-check task-check-on"><I.check /></span>
                       <span style={{ flex: 1, textDecoration: 'line-through', color: 'var(--text-3)' }}>{t.title}</span>
-                      {t.dueLabel && <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-3)' }}>{t.dueLabel}</span>}
+                      {(t.dueLabel || t.ownerRaw) && (
+                        <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1 }}>
+                          {t.dueLabel && <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-3)' }}>{t.dueLabel}</span>}
+                          {t.ownerRaw && <span style={{ fontSize: 9, color: 'var(--text-3)' }}>{t.ownerRaw}</span>}
+                        </span>
+                      )}
                     </div>
                   )}
                   expanded={() => <InlineTaskDetail taskId={t.id} refetch={refetch} />}
