@@ -255,7 +255,10 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
     });
   }, [liveLinkedInChats, channel, contacts, chatAttendeeNames]);
 
-  // Teams grouping (DB-driven, unchanged)
+  // Teams grouping. 1:1 / group chats use the other-party name; channel
+  // rows (chatType='channel') use the Team / Channel subject so e.g.
+  // 'Customers / Pipeline' shows as a distinct row instead of collapsing
+  // multiple channels into the team name.
   const teamsChats = useMemo(() => {
     if (channel !== 'teams') return [];
     const groups = new Map();
@@ -265,11 +268,15 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
       let g = groups.get(key);
       if (!g) {
         const contact = c.contactId ? (contacts || []).find(x => x.id === c.contactId) : null;
+        const isChannel = c.chatType === 'channel';
         g = {
           key,
           chatId: c.chatId,
           contactId: c.contactId,
-          contactName: contact?.name || c.from || 'Unknown',
+          isChannel,
+          contactName: isChannel
+            ? (c.subject || c.from || 'Channel')
+            : (contact?.name || c.from || 'Unknown'),
           contactRole: contact?.role || '',
           accountId: c.accountId,
           account: c.account,
