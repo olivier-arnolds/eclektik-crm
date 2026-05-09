@@ -25,7 +25,9 @@ function EmailReply({ messageId, onSent }) {
   const handleReply = async () => {
     if (!text.trim()) return;
     setSending(true);
-    const res = await replyToEmail(messageId, text.trim());
+    // Plain-text composer in this lightweight UI — keep contentType=Text
+    // so newlines render correctly (no <br> conversion needed).
+    const res = await replyToEmail(messageId, text.trim(), false);
     if (res.success) {
       setResult('sent');
       setText('');

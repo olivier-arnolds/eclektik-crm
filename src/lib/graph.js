@@ -146,14 +146,14 @@ export async function sendChatMessage(chatId, text) {
   } catch (e) { return { error: e.message }; }
 }
 
-export async function replyToEmail(messageId, body) {
+export async function replyToEmail(messageId, body, isHtml = true) {
   const token = localStorage.getItem('graph_token');
   if (!token) return { error: 'No token' };
   try {
     const resp = await fetch(`https://graph.microsoft.com/v1.0/me/messages/${messageId}/reply`, {
       method: 'POST',
       headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ message: { body: { contentType: 'Text', content: body } } })
+      body: JSON.stringify({ message: { body: { contentType: isHtml ? 'HTML' : 'Text', content: body } } })
     });
     if (resp.ok || resp.status === 202) return { success: true };
     if (resp.status === 401) { localStorage.removeItem('graph_token'); return { error: 'Token expired' }; }
