@@ -687,12 +687,14 @@ function ChatThreadPane({ chat, channel, localMessages, userFirstName, myUnipile
     if (channel === 'teams') {
       getChatMessages(chat.chatId, 200)
         .then(msgs => {
+          // graph.js returns pre-normalized messages for both 1:1/group chats
+          // and channels: { id, from (string), body (string), date, type }.
           const normalized = (msgs || []).map(m => ({
             id: m.id,
-            from: m.from?.user?.displayName || m.from?.application?.displayName || 'Unknown',
-            preview: (m.body?.content || '').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim(),
+            from: m.from || 'Unknown',
+            preview: (m.body || '').replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').trim(),
             subject: '',
-            ts: m.createdDateTime,
+            ts: m.date,
             dir: 'in',
           }));
           normalized.sort((a, b) => new Date(a.ts || 0) - new Date(b.ts || 0));
