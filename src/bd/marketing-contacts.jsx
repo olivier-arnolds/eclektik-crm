@@ -47,6 +47,10 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
   const [hasGlintDeal, setHasGlintDeal] = useState(false);
   const [hasAnyDeal, setHasAnyDeal] = useState(false);
   const [hasEmail, setHasEmail] = useState(false);
+  const [noEmail, setNoEmail] = useState(false);
+  const [editingEmailId, setEditingEmailId] = useState(null);
+  const [emailDraft, setEmailDraft] = useState('');
+  const [savingEmail, setSavingEmail] = useState(false);
   const [activeOnly, setActiveOnly] = useState(true);
   const [showBulkTag, setShowBulkTag] = useState(false);
   // Optimistic-removed (contact_id:tag_id) pairs — see removeTagFromContact
@@ -95,6 +99,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
     const matches = contacts.filter(c => {
       if (activeOnly && c.isFormer) return false;
       if (hasEmail && !c.email) return false;
+      if (noEmail && c.email) return false;
       if (hasGlintDeal && !accountsWithGlintDeal.has(c.accountId)) return false;
       if (hasAnyDeal && !accountsWithAnyDeal.has(c.accountId)) return false;
       if (selectedTagIds.size > 0) {
@@ -121,7 +126,24 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
       if (cmp !== 0) return cmp;
       return (a.name || '').toLowerCase().localeCompare((b.name || '').toLowerCase());
     });
-  }, [contacts, activeOnly, hasEmail, hasGlintDeal, hasAnyDeal, accountsWithGlintDeal, accountsWithAnyDeal, selectedTagIds, selectedAccountTypes, accountTypeById, searchText, hiddenPairs]);
+  }, [contacts, activeOnly, hasEmail, noEmail, hasGlintDeal, hasAnyDeal, accountsWithGlintDeal, accountsWithAnyDeal, selectedTagIds, selectedAccountTypes, accountTypeById, searchText, hiddenPairs]);
+
+  // Inline email edit — optimistic-free: save then refetch so the parent
+  // cache stays the single source of truth.
+  const saveEmail = async (contact) => {
+    if (savingEmail) return;
+    const val = emailDraft.trim();
+    if (val === (contact.email || '')) { setEditingEmailId(null); return; }
+    setSavingEmail(true);
+    const { error } = await supabase
+      .from('contacts')
+      .update({ email: val || null })
+      .eq('id', contact.id);
+    setSavingEmail(false);
+    if (error) { alert('Failed to save email: ' + error.message); return; }
+    setEditingEmailId(null);
+    if (refetch) refetch();
+  };
 
   const [selected, setSelected] = useState(new Set());
 
@@ -206,8 +228,12 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
 
         <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '12px 0 6px' }}>Status</div>
         <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, padding: '3px 0', cursor: 'pointer' }}>
-          <input type="checkbox" checked={hasEmail} onChange={() => setHasEmail(v => !v)} />
+          <input type="checkbox" checked={hasEmail} onChange={() => { setHasEmail(v => !v); if (!hasEmail) setNoEmail(false); }} />
           Has email
+        </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, padding: '3px 0', cursor: 'pointer' }}>
+          <input type="checkbox" checked={noEmail} onChange={() => { setNoEmail(v => !v); if (!noEmail) setHasEmail(false); }} />
+          Without email
         </label>
         <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, padding: '3px 0', cursor: 'pointer' }}>
           <input type="checkbox" checked={activeOnly} onChange={() => setActiveOnly(v => !v)} />
@@ -301,9 +327,37 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
                   </div>
                 );
               })()}
-              <span style={{ fontSize: 10, color: c.email ? 'var(--good)' : 'var(--text-4)', minWidth: 18, textAlign: 'center' }}>
-                {c.email ? '✉' : '—'}
-              </span>
+              <div onClick={e => e.stopPropagation()} style={{ minWidth: 180, flexShrink: 0 }}>
+                {editingEmailId === c.id ? (
+                  <input
+                    autoFocus
+                    type="email"
+                    value={emailDraft}
+                    onChange={e => setEmailDraft(e.target.value)}
+                    onBlur={() => saveEmail(c)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') saveEmail(c);
+                      if (e.key === 'Escape') setEditingEmailId(null);
+                    }}
+                    placeholder="email@example.com"
+                    style={{
+                      width: '100%', padding: '4px 6px', borderRadius: 4,
+                      border: '0.5px solid var(--accent)', background: 'var(--bg-1)',
+                      fontSize: 11, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
+                    }} />
+                ) : (
+                  <span
+                    onClick={() => { setEditingEmailId(c.id); setEmailDraft(c.email || ''); }}
+                    title="Click to edit email"
+                    style={{
+                      fontSize: 11, cursor: 'text',
+                      color: c.email ? 'var(--text-2)' : 'var(--text-4)',
+                      fontStyle: c.email ? 'normal' : 'italic',
+                    }}>
+                    {c.email || '+ add email'}
+                  </span>
+                )}
+              </div>
             </div>
           ))}
           {filtered.length === 0 && (
