@@ -689,6 +689,10 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
   const accDeals = !account.id ? [] : deals.filter(d => d.accountId === account.id);
   const openDeals = accDeals.filter(d => ['qualify', 'develop', 'proposal', 'close'].includes(d.stage));
   const activeDeals = accDeals.filter(d => ['onboarding', 'active'].includes(d.stage));
+  // Sleeping = finished projects (stage='past' + status='Won'). They stay
+  // linked to the account (company_id is untouched on the move) but were
+  // previously invisible here because they fell into neither open nor active.
+  const sleepingDeals = accDeals.filter(d => d.stage === 'sleeping');
   // Merge DB comms + Graph emails matched to this account via contact email or website domain
   const webDomain = ((account.website || '').toLowerCase().replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0]) || null;
   // Only count a contact's email as belonging to this account if their email
@@ -980,6 +984,37 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
             <div className="deals-list">
               {activeDeals.map(d => (
                 <ExpandableRow key={d.id} accent="var(--good)"
+                  collapsed={(open) => (
+                    <div className="deal-row">
+                      <div className="deal-row-left">
+                        <span className={`stage-pill stage-${stageClass(d.stage)}`}>{STAGE_TINT[d.stage]?.label || d.stage}</span>
+                        <DealTypePill deal={d} refetch={refetch} />
+                        <EditableDealTitle deal={d} refetch={refetch} />
+                      </div>
+                      <div className="deal-row-right">
+                        <TeamDots deal={d} />
+                        <span className="deal-row-value">{fmtMoney(d.value)}</span>
+                      </div>
+                    </div>
+                  )}
+                  expanded={() => (
+                    <InlineDealDetail deal={d}
+                      rawItems={rawItems}
+                      onCompose={onCompose}
+                      onOpenModal={() => onOpenDeal && onOpenDeal(d)}
+                      refetch={refetch} />
+                  )}
+                />
+              ))}
+            </div>
+          </Section>
+        )}
+
+        {sleepingDeals.length > 0 && (
+          <Section label={`Sleeping projects · ${sleepingDeals.length}`} defaultOpen={false}>
+            <div className="deals-list">
+              {sleepingDeals.map(d => (
+                <ExpandableRow key={d.id} accent="oklch(60% 0.10 270)"
                   collapsed={(open) => (
                     <div className="deal-row">
                       <div className="deal-row-left">
