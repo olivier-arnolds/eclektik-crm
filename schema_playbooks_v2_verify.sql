@@ -48,6 +48,8 @@ select
 -- ===== Section 4: Edge-count check =====
 -- Aantal edges = aantal nodes minus aantal playbooks-met-nodes
 -- (eerste node per playbook heeft geen inkomende edge)
+-- NB: deze check geldt voor lineaire flows (zoals na migratie uit playbook_steps).
+-- Bij branches met meerdere outgoing edges van één node klopt de formule niet meer.
 select
   (select count(*) from public.playbook_nodes) as nodes,
   (select count(distinct playbook_id) from public.playbook_nodes) as playbooks_with_nodes,
@@ -75,8 +77,8 @@ select indexname from pg_indexes
 where schemaname = 'public'
   and (indexname like 'idx_playbook%' or indexname like 'idx_signal%')
 order by indexname;
--- Expected: 13 indexen (was 11 in plan; uitgebreid met idx_playbook_edges_playbook,
---   idx_playbook_suggestions_contact, idx_playbook_suggestions_deal in review-iteration)
+-- Expected: 14 indexen (11 base + 3 toegevoegd in Task 1 review-iteration:
+--   idx_playbook_edges_playbook, idx_playbook_suggestions_contact, idx_playbook_suggestions_deal)
 
 -- ===== Section 8: RLS policies present =====
 select tablename, policyname
