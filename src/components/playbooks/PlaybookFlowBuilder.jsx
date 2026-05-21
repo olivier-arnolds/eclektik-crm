@@ -10,6 +10,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import NodeCard from './nodes/NodeCard';
+import NodePalette from './panels/NodePalette';
 import { listPlaybooks, createPlaybook, loadPlaybookGraph } from './lib/playbookGraphIO';
 
 const nodeTypes = { custom: NodeCard };
@@ -30,6 +31,7 @@ function FlowCanvas({ playbookId, onClose }) {
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [reactFlowInstance, setReactFlowInstance] = useState(null);
 
   useEffect(() => {
     setLoading(true);
@@ -45,29 +47,59 @@ function FlowCanvas({ playbookId, onClose }) {
       });
   }, [playbookId, setNodes, setEdges]);
 
+  const onDragOver = useCallback((event) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+  }, []);
+
+  const onDrop = useCallback((event) => {
+    event.preventDefault();
+    const nodeType = event.dataTransfer.getData('application/playbook-node-type');
+    if (!nodeType || !reactFlowInstance) return;
+
+    const position = reactFlowInstance.screenToFlowPosition({
+      x: event.clientX,
+      y: event.clientY,
+    });
+
+    const newNode = {
+      id: crypto.randomUUID(),
+      type: 'custom',
+      position,
+      data: { nodeType, config: {} },
+    };
+    setNodes(nds => nds.concat(newNode));
+  }, [reactFlowInstance, setNodes]);
+
   if (loading) return <div style={{ padding:40, textAlign:'center', color:'#888780' }}>Loading playbook...</div>;
   if (error) return <div style={{ padding:40, color:'#dc2626' }}>Error: {error}</div>;
 
   return (
-    <div style={{ width:'100%', height:'100%', position:'relative' }}>
-      <button
-        onClick={onClose}
-        style={{ position:'absolute', top:12, left:12, zIndex:10, padding:'6px 10px', fontSize:11,
-                 background:'#fff', border:'0.5px solid #D3D1C7', borderRadius:6, cursor:'pointer' }}>
-        ← Terug naar lijst
-      </button>
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        onNodesChange={onNodesChange}
-        onEdgesChange={onEdgesChange}
-        nodeTypes={nodeTypes}
-        fitView
-      >
-        <Background />
-        <Controls />
-        <MiniMap />
-      </ReactFlow>
+    <div style={{ display:'flex', width:'100%', height:'100%' }}>
+      <NodePalette />
+      <div style={{ flex:1, position:'relative' }}>
+        <button
+          onClick={onClose}
+          style={{ position:'absolute', top:12, left:12, zIndex:10, padding:'6px 10px', fontSize:11,
+                   background:'#fff', border:'0.5px solid #D3D1C7', borderRadius:6, cursor:'pointer' }}>
+          ← Terug naar lijst
+        </button>
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          onNodesChange={onNodesChange}
+          onEdgesChange={onEdgesChange}
+          nodeTypes={nodeTypes}
+          onInit={setReactFlowInstance}
+          onDrop={onDrop}
+          onDragOver={onDragOver}
+          fitView
+        >
+          <Background />
+          <Controls />
+          <MiniMap />
+        </ReactFlow>
+      </div>
     </div>
   );
 }
