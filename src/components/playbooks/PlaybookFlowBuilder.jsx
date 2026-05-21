@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -12,7 +12,10 @@ import '@xyflow/react/dist/style.css';
 import NodeCard from './nodes/NodeCard';
 import NodePalette from './panels/NodePalette';
 import PropertyPanel from './panels/PropertyPanel';
-import { listPlaybooks, createPlaybook, loadPlaybookGraph } from './lib/playbookGraphIO';
+import BuilderToolbar from './panels/BuilderToolbar';
+import { validatePlaybook, hasErrors } from './lib/playbookValidation';
+import { publishPlaybookVersion } from './lib/playbookVersioning';
+import { listPlaybooks, createPlaybook, loadPlaybookGraph, savePlaybookGraph, getPlaybook } from './lib/playbookGraphIO';
 
 const nodeTypes = { custom: NodeCard };
 
@@ -36,19 +39,55 @@ function FlowCanvas({ playbookId, onClose }) {
   const [selectedNodeId, setSelectedNodeId] = useState(null);
   const selectedNode = nodes.find(n => n.id === selectedNodeId) || null;
 
+  const [playbookMeta, setPlaybookMeta] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+
   useEffect(() => {
     setLoading(true);
-    loadPlaybookGraph(playbookId)
-      .then(({ nodes, edges }) => {
+    Promise.all([
+      loadPlaybookGraph(playbookId),
+      getPlaybook(playbookId),
+    ])
+      .then(([{ nodes, edges }, meta]) => {
         setNodes(nodes);
         setEdges(edges);
+        setPlaybookMeta(meta);
         setLoading(false);
       })
-      .catch(err => {
-        setError(err.message);
-        setLoading(false);
-      });
+      .catch(err => { setError(err.message); setLoading(false); });
   }, [playbookId, setNodes, setEdges]);
+
+  const issues = useMemo(() => validatePlaybook({ nodes, edges }), [nodes, edges]);
+
+  const handleSaveDraft = async () => {
+    setSaving(true);
+    try {
+      await savePlaybookGraph(playbookId, { nodes, edges });
+    } catch (err) {
+      alert('Save failed: ' + err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handlePublish = async () => {
+    if (hasErrors(issues)) {
+      alert('Fix errors voor publish.');
+      return;
+    }
+    setPublishing(true);
+    try {
+      await savePlaybookGraph(playbookId, { nodes, edges });
+      const newVersion = await publishPlaybookVersion(playbookId, { nodes, edges }, null);
+      setPlaybookMeta(m => ({ ...m, version: newVersion, status: 'active' }));
+      alert(`Gepubliceerd als v${newVersion}.`);
+    } catch (err) {
+      alert('Publish failed: ' + err.message);
+    } finally {
+      setPublishing(false);
+    }
+  };
 
   const onDragOver = useCallback((event) => {
     event.preventDefault();
@@ -115,40 +154,47 @@ function FlowCanvas({ playbookId, onClose }) {
   if (error) return <div style={{ padding:40, color:'#dc2626' }}>Error: {error}</div>;
 
   return (
-    <div style={{ display:'flex', width:'100%', height:'100%' }}>
-      <NodePalette />
-      <div style={{ flex:1, position:'relative' }}>
-        <button
-          onClick={onClose}
-          style={{ position:'absolute', top:12, left:12, zIndex:10, padding:'6px 10px', fontSize:11,
-                   background:'#fff', border:'0.5px solid #D3D1C7', borderRadius:6, cursor:'pointer' }}>
-          ← Terug naar lijst
-        </button>
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={onNodesChange}
-          onEdgesChange={onEdgesChange}
-          onConnect={onConnect}
-          onEdgeDoubleClick={onEdgeDoubleClick}
-          onNodeClick={onNodeClick}
-          onPaneClick={onPaneClick}
-          nodeTypes={nodeTypes}
-          onInit={setReactFlowInstance}
-          onDrop={onDrop}
-          onDragOver={onDragOver}
-          fitView
-        >
-          <Background />
-          <Controls />
-          <MiniMap />
-        </ReactFlow>
-      </div>
-      <PropertyPanel
-        selectedNode={selectedNode}
-        onChangeConfig={handleChangeConfig}
-        onDeleteNode={handleDeleteNode}
+    <div style={{ display:'flex', flexDirection:'column', width:'100%', height:'100%' }}>
+      <BuilderToolbar
+        playbookName={playbookMeta?.name}
+        version={playbookMeta?.version}
+        status={playbookMeta?.status}
+        saving={saving}
+        publishing={publishing}
+        issues={issues}
+        onSaveDraft={handleSaveDraft}
+        onPublish={handlePublish}
+        onClose={onClose}
       />
+      <div style={{ display:'flex', flex:1, overflow:'hidden' }}>
+        <NodePalette />
+        <div style={{ flex:1, position:'relative' }}>
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            onNodesChange={onNodesChange}
+            onEdgesChange={onEdgesChange}
+            onConnect={onConnect}
+            onEdgeDoubleClick={onEdgeDoubleClick}
+            onNodeClick={onNodeClick}
+            onPaneClick={onPaneClick}
+            nodeTypes={nodeTypes}
+            onInit={setReactFlowInstance}
+            onDrop={onDrop}
+            onDragOver={onDragOver}
+            fitView
+          >
+            <Background />
+            <Controls />
+            <MiniMap />
+          </ReactFlow>
+        </div>
+        <PropertyPanel
+          selectedNode={selectedNode}
+          onChangeConfig={handleChangeConfig}
+          onDeleteNode={handleDeleteNode}
+        />
+      </div>
     </div>
   );
 }
