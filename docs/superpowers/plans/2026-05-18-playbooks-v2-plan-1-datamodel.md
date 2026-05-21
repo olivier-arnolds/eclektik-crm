@@ -374,7 +374,7 @@ limit 5;
 select indexname from pg_indexes
 where schemaname = 'public'
   and indexname like 'idx_playbook%' or indexname like 'idx_signal%';
--- Expected: 9 indexen
+-- Expected: 14 indexen (11 base + 3 toegevoegd in Task 1 review-iteration)
 --   idx_playbook_drafts_enrollment
 --   idx_playbook_drafts_pending
 --   idx_playbook_edges_source
@@ -602,7 +602,7 @@ Bekijk de output per sectie. Run desnoods sectie-voor-sectie (selecteer alleen d
 | 4 — edges-count | edges = nodes - playbooks_with_nodes |
 | 5 — missing node_id | 0 |
 | 6 — node-spot-check | nodes hebben node_type, subject voor email-nodes |
-| 7 — indexes | 11 indexen (lichte variatie OK) |
+| 7 — indexes | 14 indexen (11 base + 3 toegevoegd in Task 1 review-iteration) |
 
 Bij mismatch: noteer welke sectie en wat je ziet. Geef het door zodat we kunnen diagnostiseren.
 

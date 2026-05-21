@@ -4,6 +4,8 @@
 -- LET OP: alleen uitvoeren NADAT het nieuwe systeem 24h stable draait.
 -- Dit script DROPT de oude playbook_steps tabel en current_step kolom.
 -- Onomkeerbaar zonder backup.
+-- Na dit script is schema_playbooks_v2_rollback.sql NIET meer veilig uitvoerbaar
+-- (rollback gaat ervan uit dat playbook_steps nog bestaat).
 -- ============================================================
 
 -- =====================
