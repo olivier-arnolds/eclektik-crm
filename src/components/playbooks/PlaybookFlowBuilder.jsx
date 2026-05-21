@@ -11,6 +11,7 @@ import {
 import '@xyflow/react/dist/style.css';
 import NodeCard from './nodes/NodeCard';
 import NodePalette from './panels/NodePalette';
+import PropertyPanel from './panels/PropertyPanel';
 import { listPlaybooks, createPlaybook, loadPlaybookGraph } from './lib/playbookGraphIO';
 
 const nodeTypes = { custom: NodeCard };
@@ -32,6 +33,8 @@ function FlowCanvas({ playbookId, onClose }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [reactFlowInstance, setReactFlowInstance] = useState(null);
+  const [selectedNodeId, setSelectedNodeId] = useState(null);
+  const selectedNode = nodes.find(n => n.id === selectedNodeId) || null;
 
   useEffect(() => {
     setLoading(true);
@@ -89,6 +92,25 @@ function FlowCanvas({ playbookId, onClose }) {
     }
   }, [setEdges]);
 
+  const onNodeClick = useCallback((event, node) => {
+    setSelectedNodeId(node.id);
+  }, []);
+
+  const onPaneClick = useCallback(() => {
+    setSelectedNodeId(null);
+  }, []);
+
+  const handleChangeConfig = useCallback((newConfig) => {
+    setNodes(nds => nds.map(n => n.id === selectedNodeId ? { ...n, data: { ...n.data, config: newConfig } } : n));
+  }, [selectedNodeId, setNodes]);
+
+  const handleDeleteNode = useCallback(() => {
+    if (!selectedNodeId) return;
+    setNodes(nds => nds.filter(n => n.id !== selectedNodeId));
+    setEdges(eds => eds.filter(e => e.source !== selectedNodeId && e.target !== selectedNodeId));
+    setSelectedNodeId(null);
+  }, [selectedNodeId, setNodes, setEdges]);
+
   if (loading) return <div style={{ padding:40, textAlign:'center', color:'#888780' }}>Loading playbook...</div>;
   if (error) return <div style={{ padding:40, color:'#dc2626' }}>Error: {error}</div>;
 
@@ -109,6 +131,8 @@ function FlowCanvas({ playbookId, onClose }) {
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
           onEdgeDoubleClick={onEdgeDoubleClick}
+          onNodeClick={onNodeClick}
+          onPaneClick={onPaneClick}
           nodeTypes={nodeTypes}
           onInit={setReactFlowInstance}
           onDrop={onDrop}
@@ -120,6 +144,11 @@ function FlowCanvas({ playbookId, onClose }) {
           <MiniMap />
         </ReactFlow>
       </div>
+      <PropertyPanel
+        selectedNode={selectedNode}
+        onChangeConfig={handleChangeConfig}
+        onDeleteNode={handleDeleteNode}
+      />
     </div>
   );
 }
