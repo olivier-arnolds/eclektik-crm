@@ -54,6 +54,7 @@ create table public.playbook_edges (
 comment on table public.playbook_edges is 'Directed edges in playbook graph. Branch-nodes hebben meerdere outgoing edges met condition_expr.';
 create index idx_playbook_edges_source on public.playbook_edges(source_node_id);
 create index idx_playbook_edges_target on public.playbook_edges(target_node_id);
+create index idx_playbook_edges_playbook on public.playbook_edges(playbook_id);
 
 -- 1d. signals — gedetecteerde externe events (LinkedIn posts in V1)
 create table public.signals (
@@ -108,6 +109,8 @@ create table public.playbook_suggestions (
 );
 comment on table public.playbook_suggestions is 'Pending playbook-suggesties. Status: pending/started/dismissed/expired.';
 create index idx_playbook_suggestions_pending on public.playbook_suggestions(created_at) where status = 'pending';
+create index idx_playbook_suggestions_contact on public.playbook_suggestions(contact_id) where contact_id is not null;
+create index idx_playbook_suggestions_deal on public.playbook_suggestions(deal_id) where deal_id is not null;
 
 -- 1g. playbook_drafts — klaar-voor-review berichten
 create table public.playbook_drafts (
@@ -212,3 +215,36 @@ from public.playbook_nodes n
 where n.config->>'migrated_from_step_id' = e.current_step::text
   and e.current_step is not null
   and e.current_node_id is null;
+
+-- =====================
+-- STAP 4: RLS policies (RLS auto-enabled door rls_auto_enable trigger)
+-- =====================
+-- Per CLAUDE.md: uniforme "auth users full access on <table>" policy voor team-toegang.
+
+create policy "auth users full access on playbook_versions"
+  on public.playbook_versions for all to authenticated
+  using (true) with check (true);
+
+create policy "auth users full access on playbook_nodes"
+  on public.playbook_nodes for all to authenticated
+  using (true) with check (true);
+
+create policy "auth users full access on playbook_edges"
+  on public.playbook_edges for all to authenticated
+  using (true) with check (true);
+
+create policy "auth users full access on signals"
+  on public.signals for all to authenticated
+  using (true) with check (true);
+
+create policy "auth users full access on signal_subjects"
+  on public.signal_subjects for all to authenticated
+  using (true) with check (true);
+
+create policy "auth users full access on playbook_suggestions"
+  on public.playbook_suggestions for all to authenticated
+  using (true) with check (true);
+
+create policy "auth users full access on playbook_drafts"
+  on public.playbook_drafts for all to authenticated
+  using (true) with check (true);
