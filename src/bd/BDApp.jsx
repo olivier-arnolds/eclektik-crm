@@ -17,8 +17,7 @@ import DealDetailModal from './deal-detail-modal';
 import ContactDetailModal from './contact-detail-modal';
 import SearchResultsPanel from './search-results-panel';
 import EnrichModal from '../components/forms/EnrichModal';
-import PlaybooksList from '../components/playbooks/PlaybooksList';
-import PlaybookDetail from '../components/playbooks/PlaybookDetail';
+import PlaybooksHub from '../components/playbooks/PlaybooksHub';
 import TasksView from './tasks-view';
 import MarketingView from './marketing-view';
 import AdminView from './admin-view';
@@ -58,7 +57,6 @@ export default function BDApp() {
   const [composeCtx, setComposeCtx] = useState(null);
   const [showEnrich, setShowEnrich] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
-  const [selectedPlaybook, setSelectedPlaybook] = useState(null);
   const [openContactId, setOpenContactId] = useState(null);
   const [searchPanelDismissed, setSearchPanelDismissed] = useState(false);
   // Which lane (if any) is expanded to full width — hides the other two.
@@ -198,12 +196,8 @@ export default function BDApp() {
                 onRefreshGraph={fetchGraphData} graphLoading={graphLoading}
                 onOpenFeedback={() => setShowFeedback(true)} />
         <div className="lanes">
-          <div className="lane" style={{ flex: 1, overflowY: 'auto' }}>
-            {selectedPlaybook ? (
-              <PlaybookDetail playbook={selectedPlaybook} onBack={() => setSelectedPlaybook(null)} contacts={rawContacts} accounts={rawAccounts} />
-            ) : (
-              <PlaybooksList onSelectPlaybook={setSelectedPlaybook} />
-            )}
+          <div className="lane" style={{ flex: 1, overflow: 'hidden' }}>
+            <PlaybooksHub />
           </div>
         </div>
         <Statusbar userName={userName} unreadCount={unreadCount} openDeals={openDealsCount} totalValue={totalValue} />
