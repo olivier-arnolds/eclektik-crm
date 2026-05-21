@@ -25,10 +25,6 @@ import AccountDetail from './components/accounts/AccountDetail';
 import ContactsList from './components/contacts/ContactsList';
 import ContactDetail from './components/contacts/ContactDetail';
 
-// Playbooks
-import PlaybooksList from './components/playbooks/PlaybooksList';
-import PlaybookDetail from './components/playbooks/PlaybookDetail';
-
 // Inbox
 import UnifiedInbox from './components/inbox/UnifiedInbox';
 
@@ -43,7 +39,6 @@ export default function BDDashboard() {
   const [selectedItem,       setSelectedItem]       = useState(null);
   const [selectedAccount,    setSelectedAccount]    = useState(null);
   const [selectedContact,    setSelectedContact]    = useState(null);
-  const [selectedPlaybook,   setSelectedPlaybook]   = useState(null);
   const [rightTab,           setRightTab]           = useState("rappel");
   const [noteText,           setNoteText]           = useState("");
   const [extraTimeline,      setExtraTimeline]      = useState({});
@@ -130,10 +125,6 @@ export default function BDDashboard() {
     if (viewMode==="swimlane") mainContent = <SwimlaneView onSelectItem={setSelectedItem} search="" allItems={allItems} accounts={accounts} contacts={contacts} followUps={followUps} refetch={refetch} stageFilter={activeFunnelStage} />;
     else if (viewMode==="timeline") mainContent = <TimelineView onSelectItem={setSelectedItem} allItems={allItems} accounts={accounts} />;
     else mainContent = <ListView stageKey={activeFunnelStage} onSelectItem={setSelectedItem} search="" allItems={allItems} accounts={accounts} contacts={contacts} followUps={followUps} refetch={refetch} />;
-  } else if (sidebarMode==="playbooks") {
-    mainContent = selectedPlaybook
-      ? <PlaybookDetail playbook={selectedPlaybook} onBack={() => setSelectedPlaybook(null)} contacts={contacts} accounts={accounts} />
-      : <PlaybooksList onSelectPlaybook={(pb) => setSelectedPlaybook(pb)} />;
   } else if (sidebarMode==="inbox") {
     mainContent = <UnifiedInbox contacts={contacts} accounts={accounts} onSwitchMode={setSidebarMode} />;
   } else if (sidebarMode==="contacts") {
