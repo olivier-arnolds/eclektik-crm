@@ -71,6 +71,24 @@ function FlowCanvas({ playbookId, onClose }) {
     setNodes(nds => nds.concat(newNode));
   }, [reactFlowInstance, setNodes]);
 
+  const onConnect = useCallback((params) => {
+    const newEdge = {
+      id: crypto.randomUUID(),
+      source: params.source,
+      target: params.target,
+      label: '',
+      data: {},
+    };
+    setEdges(eds => eds.concat(newEdge));
+  }, [setEdges]);
+
+  const onEdgeDoubleClick = useCallback((event, edge) => {
+    const newLabel = prompt('Edge label (bv. "ja", "nee", "deal > 50k"):', edge.label || '');
+    if (newLabel !== null) {
+      setEdges(eds => eds.map(e => e.id === edge.id ? { ...e, label: newLabel } : e));
+    }
+  }, [setEdges]);
+
   if (loading) return <div style={{ padding:40, textAlign:'center', color:'#888780' }}>Loading playbook...</div>;
   if (error) return <div style={{ padding:40, color:'#dc2626' }}>Error: {error}</div>;
 
@@ -89,6 +107,8 @@ function FlowCanvas({ playbookId, onClose }) {
           edges={edges}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
+          onConnect={onConnect}
+          onEdgeDoubleClick={onEdgeDoubleClick}
           nodeTypes={nodeTypes}
           onInit={setReactFlowInstance}
           onDrop={onDrop}
