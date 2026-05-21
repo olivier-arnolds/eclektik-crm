@@ -10,7 +10,7 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import NodeCard from './nodes/NodeCard';
-import { loadPlaybookGraph } from './lib/playbookGraphIO';
+import { listPlaybooks, createPlaybook, loadPlaybookGraph } from './lib/playbookGraphIO';
 
 const nodeTypes = { custom: NodeCard };
 
@@ -73,11 +73,75 @@ function FlowCanvas({ playbookId, onClose }) {
 }
 
 function PlaybookListing({ onOpenPlaybook }) {
-  // Stub voor Task 8 — wordt daar volledig ingevuld
+  const [playbooks, setPlaybooks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [newName, setNewName] = useState('');
+
+  useEffect(() => {
+    listPlaybooks()
+      .then(rows => { setPlaybooks(rows); setLoading(false); })
+      .catch(err => { setError(err.message); setLoading(false); });
+  }, []);
+
+  async function handleCreate() {
+    if (!newName.trim()) return;
+    try {
+      const pb = await createPlaybook(newName.trim());
+      setNewName('');
+      onOpenPlaybook(pb.id);
+    } catch (err) {
+      alert('Kan playbook niet aanmaken: ' + err.message);
+    }
+  }
+
+  if (loading) return <div style={{ padding:40, textAlign:'center', color:'#888780' }}>Loading...</div>;
+  if (error) return <div style={{ padding:40, color:'#dc2626' }}>Error: {error}</div>;
+
   return (
-    <div style={{ padding:24 }}>
-      <h2 style={{ fontSize:14, marginBottom:8 }}>Playbooks</h2>
-      <p style={{ fontSize:12, color:'#888780' }}>Lijst-component wordt ingevuld in Task 8.</p>
+    <div style={{ padding:24, maxWidth:800, margin:'0 auto' }}>
+      <h2 style={{ fontSize:14, marginBottom:16 }}>Playbooks</h2>
+
+      <div style={{ background:'#F1EFE8', padding:12, borderRadius:6, marginBottom:20, display:'flex', gap:8 }}>
+        <input
+          type="text"
+          value={newName}
+          onChange={e => setNewName(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && handleCreate()}
+          placeholder="Nieuwe playbook naam..."
+          style={{ flex:1, padding:'6px 10px', border:'0.5px solid #D3D1C7', borderRadius:4, fontSize:12, fontFamily:'inherit' }}
+        />
+        <button
+          onClick={handleCreate}
+          disabled={!newName.trim()}
+          style={{ padding:'6px 14px', background:'#378ADD', color:'#fff', border:'none', borderRadius:4, fontSize:12, cursor: newName.trim() ? 'pointer' : 'not-allowed', opacity: newName.trim() ? 1 : 0.5 }}>
+          + Nieuwe playbook
+        </button>
+      </div>
+
+      {playbooks.length === 0 ? (
+        <div style={{ textAlign:'center', padding:40, color:'#888780', fontSize:12 }}>
+          Nog geen playbooks. Maak je eerste hierboven aan.
+        </div>
+      ) : (
+        <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+          {playbooks.map(pb => (
+            <div
+              key={pb.id}
+              onClick={() => onOpenPlaybook(pb.id)}
+              style={{ background:'#fff', border:'0.5px solid #D3D1C7', borderRadius:6, padding:12, cursor:'pointer',
+                       display:'flex', alignItems:'center', gap:12 }}>
+              <div style={{ flex:1 }}>
+                <div style={{ fontWeight:500, fontSize:13 }}>{pb.name}</div>
+                <div style={{ fontSize:10, color:'#888780', marginTop:2 }}>
+                  {pb.status} · v{pb.version} · trigger: {pb.trigger_type || '(geen)'}
+                </div>
+              </div>
+              <div style={{ fontSize:11, color:'#888780' }}>{new Date(pb.created_at).toLocaleDateString('nl-NL')}</div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
