@@ -119,6 +119,15 @@ export default function LogView() {
                 </div>
               )}
 
+              {e.rollback && (
+                <div style={{
+                  marginTop: 12, padding: '8px 10px', borderRadius: 6,
+                  background: 'var(--fill-2)', fontSize: 11.5, lineHeight: 1.5, color: 'var(--text-2)',
+                }}>
+                  <strong style={{ color: 'var(--text-1)' }}>Rollback:</strong> {e.rollback}
+                </div>
+              )}
+
               {e.gitTag && (
                 <div style={{
                   marginTop: 14, paddingTop: 12, borderTop: '0.5px dashed var(--sep)',

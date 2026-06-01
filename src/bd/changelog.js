@@ -19,9 +19,37 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.2.0';
+export const CURRENT_VERSION = '1.3.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.3.0',
+    date: '2026-06-01T17:20:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'data',
+    title: 'Owner field normalized to canonical full names (data migration)',
+    summary:
+      'Cleaned up the free-text `owner` field, which stored the same person under ' +
+      'several spellings. Every owner in companies, contacts, leads, opportunities ' +
+      'and tasks is now one of three canonical full names. This was a DATABASE change ' +
+      '(already applied live) — to undo it, run the revert SQL, not git.',
+    changes: [
+      'Normalized owner to: Marco van Gelder / Olivier Arnolds / Yarmilla Koenders across companies, contacts, leads, opportunities, tasks.',
+      'Collapsed spelling variants: "MVG"/"Marco" → Marco van Gelder; "Olivier" → Olivier Arnolds; "Yarmilla" → Yarmilla Koenders.',
+      'Reassigned legacy Dynamics owners (Jonathan Khongwir — 54 opps + 63 contacts, Desiree Cisneros) to Marco van Gelder.',
+      'Filled empty owners (3 companies, 10 contacts, 3 leads, 5 opps, 9 tasks) with Marco van Gelder.',
+      'Left comms.owner untouched — it stores the external counterparty name, not a team owner.',
+      'Took a full snapshot first (public._owner_backup_20260601) for reversibility.',
+    ],
+    files: [
+      'db_revert_owner_normalization_2026-06-01.sql (new)',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    rollback: 'Run db_revert_owner_normalization_2026-06-01.sql in the Supabase SQL Editor (restores from the _owner_backup_20260601 snapshot). git checkout will NOT undo a database change.',
+    gitTag: 'v1.3.0',
+  },
   {
     version: '1.2.0',
     date: '2026-06-01T16:56:00Z',
