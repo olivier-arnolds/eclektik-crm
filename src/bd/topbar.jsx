@@ -5,7 +5,7 @@ import { I } from './atoms';
 // system if/when the team grows.
 const ADMIN_EMAILS = new Set(['olivier@eclectik.co', 'marco@eclectik.co']);
 
-export default function Topbar({ theme, setTheme, view, setView, leftLane, setLeftLane, layout, setLayout, search, setSearch, onOpenTweaks, onEnrich, onRefreshGraph, graphLoading, onOpenFeedback }) {
+export default function Topbar({ theme, setTheme, view, setView, layout, setLayout, search, setSearch, onOpenTweaks, onEnrich, onRefreshGraph, graphLoading, onOpenFeedback }) {
   const { session, logout, reconnectMicrosoft, hasGraphToken } = useAuth();
   const userName = session?.user?.user_metadata?.full_name || session?.user?.email || '';
   const userInitials = (userName || '?').split(' ').map(n=>n[0]).slice(0,2).join('').toUpperCase();
@@ -18,38 +18,32 @@ export default function Topbar({ theme, setTheme, view, setView, leftLane, setLe
       <div className="topbar-brand">
         <div className="brand-mark">E</div>
         <span>Eclectik BD</span>
-        <span style={{
-          marginLeft: 6, fontSize: 10, fontFamily: 'var(--font-mono)',
-          padding: '2px 6px', borderRadius: 3,
-          background: 'var(--accent-tint)', color: 'var(--accent)',
-          textTransform: 'uppercase', letterSpacing: '0.06em',
-        }}>BabyDee 1.0</span>
       </div>
 
       <div className="topbar-sep" />
 
       <div className="topbar-nav">
-        <button className={view === 'workspace' && leftLane === 'calendar' ? 'on' : ''}
-          onClick={() => { setView('workspace'); setLeftLane('calendar'); }} title="Calendar + Comms + Accounts">
-          <I.calendar /> Workspace
-        </button>
-        <button className={view === 'workspace' && leftLane === 'funnel' ? 'on' : ''}
-          onClick={() => { setView('workspace'); setLeftLane('funnel'); }} title="Funnel + Comms + Accounts">
+        <button className={view === 'funnel' ? 'on' : ''}
+          onClick={() => setView('funnel')} title="Funnel — deal pipeline">
           <I.funnel /> Funnel
         </button>
-        <button className={view === 'playbooks' ? 'on' : ''} onClick={() => setView('playbooks')} title="Playbooks">
-          <I.sparkle /> Playbooks
+        <button className={view === 'meetings' ? 'on' : ''}
+          onClick={() => setView('meetings')} title="Meetings — calendar & agenda">
+          <I.calendar /> Meetings
         </button>
         <button className={view === 'tasks' ? 'on' : ''} onClick={() => setView('tasks')} title="All open tasks">
           <I.check /> Tasks
+        </button>
+        <button className={view === 'comms' ? 'on' : ''}
+          onClick={() => setView('comms')} title="Comms — email, Teams & LinkedIn">
+          <I.inbox /> Comms
         </button>
         <button className={view === 'marketing' ? 'on' : ''}
           onClick={() => setView('marketing')} title="Marketing — segment & campaign">
           <I.send /> Marketing
         </button>
-        <button className={view === 'log' ? 'on' : ''}
-          onClick={() => setView('log')} title="Change log — version history & rollback">
-          <I.history /> Log
+        <button className={view === 'playbooks' ? 'on' : ''} onClick={() => setView('playbooks')} title="Playbooks">
+          <I.sparkle /> Playbooks
         </button>
         {isAdmin && (
           <button className={view === 'admin' ? 'on' : ''}
@@ -57,6 +51,10 @@ export default function Topbar({ theme, setTheme, view, setView, leftLane, setLe
             <I.dots /> Admin
           </button>
         )}
+        <button className={view === 'log' ? 'on' : ''}
+          onClick={() => setView('log')} title="Change log — version history & rollback">
+          <I.history /> Log
+        </button>
       </div>
 
       <div className="topbar-search">

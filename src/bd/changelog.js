@@ -19,9 +19,38 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.1.0';
+export const CURRENT_VERSION = '1.2.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.2.0',
+    date: '2026-06-01T16:56:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'refactor',
+    title: 'New layout: persistent Account 360 on the right, single view-switcher on the left',
+    summary:
+      'Reworked the app shell into a consistent two-pane model. The Account 360 ' +
+      '"database" pane now stays on the right in every view, and the left pane ' +
+      'switches between Funnel, Meetings, Tasks, Comms, Marketing, Playbooks and Admin. ' +
+      'Also removed the "BabyDee 1.0" badge from the top-left. No Supabase data touched.',
+    changes: [
+      'Removed the "BabyDee 1.0" badge next to the Eclectik BD wordmark (top-left).',
+      'Top nav is now a single flat view-switcher: Funnel · Meetings · Tasks · Comms · Marketing · Playbooks · Admin (+ Log). Replaced the old Workspace/Funnel split that toggled the left lane.',
+      'Account 360 is now rendered as a persistent right-hand pane across ALL views (previously Marketing, Playbooks and Admin took the full width and hid it).',
+      'Each view now occupies the left pane: Funnel (pipeline), Meetings (calendar/agenda), Tasks, Comms (email/Teams/LinkedIn), Marketing, Playbooks, Admin, Log.',
+      'Collapsed the duplicated per-view render blocks in BDApp.jsx into one unified shell (single Topbar / Statusbar / modal set).',
+      'Repurposed the lane "expand" toggle: expanding the left pane now hides the 360 for full-width focus (Funnel, Meetings, Tasks).',
+      'Added migration for the old persisted "workspace" view so existing users land on Meetings (or Funnel) instead of a blank screen.',
+    ],
+    files: [
+      'src/bd/BDApp.jsx',
+      'src/bd/topbar.jsx',
+      'VERSION',
+      'package.json',
+      'src/bd/changelog.js',
+    ],
+    gitTag: 'v1.2.0',
+  },
   {
     version: '1.1.0',
     date: '2026-06-01T16:43:00Z',

@@ -24,6 +24,11 @@ import AdminView from './admin-view';
 import LogView from './log-view';
 import FeedbackModal from './feedback-modal';
 
+// The single set of left-pane views. The Account 360 always sits to the right.
+const NAV_VIEWS = ['funnel', 'meetings', 'tasks', 'comms', 'marketing', 'playbooks', 'admin', 'log'];
+// Views whose left pane scrolls as one block (vs. lanes that manage their own scroll).
+const SCROLL_VIEWS = ['marketing', 'admin', 'log'];
+
 export default function BDApp() {
   const [theme, setTheme] = useLocal('bd_theme', 'light');
   useEffect(() => {
@@ -40,10 +45,11 @@ export default function BDApp() {
     } catch (_) {}
   }, []);
 
-  // view = which top-level area ('workspace' = 3-lane, 'playbooks' = full)
-  // leftLane = for workspace: 'calendar' or 'funnel'
-  const [view, setView] = useLocal('bd_view', 'workspace');
-  const [leftLane, setLeftLane] = useLocal('bd_leftlane', 'calendar');
+  // view = which left-pane area is active (see NAV_VIEWS). The Account 360
+  // pane is always shown on the right. `leftLane` is only read to migrate the
+  // old 'workspace' value into the new flat view model.
+  const [view, setView] = useLocal('bd_view', 'meetings');
+  const [leftLane] = useLocal('bd_leftlane', 'calendar');
   const [layout, setLayout] = useLocal('bd_layout', 'fixed');
   const [search, setSearchRaw] = useState('');
   const setSearch = (v) => { setSearchRaw(v); setSearchPanelDismissed(false); };
@@ -60,8 +66,17 @@ export default function BDApp() {
   const [showFeedback, setShowFeedback] = useState(false);
   const [openContactId, setOpenContactId] = useState(null);
   const [searchPanelDismissed, setSearchPanelDismissed] = useState(false);
-  // Which lane (if any) is expanded to full width — hides the other two.
+  // When 'left', the left pane expands full-width and the Account 360 hides.
   const [expandedLane, setExpandedLane] = useState(null); // 'left' | null
+
+  // Normalize legacy/unknown persisted view into the new flat model.
+  const activeView = NAV_VIEWS.includes(view)
+    ? view
+    : (view === 'workspace' && leftLane === 'funnel') ? 'funnel' : 'meetings';
+  useEffect(() => {
+    if (!NAV_VIEWS.includes(view)) setView(activeView);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Inbox emails + calendar events lifted to BDApp so they survive view switches
   const [graphEmails, setGraphEmails] = useState([]);
@@ -170,15 +185,18 @@ export default function BDApp() {
   };
   const openCompose = (ctx) => setComposeCtx(ctx || {});
 
+  const topbar = (
+    <Topbar theme={theme} setTheme={setTheme} view={activeView} setView={setView}
+            layout={layout} setLayout={setLayout} search={search} setSearch={setSearch}
+            onEnrich={() => setShowEnrich(true)}
+            onRefreshGraph={fetchGraphData} graphLoading={graphLoading}
+            onOpenFeedback={() => setShowFeedback(true)} />
+  );
+
   if (loading) {
     return (
       <div className={`app theme-${theme}`}>
-        <Topbar theme={theme} setTheme={setTheme} view={view} setView={setView}
-                leftLane={leftLane} setLeftLane={setLeftLane}
-                layout={layout} setLayout={setLayout} search={search} setSearch={setSearch}
-                onEnrich={() => setShowEnrich(true)}
-                onRefreshGraph={fetchGraphData} graphLoading={graphLoading}
-                onOpenFeedback={() => setShowFeedback(true)} />
+        {topbar}
         <div className="lanes" style={{ alignItems: 'center', justifyContent: 'center', color: 'var(--text-3)' }}>
           Loading…
         </div>
@@ -187,251 +205,100 @@ export default function BDApp() {
     );
   }
 
-  if (view === 'playbooks') {
-    return (
-      <div className={`app theme-${theme}`} data-layout={layout}>
-        <Topbar theme={theme} setTheme={setTheme} view={view} setView={setView}
-                leftLane={leftLane} setLeftLane={setLeftLane}
-                layout={layout} setLayout={setLayout} search={search} setSearch={setSearch}
-                onEnrich={() => setShowEnrich(true)}
-                onRefreshGraph={fetchGraphData} graphLoading={graphLoading}
-                onOpenFeedback={() => setShowFeedback(true)} />
-        <div className="lanes">
-          <div className="lane" style={{ flex: 1, overflow: 'hidden' }}>
-            <PlaybooksHub />
-          </div>
-        </div>
-        <Statusbar userName={userName} unreadCount={unreadCount} openDeals={openDealsCount} totalValue={totalValue} />
-        {showEnrich && (
-          <EnrichModal open={showEnrich} onClose={() => setShowEnrich(false)} accounts={rawAccounts} refetch={refetch} />
-        )}
-        <FeedbackModal open={showFeedback} onClose={() => setShowFeedback(false)} />
+  const expandToggleProps = {
+    expanded: expandedLane === 'left',
+    onToggleExpand: () => setExpandedLane(expandedLane === 'left' ? null : 'left'),
+  };
+
+  // ---- LEFT PANE: one of the NAV_VIEWS ----
+  let leftPane = null;
+  if (activeView === 'funnel') {
+    leftPane = (
+      <FunnelLane
+        deals={deals} accounts={accounts} contacts={contacts}
+        filters={filters} setFilters={setFilters} search={search}
+        onSelectDeal={selectDeal} onEditDeal={(d) => setOpenDeal(d)} refetch={refetch}
+        {...expandToggleProps}
+      />
+    );
+  } else if (activeView === 'meetings') {
+    leftPane = (
+      <CalendarLane
+        events={events} tasks={tasks} deals={deals} accounts={accounts} contacts={contacts}
+        graphEvents={graphEvents} refetch={refetch} refetchGraph={fetchGraphData}
+        onSelectEvent={(e) => setRightContext({ type: 'event', id: e.id })}
+        onSelectTask={(t) => setRightContext({ type: 'task', id: t.id, focusTaskId: t.id })}
+        {...expandToggleProps}
+      />
+    );
+  } else if (activeView === 'tasks') {
+    leftPane = (
+      <TasksView accounts={accounts} contacts={contacts}
+        onSelectTask={(t) => {
+          setRightContext({ type: 'task', id: t.id });
+          if (t.company_id) setAccountScope(t.company_id); else setAccountScope(null);
+        }}
+        onPickAccount={(acc) => { pickAccount(acc); }}
+        {...expandToggleProps}
+      />
+    );
+  } else if (activeView === 'comms') {
+    leftPane = (
+      <CommsLane
+        comms={comms} accounts={accounts} contacts={contacts} graphEmails={graphEmails}
+        refetch={refetch} refetchGraph={fetchGraphData} onCompose={openCompose}
+        selectedId={selectedComm} onSelect={selectCommHandler}
+        accountScope={accountScope} onClearScope={() => setAccountScope(null)} search={search}
+      />
+    );
+  } else if (activeView === 'playbooks') {
+    leftPane = <div className="lane" style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}><PlaybooksHub /></div>;
+  } else if (activeView === 'marketing') {
+    leftPane = (
+      <div style={{ flex: 1, minWidth: 0, overflow: 'auto' }}>
+        <MarketingView contacts={contacts} accounts={accounts} deals={deals} allTags={allTags} refetch={refetch} />
       </div>
     );
+  } else if (activeView === 'admin') {
+    leftPane = <div style={{ flex: 1, minWidth: 0, overflow: 'auto' }}><AdminView /></div>;
+  } else if (activeView === 'log') {
+    leftPane = <div style={{ flex: 1, minWidth: 0, overflow: 'auto' }}><LogView /></div>;
   }
 
-  if (view === 'admin') {
-    return (
-      <div className={`app theme-${theme}`} data-layout={layout}>
-        <Topbar theme={theme} setTheme={setTheme} view={view} setView={setView}
-                leftLane={leftLane} setLeftLane={setLeftLane}
-                layout={layout} setLayout={setLayout} search={search} setSearch={setSearch}
-                onEnrich={() => setShowEnrich(true)}
-                onRefreshGraph={fetchGraphData} graphLoading={graphLoading}
-                onOpenFeedback={() => setShowFeedback(true)} />
-        <div className="lanes" style={{ display: 'block', overflow: 'auto' }}>
-          <AdminView />
-        </div>
-        <Statusbar userName={userName} unreadCount={unreadCount} openDeals={openDealsCount} totalValue={totalValue} />
-        {showEnrich && (
-          <EnrichModal open={showEnrich} onClose={() => setShowEnrich(false)} accounts={rawAccounts} refetch={refetch} />
-        )}
-        <FeedbackModal open={showFeedback} onClose={() => setShowFeedback(false)} />
-      </div>
-    );
-  }
-
-  if (view === 'log') {
-    return (
-      <div className={`app theme-${theme}`} data-layout={layout}>
-        <Topbar theme={theme} setTheme={setTheme} view={view} setView={setView}
-                leftLane={leftLane} setLeftLane={setLeftLane}
-                layout={layout} setLayout={setLayout} search={search} setSearch={setSearch}
-                onEnrich={() => setShowEnrich(true)}
-                onRefreshGraph={fetchGraphData} graphLoading={graphLoading}
-                onOpenFeedback={() => setShowFeedback(true)} />
-        <div className="lanes" style={{ display: 'block', overflow: 'auto' }}>
-          <LogView />
-        </div>
-        <Statusbar userName={userName} unreadCount={unreadCount} openDeals={openDealsCount} totalValue={totalValue} />
-        {showEnrich && (
-          <EnrichModal open={showEnrich} onClose={() => setShowEnrich(false)} accounts={rawAccounts} refetch={refetch} />
-        )}
-        <FeedbackModal open={showFeedback} onClose={() => setShowFeedback(false)} />
-      </div>
-    );
-  }
-
-  if (view === 'marketing') {
-    return (
-      <div className={`app theme-${theme}`} data-layout={layout}>
-        <Topbar theme={theme} setTheme={setTheme} view={view} setView={setView}
-                leftLane={leftLane} setLeftLane={setLeftLane}
-                layout={layout} setLayout={setLayout} search={search} setSearch={setSearch}
-                onEnrich={() => setShowEnrich(true)}
-                onRefreshGraph={fetchGraphData} graphLoading={graphLoading}
-                onOpenFeedback={() => setShowFeedback(true)} />
-        <div className="lanes" style={{ display: 'block', overflow: 'auto' }}>
-          <MarketingView
-            contacts={contacts}
-            accounts={accounts}
-            deals={deals}
-            allTags={allTags}
-            refetch={refetch}
-          />
-        </div>
-        <Statusbar userName={userName} unreadCount={unreadCount} openDeals={openDealsCount} totalValue={totalValue} />
-        {showEnrich && (
-          <EnrichModal open={showEnrich} onClose={() => setShowEnrich(false)} accounts={rawAccounts} refetch={refetch} />
-        )}
-        <FeedbackModal open={showFeedback} onClose={() => setShowFeedback(false)} />
-      </div>
-    );
-  }
-
-  if (view === 'tasks') {
-    return (
-      <div className={`app theme-${theme}`} data-layout={layout}>
-        <Topbar theme={theme} setTheme={setTheme} view={view} setView={setView}
-                leftLane={leftLane} setLeftLane={setLeftLane}
-                layout={layout} setLayout={setLayout} search={search} setSearch={setSearch}
-                onEnrich={() => setShowEnrich(true)}
-                onRefreshGraph={fetchGraphData} graphLoading={graphLoading}
-                onOpenFeedback={() => setShowFeedback(true)} />
-        <div className="lanes">
-          <TasksView accounts={accounts} contacts={contacts}
-            onSelectTask={(t) => {
-              setRightContext({ type: 'task', id: t.id });
-              // Filter Comms + open Account 360 to the task's account
-              if (t.company_id) setAccountScope(t.company_id);
-              else setAccountScope(null);
-            }}
-            onPickAccount={(acc) => { pickAccount(acc); }}
-            expanded={expandedLane === 'left'}
-            onToggleExpand={() => setExpandedLane(expandedLane === 'left' ? null : 'left')}
-          />
-          {expandedLane !== 'left' && (
-            <CommsLane
-              comms={comms}
-              accounts={accounts}
-              contacts={contacts}
-              graphEmails={graphEmails}
-              refetch={refetch}
-              refetchGraph={fetchGraphData}
-              onCompose={openCompose}
-              selectedId={selectedComm}
-              onSelect={selectCommHandler}
-              accountScope={accountScope}
-              onClearScope={() => setAccountScope(null)}
-              search={search}
-            />
-          )}
-          <AccountsLane
-            context={rightContext}
-            accounts={accounts}
-            contacts={contacts}
-            deals={deals}
-            rawItems={rawAllItems}
-            comms={comms}
-            graphEmails={graphEmails}
-            events={events}
-            graphEvents={graphEvents}
-            tasks={tasks}
-            onPickAccount={pickAccount}
-            onCompose={openCompose}
-            onOpenDeal={selectDeal}
-            onSelectComm={selectCommHandler}
-            search={search}
-            refetch={refetch}
-            refetchGraph={fetchGraphData}
-            allTags={allTags}
-          />
-        </div>
-        <Statusbar userName={userName} unreadCount={unreadCount} openDeals={openDealsCount} totalValue={totalValue} />
-        {showEnrich && (
-          <EnrichModal open={showEnrich} onClose={() => setShowEnrich(false)} accounts={rawAccounts} refetch={refetch} />
-        )}
-        <FeedbackModal open={showFeedback} onClose={() => setShowFeedback(false)} />
-      </div>
-    );
-  }
+  const showRight = expandedLane !== 'left';
 
   return (
     <div className={`app theme-${theme}`} data-layout={layout}>
-      <Topbar theme={theme} setTheme={setTheme} view={view} setView={setView}
-              leftLane={leftLane} setLeftLane={setLeftLane}
-              layout={layout} setLayout={setLayout} search={search} setSearch={setSearch}
-              onEnrich={() => setShowEnrich(true)}
-              onRefreshGraph={fetchGraphData} graphLoading={graphLoading}
-              onOpenFeedback={() => setShowFeedback(true)} />
+      {topbar}
       <div className="lanes">
-        {/* LEFT LANE: Calendar OR Funnel */}
-        {leftLane === 'funnel' ? (
-          <FunnelLane
-            deals={deals}
-            accounts={accounts}
-            contacts={contacts}
-            filters={filters}
-            setFilters={setFilters}
-            search={search}
-            onSelectDeal={selectDeal}
-            onEditDeal={(d) => setOpenDeal(d)}
-            refetch={refetch}
-            expanded={expandedLane === 'left'}
-            onToggleExpand={() => setExpandedLane(expandedLane === 'left' ? null : 'left')}
-          />
-        ) : (
-          <CalendarLane
-            events={events}
-            tasks={tasks}
-            deals={deals}
-            accounts={accounts}
-            contacts={contacts}
-            graphEvents={graphEvents}
-            refetch={refetch}
-            refetchGraph={fetchGraphData}
-            onSelectEvent={(e) => setRightContext({ type: 'event', id: e.id })}
-            onSelectTask={(t) => setRightContext({ type: 'task', id: t.id, focusTaskId: t.id })}
-            expanded={expandedLane === 'left'}
-            onToggleExpand={() => setExpandedLane(expandedLane === 'left' ? null : 'left')}
-          />
-        )}
+        {leftPane}
 
-        {/* MIDDLE lane (Comms) — hidden when left lane is expanded.
-            Account 360 stays visible even in expanded mode. */}
-        {expandedLane !== 'left' && (
+        {/* RIGHT PANE: Account 360 — always visible unless the left pane is expanded */}
+        {showRight && (
           <>
             <div className="divider" />
-            <CommsLane
-              comms={comms}
+            <AccountsLane
+              context={rightContext}
               accounts={accounts}
               contacts={contacts}
+              deals={deals}
+              rawItems={rawAllItems}
+              comms={comms}
               graphEmails={graphEmails}
+              events={events}
+              graphEvents={graphEvents}
+              tasks={tasks}
+              search={search}
               refetch={refetch}
               refetchGraph={fetchGraphData}
+              onPickAccount={pickAccount}
               onCompose={openCompose}
-              selectedId={selectedComm}
-              onSelect={selectCommHandler}
-              accountScope={accountScope}
-              onClearScope={() => setAccountScope(null)}
-              search={search}
+              onOpenDeal={selectDeal}
+              onSelectComm={selectCommHandler}
+              allTags={allTags}
             />
           </>
         )}
-
-        <div className="divider" />
-
-        {/* RIGHT lane (Accounts 360) — always visible */}
-        <AccountsLane
-          context={rightContext}
-          accounts={accounts}
-          contacts={contacts}
-          deals={deals}
-          rawItems={rawAllItems}
-          comms={comms}
-          graphEmails={graphEmails}
-          events={events}
-          graphEvents={graphEvents}
-          tasks={tasks}
-          search={search}
-          refetch={refetch}
-          refetchGraph={fetchGraphData}
-          onPickAccount={pickAccount}
-          onCompose={openCompose}
-          onOpenDeal={selectDeal}
-          onSelectComm={selectCommHandler}
-          allTags={allTags}
-        />
 
         {/* Global search results overlay (only when user is typing ≥2 chars) */}
         {search.trim().length >= 2 && !searchPanelDismissed && (
