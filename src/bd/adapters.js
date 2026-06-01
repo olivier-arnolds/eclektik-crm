@@ -227,6 +227,19 @@ export const STAGES = [
   { id: 'sleeping',   label: 'Sleeping',   hue: 270 },
 ];
 
+// Stage → win-probability (%). Single source of truth; applied on every
+// stage move (and lead→opp promote) via stageUpdates, and used for the
+// weighted pipeline. Edit these numbers to retune the funnel.
+export const STAGE_PROBABILITY = {
+  qualify:    20,
+  develop:    40,
+  proposal:   60,
+  close:       0,
+  onboarding: 80,
+  active:    100,
+  sleeping:  100,
+};
+
 // Convert a drop-target stage back to Supabase updates.
 // Handles all 7 BD stages with the correct combination of stage / sub_status
 // / status / status_reason fields. NOTE: 'leads' has no `stage` column, so
@@ -263,6 +276,10 @@ export function stageUpdates(targetStage, dealTable) {
       updates.status = null;
       updates.status_reason = null;
     }
+  }
+  // Stage-driven win probability (applies to both leads and opportunities).
+  if (STAGE_PROBABILITY[targetStage] !== undefined) {
+    updates.probability = STAGE_PROBABILITY[targetStage];
   }
   return updates;
 }

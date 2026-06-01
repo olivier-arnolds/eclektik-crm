@@ -19,9 +19,37 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.3.0';
+export const CURRENT_VERSION = '1.4.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.4.0',
+    date: '2026-06-01T17:40:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feature',
+    title: 'Stage-driven win probability on the funnel',
+    summary:
+      'Each funnel stage now carries a fixed win probability. The app sets it ' +
+      'automatically whenever a deal moves stage (including lead→opportunity ' +
+      'promotion), and existing deals were backfilled to match. Percentages are ' +
+      'configurable in one place (STAGE_PROBABILITY in src/bd/adapters.js).',
+    changes: [
+      'Probabilities: qualify 20% · develop 40% · proposal 60% · close 0% · onboarding 80% · active 100% · sleeping 100%.',
+      'Added STAGE_PROBABILITY map (src/bd/adapters.js) as the single source of truth.',
+      'Wired it into stageUpdates so every stage move (and the lead→opp promote path) writes the right probability automatically.',
+      'Backfilled probability on all 52 leads and 122 opportunities to match their current stage (DATABASE change, already applied live).',
+      'Snapshot taken first (public._probability_backup_20260601) for reversibility.',
+    ],
+    files: [
+      'src/bd/adapters.js',
+      'db_revert_probability_2026-06-01.sql (new)',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    rollback: 'Data: run db_revert_probability_2026-06-01.sql in the Supabase SQL Editor (restores from the _probability_backup_20260601 snapshot). Code: git checkout v1.4.0 (or revert) to stop auto-setting probability on stage moves.',
+    gitTag: 'v1.4.0',
+  },
   {
     version: '1.3.0',
     date: '2026-06-01T17:20:00Z',
