@@ -19,9 +19,38 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.5.0';
+export const CURRENT_VERSION = '1.5.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.5.1',
+    date: '2026-06-01T20:40:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'data',
+    title: 'CRM data-quality corrections surfaced by the Reporting tab',
+    summary:
+      'Cleaned up the data-quality flags the new Reporting tab exposed. Two ' +
+      'in-delivery deals that were never marked Won are now Won; two prospects ' +
+      'that had actually bought are now Customers; and a customer with no country ' +
+      'was placed in the US. Applied live to the database (with a snapshot + revert ' +
+      'script); no code logic changed.',
+    changes: [
+      'Breitling: active deal marked Won (€14,700 estimate).',
+      'BioMarin Pharmaceutical Inc: active deal marked Won; the €0 actual was cleared so the €33,250 estimate counts; account reclassified Prospect → Customer.',
+      'European Training Foundation (ETF) and PIMCO Prime Real Estate: reclassified Prospect → Customer (they carry won revenue). Microsoft Corp intentionally left as Partner.',
+      'BMC Software: country set to US (was blank, previously defaulting to EMEA).',
+      'Effect: won revenue €1,113,770 → €1,161,720, won deals 44 → 46, customers (excl. Adecco) 32 → 35. Breitling & BioMarin now appear under the (informational) "won on estimate, no actual booked" flag — actuals were deliberately not faked.',
+      'Snapshots: public._dq_backup_opps_20260601 and public._dq_backup_companies_20260601.',
+    ],
+    files: [
+      'db_revert_dataquality_2026-06-01.sql (new)',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    rollback: 'Data: run db_revert_dataquality_2026-06-01.sql in the Supabase SQL Editor (restores from the _dq_backup_*_20260601 snapshots). This was a DB-only change — git checkout does not undo it.',
+    gitTag: 'v1.5.1',
+  },
   {
     version: '1.5.0',
     date: '2026-06-01T20:10:00Z',
