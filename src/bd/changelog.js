@@ -19,9 +19,40 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.4.1';
+export const CURRENT_VERSION = '1.5.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.5.0',
+    date: '2026-06-01T20:10:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feature',
+    title: 'Reporting tab — BD revenue & pipeline dashboard',
+    summary:
+      'New Reporting tab (after Comms) that reads live from Supabase and derives ' +
+      'every figure from queries at load time — no hardcoded numbers. Won revenue ' +
+      'by quarter with target + linear trend, new vs recurring by line, win/loss by ' +
+      'line, and an all-clients US/EMEA matrix. Clicking a client name opens that ' +
+      "account's 360 in the right pane. Follows the app's light/dark theme.",
+    changes: [
+      'Added the "Reporting" view to NAV_VIEWS (after Comms) + a topbar nav button; registered in SCROLL_VIEWS.',
+      'New src/bd/lane-reporting.jsx: fetches opportunities + companies via the existing supabase client and computes all metrics in one place (revenue = COALESCE(actual, est, 0); quarter = quarter of actual/expected close; Won/Lost/Open; weighted = Σ(est × probability); Customer excl. Adecco; region US vs EMEA; new vs recurring by close-date rank).',
+      'KPI row (won revenue, win rate, open + weighted pipeline, active/dormant clients), data-quality warnings panel, and a methodology footer.',
+      'Charts are hand-rolled inline SVG (no new dependency) and theme via CSS variables; trend line shows R² and the illustrative target-crossing quarter.',
+      'All-clients table groups US/EMEA with per-quarter columns, subtotals and a grand total that reconciles to total won; client-name click calls the existing pickAccount() so the persistent right pane shows the Account 360.',
+      'Config toggles: count unstatused-active deals as won (off by default) and new-vs-recurring at relationship vs product-line level.',
+      'Read-only feature — no database change, so no snapshot/revert required.',
+    ],
+    files: [
+      'src/bd/lane-reporting.jsx (new)',
+      'src/bd/BDApp.jsx',
+      'src/bd/topbar.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.5.0',
+  },
   {
     version: '1.4.1',
     date: '2026-06-01T20:05:00Z',
