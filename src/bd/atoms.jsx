@@ -161,6 +161,7 @@ export const I = {
   reply: (p={}) => <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.3" {...p}><path d="M6 4L2 8l4 4M2 8h7a4 4 0 014 4v1"/></svg>,
   forward: (p={}) => <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.3" {...p}><path d="M10 4l4 4-4 4M14 8H7a4 4 0 00-4 4v1"/></svg>,
   globe: (p={}) => <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.3" {...p}><circle cx="8" cy="8" r="6"/><path d="M2 8h12M8 2c2 2 3 4 3 6s-1 4-3 6c-2-2-3-4-3-6s1-4 3-6z"/></svg>,
+  history: (p={}) => <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.3" {...p}><path d="M2.5 8a5.5 5.5 0 1 0 1.7-4M2 2v3h3M8 5v3l2.5 1.5"/></svg>,
 };
 
 // ---------- Hooks ----------

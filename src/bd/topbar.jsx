@@ -47,6 +47,10 @@ export default function Topbar({ theme, setTheme, view, setView, leftLane, setLe
           onClick={() => setView('marketing')} title="Marketing — segment & campaign">
           <I.send /> Marketing
         </button>
+        <button className={view === 'log' ? 'on' : ''}
+          onClick={() => setView('log')} title="Change log — version history & rollback">
+          <I.history /> Log
+        </button>
         {isAdmin && (
           <button className={view === 'admin' ? 'on' : ''}
             onClick={() => setView('admin')} title="Admin — recurring jobs & exports">
