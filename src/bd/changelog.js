@@ -19,9 +19,31 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.4.0';
+export const CURRENT_VERSION = '1.4.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.4.1',
+    date: '2026-06-01T20:05:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'chore',
+    title: 'Add change & release procedure (PROCEDURE.md)',
+    summary:
+      'Documented the full workflow for this project: how to version a change, ' +
+      'write a changelog entry, run the GitHub push, handle database changes safely, ' +
+      'and roll back. Includes a reusable prompt for Cowork/Claude sessions.',
+    changes: [
+      'Added PROCEDURE.md at the repo root covering: the working model, semver rules (keep VERSION + package.json + changelog.js + git tag in sync), the changelog entry shape, a pre-push checklist, database-change rules (snapshot → apply → verify → revert script), the exact push command, git/macOS gotchas, and rollback.',
+      'Included a copy-paste prompt to drive future change sessions.',
+    ],
+    files: [
+      'PROCEDURE.md (new)',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.4.1',
+  },
   {
     version: '1.4.0',
     date: '2026-06-01T17:40:00Z',
