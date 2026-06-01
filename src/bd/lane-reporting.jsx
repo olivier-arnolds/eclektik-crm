@@ -56,6 +56,8 @@ const ccShort = (c) => {
 function useReportingData() {
   const [opps, setOpps] = useState(null);
   const [companies, setCompanies] = useState(null);
+  const [links, setLinks] = useState(null);
+  const [teamContacts, setTeamContacts] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshedAt, setRefreshedAt] = useState(null);
@@ -63,16 +65,20 @@ function useReportingData() {
   const load = async () => {
     setLoading(true); setError(null);
     try {
-      const [o, c] = await Promise.all([
+      const [o, c, l, ct] = await Promise.all([
         supabase.from('opportunities')
           .select('id,company_id,company_name,status,stage,product_line,est_revenue,actual_revenue,probability,close_date,actual_close_date')
           .limit(2000),
         supabase.from('companies').select('id,name,type,country').limit(2000),
+        supabase.from('account_links').select('account_id,contact_id,role').eq('link_type', 'eclectik_team').limit(2000),
+        supabase.from('contacts').select('id,first_name,last_name,full_name,title').limit(2000),
       ]);
       if (o.error) throw o.error;
       if (c.error) throw c.error;
       setOpps(o.data || []);
       setCompanies(c.data || []);
+      setLinks(l.data || []);
+      setTeamContacts(ct.data || []);
       setRefreshedAt(new Date());
     } catch (e) {
       setError(e.message || String(e));
@@ -81,11 +87,11 @@ function useReportingData() {
     }
   };
   useEffect(() => { load(); }, []);
-  return { opps, companies, error, loading, refreshedAt, reload: load };
+  return { opps, companies, links, teamContacts, error, loading, refreshedAt, reload: load };
 }
 
 // ───────────────────────── metric computation ─────────────────────────
-function computeMetrics(opps, companies, cfg) {
+function computeMetrics(opps, companies, links, teamContacts, cfg) {
   const byId = new Map(companies.map((c) => [c.id, c]));
   const isCustomer = (c) => c && c.type === 'Customer' && c.name !== ADECCO;
 
@@ -236,13 +242,101 @@ function computeMetrics(opps, companies, cfg) {
     missingCountry: customers.filter((c) => !c.country).map((c) => c.name),
   };
 
+  // Team coverage matrix: Eclectik team members (columns) × clients (rows).
+  // Person role from account_links.role; columns sorted CSM → PSC → ROI → rest.
+  const ROLE_ORDER = { CSM: 0, PSC: 1, ROI: 2, rest: 3 };
+  const normRole = (r) => (r === 'CSM' || r === 'PSC' || r === 'ROI') ? r : 'rest';
+  const ctById = new Map((teamContacts || []).map((c) => [c.id, c]));
+  const personName = (c) => {
+    const n = `${c.first_name || ''} ${c.last_name || ''}`.trim();
+    return n || c.full_name || '—';
+  };
+  const clientIds = new Set(rows.map((r) => r.id));
+  const people = new Map(); // by display name (merge duplicate contact rows)
+  for (const l of (links || [])) {
+    if (!clientIds.has(l.account_id)) continue;       // only clients shown in the table
+    const c = ctById.get(l.contact_id); if (!c) continue;
+    const name = personName(c);
+    if (!people.has(name)) people.set(name, { name, roleCounts: {}, clients: new Set() });
+    const p = people.get(name);
+    p.clients.add(l.account_id);
+    const rr = normRole(l.role); p.roleCounts[rr] = (p.roleCounts[rr] || 0) + 1;
+  }
+  const team = [...people.values()].map((p) => {
+    let role = 'rest', best = 0;
+    for (const k of ['CSM', 'PSC', 'ROI']) if ((p.roleCounts[k] || 0) > best) { role = k; best = p.roleCounts[k]; }
+    return { name: p.name, role, clients: p.clients, n: p.clients.size, initials: p.name.split(' ').filter(Boolean).map((w) => w[0]).slice(0, 2).join('').toUpperCase() };
+  }).sort((a, b) => ROLE_ORDER[a.role] - ROLE_ORDER[b.role] || a.name.localeCompare(b.name));
+
   return {
     kpi: { wonRev, wonN, lostN, winRate, openGross, openN: openP.length, openWeighted, customers: customers.length, activeClients, dormantClients },
     quarters, extQuarters, glint, roi, other, totals, wonCount, lostCount,
     trend: { slope, intercept, r2, trendVals, crossingLabel },
     nr, recGlint, recRoi, recTotal, recDeals,
-    wl, rows, regionRows, subtotal, grand, colTotals, dormant, warnings,
+    wl, rows, regionRows, subtotal, grand, colTotals, dormant, warnings, team,
   };
+}
+
+const ROLE_COLOR = { CSM: 'var(--good)', PSC: 'var(--accent)', ROI: 'var(--warn)', rest: 'var(--text-3)' };
+
+// Eclectik team ↔ client coverage matrix. Clients down the side, team across
+// the top (grouped by role); a colored dot marks each covered crossing.
+function TeamCoverageMatrix({ m, onPick }) {
+  const { team, regionRows } = m;
+  if (!team.length) return <div style={{ ...muted, fontSize: 12 }}>No Eclectik-team links found.</div>;
+  const stickyName = { position: 'sticky', left: 0, zIndex: 1, background: 'var(--bg-1)' };
+  const HeadCell = (p) => (
+    <th key={p.name} title={`${p.name} · ${p.role}`} style={{ padding: '2px 0 4px', textAlign: 'center', fontWeight: 400, verticalAlign: 'bottom' }}>
+      <div style={{ fontSize: 10.5, color: 'var(--text-2)' }}>{p.initials}</div>
+      <div style={{ height: 2, width: 16, margin: '3px auto 0', borderRadius: 2, background: ROLE_COLOR[p.role] }} />
+    </th>
+  );
+  const Row = (r) => (
+    <tr key={r.id} onClick={() => onPick(r.id)} style={{ borderTop: '0.5px solid var(--sep)', cursor: 'pointer' }}
+      onMouseEnter={(e) => e.currentTarget.style.background = 'var(--fill-1)'}
+      onMouseLeave={(e) => e.currentTarget.style.background = ''}>
+      <td style={{ ...stickyName, padding: '4px 8px 4px 6px', whiteSpace: 'nowrap', color: r.green ? 'var(--good)' : 'var(--text-1)', textDecoration: 'underline', textDecorationColor: 'var(--sep-strong)', textUnderlineOffset: 2 }}>{r.name}</td>
+      {team.map((p) => (
+        <td key={p.name} style={{ textAlign: 'center', padding: '4px 0' }}>
+          {p.clients.has(r.id) ? <span style={{ color: ROLE_COLOR[p.role], fontSize: 13 }}>●</span> : <span style={{ color: 'var(--text-4)' }}>·</span>}
+        </td>
+      ))}
+    </tr>
+  );
+  const Section = (label) => (
+    <tr><td colSpan={team.length + 1} style={{ ...stickyName, padding: '7px 6px', background: 'var(--good-tint)', fontSize: 10.5, ...muted, letterSpacing: '0.04em' }}>{label}</td></tr>
+  );
+  const us = regionRows('US'), emea = regionRows('EMEA');
+  return (
+    <>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 8, fontSize: 11, ...muted }}>
+        {[['CSM', 'CSM'], ['PSC', 'PSC'], ['rest', 'Leadership / other']].map(([k, lbl]) => (
+          <span key={k} style={{ display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ color: ROLE_COLOR[k], fontSize: 13 }}>●</span>{lbl}</span>
+        ))}
+        <span>· hover a column for the full name · click a client to open its 360</span>
+      </div>
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ borderCollapse: 'collapse', fontSize: 11, minWidth: '100%' }}>
+          <thead>
+            <tr>
+              <th style={{ ...stickyName, padding: '2px 6px', textAlign: 'left', fontWeight: 400, ...muted }}>CLIENT</th>
+              {team.map(HeadCell)}
+            </tr>
+          </thead>
+          <tbody>
+            {Section(`UNITED STATES · ${us.length}`)}
+            {us.map(Row)}
+            {Section(`EMEA · ${emea.length}`)}
+            {emea.map(Row)}
+            <tr style={{ borderTop: '0.5px solid var(--sep-strong)' }}>
+              <td style={{ ...stickyName, padding: '6px', fontWeight: 500 }}>Clients covered</td>
+              {team.map((p) => <td key={p.name} style={{ textAlign: 'center', padding: '6px 0', fontWeight: 500, ...mono }}>{p.n}</td>)}
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
 }
 
 // ───────────────────────── small UI atoms ─────────────────────────
@@ -439,14 +533,14 @@ function ClientsTable({ m, onPick }) {
 
 // ───────────────────────── main lane ─────────────────────────
 export default function ReportingLane({ onPickAccount, accounts = [] }) {
-  const { opps, companies, error, loading, refreshedAt, reload } = useReportingData();
+  const { opps, companies, links, teamContacts, error, loading, refreshedAt, reload } = useReportingData();
   const [countActiveAsWon, setCountActiveAsWon] = useState(false);
   const [recurringLineLevel, setRecurringLineLevel] = useState(false);
   const rootRef = useRef(null);
 
   const m = useMemo(
-    () => (opps && companies) ? computeMetrics(opps, companies, { countActiveAsWon, recurringLineLevel }) : null,
-    [opps, companies, countActiveAsWon, recurringLineLevel]
+    () => (opps && companies) ? computeMetrics(opps, companies, links || [], teamContacts || [], { countActiveAsWon, recurringLineLevel }) : null,
+    [opps, companies, links, teamContacts, countActiveAsWon, recurringLineLevel]
   );
 
   const pick = (id) => { if (onPickAccount) onPickAccount(accounts.find((a) => a.id === id) || { id }); };
@@ -544,6 +638,10 @@ export default function ReportingLane({ onPickAccount, accounts = [] }) {
                 <span><Pill status="Dormant" /> no live/open</span><span><Pill status="Partner" /> won, not a Customer</span>
               </div>
               <ClientsTable m={m} onPick={pick} />
+            </Panel>
+
+            <Panel title="Client coverage · Eclectik team" hint="Who covers each client. Columns grouped CSM → PSC → ROI → leadership/other; a dot marks coverage. Click a client to open its 360.">
+              <TeamCoverageMatrix m={m} onPick={pick} />
             </Panel>
 
             <Panel title="Dormant clients" hint="Customers (excl. Adecco) with no live or open work — re-engagement candidates.">

@@ -40,6 +40,7 @@ export const CHANGELOG = [
       'KPI row (won revenue, win rate, open + weighted pipeline, active/dormant clients), data-quality warnings panel, and a methodology footer.',
       'Charts are hand-rolled inline SVG (no new dependency) and theme via CSS variables; trend line shows R² and the illustrative target-crossing quarter.',
       'All-clients table groups US/EMEA with per-quarter columns, subtotals and a grand total that reconciles to total won; client-name click calls the existing pickAccount() so the persistent right pane shows the Account 360.',
+      'Client-coverage matrix: clients (rows) × Eclectik team members (columns, grouped CSM → PSC → ROI → leadership/other from account_links), a colored dot marks each covered client; client name opens the 360.',
       'Config toggles: count unstatused-active deals as won (off by default) and new-vs-recurring at relationship vs product-line level.',
       'Read-only feature — no database change, so no snapshot/revert required.',
     ],
