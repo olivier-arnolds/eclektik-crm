@@ -13,6 +13,7 @@ import NodeCard from './nodes/NodeCard';
 import NodePalette from './panels/NodePalette';
 import PropertyPanel from './panels/PropertyPanel';
 import BuilderToolbar from './panels/BuilderToolbar';
+import TestRunModal from './builder/TestRunModal';
 import { validatePlaybook, hasErrors } from './lib/playbookValidation';
 import { publishPlaybookVersion } from './lib/playbookVersioning';
 import { listPlaybooks, createPlaybook, loadPlaybookGraph, savePlaybookGraph, getPlaybook } from './lib/playbookGraphIO';
@@ -42,6 +43,7 @@ function FlowCanvas({ playbookId, onClose }) {
   const [playbookMeta, setPlaybookMeta] = useState(null);
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [showTestRun, setShowTestRun] = useState(false);
 
   useEffect(() => {
     setLoading(true);
@@ -165,6 +167,7 @@ function FlowCanvas({ playbookId, onClose }) {
         onSaveDraft={handleSaveDraft}
         onPublish={handlePublish}
         onClose={onClose}
+        onTestRun={() => setShowTestRun(true)}
       />
       <div style={{ display:'flex', flex:1, overflow:'hidden' }}>
         <NodePalette />
@@ -195,6 +198,14 @@ function FlowCanvas({ playbookId, onClose }) {
           onDeleteNode={handleDeleteNode}
         />
       </div>
+      {showTestRun && (
+        <TestRunModal
+          playbookId={playbookId}
+          nodes={nodes}
+          edges={edges}
+          onClose={() => setShowTestRun(false)}
+        />
+      )}
     </div>
   );
 }

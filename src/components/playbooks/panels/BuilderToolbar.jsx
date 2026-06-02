@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function BuilderToolbar({ playbookName, version, status, saving, publishing, issues, onSaveDraft, onPublish, onClose }) {
+export default function BuilderToolbar({ playbookName, version, status, saving, publishing, issues, onSaveDraft, onPublish, onClose, onTestRun }) {
   const hasErrors = issues.some(i => i.severity === 'error');
   const errorCount = issues.filter(i => i.severity === 'error').length;
   const warningCount = issues.filter(i => i.severity === 'warning').length;
@@ -26,6 +26,13 @@ export default function BuilderToolbar({ playbookName, version, status, saving, 
       )}
 
       <div style={{ flex:1 }} />
+
+      <button
+        onClick={onTestRun}
+        disabled={saving || publishing}
+        style={{ padding:'4px 10px', fontSize:11, background:'#fff', border:'0.5px solid #D3D1C7', borderRadius:4, cursor: (saving || publishing) ? 'not-allowed' : 'pointer' }}>
+        ▷ Test-run
+      </button>
 
       <button
         onClick={onSaveDraft}
