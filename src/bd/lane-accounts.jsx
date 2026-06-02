@@ -606,6 +606,7 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
   const [showSearchContact, setShowSearchContact] = useState(false);
   const [showLinkExisting, setShowLinkExisting] = useState(false);
   const [showInactivate, setShowInactivate] = useState(false);
+  const [showAddTask, setShowAddTask] = useState(false);
   const [detailContactId, setDetailContactId] = useState(null);
   const [meetingNoteEvent, setMeetingNoteEvent] = useState(null);
   const [showCoreDetails, setShowCoreDetails] = useState(false);
@@ -1209,9 +1210,21 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
           </Section>
         )}
 
-        <Section label={`Tasks · ${openTasks.length}`}>
+        <Section label={`Tasks · ${openTasks.length}`}
+          actions={account.id && (
+            <button className="btn-ghost tiny" onClick={() => setShowAddTask(v => !v)} title="Add a new task for this account">
+              <I.plus /> Add
+            </button>
+          )}>
+          {showAddTask && account.id && (
+            <AddTaskInline
+              accountId={account.id}
+              onCancel={() => setShowAddTask(false)}
+              onDone={() => { setShowAddTask(false); if (refetch) refetch(); }}
+            />
+          )}
           {openTasks.length === 0 ? (
-            <div className="empty" style={{ padding: '8px 0', textAlign: 'left' }}>No open tasks</div>
+            !showAddTask && <div className="empty" style={{ padding: '8px 0', textAlign: 'left' }}>No open tasks</div>
           ) : (
             <div className="actions-list">
               {openTasks.map(t => (
@@ -1333,6 +1346,69 @@ function TeamDots({ deal }) {
           <OwnerDot id={m} ring />
         </span>
       ))}
+    </div>
+  );
+}
+
+// Quick-add task form shown inline at the top of the Account 360 Tasks section.
+function AddTaskInline({ accountId, onDone, onCancel }) {
+  const [title, setTitle] = useState('');
+  const [owner, setOwner] = useState('');
+  const [due, setDue] = useState('');
+  const [priority, setPriority] = useState('Normal');
+  const [saving, setSaving] = useState(false);
+
+  const fieldStyle = {
+    padding: '4px 6px', borderRadius: 4, border: '0.5px solid var(--sep)',
+    background: 'var(--fill-1)', color: 'var(--text-1)', fontSize: 12,
+    fontFamily: 'var(--font)', outline: 'none', width: '100%',
+  };
+  const labelStyle = { fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)' };
+
+  const save = async () => {
+    if (!title.trim() || saving) return;
+    setSaving(true);
+    const { error } = await supabase.from('tasks').insert({
+      title: title.trim(), company_id: accountId, status: 'pending',
+      owner: owner || null, due_date: due || null, priority,
+    });
+    setSaving(false);
+    if (error) { alert('Could not add task: ' + error.message); return; }
+    onDone();
+  };
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '8px 0', borderBottom: '0.5px solid var(--sep)', marginBottom: 8 }}>
+      <input autoFocus value={title} onChange={e => setTitle(e.target.value)}
+        onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') onCancel(); }}
+        placeholder="Task title…" style={fieldStyle} />
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <div style={labelStyle}>Due date</div>
+          <input type="date" value={due} onChange={e => setDue(e.target.value)} style={fieldStyle} />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <div style={labelStyle}>For</div>
+          <select value={owner} onChange={e => setOwner(e.target.value)} style={fieldStyle}>
+            <option value="">—</option>
+            {['Marco', 'Olivier', 'Yarmilla'].map(n => <option key={n} value={n}>{n}</option>)}
+          </select>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <div style={labelStyle}>Priority</div>
+          <select value={priority} onChange={e => setPriority(e.target.value)} style={fieldStyle}>
+            <option value="Low">Low</option>
+            <option value="Normal">Normal</option>
+            <option value="High">High</option>
+          </select>
+        </div>
+      </div>
+      <div style={{ display: 'flex', gap: 4 }}>
+        <button className="btn-primary tiny" disabled={!title.trim() || saving} onClick={save}>
+          {saving ? 'Adding…' : 'Add task'}
+        </button>
+        <button className="btn-ghost tiny" onClick={onCancel}>Cancel</button>
+      </div>
     </div>
   );
 }
