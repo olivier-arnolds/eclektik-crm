@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../supabase';
+import { sendDraft } from '../lib/sendChannels';
 
 export default function DraftsTab() {
   const [drafts, setDrafts] = useState([]);
@@ -125,7 +126,18 @@ function DraftPreview({ draft, onAction }) {
       <div style={{ display:'flex', gap:8 }}>
         <button
           disabled={sending}
-          onClick={() => alert('Send wordt wired-up in Task 9 (sendChannels)')}
+          onClick={async () => {
+            setSending(true);
+            try {
+              await handleSave();
+              await sendDraft({ ...draft, body, subject });
+              onAction();
+            } catch (err) {
+              alert('Send failed: ' + err.message);
+            } finally {
+              setSending(false);
+            }
+          }}
           style={{ padding:'8px 16px', background:'#14b8a6', color:'#fff', border:'none', borderRadius:4, fontSize:12, fontWeight:600, cursor: sending ? 'not-allowed' : 'pointer' }}>
           ▶ Verzend
         </button>
