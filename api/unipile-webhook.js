@@ -85,6 +85,27 @@ export default async function handler(req, res) {
         });
       }
 
+      // Plan 3 Task 10: mark playbook enrollments as replied
+      if (contactId) {
+        try {
+          const { data: matchedEnrollments } = await supabase
+            .from('playbook_enrollments')
+            .select('id')
+            .eq('contact_id', contactId)
+            .in('status', ['active', 'awaiting_review'])
+            .is('replied_at', null);
+
+          if (matchedEnrollments?.length > 0) {
+            await supabase.from('playbook_enrollments')
+              .update({ replied_at: new Date().toISOString(), next_action_at: new Date().toISOString() })
+              .in('id', matchedEnrollments.map(e => e.id));
+            console.log(`[playbook] Marked ${matchedEnrollments.length} enrollment(s) as replied for contact ${contactId}`);
+          }
+        } catch (err) {
+          console.error('[playbook] Failed to mark enrollments as replied:', err);
+        }
+      }
+
       console.log(`Stored LinkedIn message from ${senderName} (contact: ${contactId || 'unknown'})`);
       return res.status(200).json({ success: true, contactId, sender: senderName });
     }
