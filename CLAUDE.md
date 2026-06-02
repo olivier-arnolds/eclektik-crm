@@ -31,6 +31,44 @@ of Dynamics for funnel, comms, calendar, accounts, marketing and admin.
 - The team uses an in-app **💡 Feedback** workflow (see §6) to queue feature
   requests; Claude pulls them via `/api/next-feature-request`.
 
+## 2b. Content rules for client-facing communication
+
+**Scope**: every piece of tekst die naar een echte persoon wordt verstuurd —
+emails, LinkedIn-reacties/-berichten, WhatsApp, Instagram, betaalde drafts,
+follow-up notes die de klant ziet. Geldt voor zowel:
+- Tekst die Claude (in chat) voor Olivier opstelt om door te sturen
+- Playbook-AI-drafts gegenereerd door de cron via `api/playbook-execute.js`
+- Test-run output die als blueprint voor echte communicatie dient
+
+**Niet** van toepassing op: interne Claude-Olivier chat, code-comments,
+commit-messages, docs.
+
+### Harde regels (NOOIT)
+
+- **Geen em-dashes** (`—`, U+2014). Gebruik een gewone streepje `-` met spaties,
+  of komma's, of splits in zinnen. Em-dashes zijn de #1 AI-tell.
+- **Geen markdown-headers** (`#`, `##`) in berichten. LinkedIn/email-clients
+  renderen die niet als heading; ze tonen letterlijk `# Tekst`.
+- **Geen lijstjes met bullets** (`-`, `*`, `•`) tenzij de context dat
+  expliciet vraagt (bv. agenda-item). Schrijf in lopende zinnen.
+- **Geen emoji-overload**. Max 1 emoji per bericht, alleen als het natuurlijk past.
+- **Geen "Hopelijk gaat het goed!" / "Ik hoop dat dit bericht je in goede gezondheid bereikt"**
+  type filler-openingen. Direct ter zake.
+
+### Zachte voorkeuren
+
+- Korte zinnen, natuurlijke spreektaal
+- Eindig met een open vraag of duidelijke call-to-action — niet beide
+- Persoonlijk waar het kan (verwijs naar concreet iets), niet generiek
+
+### Hoe afgedwongen
+
+- **Claude in chat**: leest deze sectie elke sessie. Bij draftwerk volg de regels.
+- **Playbook AI cron**: deze regels zijn als system-prompt baked in
+  `api/playbook-execute.js` (zie de `EXTERNAL_COMMUNICATION_RULES` constante).
+- **Property panel prompt-templates**: gebruikers hoeven de regels niet in elke
+  template te herhalen — de system-prompt regelt het.
+
 ## 3. Architecture
 
 ```

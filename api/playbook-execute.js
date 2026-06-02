@@ -24,6 +24,25 @@ const anthropic = process.env.ANTHROPIC_API_KEY
   ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
   : null;
 
+// Style-rules voor ALLE AI-gegenereerde client-facing content.
+// Zie CLAUDE.md §2b. Deze rules worden als system-prompt geïnjecteerd zodat
+// individuele prompt-templates ze niet hoeven te herhalen.
+const EXTERNAL_COMMUNICATION_RULES = `Je schrijft een bericht dat naar een echte persoon verstuurd wordt (email, LinkedIn, WhatsApp, Instagram). Volg deze regels strikt:
+
+VERBODEN:
+- Em-dashes (—). Gebruik gewone streepjes (-) met spaties, of komma's, of splits in zinnen.
+- Markdown-headers (# of ##). Berichten worden letterlijk getoond.
+- Bullet lists (- of *) tenzij expliciet om gevraagd.
+- Filler-openingen zoals "Hopelijk gaat het goed!" of "I hope this message finds you well".
+- Emoji-overload. Maximaal 1 emoji per bericht, alleen als het natuurlijk past.
+
+VOORKEUREN:
+- Korte zinnen, natuurlijke spreektaal.
+- Persoonlijk en concreet — verwijs naar specifieke dingen, niet generiek.
+- Eindig met óf een open vraag óf een duidelijke call-to-action, niet beide.
+
+Geef alleen de pure berichttekst terug, geen omhullende tekst, geen labels, geen "Hier is je bericht:".`;
+
 export default async function handler(req, res) {
   const force = req.query?.force === 'true';
   const stats = { processed: 0, drafts_created: 0, tasks_created: 0, completed: 0, errors: [] };
@@ -156,6 +175,7 @@ async function executeSideEffect(sideEffect, enrollment, ctx, stats) {
         const msg = await anthropic.messages.create({
           model: 'claude-haiku-4-5-20251001',
           max_tokens: 600,
+          system: EXTERNAL_COMMUNICATION_RULES,
           messages: [{ role: 'user', content: prompt }],
         });
         body = msg.content[0]?.text || '';
@@ -164,6 +184,7 @@ async function executeSideEffect(sideEffect, enrollment, ctx, stats) {
         const msg = await anthropic.messages.create({
           model: 'claude-3-5-haiku-20241022',
           max_tokens: 600,
+          system: EXTERNAL_COMMUNICATION_RULES,
           messages: [{ role: 'user', content: prompt }],
         });
         body = msg.content[0]?.text || '';
