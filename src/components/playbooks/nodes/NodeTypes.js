@@ -66,8 +66,11 @@ export const NODE_TYPES = {
     maxOutgoing: 1,
     maxIncoming: 1,
     fields: [
+      { key: 'use_ai', label: 'Generatie-modus', type: 'select', required: true,
+        options: ['manual', 'ai'] },
       { key: 'subject', label: 'Onderwerp', type: 'text', required: true },
-      { key: 'body', label: 'Body', type: 'textarea', required: true },
+      { key: 'body', label: 'Body (manual-modus)', type: 'textarea', required: false },
+      { key: 'ai_prompt', label: 'AI prompt template (ai-modus)', type: 'textarea', required: false },
     ],
   },
   action_linkedin_draft: {
@@ -78,7 +81,10 @@ export const NODE_TYPES = {
     maxOutgoing: 1,
     maxIncoming: 1,
     fields: [
-      { key: 'body', label: 'Body', type: 'textarea', required: true },
+      { key: 'use_ai', label: 'Generatie-modus', type: 'select', required: true,
+        options: ['manual', 'ai'] },
+      { key: 'body', label: 'Body (manual-modus)', type: 'textarea', required: false },
+      { key: 'ai_prompt', label: 'AI prompt template (ai-modus)', type: 'textarea', required: false },
     ],
   },
   action_whatsapp_draft: {
@@ -89,7 +95,10 @@ export const NODE_TYPES = {
     maxOutgoing: 1,
     maxIncoming: 1,
     fields: [
-      { key: 'body', label: 'Body', type: 'textarea', required: true },
+      { key: 'use_ai', label: 'Generatie-modus', type: 'select', required: true,
+        options: ['manual', 'ai'] },
+      { key: 'body', label: 'Body (manual-modus)', type: 'textarea', required: false },
+      { key: 'ai_prompt', label: 'AI prompt template (ai-modus)', type: 'textarea', required: false },
     ],
   },
   action_instagram_draft: {
@@ -100,7 +109,10 @@ export const NODE_TYPES = {
     maxOutgoing: 1,
     maxIncoming: 1,
     fields: [
-      { key: 'body', label: 'Body', type: 'textarea', required: true },
+      { key: 'use_ai', label: 'Generatie-modus', type: 'select', required: true,
+        options: ['manual', 'ai'] },
+      { key: 'body', label: 'Body (manual-modus)', type: 'textarea', required: false },
+      { key: 'ai_prompt', label: 'AI prompt template (ai-modus)', type: 'textarea', required: false },
     ],
   },
   action_internal_task: {
