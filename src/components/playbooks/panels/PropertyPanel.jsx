@@ -35,46 +35,52 @@ export default function PropertyPanel({ selectedNode, onChangeConfig, onDeleteNo
         <p style={{ fontSize:11, color:'#888780' }}>Dit node-type heeft geen configureerbare properties.</p>
       )}
 
-      {nodeType.fields.map(field => (
-        <div key={field.key} style={{ marginBottom:10 }}>
-          <div style={{ fontSize:9, textTransform:'uppercase', color:'#6b7280', fontWeight:600, marginBottom:3 }}>
-            {field.label}{field.required && <span style={{ color:'#dc2626' }}> *</span>}
+      {nodeType.fields.map(field => {
+        // Skip 'body' field if use_ai is 'ai'
+        if (field.key === 'body' && config.use_ai === 'ai') return null;
+        // Skip 'ai_prompt' field if use_ai is 'manual' (default)
+        if (field.key === 'ai_prompt' && (config.use_ai || 'manual') === 'manual') return null;
+        return (
+          <div key={field.key} style={{ marginBottom:10 }}>
+            <div style={{ fontSize:9, textTransform:'uppercase', color:'#6b7280', fontWeight:600, marginBottom:3 }}>
+              {field.label}{field.required && <span style={{ color:'#dc2626' }}> *</span>}
+            </div>
+            {field.type === 'text' && (
+              <input
+                type="text"
+                value={config[field.key] || ''}
+                onChange={e => updateField(field.key, e.target.value)}
+                style={{ width:'100%', padding:'4px 6px', fontSize:11, border:'0.5px solid #D3D1C7', borderRadius:4, fontFamily:'inherit' }}
+              />
+            )}
+            {field.type === 'textarea' && (
+              <textarea
+                value={config[field.key] || ''}
+                onChange={e => updateField(field.key, e.target.value)}
+                rows={5}
+                style={{ width:'100%', padding:'4px 6px', fontSize:11, border:'0.5px solid #D3D1C7', borderRadius:4, fontFamily:'inherit', resize:'vertical' }}
+              />
+            )}
+            {field.type === 'number' && (
+              <input
+                type="number"
+                value={config[field.key] || ''}
+                onChange={e => updateField(field.key, e.target.value === '' ? null : Number(e.target.value))}
+                style={{ width:'100%', padding:'4px 6px', fontSize:11, border:'0.5px solid #D3D1C7', borderRadius:4, fontFamily:'inherit' }}
+              />
+            )}
+            {field.type === 'select' && (
+              <select
+                value={config[field.key] || ''}
+                onChange={e => updateField(field.key, e.target.value)}
+                style={{ width:'100%', padding:'4px 6px', fontSize:11, border:'0.5px solid #D3D1C7', borderRadius:4, fontFamily:'inherit' }}>
+                <option value="">— kies —</option>
+                {field.options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+              </select>
+            )}
           </div>
-          {field.type === 'text' && (
-            <input
-              type="text"
-              value={config[field.key] || ''}
-              onChange={e => updateField(field.key, e.target.value)}
-              style={{ width:'100%', padding:'4px 6px', fontSize:11, border:'0.5px solid #D3D1C7', borderRadius:4, fontFamily:'inherit' }}
-            />
-          )}
-          {field.type === 'textarea' && (
-            <textarea
-              value={config[field.key] || ''}
-              onChange={e => updateField(field.key, e.target.value)}
-              rows={5}
-              style={{ width:'100%', padding:'4px 6px', fontSize:11, border:'0.5px solid #D3D1C7', borderRadius:4, fontFamily:'inherit', resize:'vertical' }}
-            />
-          )}
-          {field.type === 'number' && (
-            <input
-              type="number"
-              value={config[field.key] || ''}
-              onChange={e => updateField(field.key, e.target.value === '' ? null : Number(e.target.value))}
-              style={{ width:'100%', padding:'4px 6px', fontSize:11, border:'0.5px solid #D3D1C7', borderRadius:4, fontFamily:'inherit' }}
-            />
-          )}
-          {field.type === 'select' && (
-            <select
-              value={config[field.key] || ''}
-              onChange={e => updateField(field.key, e.target.value)}
-              style={{ width:'100%', padding:'4px 6px', fontSize:11, border:'0.5px solid #D3D1C7', borderRadius:4, fontFamily:'inherit' }}>
-              <option value="">— kies —</option>
-              {field.options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-            </select>
-          )}
-        </div>
-      ))}
+        );
+      })}
 
       <div style={{ marginTop:18, borderTop:'0.5px solid #D3D1C7', paddingTop:10 }}>
         <button
