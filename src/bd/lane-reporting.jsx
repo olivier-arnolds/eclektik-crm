@@ -156,6 +156,14 @@ function computeMetrics(opps, companies, links, teamContacts, cfg) {
   const trendVals = extQuarters.map((_, x) => intercept + slope * x);
   const crossingLabel = crossingIdx ? qLabel(crossingIdx) : null;
 
+  // Open proposal pipeline (stage 'opportunity') by line, pooled into the next
+  // calendar quarter. Probability-weighted (est × prob). Hollow/outlined bars.
+  const nowIdx = (() => { const d = new Date(); return d.getFullYear() * 4 + Math.floor(d.getMonth() / 3); })();
+  const proposalQuarter = qLabel(nowIdx + 1);
+  const propByLine = (L) => openP.filter((o) => lineOf(o) === L)
+    .reduce((s, o) => s + (num(o.est_revenue) || 0) * (num(o.probability) || 0) / 100, 0);
+  const proposal = { quarter: proposalQuarter, glint: propByLine('Glint'), roi: propByLine('ROI') };
+
   // New vs recurring by line. Rank a company's won deals by close date,id.
   // relationship-level (default): first win across ALL lines = new.
   // line-level (cfg.recurringLineLevel): first win within the same line = new.
@@ -283,7 +291,7 @@ function computeMetrics(opps, companies, links, teamContacts, cfg) {
     kpi: { wonRev, wonN, lostN, winRate, openGross, openN: openP.length, openWeighted, customers: customers.length, activeClients, dormantClients },
     quarters, extQuarters, glint, roi, other, totals, wonCount, lostCount,
     trend: { slope, intercept, r2, trendVals, crossingLabel },
-    nr, recGlint, recRoi, recTotal, recDeals,
+    nr, recGlint, recRoi, recTotal, recDeals, proposal,
     wl, rows, regionRows, subtotal, grand, colTotals, dormant, warnings, team,
   };
 }
@@ -392,16 +400,22 @@ const CHART = { W: 760, H: 300, padL: 46, padR: 12, padT: 22, padB: 26 };
 function yTicks(max) { const t = []; for (let v = 0; v <= max; v += 50000) t.push(v); return t; }
 
 function WonByQuarterChart({ m }) {
-  const { quarters, extQuarters, glint, roi, totals, trend } = m;
+  const { quarters, extQuarters, glint, roi, totals, trend, proposal } = m;
   const { W, H, padL, padR, padT, padB } = CHART;
   const plotW = W - padL - padR, plotH = H - padT - padB;
-  const maxV = Math.max(300000, ...quarters.map((q) => totals[q]));
-  const x = extQuarters.map((_, i) => padL + (plotW / extQuarters.length) * (i + 0.5));
+  // Forward axis = trend extension, extended (contiguously) to the proposal quarter.
+  const startI = qIndex(extQuarters[0]);
+  const endI = Math.max(qIndex(extQuarters[extQuarters.length - 1]), qIndex(proposal.quarter));
+  const axis = []; for (let i = startI; i <= endI; i++) axis.push(qLabel(i));
+  const pi = axis.indexOf(proposal.quarter);
+  const maxV = Math.max(300000, ...quarters.map((q) => totals[q]), proposal.glint, proposal.roi);
+  const x = axis.map((_, i) => padL + (plotW / axis.length) * (i + 0.5));
   const y = (v) => padT + plotH - (v / maxV) * plotH;
-  const bw = (plotW / extQuarters.length) * 0.26;
+  const bw = (plotW / axis.length) * 0.26;
+  const baseY = padT + plotH;
   const totalPts = quarters.map((q, i) => `${x[i]},${y(totals[q])}`).join(' ');
   const trendPts = extQuarters.map((_, i) => `${x[i]},${y(trend.trendVals[i])}`).join(' ');
-  const crossI = trend.crossingLabel ? extQuarters.indexOf(trend.crossingLabel) : -1;
+  const crossI = trend.crossingLabel ? axis.indexOf(trend.crossingLabel) : -1;
   return (
     <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label="Won revenue by quarter with total line, target and trend" style={{ display: 'block' }}>
       {yTicks(maxV).map((v) => (
@@ -419,6 +433,19 @@ function WonByQuarterChart({ m }) {
           {roi[q] > 0 && <text x={x[i] + bw / 2 + 1} y={y(roi[q]) - 4} textAnchor="middle" fontSize="9.5" fill="var(--accent)">{eur(roi[q])}</text>}
         </g>
       ))}
+      {/* Next-quarter open proposal pipeline by line — hollow/outlined bars (not yet won) */}
+      {pi >= 0 && proposal.glint > 0 && (
+        <g>
+          <rect x={x[pi] - bw - 1} y={y(proposal.glint)} width={bw} height={baseY - y(proposal.glint)} rx="2" fill="none" stroke="var(--good)" strokeWidth="1.5" strokeDasharray="3 2" />
+          <text x={x[pi] - bw / 2 - 1} y={y(proposal.glint) - 4} textAnchor="middle" fontSize="9.5" fill="var(--good)" opacity="0.8">{eur(proposal.glint)}</text>
+        </g>
+      )}
+      {pi >= 0 && proposal.roi > 0 && (
+        <g>
+          <rect x={x[pi] + 1} y={y(proposal.roi)} width={bw} height={baseY - y(proposal.roi)} rx="2" fill="none" stroke="var(--accent)" strokeWidth="1.5" strokeDasharray="3 2" />
+          <text x={x[pi] + bw / 2 + 1} y={y(proposal.roi) - 4} textAnchor="middle" fontSize="9.5" fill="var(--accent)" opacity="0.8">{eur(proposal.roi)}</text>
+        </g>
+      )}
       <polyline points={trendPts} fill="none" stroke="var(--rep-trend)" strokeWidth="1.5" strokeDasharray="2 3" />
       <polyline points={totalPts} fill="none" stroke="var(--text-1)" strokeWidth="2" />
       {quarters.map((q, i) => <circle key={q} cx={x[i]} cy={y(totals[q])} r="3" fill="var(--text-1)" />)}
@@ -428,20 +455,27 @@ function WonByQuarterChart({ m }) {
           <text x={x[crossI]} y={y(TARGET_Q) - 10} textAnchor="middle" fontSize="10.5" fill="var(--rep-trend)">≈ {qShort(trend.crossingLabel)}</text>
         </g>
       )}
-      {extQuarters.map((q, i) => <text key={q} x={x[i]} y={H - 8} textAnchor="middle" fontSize="9.5" fill="var(--text-3)">{qShort(q)}</text>)}
+      {axis.map((q, i) => <text key={q} x={x[i]} y={H - 8} textAnchor="middle" fontSize="9.5" fill={i === pi ? 'var(--text-2)' : 'var(--text-3)'}>{qShort(q)}</text>)}
     </svg>
   );
 }
 
 function NewRecurringChart({ m }) {
-  const { quarters, nr } = m;
+  const { quarters, nr, proposal } = m;
   const { W, H, padL, padR, padT, padB } = CHART;
   const plotW = W - padL - padR, plotH = H - padT - padB;
   const stackTot = (q) => nr.glintNew[q] + nr.glintRec[q] + nr.roiNew[q] + nr.roiRec[q];
-  const maxV = Math.max(300000, ...quarters.map(stackTot));
-  const x = quarters.map((_, i) => padL + (plotW / quarters.length) * (i + 0.5));
+  // Extend (contiguously) to the proposal quarter for the open-pipeline forecast.
+  const startI = qIndex(quarters[0]);
+  const endI = Math.max(qIndex(quarters[quarters.length - 1]), qIndex(proposal.quarter));
+  const axis = []; for (let i = startI; i <= endI; i++) axis.push(qLabel(i));
+  const pi = axis.indexOf(proposal.quarter);
+  const maxV = Math.max(300000, ...quarters.map(stackTot), proposal.glint, proposal.roi);
+  const x = axis.map((_, i) => padL + (plotW / axis.length) * (i + 0.5));
   const y = (v) => padT + plotH - (v / maxV) * plotH;
-  const bw = (plotW / quarters.length) * 0.5;
+  const bw = (plotW / axis.length) * 0.5;
+  const obw = (plotW / axis.length) * 0.26; // narrower outlined proposal bars (side-by-side)
+  const baseY = padT + plotH;
   const segs = [['glintNew', 'var(--good)', 1], ['glintRec', 'var(--good)', 0.4], ['roiNew', 'var(--accent)', 1], ['roiRec', 'var(--accent)', 0.4]];
   return (
     <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label="New versus recurring won revenue by line per quarter" style={{ display: 'block' }}>
@@ -465,6 +499,21 @@ function NewRecurringChart({ m }) {
           </g>
         );
       })}
+      {/* Next-quarter open proposal pipeline by line — hollow/outlined bars (not yet won) */}
+      {pi >= 0 && proposal.glint > 0 && (
+        <g>
+          <rect x={x[pi] - obw - 1} y={y(proposal.glint)} width={obw} height={baseY - y(proposal.glint)} rx="2" fill="none" stroke="var(--good)" strokeWidth="1.5" strokeDasharray="3 2" />
+          <text x={x[pi] - obw / 2 - 1} y={y(proposal.glint) - 4} textAnchor="middle" fontSize="9.5" fill="var(--good)" opacity="0.8">{eur(proposal.glint)}</text>
+        </g>
+      )}
+      {pi >= 0 && proposal.roi > 0 && (
+        <g>
+          <rect x={x[pi] + 1} y={y(proposal.roi)} width={obw} height={baseY - y(proposal.roi)} rx="2" fill="none" stroke="var(--accent)" strokeWidth="1.5" strokeDasharray="3 2" />
+          <text x={x[pi] + obw / 2 + 1} y={y(proposal.roi) - 4} textAnchor="middle" fontSize="9.5" fill="var(--accent)" opacity="0.8">{eur(proposal.roi)}</text>
+        </g>
+      )}
+      {pi >= 0 && (proposal.glint > 0 || proposal.roi > 0) &&
+        <text x={x[pi]} y={H - 8} textAnchor="middle" fontSize="9.5" fill="var(--text-2)">{qShort(proposal.quarter)}</text>}
     </svg>
   );
 }
@@ -611,13 +660,13 @@ export default function ReportingLane({ onPickAccount, accounts = [] }) {
               </div>
             )}
 
-            <Panel title="Won revenue by quarter" hint={`Actuals by close date · bars by line, total + linear trend vs €250k/q target · R²=${m.trend.r2.toFixed(2)} (illustrative, not a forecast)`}>
-              <Legend items={[['Glint', 'var(--good)'], ['ROI', 'var(--accent)'], ['Total (actual)', 'var(--text-1)', 'solid'], ['Target €250k/q', 'var(--text-3)', 'dashed'], ['Trend', 'var(--rep-trend)', 'dotted']]} />
+            <Panel title="Won revenue by quarter" hint={`Filled bars = won actuals by close date · hollow bars (${qShort(m.proposal.quarter)}) = open proposal pipeline by line, probability-weighted, not yet won · total + linear trend vs €250k/q target · R²=${m.trend.r2.toFixed(2)} (illustrative, not a forecast)`}>
+              <Legend items={[['Glint (won)', 'var(--good)'], ['ROI (won)', 'var(--accent)'], ['Proposals (open)', 'var(--text-3)', 'dashed'], ['Total (actual)', 'var(--text-1)', 'solid'], ['Target €250k/q', 'var(--text-3)', 'dashed'], ['Trend', 'var(--rep-trend)', 'dotted']]} />
               <WonByQuarterChart m={m} />
             </Panel>
 
-            <Panel title="New vs recurring business by quarter" hint={`Full tone = new client, light tone = recurring · recurring ${eur(m.recTotal)} of ${eur(m.kpi.wonRev)} won: Glint ${eur(m.recGlint)} · ROI ${eur(m.recRoi)} · ${m.recDeals} repeat deals`}>
-              <Legend items={[['Glint — new', 'var(--good)'], ['Glint — recurring', 'var(--good)', null, 0.4], ['ROI — new', 'var(--accent)'], ['ROI — recurring', 'var(--accent)', null, 0.4]]} />
+            <Panel title="New vs recurring business by quarter" hint={`Full tone = new client, light tone = recurring · hollow bars (${qShort(m.proposal.quarter)}) = open proposal pipeline by line, probability-weighted, not yet won · recurring ${eur(m.recTotal)} of ${eur(m.kpi.wonRev)} won: Glint ${eur(m.recGlint)} · ROI ${eur(m.recRoi)} · ${m.recDeals} repeat deals`}>
+              <Legend items={[['Glint — new', 'var(--good)'], ['Glint — recurring', 'var(--good)', null, 0.4], ['ROI — new', 'var(--accent)'], ['ROI — recurring', 'var(--accent)', null, 0.4], ['Proposals (open)', 'var(--text-3)', 'dashed']]} />
               <NewRecurringChart m={m} />
             </Panel>
 
