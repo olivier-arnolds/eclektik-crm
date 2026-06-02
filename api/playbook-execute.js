@@ -1,303 +1,213 @@
+// Playbook execution cron — graph-traversal versie (Plan 3).
+//
+// Trigger: Vercel cron, 0 8 * * 1-5 (8u NL-tijd werkdagen, configured in vercel.json).
+//
+// Per active enrollment:
+//   1. Load playbook_versions snapshot (using enrollment.version_at_start)
+//   2. Call traverseStep() to determine next action
+//   3. Execute side-effect (insert into playbook_drafts, insert into tasks, etc.)
+//   4. Update enrollment.current_node_id, next_action_at, status
+//
+// Email + LinkedIn/WA/IG drafts: created here, sent later by user via browser.
+
 import { createClient } from '@supabase/supabase-js';
+import Anthropic from '@anthropic-ai/sdk';
+import { traverseStep } from '../src/components/playbooks/lib/playbookGraphTraversal.js';
+import { substituteMergeFields, isAiMode, buildAiPrompt, getManualBody, getEmailSubject } from '../src/components/playbooks/lib/draftGeneration.js';
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL,
   process.env.SUPABASE_SERVICE_KEY
 );
 
-const UNIPILE_DSN = process.env.UNIPILE_BASE_URL || process.env.UNIPILE_DSN;
-const UNIPILE_TOKEN = process.env.UNIPILE_API_KEY || process.env.UNIPILE_TOKEN;
-
-// Replace template variables in text
-function replaceVariables(text, contact) {
-  if (!text) return text;
-  return text
-    .replace(/\{\{FirstName\}\}/g, contact.first_name || '')
-    .replace(/\{\{LastName\}\}/g, contact.last_name || '')
-    .replace(/\{\{FullName\}\}/g, contact.full_name || `${contact.first_name || ''} ${contact.last_name || ''}`.trim())
-    .replace(/\{\{CompanyName\}\}/g, contact.company_name || '')
-    .replace(/\{\{Title\}\}/g, contact.title || '');
-}
-
-// Make a Unipile API request
-async function unipileRequest(method, path, body) {
-  if (!UNIPILE_DSN || !UNIPILE_TOKEN) {
-    return { error: 'Unipile not configured' };
-  }
-  const url = `https://${UNIPILE_DSN}/api/v1${path}`;
-  const headers = {
-    'X-API-KEY': UNIPILE_TOKEN,
-    'accept': 'application/json',
-  };
-  const options = { method, headers };
-  if (body) {
-    headers['content-type'] = 'application/json';
-    options.body = JSON.stringify(body);
-  }
-  try {
-    const resp = await fetch(url, options);
-    const data = await resp.json();
-    if (!resp.ok) return { error: data?.message || `Unipile error ${resp.status}` };
-    return { success: true, data };
-  } catch (err) {
-    return { error: err.message };
-  }
-}
-
-// Get the Unipile account ID (first LinkedIn account)
-async function getUnipileAccountId() {
-  const result = await unipileRequest('GET', '/accounts');
-  if (result.success && result.data?.items?.length > 0) {
-    const linkedinAccount = result.data.items.find(a => a.type === 'LINKEDIN') || result.data.items[0];
-    return linkedinAccount.id;
-  }
-  return null;
-}
-
-// Resolve a LinkedIn URL to a provider ID
-async function resolveLinkedInUser(linkedinUrl, accountId) {
-  if (!linkedinUrl) return null;
-  const match = linkedinUrl.match(/linkedin\.com\/in\/([^\/\?]+)/);
-  const identifier = match ? match[1] : linkedinUrl;
-  const result = await unipileRequest('GET', `/users/${encodeURIComponent(identifier)}?account_id=${accountId}`);
-  if (result.success && result.data) {
-    return result.data.provider_id || result.data.id;
-  }
-  return null;
-}
+const anthropic = process.env.ANTHROPIC_API_KEY
+  ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+  : null;
 
 export default async function handler(req, res) {
-  console.log('[playbook-execute] Starting execution run...');
-  const results = { processed: 0, executed: 0, errors: [], skipped: 0 };
+  const force = req.query?.force === 'true';
+  const stats = { processed: 0, drafts_created: 0, tasks_created: 0, completed: 0, errors: [] };
 
   try {
-    // Get all active enrollments due for next step
-    const now = new Date().toISOString();
-    const { data: enrollments, error: enrollError } = await supabase
+    const now = new Date();
+    const query = supabase
       .from('playbook_enrollments')
-      .select(`
-        *,
-        playbooks!inner(id, name, status, settings),
-        contacts(*)
-      `)
-      .eq('status', 'active')
-      .lte('next_step_at', now);
+      .select('*, contacts(*), opportunities(*, companies(*))')
+      .eq('status', 'active');
 
-    if (enrollError) {
-      console.error('[playbook-execute] Error fetching enrollments:', enrollError);
-      return res.status(500).json({ error: enrollError.message });
-    }
+    const filter = force
+      ? query
+      : query.or(`next_action_at.lte.${now.toISOString()},next_action_at.is.null`);
 
-    if (!enrollments || enrollments.length === 0) {
-      console.log('[playbook-execute] No enrollments due for execution.');
-      return res.status(200).json({ message: 'No enrollments due', ...results });
-    }
+    const { data: enrollments, error } = await filter;
+    if (error) throw new Error(`Failed to fetch enrollments: ${error.message}`);
 
-    console.log(`[playbook-execute] Found ${enrollments.length} enrollment(s) to process.`);
-
-    // Get Unipile account ID for LinkedIn steps
-    let unipileAccountId = null;
-
-    for (const enrollment of enrollments) {
-      results.processed++;
-
-      // Skip if playbook is not active
-      if (enrollment.playbooks.status !== 'active') {
-        results.skipped++;
-        continue;
-      }
-
-      // Check weekdays-only setting
-      const settings = enrollment.playbooks.settings || {};
-      if (settings.weekdays_only !== false) {
-        const day = new Date().getDay();
-        if (day === 0 || day === 6) {
-          results.skipped++;
-          continue;
-        }
-      }
-
-      const contact = enrollment.contacts;
-      if (!contact) {
-        results.errors.push({ enrollment_id: enrollment.id, error: 'Contact not found' });
-        continue;
-      }
-
-      // Get the current step
-      const { data: step, error: stepError } = await supabase
-        .from('playbook_steps')
-        .select('*')
-        .eq('playbook_id', enrollment.playbook_id)
-        .eq('step_number', enrollment.current_step)
-        .single();
-
-      if (stepError || !step) {
-        // No more steps - mark as completed
-        await supabase.from('playbook_enrollments')
-          .update({ status: 'completed', completed_at: now })
-          .eq('id', enrollment.id);
-        continue;
-      }
-
-      let execStatus = 'sent';
-      let execResult = {};
-
+    for (const enrollment of enrollments || []) {
       try {
-        switch (step.step_type) {
-          case 'linkedin_connect': {
-            // Send LinkedIn connection invite via Unipile
-            if (!unipileAccountId) unipileAccountId = await getUnipileAccountId();
-            if (!unipileAccountId) {
-              execStatus = 'failed';
-              execResult = { error: 'No Unipile account available' };
-              break;
-            }
-            const providerId = await resolveLinkedInUser(contact.linkedin, unipileAccountId);
-            if (!providerId) {
-              execStatus = 'failed';
-              execResult = { error: 'Could not resolve LinkedIn user' };
-              break;
-            }
-            const message = replaceVariables(step.body, contact);
-            const inviteResult = await unipileRequest('POST', '/users/invite', {
-              provider_id: providerId,
-              account_id: unipileAccountId,
-              message: message || '',
-            });
-            if (inviteResult.error) {
-              execStatus = 'failed';
-              execResult = { error: inviteResult.error };
-            } else {
-              execResult = { unipile: inviteResult.data };
-            }
-            break;
-          }
-
-          case 'linkedin_message': {
-            // Send LinkedIn message via Unipile (start chat)
-            if (!unipileAccountId) unipileAccountId = await getUnipileAccountId();
-            if (!unipileAccountId) {
-              execStatus = 'failed';
-              execResult = { error: 'No Unipile account available' };
-              break;
-            }
-            const providerId = await resolveLinkedInUser(contact.linkedin, unipileAccountId);
-            if (!providerId) {
-              execStatus = 'failed';
-              execResult = { error: 'Could not resolve LinkedIn user' };
-              break;
-            }
-            const text = replaceVariables(step.body, contact);
-            const chatResult = await unipileRequest('POST', '/chats', {
-              account_id: unipileAccountId,
-              attendees_ids: providerId,
-              text,
-            });
-            if (chatResult.error) {
-              execStatus = 'failed';
-              execResult = { error: chatResult.error };
-            } else {
-              execResult = { unipile: chatResult.data };
-            }
-            break;
-          }
-
-          case 'email': {
-            // Email: create a pending task for manual sending
-            const subject = replaceVariables(step.subject, contact);
-            const body = replaceVariables(step.body, contact);
-            await supabase.from('tasks').insert({
-              title: `Send email: ${subject}`,
-              description: `To: ${contact.full_name || contact.first_name} (${contact.email || 'no email'})\n\nSubject: ${subject}\n\n${body}`,
-              status: 'pending',
-              type: 'playbook_email',
-              contact_id: contact.id,
-              created_at: now,
-            });
-            execStatus = 'pending';
-            execResult = { task: 'Email task created for manual sending' };
-            break;
-          }
-
-          case 'call':
-          case 'task': {
-            // Create a task
-            const description = replaceVariables(step.body, contact);
-            await supabase.from('tasks').insert({
-              title: step.step_type === 'call'
-                ? `Call ${contact.full_name || contact.first_name}`
-                : replaceVariables(step.subject || step.body || 'Playbook task', contact),
-              description: description || '',
-              status: 'pending',
-              type: step.step_type === 'call' ? 'playbook_call' : 'playbook_task',
-              contact_id: contact.id,
-              created_at: now,
-            });
-            execStatus = 'sent';
-            execResult = { task: `${step.step_type} task created` };
-            break;
-          }
-
-          case 'wait': {
-            // Wait step: just advance the next_step_at
-            execStatus = 'sent';
-            execResult = { wait: `${step.delay_days} days` };
-            break;
-          }
-
-          default:
-            execStatus = 'skipped';
-            execResult = { error: `Unknown step type: ${step.step_type}` };
-        }
-      } catch (execError) {
-        execStatus = 'failed';
-        execResult = { error: execError.message };
-      }
-
-      // Log the execution
-      await supabase.from('playbook_executions').insert({
-        enrollment_id: enrollment.id,
-        step_id: step.id,
-        step_number: step.step_number,
-        status: execStatus,
-        executed_at: now,
-        result: execResult,
-      });
-
-      // Get the next step to determine delay
-      const { data: nextStep } = await supabase
-        .from('playbook_steps')
-        .select('*')
-        .eq('playbook_id', enrollment.playbook_id)
-        .eq('step_number', enrollment.current_step + 1)
-        .single();
-
-      if (nextStep) {
-        // Advance to next step
-        const nextAt = new Date();
-        nextAt.setDate(nextAt.getDate() + (nextStep.delay_days || 0));
-        await supabase.from('playbook_enrollments')
-          .update({ current_step: enrollment.current_step + 1, next_step_at: nextAt.toISOString() })
-          .eq('id', enrollment.id);
-      } else {
-        // Last step completed
-        await supabase.from('playbook_enrollments')
-          .update({ status: 'completed', completed_at: now })
-          .eq('id', enrollment.id);
-      }
-
-      if (execStatus !== 'failed' && execStatus !== 'skipped') {
-        results.executed++;
-      } else if (execStatus === 'failed') {
-        results.errors.push({ enrollment_id: enrollment.id, step: step.step_number, error: execResult.error });
+        await processEnrollment(enrollment, now, stats);
+        stats.processed++;
+      } catch (err) {
+        stats.errors.push({ enrollment_id: enrollment.id, error: err.message });
       }
     }
 
-    console.log(`[playbook-execute] Done. Processed: ${results.processed}, Executed: ${results.executed}, Errors: ${results.errors.length}`);
-    return res.status(200).json({ message: 'Execution complete', ...results });
+    res.status(200).json({ status: 'ok', stats });
+  } catch (err) {
+    res.status(500).json({ status: 'error', error: err.message });
+  }
+}
 
-  } catch (error) {
-    console.error('[playbook-execute] Fatal error:', error);
-    return res.status(500).json({ error: error.message });
+async function processEnrollment(enrollment, now, stats) {
+  const { data: versionRow, error } = await supabase
+    .from('playbook_versions')
+    .select('graph_snapshot')
+    .eq('playbook_id', enrollment.playbook_id)
+    .eq('version', enrollment.version_at_start)
+    .single();
+
+  if (error || !versionRow) {
+    throw new Error(`No version snapshot found for playbook ${enrollment.playbook_id} v${enrollment.version_at_start}`);
+  }
+
+  const graph = versionRow.graph_snapshot;
+  const ctx = await buildContext(enrollment, now);
+
+  // Loop until we hit wait/complete/error. Safety: max 20 iterations per tick.
+  for (let i = 0; i < 20; i++) {
+    const result = traverseStep({ graph, enrollment, context: ctx });
+
+    if (result.action === 'complete') {
+      await supabase.from('playbook_enrollments')
+        .update({ status: 'completed', completed_at: now.toISOString() })
+        .eq('id', enrollment.id);
+      stats.completed++;
+      return;
+    }
+
+    if (result.action === 'error') {
+      throw new Error(result.error);
+    }
+
+    if (result.action === 'wait_until') {
+      await supabase.from('playbook_enrollments')
+        .update({ current_node_id: result.next_node_id, next_action_at: result.next_action_at })
+        .eq('id', enrollment.id);
+      return;
+    }
+
+    // execute_node — first the side-effect, then advance
+    if (result.side_effect) {
+      await executeSideEffect(result.side_effect, enrollment, ctx, stats);
+    }
+
+    if (!result.next_node_id) {
+      await supabase.from('playbook_enrollments')
+        .update({ status: 'completed', completed_at: now.toISOString() })
+        .eq('id', enrollment.id);
+      stats.completed++;
+      return;
+    }
+
+    enrollment.current_node_id = result.next_node_id;
+    await supabase.from('playbook_enrollments')
+      .update({ current_node_id: result.next_node_id })
+      .eq('id', enrollment.id);
+
+    if (result.side_effect && result.side_effect.type.endsWith('_draft')) {
+      await supabase.from('playbook_enrollments')
+        .update({ status: 'awaiting_review' })
+        .eq('id', enrollment.id);
+      return;
+    }
+  }
+}
+
+async function buildContext(enrollment, now) {
+  const contact = enrollment.contacts || {};
+  const deal = enrollment.opportunities || null;
+  const company = deal?.companies || null;
+  const ownerFirstName = (deal?.owner_name || '').split(' ')[0] || '';
+  return {
+    now,
+    contact,
+    deal,
+    company,
+    owner: { first_name: ownerFirstName },
+    signal_context: enrollment.source_context?.signal_content || '',
+  };
+}
+
+async function executeSideEffect(sideEffect, enrollment, ctx, stats) {
+  const { type, config, node_id } = sideEffect;
+
+  if (['action_email_draft','action_linkedin_draft','action_whatsapp_draft','action_instagram_draft'].includes(type)) {
+    const channelMap = {
+      action_email_draft: 'email',
+      action_linkedin_draft: 'linkedin',
+      action_whatsapp_draft: 'whatsapp',
+      action_instagram_draft: 'instagram'
+    };
+    const channel = channelMap[type];
+
+    let body, subject = null;
+    if (isAiMode(config) && anthropic) {
+      const prompt = buildAiPrompt(config, ctx);
+      try {
+        const msg = await anthropic.messages.create({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 600,
+          messages: [{ role: 'user', content: prompt }],
+        });
+        body = msg.content[0]?.text || '';
+      } catch (err) {
+        // Fallback model
+        const msg = await anthropic.messages.create({
+          model: 'claude-3-5-haiku-20241022',
+          max_tokens: 600,
+          messages: [{ role: 'user', content: prompt }],
+        });
+        body = msg.content[0]?.text || '';
+      }
+    } else {
+      body = getManualBody(config, ctx);
+    }
+    if (type === 'action_email_draft') subject = getEmailSubject(config, ctx);
+
+    await supabase.from('playbook_drafts').insert({
+      enrollment_id: enrollment.id,
+      node_id,
+      channel,
+      to_contact_id: enrollment.contact_id,
+      subject,
+      body,
+      body_original: body,
+      status: 'pending',
+    });
+    stats.drafts_created++;
+    return;
+  }
+
+  if (type === 'action_internal_task') {
+    const dueDate = new Date(ctx.now);
+    if (config.days_due) dueDate.setDate(dueDate.getDate() + Number(config.days_due));
+    await supabase.from('tasks').insert({
+      title: substituteMergeFields(config.title || '', ctx),
+      type: 'playbook_task',
+      due_date: dueDate.toISOString().split('T')[0],
+      contact_id: enrollment.contact_id,
+      opportunity_id: ctx.deal?.id || null,
+      owner: ctx.deal?.owner_name || null,
+      status: 'pending',
+    });
+    stats.tasks_created++;
+    return;
+  }
+
+  if (type === 'action_stage_update') {
+    const newStage = config.new_stage;
+    if (newStage && ctx.deal?.id) {
+      await supabase.from('opportunities').update({ stage: newStage }).eq('id', ctx.deal.id);
+    }
+    return;
   }
 }
