@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import PlaybookFlowBuilder from './PlaybookFlowBuilder';
+import DraftsTab from './tabs/DraftsTab';
+import RunningTab from './tabs/RunningTab';
+import CompletedTab from './tabs/CompletedTab';
 
 const TABS = [
   { key: 'suggestions', label: 'Suggesties', placeholder: true },
-  { key: 'drafts',      label: 'Drafts',     placeholder: true },
-  { key: 'running',     label: 'Lopend',     placeholder: true },
-  { key: 'completed',   label: 'Completed',  placeholder: true },
+  { key: 'drafts',      label: 'Drafts',     placeholder: false },
+  { key: 'running',     label: 'Lopend',     placeholder: false },
+  { key: 'completed',   label: 'Completed',  placeholder: false },
   { key: 'builder',     label: 'Builder',    placeholder: false },
 ];
 
@@ -45,13 +48,12 @@ export default function PlaybooksHub() {
             onOpenPlaybook={setEditingPlaybookId}
           />
         )}
-        {activeTab !== 'builder' && (
+        {activeTab === 'drafts' && <DraftsTab />}
+        {activeTab === 'running' && <RunningTab />}
+        {activeTab === 'completed' && <CompletedTab />}
+        {activeTab === 'suggestions' && (
           <div style={{ padding:40, textAlign:'center', color:'#888780', fontSize:13 }}>
-            <p>Deze tab komt beschikbaar in een volgend plan:</p>
-            <ul style={{ listStyle:'none', padding:0, marginTop:8 }}>
-              <li>📨 Drafts + Lopend + Completed → Plan 3 (execution engine)</li>
-              <li>▶ Suggesties → Plan 4 (signal-system)</li>
-            </ul>
+            <p>Deze tab komt beschikbaar in Plan 4 (signal-system).</p>
           </div>
         )}
       </div>
