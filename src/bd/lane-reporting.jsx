@@ -234,7 +234,7 @@ function computeMetrics(opps, companies, links, teamContacts, cfg) {
 
   // Data-quality warnings
   const warnings = {
-    wonNoActual: won.filter((o) => num(o.actual_revenue) === null || num(o.actual_revenue) === 0)
+    wonNoRevenue: won.filter((o) => revenueOf(o) === 0)
       .map((o) => o.company_name || byId.get(o.company_id)?.name || '—'),
     activeNoStatus: activeNoStatus.map((o) => o.company_name || byId.get(o.company_id)?.name || '—'),
     wonNonCustomer: won.filter((o) => { const c = byId.get(o.company_id); return c && c.type !== 'Customer'; })
@@ -246,6 +246,16 @@ function computeMetrics(opps, companies, links, teamContacts, cfg) {
   // Person role from account_links.role; columns sorted CSM → PSC → ROI → rest.
   const ROLE_ORDER = { CSM: 0, PSC: 1, ROI: 2, rest: 3 };
   const normRole = (r) => (r === 'CSM' || r === 'PSC' || r === 'ROI') ? r : 'rest';
+  // Marco's authoritative role assignment (overrides whatever account_links.role
+  // says). Keyed by normalised name; anyone not listed falls back to the link role.
+  const normName = (s) => s.toLowerCase().replace(/\s+/g, ' ').trim();
+  const ROLE_OVERRIDE = {
+    'angela schwingel': 'CSM', 'avneeta solanki': 'PSC', 'eric quintane': 'ROI',
+    'ezra fermanis': 'CSM', 'heidi muhle': 'CSM', 'ivan de las cuevas ruiz': 'CSM',
+    'kirsty thompson-clarke': 'PSC', 'manish goel': 'ROI', 'pablo borges patel': 'PSC',
+    'paul mastrangelo': 'PSC', 'simon boehm': 'rest', 'stephanie noack': 'CSM',
+    'yarmilla koenders': 'rest',
+  };
   const ctById = new Map((teamContacts || []).map((c) => [c.id, c]));
   const personName = (c) => {
     const n = `${c.first_name || ''} ${c.last_name || ''}`.trim();
@@ -265,6 +275,7 @@ function computeMetrics(opps, companies, links, teamContacts, cfg) {
   const team = [...people.values()].map((p) => {
     let role = 'rest', best = 0;
     for (const k of ['CSM', 'PSC', 'ROI']) if ((p.roleCounts[k] || 0) > best) { role = k; best = p.roleCounts[k]; }
+    role = ROLE_OVERRIDE[normName(p.name)] || role;
     return { name: p.name, role, clients: p.clients, n: p.clients.size, initials: p.name.split(' ').filter(Boolean).map((w) => w[0]).slice(0, 2).join('').toUpperCase() };
   }).sort((a, b) => ROLE_ORDER[a.role] - ROLE_ORDER[b.role] || a.name.localeCompare(b.name));
 
@@ -310,7 +321,7 @@ function TeamCoverageMatrix({ m, onPick }) {
   return (
     <>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 8, fontSize: 11, ...muted }}>
-        {[['CSM', 'CSM'], ['PSC', 'PSC'], ['rest', 'Leadership / other']].map(([k, lbl]) => (
+        {[['CSM', 'CSM'], ['PSC', 'PSC'], ['ROI', 'ROI'], ['rest', 'Leadership / other']].map(([k, lbl]) => (
           <span key={k} style={{ display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ color: ROLE_COLOR[k], fontSize: 13 }}>●</span>{lbl}</span>
         ))}
         <span>· hover a column for the full name · click a client to open its 360</span>
@@ -588,13 +599,13 @@ export default function ReportingLane({ onPickAccount, accounts = [] }) {
               <Kpi label="Dormant clients" value={m.kpi.dormantClients} sub="no live / open work" danger />
             </div>
 
-            {(m.warnings.activeNoStatus.length > 0 || m.warnings.wonNonCustomer.length > 0 || m.warnings.wonNoActual.length > 0 || m.warnings.missingCountry.length > 0) && (
+            {(m.warnings.activeNoStatus.length > 0 || m.warnings.wonNonCustomer.length > 0 || m.warnings.wonNoRevenue.length > 0 || m.warnings.missingCountry.length > 0) && (
               <div style={{ ...card, marginBottom: 14, borderColor: 'var(--danger)', background: 'var(--danger-tint)' }}>
                 <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--danger)', marginBottom: 4 }}>Data warnings</div>
                 <div style={{ fontSize: 11.5, ...muted, lineHeight: 1.7 }}>
                   {m.warnings.activeNoStatus.length > 0 && <div>{m.warnings.activeNoStatus.length} active/onboarding deal(s) with no status: {m.warnings.activeNoStatus.join(', ')}.</div>}
                   {m.warnings.wonNonCustomer.length > 0 && <div>{m.warnings.wonNonCustomer.length} won deal(s) on non-Customer accounts: {m.warnings.wonNonCustomer.join(', ')}.</div>}
-                  {m.warnings.wonNoActual.length > 0 && <div>{m.warnings.wonNoActual.length} won deal(s) with no/zero actual revenue (using estimate): {m.warnings.wonNoActual.join(', ')}.</div>}
+                  {m.warnings.wonNoRevenue.length > 0 && <div>{m.warnings.wonNoRevenue.length} won deal(s) with no revenue at all (no actual or estimate): {m.warnings.wonNoRevenue.join(', ')}.</div>}
                   {m.warnings.missingCountry.length > 0 && <div>{m.warnings.missingCountry.length} customer(s) with no country (defaulted to EMEA): {m.warnings.missingCountry.join(', ')}.</div>}
                 </div>
               </div>

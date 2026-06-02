@@ -19,9 +19,57 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.5.1';
+export const CURRENT_VERSION = '1.5.3';
 
 export const CHANGELOG = [
+  {
+    version: '1.5.3',
+    date: '2026-06-01T21:05:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'fix',
+    title: 'Reporting: only flag won deals with no revenue at all',
+    summary:
+      'The "won with no/zero actual revenue" data warning was misleading — it fired ' +
+      'for deals that are won on an estimate (real revenue), e.g. Breitling and ' +
+      'BioMarin. It now fires only when a won deal has no revenue at all (no actual ' +
+      'AND no estimate), so estimate-based wins no longer raise a flag.',
+    changes: [
+      'Changed the warning rule in src/bd/lane-reporting.jsx from "actual_revenue is null/0" to "revenue (COALESCE actual, est, 0) = 0".',
+      'Reworded the warning to "won deal(s) with no revenue at all (no actual or estimate)".',
+      'Effect: Breitling (€14,700 est) and BioMarin (€33,250 est) no longer appear in the warnings panel.',
+    ],
+    files: [
+      'src/bd/lane-reporting.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.5.3',
+  },
+  {
+    version: '1.5.2',
+    date: '2026-06-01T20:55:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'fix',
+    title: 'Coverage matrix — authoritative team role mapping',
+    summary:
+      'The Reporting coverage matrix now uses an explicit role map for the Eclectik ' +
+      'team instead of inferring purely from account_links. Eric Quintane and Manish ' +
+      'Goel are now ROI (were "leadership/other"); everyone else is unchanged. The ROI ' +
+      'group now appears in the column order (CSM → PSC → ROI → rest) and the legend.',
+    changes: [
+      'Added ROLE_OVERRIDE map (by name) in src/bd/lane-reporting.jsx; falls back to account_links.role for anyone not listed.',
+      'Eric Quintane → ROI, Manish Goel → ROI. Angela/Ezra/Heidi/Ivan/Steph = CSM; Avneeta/Kirsty/Pablo/Paul = PSC; Simon/Yarmilla = leadership/other.',
+      'ROI added to the matrix legend.',
+    ],
+    files: [
+      'src/bd/lane-reporting.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.5.2',
+  },
   {
     version: '1.5.1',
     date: '2026-06-01T20:40:00Z',
