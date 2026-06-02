@@ -56,6 +56,25 @@ export function validatePlaybook({ nodes, edges }) {
     }
   }
 
+  // Rule 3b: voor draft-action nodes: body OR ai_prompt moet gevuld zijn (conditioneel op use_ai)
+  for (const n of nodes) {
+    const def = NODE_TYPES[n.data.nodeType];
+    if (!def) continue;
+    const isDraftAction = ['action_email_draft','action_linkedin_draft','action_whatsapp_draft','action_instagram_draft'].includes(n.data.nodeType);
+    if (!isDraftAction) continue;
+    const config = n.data.config || {};
+    const useAi = config.use_ai || 'manual';
+    if (useAi === 'manual' && !config.body) {
+      issues.push({ severity: 'error', nodeId: n.id, message: `${def.label}: 'Body' is verplicht bij manual-modus.` });
+    }
+    if (useAi === 'ai' && !config.ai_prompt) {
+      issues.push({ severity: 'error', nodeId: n.id, message: `${def.label}: 'AI prompt template' is verplicht bij ai-modus.` });
+    }
+    if (n.data.nodeType === 'action_email_draft' && !config.subject) {
+      issues.push({ severity: 'error', nodeId: n.id, message: `${def.label}: 'Onderwerp' is verplicht.` });
+    }
+  }
+
   // Rule 4: orphan nodes (geen incoming en geen trigger)
   for (const n of nodes) {
     const def = NODE_TYPES[n.data.nodeType];
