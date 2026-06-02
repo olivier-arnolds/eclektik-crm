@@ -19,9 +19,29 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.5.3';
+export const CURRENT_VERSION = '1.5.4';
 
 export const CHANGELOG = [
+  {
+    version: '1.5.4',
+    date: '2026-06-01T21:20:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'fix',
+    title: 'Coverage matrix — Kate Feeney mapped to PSC',
+    summary:
+      'Kate Feeney (no role in the CRM, was showing under leadership/other) is a ' +
+      'people scientist, grouped under PSC in the coverage matrix.',
+    changes: [
+      'Added "kate feeney": "PSC" to ROLE_OVERRIDE in src/bd/lane-reporting.jsx.',
+    ],
+    files: [
+      'src/bd/lane-reporting.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.5.4',
+  },
   {
     version: '1.5.3',
     date: '2026-06-01T21:05:00Z',

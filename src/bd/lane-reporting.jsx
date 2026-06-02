@@ -254,7 +254,7 @@ function computeMetrics(opps, companies, links, teamContacts, cfg) {
     'ezra fermanis': 'CSM', 'heidi muhle': 'CSM', 'ivan de las cuevas ruiz': 'CSM',
     'kirsty thompson-clarke': 'PSC', 'manish goel': 'ROI', 'pablo borges patel': 'PSC',
     'paul mastrangelo': 'PSC', 'simon boehm': 'rest', 'stephanie noack': 'CSM',
-    'yarmilla koenders': 'rest',
+    'yarmilla koenders': 'rest', 'kate feeney': 'PSC',
   };
   const ctById = new Map((teamContacts || []).map((c) => [c.id, c]));
   const personName = (c) => {
