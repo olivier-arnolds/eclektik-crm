@@ -58,6 +58,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
     try { return JSON.parse(localStorage.getItem('marketing_extra_statuses') || '[]'); }
     catch { return []; }
   });
+  const [optOutOverrides, setOptOutOverrides] = useState({}); // { [contactId]: boolean } — local optimistic state
   const [savingEmail, setSavingEmail] = useState(false);
   const [activeOnly, setActiveOnly] = useState(true);
   const [showBulkTag, setShowBulkTag] = useState(false);
@@ -378,7 +379,8 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
             <button className="btn-primary tiny" disabled={!onComposeCampaign}
               onClick={() => {
                 if (!onComposeCampaign) return;
-                const eligible = filtered.filter(c => selected.has(c.id) && !c.do_not_email);
+                const isBlocked = (c) => optOutOverrides[c.id] !== undefined ? optOutOverrides[c.id] : !!c.do_not_email;
+                const eligible = filtered.filter(c => selected.has(c.id) && !isBlocked(c));
                 const optedOut = selected.size - eligible.length;
                 if (optedOut > 0 && !confirm(`${optedOut} geselecteerde contact${optedOut === 1 ? '' : 'en'} ${optedOut === 1 ? 'staat' : 'staan'} op opt-out (🚫). Ga je door met de overige ${eligible.length}?`)) {
                   return;
@@ -425,27 +427,36 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
                   </div>
                 );
               })()}
-              <button
-                onClick={async (e) => {
-                  e.stopPropagation();
-                  const newVal = !c.do_not_email;
-                  const { error } = await supabase.from('contacts').update({ do_not_email: newVal }).eq('id', c.id);
-                  if (error) {
-                    alert('Opt-out toggle mislukt: ' + error.message + '\n\nMogelijke oorzaak: do_not_email kolom bestaat nog niet in contacts-tabel. Run de ALTER TABLE in Supabase.');
-                    return;
-                  }
-                  if (refetch) refetch();
-                }}
-                title={c.do_not_email ? 'Opt-in: mag wel gemaild worden' : 'Opt-out: niet meer mailen'}
-                style={{
-                  background: 'transparent', border: 'none', cursor: 'pointer',
-                  fontSize: 18, padding: '2px 6px', flexShrink: 0,
-                  lineHeight: 1,
-                  color: c.do_not_email ? '#dc2626' : '#16a34a',
-                  fontWeight: 600,
-                }}>
-                {c.do_not_email ? '⊘' : '✉'}
-              </button>
+              {(() => {
+                // Effective state: local override wint van DB-state.
+                const effective = optOutOverrides[c.id] !== undefined ? optOutOverrides[c.id] : !!c.do_not_email;
+                return (
+                  <button
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      const newVal = !effective;
+                      // Optimistic update — UI flipt direct
+                      setOptOutOverrides(prev => ({ ...prev, [c.id]: newVal }));
+                      const { error } = await supabase.from('contacts').update({ do_not_email: newVal }).eq('id', c.id);
+                      if (error) {
+                        // Rollback
+                        setOptOutOverrides(prev => ({ ...prev, [c.id]: !newVal }));
+                        alert('Opt-out toggle mislukt: ' + error.message + '\n\nMogelijke oorzaak: do_not_email kolom bestaat nog niet, of RLS-policy ontbreekt.');
+                      }
+                      // Geen refetch — local override is voldoende tot volgende natuurlijke reload
+                    }}
+                    title={effective ? 'Opt-in: mag wel gemaild worden' : 'Opt-out: niet meer mailen'}
+                    style={{
+                      background: 'transparent', border: 'none', cursor: 'pointer',
+                      fontSize: 18, padding: '2px 6px', flexShrink: 0,
+                      lineHeight: 1,
+                      color: effective ? '#dc2626' : '#16a34a',
+                      fontWeight: 600,
+                    }}>
+                    {effective ? '⊘' : '✉'}
+                  </button>
+                );
+              })()}
               <div onClick={e => e.stopPropagation()} style={{ minWidth: 180, flexShrink: 0 }}>
                 {editingEmailId === c.id ? (
                   <input
@@ -465,18 +476,23 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
                       fontSize: 11, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
                     }} />
                 ) : (
-                  <span
-                    onClick={() => { setEditingEmailId(c.id); setEmailDraft(c.email || ''); }}
-                    title={c.do_not_email ? 'Email geblokt (opt-out)' : 'Click to edit email'}
-                    style={{
-                      fontSize: 11, cursor: 'text',
-                      color: c.email ? 'var(--text-2)' : 'var(--text-4)',
-                      fontStyle: c.email ? 'normal' : 'italic',
-                      textDecoration: c.do_not_email ? 'line-through' : 'none',
-                      opacity: c.do_not_email ? 0.5 : 1,
-                    }}>
-                    {c.email || '+ add email'}
-                  </span>
+                  {(() => {
+                    const blocked = optOutOverrides[c.id] !== undefined ? optOutOverrides[c.id] : !!c.do_not_email;
+                    return (
+                      <span
+                        onClick={() => { setEditingEmailId(c.id); setEmailDraft(c.email || ''); }}
+                        title={blocked ? 'Email geblokt (opt-out)' : 'Click to edit email'}
+                        style={{
+                          fontSize: 11, cursor: 'text',
+                          color: c.email ? 'var(--text-2)' : 'var(--text-4)',
+                          fontStyle: c.email ? 'normal' : 'italic',
+                          textDecoration: blocked ? 'line-through' : 'none',
+                          opacity: blocked ? 0.5 : 1,
+                        }}>
+                        {c.email || '+ add email'}
+                      </span>
+                    );
+                  })()}
                 )}
               </div>
             </div>
