@@ -404,22 +404,34 @@ export default async function handler(req, res) {
       const liAcc = (acctsResp.data?.items || []).find(a => (a.type || '').toUpperCase() === 'LINKEDIN');
       if (!liAcc) return res.status(400).json({ error: 'No LinkedIn account connected in Unipile' });
 
-      // Search keywords: last name + company is robuuster dan full name (nickname-issues
-      // zoals Debbie/Deborah). Eerst proberen met last name + company; bij no-results
-      // fallback naar volledig.
-      const searchBody = {
-        api: 'classic',
-        category: 'people',
-        keywords: lastName && company ? `${lastName} ${company}` : `${fullName} ${company}`.trim(),
-      };
-      const searchResult = await unipileRequest('POST', `/linkedin/search?account_id=${liAcc.id}`, searchBody);
-      if (searchResult.error || !searchResult.data) {
-        return res.status(400).json({ error: searchResult.error || 'search failed' });
+      // Multi-attempt search: probeer meerdere keyword-combos tot er resultaten zijn.
+      // Lost o.a. op: gepensioneerde contacten (geen current_company match), nicknames,
+      // typos. Volgorde van specifiek naar breed.
+      const attempts = [
+        company ? `${fullName} ${company}` : '',
+        company ? `${lastName} ${company}` : '',
+        firstName && lastName ? `${firstName} ${lastName}` : '',
+        lastName,
+      ].filter(Boolean);
+
+      let items = [];
+      let workingAttempt = null;
+      let lastSearchError = null;
+      for (const attempt of attempts) {
+        const searchBody = { api: 'classic', category: 'people', keywords: attempt };
+        const searchResult = await unipileRequest('POST', `/linkedin/search?account_id=${liAcc.id}`, searchBody);
+        if (searchResult.error) { lastSearchError = searchResult.error; continue; }
+        const found = searchResult.data?.items || searchResult.data?.data || [];
+        if (found.length > 0) { items = found; workingAttempt = attempt; break; }
       }
 
-      const items = searchResult.data.items || searchResult.data.data || [];
       if (items.length === 0) {
-        return res.status(200).json({ success: false, reason: 'no-results' });
+        return res.status(200).json({
+          success: false,
+          reason: 'no-results',
+          attempts_tried: attempts,
+          last_error: lastSearchError,
+        });
       }
 
       const firstLower = firstName.toLowerCase();
@@ -438,21 +450,44 @@ export default async function handler(req, res) {
         return candFn.includes(firstLower) && candLn.includes(lastLower);
       });
       // Tier 3: last-name only + company appears in candidate data (Debbie/Deborah nicknames etc.)
-      const lastNameMatch = !exactMatch && !fuzzyMatch && companyLower.length > 2 && items.find(c => {
+      const lastNameMatchWithCompany = !exactMatch && !fuzzyMatch && companyLower.length > 2 && items.find(c => {
         const candLn = (c.last_name || '').toLowerCase();
         if (!candLn.includes(lastLower) && !lastLower.includes(candLn)) return false;
         const blob = JSON.stringify(c).toLowerCase();
         return blob.includes(companyLower);
       });
-      const match = exactMatch || fuzzyMatch || lastNameMatch;
-      const matchType = exactMatch ? 'exact' : (fuzzyMatch ? 'fuzzy' : 'last-name+company');
+      // Tier 4: als de search-attempt al specifiek was (last name + company / full name)
+      // en er maar 1 candidate is met last-name match — accepteer 'm (bv. retired contacts
+      // die geen current company hebben). Risico klein omdat search-keywords al filtered.
+      const lastNameOnlyMatch = !exactMatch && !fuzzyMatch && !lastNameMatchWithCompany && (() => {
+        const candidates = items.filter(c => {
+          const candLn = (c.last_name || '').toLowerCase();
+          return candLn.includes(lastLower) || lastLower.includes(candLn);
+        });
+        // Alleen accepteren als precies 1 last-name-match én de search niet alleen op "lastName" was
+        // (om matching false-positive op een generiek lastname te voorkomen)
+        const wasNarrowSearch = workingAttempt && (workingAttempt.includes(' ') || workingAttempt.toLowerCase().includes(companyLower));
+        return wasNarrowSearch && candidates.length === 1 ? candidates[0] : null;
+      })();
+      const match = exactMatch || fuzzyMatch || lastNameMatchWithCompany || lastNameOnlyMatch;
+      const matchType = exactMatch ? 'exact'
+        : fuzzyMatch ? 'fuzzy'
+        : lastNameMatchWithCompany ? 'last-name+company'
+        : lastNameOnlyMatch ? 'last-name+narrow-search'
+        : null;
 
       if (!match) {
         return res.status(200).json({
           success: false,
           reason: 'no-name-match',
+          working_attempt: workingAttempt,
           candidates: items.length,
-          sample: items.slice(0, 3).map(c => ({ first: c.first_name, last: c.last_name, headline: c.headline })),
+          sample: items.slice(0, 5).map(c => ({
+            first: c.first_name,
+            last: c.last_name,
+            headline: c.headline || c.occupation,
+            profile_url: c.profile_url || c.public_profile_url,
+          })),
         });
       }
 
