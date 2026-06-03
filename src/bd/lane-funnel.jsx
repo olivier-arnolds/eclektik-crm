@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { I, fmtMoney, OwnerDot, AccountMark, StaleDot, OWNERS, STAGE_TINT } from './atoms';
 import { STAGES, stageUpdates } from './adapters';
 import { updateRow } from '../hooks/useSupabase';
+import { supabase } from '../supabase';
 import { promoteLeadToOpportunity } from './lead-promote';
 import NewDealModal from './new-deal-modal';
 import BulkLinkDealsModal from './bulk-link-deals-modal';
@@ -15,6 +16,30 @@ export default function FunnelLane({ deals, accounts, contacts, filters, setFilt
   const [confirmMove, setConfirmMove] = useState(null);
   const [showNewDeal, setShowNewDeal] = useState(false);
   const [showBulkLink, setShowBulkLink] = useState(false);
+  const [pendingByDealId, setPendingByDealId] = useState({});
+
+  useEffect(() => {
+    function loadSuggestions() {
+      supabase.from('playbook_suggestions')
+        .select('deal_id, playbook_id, playbooks(name)')
+        .eq('status', 'pending')
+        .not('deal_id', 'is', null)
+        .then(({ data }) => {
+          const map = {};
+          (data || []).forEach(s => {
+            if (!map[s.deal_id]) map[s.deal_id] = [];
+            map[s.deal_id].push(s);
+          });
+          setPendingByDealId(map);
+        });
+    }
+    loadSuggestions();
+    const channel = supabase
+      .channel('lane_funnel_suggestions')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'playbook_suggestions' }, loadSuggestions)
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
   const q = (search || '').toLowerCase();
   const matchesSearch = (d) => !q ||
@@ -171,7 +196,8 @@ export default function FunnelLane({ deals, accounts, contacts, filters, setFilt
                       onDragStart={() => setDraggingId(d.id)}
                       onDragEnd={() => setDraggingId(null)}
                       onClick={() => onSelectDeal && onSelectDeal(d)}
-                      onEdit={onEditDeal} />
+                      onEdit={onEditDeal}
+                      pendingSuggestions={pendingByDealId[d.id] || []} />
                   ))}
                   {sDeals.length === 0 && <div className="swimlane-empty">No deals</div>}
                 </div>
@@ -236,7 +262,7 @@ export default function FunnelLane({ deals, accounts, contacts, filters, setFilt
   );
 }
 
-function DealCard({ deal, accounts, dragging, onDragStart, onDragEnd, onClick, onEdit }) {
+function DealCard({ deal, accounts, dragging, onDragStart, onDragEnd, onClick, onEdit, pendingSuggestions = [] }) {
   const account = accounts.find(a => a.id === deal.accountId);
   return (
     <div className={`deal-card ${dragging ? 'deal-card-dragging' : ''}`}
@@ -274,6 +300,23 @@ function DealCard({ deal, accounts, dragging, onDragStart, onDragEnd, onClick, o
           {deal.probability > 0 && <span>{deal.probability}%</span>}
         </div>
       </div>
+      {pendingSuggestions.length > 0 && (
+        <div style={{
+          background: '#fdf2f8',
+          color: '#be185d',
+          fontSize: 9,
+          padding: '2px 6px',
+          borderRadius: 3,
+          marginTop: 4,
+          fontWeight: 600,
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: 4,
+        }}>
+          ▶ {pendingSuggestions[0].playbooks?.name || 'Playbook'}
+          {pendingSuggestions.length > 1 && ` (+${pendingSuggestions.length - 1})`}
+        </div>
+      )}
     </div>
   );
 }
