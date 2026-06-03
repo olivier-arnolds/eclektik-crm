@@ -51,7 +51,7 @@ export default async function handler(req, res) {
     const now = new Date();
     const query = supabase
       .from('playbook_enrollments')
-      .select('*, contacts(*), opportunities(*, companies(*))')
+      .select('*, contacts(*, companies(*))')
       .eq('status', 'active');
 
     const filter = force
@@ -143,8 +143,19 @@ async function processEnrollment(enrollment, now, stats) {
 
 async function buildContext(enrollment, now) {
   const contact = enrollment.contacts || {};
-  const deal = enrollment.opportunities || null;
-  const company = deal?.companies || null;
+  const company = enrollment.contacts?.companies || null;
+  // Geen direct deal-link op enrollment — lookup latest active opportunity voor company (best-effort).
+  let deal = null;
+  if (company?.id) {
+    const { data: deals } = await supabase
+      .from('opportunities')
+      .select('id, name, value, owner_name, stage, status')
+      .eq('company_id', company.id)
+      .in('stage', ['active', 'onboarding', 'qualify', 'develop', 'proposal'])
+      .order('created_at', { ascending: false })
+      .limit(1);
+    deal = deals?.[0] || null;
+  }
   const ownerFirstName = (deal?.owner_name || '').split(' ')[0] || '';
   return {
     now,
