@@ -429,7 +429,11 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
                 onClick={async (e) => {
                   e.stopPropagation();
                   const newVal = !c.do_not_email;
-                  await supabase.from('contacts').update({ do_not_email: newVal }).eq('id', c.id);
+                  const { error } = await supabase.from('contacts').update({ do_not_email: newVal }).eq('id', c.id);
+                  if (error) {
+                    alert('Opt-out toggle mislukt: ' + error.message + '\n\nMogelijke oorzaak: do_not_email kolom bestaat nog niet in contacts-tabel. Run de ALTER TABLE in Supabase.');
+                    return;
+                  }
                   if (refetch) refetch();
                 }}
                 title={c.do_not_email ? 'Opt-in: mag wel gemaild worden' : 'Opt-out: niet meer mailen'}
