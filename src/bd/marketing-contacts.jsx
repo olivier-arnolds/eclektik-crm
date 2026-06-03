@@ -437,9 +437,10 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
                   background: 'transparent', border: 'none', cursor: 'pointer',
                   fontSize: 18, padding: '2px 6px', flexShrink: 0,
                   lineHeight: 1,
-                  opacity: c.do_not_email ? 1 : 0.4,
+                  color: c.do_not_email ? '#dc2626' : '#16a34a',
+                  fontWeight: 600,
                 }}>
-                {c.do_not_email ? '🚫' : '✉'}
+                {c.do_not_email ? '⊘' : '✉'}
               </button>
               <div onClick={e => e.stopPropagation()} style={{ minWidth: 180, flexShrink: 0 }}>
                 {editingEmailId === c.id ? (
