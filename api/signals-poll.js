@@ -84,23 +84,49 @@ export default async function handler(req, res) {
 }
 
 async function processSubject(subject, accountId, activePlaybooks, stats) {
-  let identifier, isCompany;
+  // Resolve LinkedIn URL to internal Unipile-acceptable ID.
+  // Two-step pattern (same as api/unipile.js get-posts):
+  //   Persons:   GET /users/{slug}?account_id=X  -> data.provider_id  -> /users/{provider_id}/posts
+  //   Companies: GET /linkedin/company/{slug}?account_id=X -> data.id -> /users/{id}/posts?is_company=true
+
+  let slug, isCompany;
   if (subject.contact_id) {
     const contact = subject.contacts;
     if (!contact?.linkedin_url) return;
-    identifier = contact.linkedin_url.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//, '').replace(/\/$/, '');
+    const m = contact.linkedin_url.match(/linkedin\.com\/in\/([^\/\?]+)/);
+    if (!m) return;
+    slug = m[1];
     isCompany = false;
   } else if (subject.company_id) {
     const company = subject.companies;
     if (!company?.linkedin_url) return;
-    identifier = company.linkedin_url.replace(/^https?:\/\/(www\.)?linkedin\.com\/company\//, '').replace(/\/$/, '');
+    const m = company.linkedin_url.match(/linkedin\.com\/company\/([^\/\?]+)/);
+    if (!m) return;
+    slug = m[1];
     isCompany = true;
   } else {
     return;
   }
 
+  // Step 1: resolve slug to internal ID
+  let resolvedId;
+  if (isCompany) {
+    const companyResult = await unipileGet(`/linkedin/company/${encodeURIComponent(slug)}?account_id=${accountId}`);
+    resolvedId = companyResult.id;
+    if (!resolvedId && companyResult.entity_urn) {
+      const numMatch = companyResult.entity_urn.match(/(\d+)$/);
+      if (numMatch) resolvedId = numMatch[1];
+    }
+    if (!resolvedId) throw new Error(`Could not resolve company ID for slug ${slug}`);
+  } else {
+    const personResult = await unipileGet(`/users/${encodeURIComponent(slug)}?account_id=${accountId}`);
+    resolvedId = personResult.provider_id;
+    if (!resolvedId) throw new Error(`Could not resolve provider_id for slug ${slug}`);
+  }
+
+  // Step 2: fetch posts using the resolved ID
   const isCompanyParam = isCompany ? '&is_company=true' : '';
-  const data = await unipileGet(`/users/${encodeURIComponent(identifier)}/posts?limit=10&account_id=${accountId}${isCompanyParam}`);
+  const data = await unipileGet(`/users/${encodeURIComponent(resolvedId)}/posts?limit=10&account_id=${accountId}${isCompanyParam}`);
   const posts = data.items || data.data || [];
   stats.posts_seen += posts.length;
 
