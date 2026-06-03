@@ -3,9 +3,10 @@ import PlaybookFlowBuilder from './PlaybookFlowBuilder';
 import DraftsTab from './tabs/DraftsTab';
 import RunningTab from './tabs/RunningTab';
 import CompletedTab from './tabs/CompletedTab';
+import SuggestionsTab from './tabs/SuggestionsTab';
 
 const TABS = [
-  { key: 'suggestions', label: 'Suggesties', placeholder: true },
+  { key: 'suggestions', label: 'Suggesties', placeholder: false },
   { key: 'drafts',      label: 'Drafts',     placeholder: false },
   { key: 'running',     label: 'Lopend',     placeholder: false },
   { key: 'completed',   label: 'Completed',  placeholder: false },
@@ -51,11 +52,7 @@ export default function PlaybooksHub() {
         {activeTab === 'drafts' && <DraftsTab />}
         {activeTab === 'running' && <RunningTab />}
         {activeTab === 'completed' && <CompletedTab />}
-        {activeTab === 'suggestions' && (
-          <div style={{ padding:40, textAlign:'center', color:'#888780', fontSize:13 }}>
-            <p>Deze tab komt beschikbaar in Plan 4 (signal-system).</p>
-          </div>
-        )}
+        {activeTab === 'suggestions' && <SuggestionsTab />}
       </div>
     </div>
   );
