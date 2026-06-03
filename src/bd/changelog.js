@@ -19,9 +19,81 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.5.4';
+export const CURRENT_VERSION = '1.6.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.6.0',
+    date: '2026-06-03T10:00:00Z',
+    author: 'Olivier Arnolds (via Claude / Cowork)',
+    type: 'feature',
+    title: 'Playbooks v2 — visual workflow builder + execution engine + AI + signals',
+    summary:
+      'Compleet nieuwe Playbooks-feature: graph-gebaseerd ontwerp met drag-drop ' +
+      'visuele builder (React Flow), conditional branching, AI-gegenereerde drafts ' +
+      'via Claude Haiku, en automatische suggesties op basis van stage-changes en ' +
+      'LinkedIn-post signalen. Oude lineaire playbook-systeem volledig vervangen. ' +
+      'Nu beschikbaar via Playbooks-tab in topbar.',
+    changes: [
+      'Datamodel: 7 nieuwe tabellen (playbook_versions/nodes/edges, signals, signal_subjects, playbook_suggestions, playbook_drafts) + RLS-policies. Oude playbook_steps tabel gemigreerd naar nieuwe graph-structuur en gedropt na 24u stable.',
+      'Visual builder (PlaybookFlowBuilder): React Flow canvas met drag-drop palette van 14 node-types (4 triggers, 6 actions, 4 logic), dynamic property panel per node-type, edge-creation + branch-labels, real-time validatie (6 regels), save-draft + publish-met-versionering (snapshots in playbook_versions).',
+      'Execution engine (api/playbook-execute.js): graph-traversal cron die enrollments door playbook-graph laat lopen. Genereert drafts (email/LinkedIn/WhatsApp/Instagram), creëert internal tasks, update stages. Per draft-action: manual body OR AI-gegenereerde tekst via Claude Haiku met merge-fields ({{first_name}}, {{signal_context}}, etc.). System-prompt voorkomt em-dashes en andere AI-tells.',
+      'Drafts hub (Playbooks → Drafts): two-pane preview + inline-edit + verzend via MS Graph (email) of Unipile (LinkedIn/WA/IG). Reply-detection voor LI/WA/IG via Unipile-webhook (markeert enrollment.replied_at).',
+      'Test-run mode in builder: simulate playbook met test-contact, toont AI-output via /api/anthropic-generate endpoint.',
+      'Signals (api/signals-poll.js): dagelijkse cron pollt Unipile voor LinkedIn-posts per signal_subject (auto-tracked: contacten + companies van active/sleeping deals). Two-step ID-resolution (slug → provider_id → posts). Claude Haiku scoort relevance 0-1 met JSON-output. Score > 0.6 → automatische suggestion.',
+      'Suggesties UI: SuggestionsTab (filter pending/started/dismissed/expired + Start/Niet-nu acties), TopbarSuggestions badge met dropdown van top-5 (Supabase Realtime), pink card-pills op funnel-deal-cards, bell-icon (🔔) signal-follow toggle op contact panels.',
+      'Stage-change suggesties: PL/pgSQL DB-trigger op opportunities.stage UPDATE → automatic playbook_suggestions insert voor matching playbooks. Instant (zelfde transactie).',
+      'Warm Outreach seed-playbook: 3-node graph (trigger_linkedin_user_post → AI LinkedIn-draft → end) geseed via SQL, klaar voor signal-driven outreach.',
+      'Content rules (CLAUDE.md §2b + system-prompt in cron): geen em-dashes, geen markdown-headers, geen bullet lists, geen filler-openingen in client-facing AI-gegenereerde tekst.',
+      'Twee nieuwe Vercel cron-entries: signals-poll dagelijks 7u werkdagen, suggestions-expire weekly maandag 6u.',
+    ],
+    files: [
+      'schema_playbooks_v2.sql',
+      'schema_playbooks_v2_verify.sql',
+      'schema_playbooks_v2_cleanup.sql',
+      'schema_playbooks_v2_rollback.sql',
+      'schema_playbooks_v2_stage_trigger.sql',
+      'schema_playbooks_v2_signal_subjects_backfill.sql',
+      'schema_playbooks_v2_warm_outreach_seed.sql',
+      'api/playbook-execute.js',
+      'api/signals-poll.js',
+      'api/suggestions-expire.js',
+      'api/anthropic-generate.js',
+      'api/unipile-webhook.js',
+      'src/components/playbooks/PlaybooksHub.jsx',
+      'src/components/playbooks/PlaybookFlowBuilder.jsx',
+      'src/components/playbooks/nodes/NodeTypes.js',
+      'src/components/playbooks/nodes/NodeCard.jsx',
+      'src/components/playbooks/panels/NodePalette.jsx',
+      'src/components/playbooks/panels/PropertyPanel.jsx',
+      'src/components/playbooks/panels/BuilderToolbar.jsx',
+      'src/components/playbooks/builder/TestRunModal.jsx',
+      'src/components/playbooks/tabs/DraftsTab.jsx',
+      'src/components/playbooks/tabs/RunningTab.jsx',
+      'src/components/playbooks/tabs/CompletedTab.jsx',
+      'src/components/playbooks/tabs/SuggestionsTab.jsx',
+      'src/components/playbooks/lib/playbookGraphIO.js',
+      'src/components/playbooks/lib/playbookValidation.js',
+      'src/components/playbooks/lib/playbookVersioning.js',
+      'src/components/playbooks/lib/playbookGraphTraversal.js',
+      'src/components/playbooks/lib/draftGeneration.js',
+      'src/components/playbooks/lib/sendChannels.js',
+      'src/components/playbooks/lib/signalScoring.js',
+      'src/components/playbooks/lib/signalSuggestionRules.js',
+      'src/bd/topbar-suggestions.jsx',
+      'src/bd/signal-follow-toggle.jsx',
+      'src/bd/topbar.jsx',
+      'src/bd/lane-funnel.jsx',
+      'src/bd/inline-details.jsx',
+      'src/bd/BDApp.jsx',
+      'src/bd/changelog.js',
+      'CLAUDE.md',
+      'vercel.json',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.6.0',
+  },
   {
     version: '1.5.4',
     date: '2026-06-01T21:20:00Z',
