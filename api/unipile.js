@@ -404,10 +404,13 @@ export default async function handler(req, res) {
       const liAcc = (acctsResp.data?.items || []).find(a => (a.type || '').toUpperCase() === 'LINKEDIN');
       if (!liAcc) return res.status(400).json({ error: 'No LinkedIn account connected in Unipile' });
 
+      // Search keywords: last name + company is robuuster dan full name (nickname-issues
+      // zoals Debbie/Deborah). Eerst proberen met last name + company; bij no-results
+      // fallback naar volledig.
       const searchBody = {
         api: 'classic',
         category: 'people',
-        keywords: `${fullName} ${company}`.trim(),
+        keywords: lastName && company ? `${lastName} ${company}` : `${fullName} ${company}`.trim(),
       };
       const searchResult = await unipileRequest('POST', `/linkedin/search?account_id=${liAcc.id}`, searchBody);
       if (searchResult.error || !searchResult.data) {

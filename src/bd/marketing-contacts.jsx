@@ -71,11 +71,14 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
     const without = selectedContacts.filter(c => !c.linkedin_url);
     const withUrl = selectedContacts.filter(c => c.linkedin_url);
 
-    const planLines = [];
-    if (without.length > 0) planLines.push(`- ${without.length} zonder LinkedIn-URL → zoeken via Unipile en URL invullen`);
-    if (withUrl.length > 0) planLines.push(`- ${withUrl.length} met LinkedIn-URL → profile fetchen en title refreshen`);
-    if (!confirm(`Enrich plan:\n${planLines.join('\n')}\n\nDoorgaan? (~0.8s per contact)`)) {
-      return;
+    // Skip confirm voor kleine batches (≤3) — voor grote sets bevestiging vragen om accidents te voorkomen
+    if (selectedContacts.length > 3) {
+      const planLines = [];
+      if (without.length > 0) planLines.push(`- ${without.length} zonder LinkedIn-URL → zoeken via Unipile en URL invullen`);
+      if (withUrl.length > 0) planLines.push(`- ${withUrl.length} met LinkedIn-URL → profile fetchen en title refreshen`);
+      if (!confirm(`Enrich plan voor ${selectedContacts.length} contacten:\n${planLines.join('\n')}\n\nDoorgaan? (~0.8s per contact)`)) {
+        return;
+      }
     }
 
     setEnriching(true);
