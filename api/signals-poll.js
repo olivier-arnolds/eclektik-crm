@@ -144,7 +144,8 @@ async function processSubject(subject, accountId, activePlaybooks, stats) {
 
     const postText = post.text || post.body || post.content || '';
     const postUrl = post.url || post.permalink || null;
-    const postedAt = post.posted_at || post.date || post.created_at || new Date().toISOString();
+    const rawPostedAt = post.posted_at || post.date || post.created_at;
+    const postedAt = parsePostedAt(rawPostedAt);
 
     const insertPayload = {
       source: subject.source_type,
@@ -225,4 +226,34 @@ async function processSubject(subject, accountId, activePlaybooks, stats) {
   await supabase.from('signal_subjects')
     .update({ last_polled_at: new Date().toISOString() })
     .eq('id', subject.id);
+}
+
+// Unipile levert posted_at vaak als relatieve string ("5h", "1d", "2w", "1mo")
+// in plaats van ISO-timestamp. Parse naar absolute ISO-string of return null.
+function parsePostedAt(raw) {
+  if (!raw) return null;
+  // Already ISO-ish? trust the DB to parse
+  if (/^\d{4}-\d{2}-\d{2}/.test(raw)) return raw;
+  // Try numeric epoch (ms or seconds)
+  if (typeof raw === 'number' || /^\d+$/.test(raw)) {
+    const n = Number(raw);
+    const ms = n > 1e12 ? n : n * 1000; // heuristic: ms vs seconds
+    const d = new Date(ms);
+    if (!isNaN(d.getTime())) return d.toISOString();
+  }
+  // Relative: "5h", "14h", "1d", "5d", "1w", "2w", "1mo", "2mo", "1y"
+  const m = String(raw).match(/^(\d+)\s*(h|d|w|mo|m|y)$/i);
+  if (!m) return null;
+  const n = parseInt(m[1], 10);
+  const unit = m[2].toLowerCase();
+  const msPerUnit = {
+    h: 3600 * 1000,
+    d: 86400 * 1000,
+    w: 7 * 86400 * 1000,
+    mo: 30 * 86400 * 1000,
+    m: 30 * 86400 * 1000,
+    y: 365 * 86400 * 1000,
+  }[unit];
+  if (!msPerUnit) return null;
+  return new Date(Date.now() - n * msPerUnit).toISOString();
 }
