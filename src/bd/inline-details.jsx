@@ -3,6 +3,7 @@ import { I, fmtFull, fmtMoney, OwnerDot, STAGE_TINT } from './atoms';
 import { supabase } from '../supabase';
 import DOMPurify from 'dompurify';
 import { updateRow } from '../hooks/useSupabase';
+import SignalFollowToggle from './signal-follow-toggle';
 import TypePicker from './type-picker';
 import { useAuth } from '../lib/auth';
 import TagChip from './tag-chip';
@@ -177,6 +178,9 @@ export function InlineContactDetail({ contactId, onCompose, refetch, allTags, on
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+      <div style={{ gridColumn: 'span 2', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 6 }}>
+        <SignalFollowToggle contactId={contactId} />
+      </div>
       <div style={{ gridColumn: 'span 2' }}>
         <CompanyPicker
           value={row.company_id}
