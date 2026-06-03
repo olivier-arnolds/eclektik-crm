@@ -488,6 +488,7 @@ export default async function handler(req, res) {
             headline: c.headline || c.occupation,
             profile_url: c.profile_url || c.public_profile_url,
           })),
+          raw_first_candidate: items[0], // FULL shape for debug — see all available fields
         });
       }
 
