@@ -48,6 +48,8 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
   const [hasAnyDeal, setHasAnyDeal] = useState(false);
   const [hasEmail, setHasEmail] = useState(false);
   const [noEmail, setNoEmail] = useState(false);
+  const [hasLinkedin, setHasLinkedin] = useState(false);
+  const [noLinkedin, setNoLinkedin] = useState(false);
   const [editingEmailId, setEditingEmailId] = useState(null);
   const [emailDraft, setEmailDraft] = useState('');
   const [showAddTag, setShowAddTag] = useState(false);
@@ -135,6 +137,8 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
       if (activeOnly && c.isFormer) return false;
       if (hasEmail && !c.email) return false;
       if (noEmail && c.email) return false;
+      if (hasLinkedin && !c.linkedin_url) return false;
+      if (noLinkedin && c.linkedin_url) return false;
       if (hasGlintDeal && !accountsWithGlintDeal.has(c.accountId)) return false;
       if (hasAnyDeal && !accountsWithAnyDeal.has(c.accountId)) return false;
       if (selectedTagIds.size > 0) {
@@ -161,7 +165,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
       if (cmp !== 0) return cmp;
       return (a.name || '').toLowerCase().localeCompare((b.name || '').toLowerCase());
     });
-  }, [contacts, activeOnly, hasEmail, noEmail, hasGlintDeal, hasAnyDeal, accountsWithGlintDeal, accountsWithAnyDeal, selectedTagIds, selectedAccountTypes, accountTypeById, searchText, hiddenPairs]);
+  }, [contacts, activeOnly, hasEmail, noEmail, hasLinkedin, noLinkedin, hasGlintDeal, hasAnyDeal, accountsWithGlintDeal, accountsWithAnyDeal, selectedTagIds, selectedAccountTypes, accountTypeById, searchText, hiddenPairs]);
 
   // Inline email edit — optimistic-free: save then refetch so the parent
   // cache stays the single source of truth.
@@ -316,6 +320,14 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
         <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, padding: '3px 0', cursor: 'pointer' }}>
           <input type="checkbox" checked={noEmail} onChange={() => { setNoEmail(v => !v); if (!noEmail) setHasEmail(false); }} />
           Without email
+        </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, padding: '3px 0', cursor: 'pointer' }}>
+          <input type="checkbox" checked={hasLinkedin} onChange={() => { setHasLinkedin(v => !v); if (!hasLinkedin) setNoLinkedin(false); }} />
+          Has LinkedIn
+        </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, padding: '3px 0', cursor: 'pointer' }}>
+          <input type="checkbox" checked={noLinkedin} onChange={() => { setNoLinkedin(v => !v); if (!noLinkedin) setHasLinkedin(false); }} />
+          Without LinkedIn
         </label>
         <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, padding: '3px 0', cursor: 'pointer' }}>
           <input type="checkbox" checked={activeOnly} onChange={() => setActiveOnly(v => !v)} />
