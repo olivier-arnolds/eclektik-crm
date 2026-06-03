@@ -10,17 +10,13 @@ export function shouldCreateSuggestion(signal) {
 }
 
 // Bepaal welke playbook getriggerd moet worden door dit signal.
-// Voor V1: hard-coded mapping. Latere uitbreidingen: matching op trigger_config.
+// Convention:
+//   - playbooks.trigger_type = unprefixed ('linkedin_user_post', 'stage_change', 'manual')
+//   - playbook_nodes.node_type = prefixed ('trigger_linkedin_user_post', 'logic_wait')
+// Match direct op signal.source -> playbook.trigger_type.
 export function findPlaybookForSignal(signal, activePlaybooks) {
-  const triggerType = signal.source === 'linkedin_user_post'
-    ? 'trigger_linkedin_user_post'
-    : signal.source === 'linkedin_company_post'
-    ? 'trigger_linkedin_company_post'
-    : null;
-  if (!triggerType) return null;
-
-  // Find first active playbook with this trigger_type
-  return activePlaybooks.find(pb => pb.trigger_type === triggerType) || null;
+  if (!signal.source) return null;
+  return activePlaybooks.find(pb => pb.trigger_type === signal.source) || null;
 }
 
 // Build source_context payload voor suggestion (merge-field source).
