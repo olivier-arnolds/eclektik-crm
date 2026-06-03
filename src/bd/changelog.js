@@ -19,9 +19,43 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.6.0';
+export const CURRENT_VERSION = '1.6.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.6.1',
+    date: '2026-06-03T16:00:00Z',
+    author: 'Olivier Arnolds (via Claude / Cowork)',
+    type: 'fix',
+    title: 'Playbooks v2 — last-mile fixes voor signals + suggesties + cron',
+    summary:
+      'Zes opvolg-fixes na productie-deploy van 1.6.0. Volledige eind-tot-eind ' +
+      'loop bewezen: signaal-poll detecteert LinkedIn-posts, Claude scoort, ' +
+      'auto-suggesties verschijnen, gebruiker start, cron genereert tasks. ' +
+      'Plus seed van een Warm Company Outreach playbook (internal task ' +
+      'voor account-eigenaar bij score >= 0.6 op company-posts).',
+    changes: [
+      'Unipile 422 fix: signals-poll resolvet eerst de LinkedIn-slug naar internal provider_id (persons) of numeric company-id (via /linkedin/company/{slug}) voordat /users/{id}/posts wordt aangeroepen. Volgt zelfde patroon als api/unipile.js get-posts.',
+      'Relative timestamp parsing: Unipile levert posted_at als "5h"/"1d"/"1w"/"1mo" strings. parsePostedAt converteert naar absolute ISO-strings (anders weigert Postgres timestamptz).',
+      'Trigger-type prefix mismatch: signalSuggestionRules matchte signal.source naar "trigger_<source>" maar playbooks.trigger_type is unprefixed. Convention nu expliciet: playbook_nodes.node_type prefixed, playbooks.trigger_type unprefixed.',
+      'Cron FK-join fix: playbook-execute.js JOIN op opportunities faalde omdat playbook_enrollments geen opportunity_id heeft. Vervangen door contacts(*, companies(*)) join + best-effort deal-lookup via company_id.',
+      'SuggestionsTab FK-join fix: PostgREST kon opportunities-relatie niet auto-inferren via deal_id-kolom. Join verwijderd. Fallback-tekst toont nu signal_topics i.p.v. "Onbekend doelwit".',
+      'playbook_enrollments.source_context kolom toegevoegd (was vergeten in Plan 1 schema) zodat suggestion-Start enrollment-creatie niet meer silently faalt.',
+      'Warm Company Outreach playbook geseed: trigger_linkedin_company_post -> action_internal_task -> end. Genereert task "Reageer op company-nieuws: {{signal_context}}" voor account-eigenaar met due-date +3d.',
+    ],
+    files: [
+      'api/signals-poll.js',
+      'api/playbook-execute.js',
+      'src/components/playbooks/lib/signalSuggestionRules.js',
+      'src/components/playbooks/tabs/SuggestionsTab.jsx',
+      'schema_playbooks_v2_warm_company_outreach_seed.sql (ad-hoc, niet in repo)',
+      'ALTER playbook_enrollments ADD COLUMN source_context jsonb (ad-hoc, niet in repo)',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.6.1',
+  },
   {
     version: '1.6.0',
     date: '2026-06-03T10:00:00Z',
