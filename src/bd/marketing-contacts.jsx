@@ -61,6 +61,42 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
     catch { return []; }
   });
   const [optOutOverrides, setOptOutOverrides] = useState({}); // { [contactId]: boolean } — local optimistic state
+  const [enriching, setEnriching] = useState(false);
+  const [enrichProgress, setEnrichProgress] = useState({ done: 0, total: 0 });
+
+  async function enrichSelected() {
+    const eligible = filtered.filter(c => selected.has(c.id) && c.linkedin_url);
+    if (eligible.length === 0) {
+      alert('Geen geselecteerde contacten met LinkedIn-URL.');
+      return;
+    }
+    const skipped = selected.size - eligible.length;
+    if (!confirm(`Enrich ${eligible.length} contact${eligible.length === 1 ? '' : 'en'} via LinkedIn?${skipped > 0 ? ` (${skipped} zonder LinkedIn-URL worden overgeslagen)` : ''}\n\nElk roept Unipile aan voor profile-fetch en update title (+ first/last name als leeg).`)) {
+      return;
+    }
+    setEnriching(true);
+    setEnrichProgress({ done: 0, total: eligible.length });
+    let succeeded = 0, failed = 0;
+    for (let i = 0; i < eligible.length; i++) {
+      const c = eligible[i];
+      try {
+        const resp = await fetch('/api/unipile?action=enrich-contact', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contact_id: c.id, linkedin_url: c.linkedin_url }),
+        });
+        const data = await resp.json();
+        if (data.success) succeeded++; else failed++;
+      } catch {
+        failed++;
+      }
+      setEnrichProgress({ done: i + 1, total: eligible.length });
+      if (i < eligible.length - 1) await new Promise(r => setTimeout(r, 600));
+    }
+    setEnriching(false);
+    alert(`Enrich klaar: ${succeeded} succes, ${failed} fout${skipped > 0 ? `, ${skipped} overgeslagen` : ''}.`);
+    if (refetch) refetch();
+  }
   const [savingEmail, setSavingEmail] = useState(false);
   const [activeOnly, setActiveOnly] = useState(true);
   const [showBulkTag, setShowBulkTag] = useState(false);
@@ -387,6 +423,9 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
             <span style={{ fontSize: 12, fontWeight: 500 }}>{selected.size} selected</span>
             <button className="btn-primary tiny" onClick={() => setShowBulkTag(true)}>
               Tag selected
+            </button>
+            <button className="btn-ghost tiny" onClick={enrichSelected} disabled={enriching}>
+              {enriching ? `Enriching ${enrichProgress.done}/${enrichProgress.total}…` : 'Enrich via LinkedIn'}
             </button>
             <button className="btn-primary tiny" disabled={!onComposeCampaign}
               onClick={() => {

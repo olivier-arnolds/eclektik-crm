@@ -380,6 +380,52 @@ export default async function handler(req, res) {
       });
     }
 
+    // ── ENRICH CONTACT FROM LINKEDIN PROFILE ──
+    // Body: { contact_id, linkedin_url }
+    if (action === 'enrich-contact' && req.method === 'POST') {
+      if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+      const { contact_id, linkedin_url } = req.body || {};
+      if (!contact_id || !linkedin_url) {
+        return res.status(400).json({ error: 'contact_id and linkedin_url required' });
+      }
+      const slugMatch = linkedin_url.match(/linkedin\.com\/in\/([^\/\?]+)/);
+      if (!slugMatch) return res.status(400).json({ error: 'invalid LinkedIn profile URL' });
+      const slug = slugMatch[1];
+
+      const acctsResp = await unipileRequest('GET', '/accounts');
+      const liAcc = (acctsResp.data?.items || []).find(a => (a.type || '').toUpperCase() === 'LINKEDIN');
+      if (!liAcc) return res.status(400).json({ error: 'No LinkedIn account connected in Unipile' });
+
+      const lookup = await unipileRequest('GET', `/users/${encodeURIComponent(slug)}?account_id=${liAcc.id}`);
+      if (lookup.error || !lookup.data) {
+        return res.status(400).json({ error: lookup.error || 'profile not found', details: lookup.details });
+      }
+
+      const p = lookup.data;
+      const updates = {};
+      // Title: prefer headline > occupation. Always refresh (titles change frequently)
+      if (p.headline) updates.title = p.headline;
+      else if (p.occupation) updates.title = p.occupation;
+      // First/last name: only set if currently empty (don't overwrite curated names)
+      const { data: existing } = await supabase.from('contacts').select('first_name, last_name').eq('id', contact_id).single();
+      if (p.first_name && !existing?.first_name) updates.first_name = p.first_name;
+      if (p.last_name && !existing?.last_name) updates.last_name = p.last_name;
+
+      if (Object.keys(updates).length === 0) {
+        return res.status(200).json({ success: true, contact_id, fieldsUpdated: [], message: 'No new fields to set' });
+      }
+
+      const { error: dbErr } = await supabase.from('contacts').update(updates).eq('id', contact_id);
+      if (dbErr) return res.status(500).json({ error: dbErr.message });
+
+      return res.status(200).json({
+        success: true,
+        contact_id,
+        fieldsUpdated: Object.keys(updates),
+        updates,
+      });
+    }
+
     // ── REGISTER WEBHOOK ──
     if (action === 'register-webhook' && req.method === 'POST') {
       const webhookUrl = 'https://crm.eclectik-insights.co/api/unipile-webhook';
