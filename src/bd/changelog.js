@@ -19,9 +19,40 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.6.1';
+export const CURRENT_VERSION = '1.6.2';
 
 export const CHANGELOG = [
+  {
+    version: '1.6.2',
+    date: '2026-06-03T18:00:00Z',
+    author: 'Olivier Arnolds (via Claude / Cowork)',
+    type: 'feature',
+    title: 'Marketing-tab UX: sticky panels, opt-out toggle, + tag/status',
+    summary:
+      'Marketing-tab krijgt meerdere kwaliteits-aanpassingen voor lange ' +
+      'contact-lijsten en beter segmenteren. Sticky linker filter-panel + ' +
+      'sticky top-toolbar blijven in beeld bij scrollen. Per contact een ' +
+      'klik-toggle "wel mailen / niet mailen" (groen envelope / rood circled-' +
+      'slash), persistent in DB. Plus + knoppen om direct nieuwe tags of ' +
+      'account-statussen toe te voegen vanuit de filter-sidebar.',
+    changes: [
+      'Sticky filter-sidebar (TAGS / DEALS / ACCOUNT STATUS / STATUS) blijft in beeld tijdens scroll. maxHeight 100vh-80px met eigen overflow-y voor lange filter-lijsten.',
+      'Sticky top-toolbar (search-input + select-all + bulk-acties) blijft bovenaan tijdens scrollen door contact-lijst.',
+      'Per-contact opt-out toggle: groen envelope (✉) = wel mailen, rood circled-slash (⊘) = niet mailen. Tekst-Unicode i.p.v. emoji zodat CSS-color werkt. Optimistic local-state voor directe visuele feedback; async DB-write met rollback bij error.',
+      'Visuele indicator: email-tekst strikethrough + opacity 0.5 wanneer opt-out actief.',
+      'Send-campaign filtert do_not_email=true contacten automatisch uit recipients. Confirm-dialog ("X contacten op opt-out — door met overige Y?") als er geskipped worden.',
+      '+ knop naast TAGS-header: inline input voor nieuwe tag-naam, persist in tags-tabel met random pastel-kleur.',
+      '+ knop naast ACCOUNT STATUS-header: inline input voor nieuwe status, lokaal opgeslagen in localStorage (marketing_extra_statuses) zodat filter-optie zichtbaar wordt. Persistent in DB pas wanneer toegewezen aan een account via account-detail.',
+      'Vereist eenmalige SQL: ALTER TABLE contacts ADD COLUMN do_not_email boolean NOT NULL DEFAULT false (door Olivier handmatig).',
+    ],
+    files: [
+      'src/bd/marketing-contacts.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.6.2',
+  },
   {
     version: '1.6.1',
     date: '2026-06-03T16:00:00Z',
