@@ -14,6 +14,14 @@
     {
       "path": "/api/admin-weekly-export?cron=1",
       "schedule": "0 6 * * 1"
+    },
+    {
+      "path": "/api/signals-poll",
+      "schedule": "0 7 * * 1-5"
+    },
+    {
+      "path": "/api/suggestions-expire",
+      "schedule": "0 6 * * 1"
     }
   ]
 }
