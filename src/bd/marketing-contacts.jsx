@@ -193,8 +193,19 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
 
   return (
     <div style={{ display: 'flex', gap: 16 }}>
-      {/* Filter sidebar */}
-      <aside style={{ flex: '0 0 240px', background: 'var(--bg-1)', padding: 12, border: '0.5px solid var(--sep)', borderRadius: 8, alignSelf: 'flex-start' }}>
+      {/* Filter sidebar — sticky tijdens scroll */}
+      <aside style={{
+        flex: '0 0 240px',
+        background: 'var(--bg-1)',
+        padding: 12,
+        border: '0.5px solid var(--sep)',
+        borderRadius: 8,
+        alignSelf: 'flex-start',
+        position: 'sticky',
+        top: 0,
+        maxHeight: 'calc(100vh - 80px)',
+        overflowY: 'auto',
+      }}>
         <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Tags</div>
         {(allTags || []).map(t => (
           <label key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, padding: '3px 0', cursor: 'pointer' }}>
@@ -243,6 +254,14 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
 
       {/* Contact list */}
       <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{
+          position: 'sticky',
+          top: 0,
+          background: 'var(--bg-0, #fafafa)',
+          zIndex: 5,
+          paddingBottom: 4,
+          marginBottom: 4,
+        }}>
         <div style={{ marginBottom: 8 }}>
           <input type="text" value={searchText} onChange={e => setSearchText(e.target.value)}
             placeholder="Search by name, role, account, or email…"
@@ -287,7 +306,15 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
               Tag selected
             </button>
             <button className="btn-primary tiny" disabled={!onComposeCampaign}
-              onClick={() => onComposeCampaign && onComposeCampaign(filtered.filter(c => selected.has(c.id)))}>
+              onClick={() => {
+                if (!onComposeCampaign) return;
+                const eligible = filtered.filter(c => selected.has(c.id) && !c.do_not_email);
+                const optedOut = selected.size - eligible.length;
+                if (optedOut > 0 && !confirm(`${optedOut} geselecteerde contact${optedOut === 1 ? '' : 'en'} ${optedOut === 1 ? 'staat' : 'staan'} op opt-out (🚫). Ga je door met de overige ${eligible.length}?`)) {
+                  return;
+                }
+                onComposeCampaign(eligible);
+              }}>
               Send campaign to {selected.size}
             </button>
             <button className="btn-ghost tiny" onClick={() => setSelected(new Set())}>
@@ -295,6 +322,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
             </button>
           </div>
         )}
+        </div>{/* end sticky top-toolbar */}
         <div style={{ background: 'var(--bg-1)', border: '0.5px solid var(--sep)', borderRadius: 8 }}>
           {filtered.map(c => (
             <div key={c.id}
@@ -327,6 +355,21 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
                   </div>
                 );
               })()}
+              <button
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  const newVal = !c.do_not_email;
+                  await supabase.from('contacts').update({ do_not_email: newVal }).eq('id', c.id);
+                  if (refetch) refetch();
+                }}
+                title={c.do_not_email ? 'Opt-in: mag wel gemaild worden' : 'Opt-out: niet meer mailen'}
+                style={{
+                  background: 'transparent', border: 'none', cursor: 'pointer',
+                  fontSize: 14, padding: '2px 6px', flexShrink: 0,
+                  opacity: c.do_not_email ? 1 : 0.4,
+                }}>
+                {c.do_not_email ? '🚫' : '✉'}
+              </button>
               <div onClick={e => e.stopPropagation()} style={{ minWidth: 180, flexShrink: 0 }}>
                 {editingEmailId === c.id ? (
                   <input
@@ -348,11 +391,13 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
                 ) : (
                   <span
                     onClick={() => { setEditingEmailId(c.id); setEmailDraft(c.email || ''); }}
-                    title="Click to edit email"
+                    title={c.do_not_email ? 'Email geblokt (opt-out)' : 'Click to edit email'}
                     style={{
                       fontSize: 11, cursor: 'text',
                       color: c.email ? 'var(--text-2)' : 'var(--text-4)',
                       fontStyle: c.email ? 'normal' : 'italic',
+                      textDecoration: c.do_not_email ? 'line-through' : 'none',
+                      opacity: c.do_not_email ? 0.5 : 1,
                     }}>
                     {c.email || '+ add email'}
                   </span>
