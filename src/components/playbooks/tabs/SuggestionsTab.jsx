@@ -23,8 +23,7 @@ export default function SuggestionsTab() {
       .select(`
         *,
         playbooks(name),
-        contacts(full_name, first_name, last_name, company_name),
-        opportunities(name, stage)
+        contacts(full_name, first_name, last_name, company_name)
       `)
       .eq('status', filter)
       .order('created_at', { ascending: false })
@@ -116,8 +115,11 @@ export default function SuggestionsTab() {
                     {s.playbooks?.name || 'Onbekende playbook'}
                   </div>
                   <div style={{ fontSize:11, color:'#374151', marginTop:4 }}>
-                    {s.contacts ? `${s.contacts.full_name || s.contacts.first_name} (${s.contacts.company_name || '?'})` :
-                     s.opportunities ? `Deal: ${s.opportunities.name}` : 'Onbekend doelwit'}
+                    {s.contacts
+                      ? `${s.contacts.full_name || s.contacts.first_name} (${s.contacts.company_name || '?'})`
+                      : (s.source_context?.signal_topics?.length > 0
+                          ? `Topics: ${s.source_context.signal_topics.slice(0, 3).join(', ')}`
+                          : 'Company-post suggestie')}
                   </div>
                   <div style={{ fontSize:10, color:'#888780', marginTop:6 }}>
                     Bron: {s.source}
