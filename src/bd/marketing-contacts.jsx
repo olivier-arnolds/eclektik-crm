@@ -50,6 +50,14 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
   const [noEmail, setNoEmail] = useState(false);
   const [editingEmailId, setEditingEmailId] = useState(null);
   const [emailDraft, setEmailDraft] = useState('');
+  const [showAddTag, setShowAddTag] = useState(false);
+  const [newTagName, setNewTagName] = useState('');
+  const [showAddStatus, setShowAddStatus] = useState(false);
+  const [newStatusName, setNewStatusName] = useState('');
+  const [extraStatuses, setExtraStatuses] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('marketing_extra_statuses') || '[]'); }
+    catch { return []; }
+  });
   const [savingEmail, setSavingEmail] = useState(false);
   const [activeOnly, setActiveOnly] = useState(true);
   const [showBulkTag, setShowBulkTag] = useState(false);
@@ -70,8 +78,34 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
   const accountTypes = useMemo(() => {
     const set = new Set();
     for (const a of (accounts || [])) if (a.type) set.add(a.type);
+    for (const t of extraStatuses) set.add(t);
     return [...set].sort();
-  }, [accounts]);
+  }, [accounts, extraStatuses]);
+
+  async function createTag() {
+    const name = newTagName.trim();
+    if (!name) return;
+    const palette = ['#fef3c7', '#dbeafe', '#fce7f3', '#dcfce7', '#fde68a', '#e0e7ff'];
+    const bg = palette[Math.floor(Math.random() * palette.length)];
+    const { error } = await supabase.from('tags').insert({ name, color: bg });
+    if (!error) {
+      setNewTagName('');
+      setShowAddTag(false);
+      if (refetch) refetch();
+    } else {
+      alert('Tag aanmaken mislukt: ' + error.message);
+    }
+  }
+
+  function addAccountStatus() {
+    const name = newStatusName.trim();
+    if (!name) return;
+    const next = [...new Set([...extraStatuses, name])];
+    setExtraStatuses(next);
+    localStorage.setItem('marketing_extra_statuses', JSON.stringify(next));
+    setNewStatusName('');
+    setShowAddStatus(false);
+  }
 
   // Per-tag count: how many contacts carry tag X
   const tagCounts = useMemo(() => {
@@ -206,7 +240,25 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
         maxHeight: 'calc(100vh - 80px)',
         overflowY: 'auto',
       }}>
-        <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Tags</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+          <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Tags</div>
+          <button onClick={() => setShowAddTag(v => !v)}
+            title="Nieuwe tag toevoegen"
+            style={{ background:'transparent', border:'0.5px solid var(--sep)', borderRadius:3, cursor:'pointer', fontSize:11, padding:'0 5px', lineHeight:'14px', color:'var(--text-3)' }}>
+            +
+          </button>
+        </div>
+        {showAddTag && (
+          <div style={{ display:'flex', gap:4, marginBottom:6 }}>
+            <input type="text" value={newTagName} autoFocus
+              onChange={e => setNewTagName(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') createTag(); if (e.key === 'Escape') { setShowAddTag(false); setNewTagName(''); } }}
+              placeholder="Tag naam..."
+              style={{ flex:1, padding:'3px 6px', fontSize:11, border:'0.5px solid var(--sep)', borderRadius:3, background:'var(--bg-0)', fontFamily:'inherit' }} />
+            <button onClick={createTag}
+              style={{ padding:'3px 8px', fontSize:11, background:'var(--accent)', color:'#fff', border:'none', borderRadius:3, cursor:'pointer' }}>OK</button>
+          </div>
+        )}
         {(allTags || []).map(t => (
           <label key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, padding: '3px 0', cursor: 'pointer' }}>
             <input type="checkbox" checked={selectedTagIds.has(t.id)} onChange={() => toggleTagFilter(t.id)} />
@@ -225,9 +277,27 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
           Has any deal
         </label>
 
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, margin: '12px 0 6px' }}>
+          <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Account status</div>
+          <button onClick={() => setShowAddStatus(v => !v)}
+            title="Nieuwe status toevoegen (lokaal — wordt zichtbaar als filter; wijs toe via account-detail om te persisten in DB)"
+            style={{ background:'transparent', border:'0.5px solid var(--sep)', borderRadius:3, cursor:'pointer', fontSize:11, padding:'0 5px', lineHeight:'14px', color:'var(--text-3)' }}>
+            +
+          </button>
+        </div>
+        {showAddStatus && (
+          <div style={{ display:'flex', gap:4, marginBottom:6 }}>
+            <input type="text" value={newStatusName} autoFocus
+              onChange={e => setNewStatusName(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') addAccountStatus(); if (e.key === 'Escape') { setShowAddStatus(false); setNewStatusName(''); } }}
+              placeholder="Status naam..."
+              style={{ flex:1, padding:'3px 6px', fontSize:11, border:'0.5px solid var(--sep)', borderRadius:3, background:'var(--bg-0)', fontFamily:'inherit' }} />
+            <button onClick={addAccountStatus}
+              style={{ padding:'3px 8px', fontSize:11, background:'var(--accent)', color:'#fff', border:'none', borderRadius:3, cursor:'pointer' }}>OK</button>
+          </div>
+        )}
         {accountTypes.length > 0 && (
           <>
-            <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '12px 0 6px' }}>Account status</div>
             {accountTypes.map(type => (
               <label key={type} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, padding: '3px 0', cursor: 'pointer' }}>
                 <input type="checkbox" checked={selectedAccountTypes.has(type)} onChange={() => toggleAccountType(type)} />
