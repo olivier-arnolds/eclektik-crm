@@ -421,20 +421,36 @@ export default async function handler(req, res) {
 
       const firstLower = firstName.toLowerCase();
       const lastLower = lastName.toLowerCase();
+      const companyLower = company.toLowerCase();
+      // Tier 1: exact first+last
       const exactMatch = items.find(c => {
         const candFn = (c.first_name || '').toLowerCase();
         const candLn = (c.last_name || '').toLowerCase();
         return candFn === firstLower && candLn === lastLower;
       });
+      // Tier 2: substring first+last
       const fuzzyMatch = !exactMatch && items.find(c => {
         const candFn = (c.first_name || '').toLowerCase();
         const candLn = (c.last_name || '').toLowerCase();
         return candFn.includes(firstLower) && candLn.includes(lastLower);
       });
-      const match = exactMatch || fuzzyMatch;
+      // Tier 3: last-name only + company appears in candidate data (Debbie/Deborah nicknames etc.)
+      const lastNameMatch = !exactMatch && !fuzzyMatch && companyLower.length > 2 && items.find(c => {
+        const candLn = (c.last_name || '').toLowerCase();
+        if (!candLn.includes(lastLower) && !lastLower.includes(candLn)) return false;
+        const blob = JSON.stringify(c).toLowerCase();
+        return blob.includes(companyLower);
+      });
+      const match = exactMatch || fuzzyMatch || lastNameMatch;
+      const matchType = exactMatch ? 'exact' : (fuzzyMatch ? 'fuzzy' : 'last-name+company');
 
       if (!match) {
-        return res.status(200).json({ success: false, reason: 'no-name-match', candidates: items.length });
+        return res.status(200).json({
+          success: false,
+          reason: 'no-name-match',
+          candidates: items.length,
+          sample: items.slice(0, 3).map(c => ({ first: c.first_name, last: c.last_name, headline: c.headline })),
+        });
       }
 
       const url = match.profile_url
@@ -452,7 +468,7 @@ export default async function handler(req, res) {
         contact_id,
         linkedin_url: url,
         matched_name: `${match.first_name || ''} ${match.last_name || ''}`.trim(),
-        match_type: exactMatch ? 'exact' : 'fuzzy',
+        match_type: matchType,
       });
     }
 
