@@ -434,46 +434,38 @@ export default async function handler(req, res) {
         });
       }
 
+      // Unipile classic-search candidates hebben GEEN first_name/last_name velden,
+      // alleen profile_url + headline. Extract de slug uit de URL en match daarop.
       const firstLower = firstName.toLowerCase();
       const lastLower = lastName.toLowerCase();
       const companyLower = company.toLowerCase();
-      // Tier 1: exact first+last
+      const slugOf = (c) => {
+        const url = c.profile_url || c.public_profile_url || '';
+        const m = url.match(/linkedin\.com\/in\/([^\/\?]+)/);
+        return (m ? m[1] : '').toLowerCase();
+      };
+
+      // Tier 1: slug bevat BEIDE first + last (sterk match)
       const exactMatch = items.find(c => {
-        const candFn = (c.first_name || '').toLowerCase();
-        const candLn = (c.last_name || '').toLowerCase();
-        return candFn === firstLower && candLn === lastLower;
+        const slug = slugOf(c);
+        return firstLower && lastLower && slug.includes(firstLower) && slug.includes(lastLower);
       });
-      // Tier 2: substring first+last
-      const fuzzyMatch = !exactMatch && items.find(c => {
-        const candFn = (c.first_name || '').toLowerCase();
-        const candLn = (c.last_name || '').toLowerCase();
-        return candFn.includes(firstLower) && candLn.includes(lastLower);
+      // Tier 2: slug bevat last + headline mentions company (last name vaak in slug, company-context confirmt)
+      const lastWithCompanyInHeadline = !exactMatch && companyLower.length > 2 && items.find(c => {
+        const slug = slugOf(c);
+        const headline = (c.headline || c.occupation || '').toLowerCase();
+        return slug.includes(lastLower) && headline.includes(companyLower);
       });
-      // Tier 3: last-name only + company appears in candidate data (Debbie/Deborah nicknames etc.)
-      const lastNameMatchWithCompany = !exactMatch && !fuzzyMatch && companyLower.length > 2 && items.find(c => {
-        const candLn = (c.last_name || '').toLowerCase();
-        if (!candLn.includes(lastLower) && !lastLower.includes(candLn)) return false;
-        const blob = JSON.stringify(c).toLowerCase();
-        return blob.includes(companyLower);
-      });
-      // Tier 4: als de search-attempt al specifiek was (last name + company / full name)
-      // en er maar 1 candidate is met last-name match — accepteer 'm (bv. retired contacts
-      // die geen current company hebben). Risico klein omdat search-keywords al filtered.
-      const lastNameOnlyMatch = !exactMatch && !fuzzyMatch && !lastNameMatchWithCompany && (() => {
-        const candidates = items.filter(c => {
-          const candLn = (c.last_name || '').toLowerCase();
-          return candLn.includes(lastLower) || lastLower.includes(candLn);
-        });
-        // Alleen accepteren als precies 1 last-name-match én de search niet alleen op "lastName" was
-        // (om matching false-positive op een generiek lastname te voorkomen)
-        const wasNarrowSearch = workingAttempt && (workingAttempt.includes(' ') || workingAttempt.toLowerCase().includes(companyLower));
-        return wasNarrowSearch && candidates.length === 1 ? candidates[0] : null;
+      // Tier 3: slug bevat last, en search was specifiek (>=2 woorden). Risk-tolerant fallback.
+      const lastInSlugSpecificSearch = !exactMatch && !lastWithCompanyInHeadline && (() => {
+        const matches = items.filter(c => slugOf(c).includes(lastLower));
+        const wasNarrowSearch = workingAttempt && workingAttempt.includes(' ');
+        return wasNarrowSearch && matches.length === 1 ? matches[0] : null;
       })();
-      const match = exactMatch || fuzzyMatch || lastNameMatchWithCompany || lastNameOnlyMatch;
-      const matchType = exactMatch ? 'exact'
-        : fuzzyMatch ? 'fuzzy'
-        : lastNameMatchWithCompany ? 'last-name+company'
-        : lastNameOnlyMatch ? 'last-name+narrow-search'
+      const match = exactMatch || lastWithCompanyInHeadline || lastInSlugSpecificSearch;
+      const matchType = exactMatch ? 'first+last-in-slug'
+        : lastWithCompanyInHeadline ? 'last-in-slug+company-in-headline'
+        : lastInSlugSpecificSearch ? 'last-in-slug+narrow-search'
         : null;
 
       if (!match) {
@@ -492,12 +484,13 @@ export default async function handler(req, res) {
         });
       }
 
-      const url = match.profile_url
-        || match.public_profile_url
+      const rawUrl = match.profile_url || match.public_profile_url
         || (match.public_identifier ? `https://www.linkedin.com/in/${match.public_identifier}` : null);
-      if (!url) {
+      if (!rawUrl) {
         return res.status(200).json({ success: false, reason: 'no-url-in-match' });
       }
+      // Strip miniProfileUrn querystring — we willen alleen de canonical URL
+      const url = rawUrl.split('?')[0];
 
       const { error: updErr } = await supabase.from('contacts').update({ linkedin_url: url }).eq('id', contact_id);
       if (updErr) return res.status(500).json({ error: updErr.message });
@@ -506,7 +499,7 @@ export default async function handler(req, res) {
         success: true,
         contact_id,
         linkedin_url: url,
-        matched_name: `${match.first_name || ''} ${match.last_name || ''}`.trim(),
+        matched_headline: match.headline || match.occupation || null,
         match_type: matchType,
       });
     }
