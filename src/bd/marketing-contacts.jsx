@@ -476,7 +476,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
                       fontSize: 11, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
                     }} />
                 ) : (
-                  {(() => {
+                  (() => {
                     const blocked = optOutOverrides[c.id] !== undefined ? optOutOverrides[c.id] : !!c.do_not_email;
                     return (
                       <span
@@ -492,7 +492,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
                         {c.email || '+ add email'}
                       </span>
                     );
-                  })()}
+                  })()
                 )}
               </div>
             </div>
