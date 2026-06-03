@@ -191,7 +191,8 @@ export default function BDApp() {
             layout={layout} setLayout={setLayout} search={search} setSearch={setSearch}
             onEnrich={() => setShowEnrich(true)}
             onRefreshGraph={fetchGraphData} graphLoading={graphLoading}
-            onOpenFeedback={() => setShowFeedback(true)} />
+            onOpenFeedback={() => setShowFeedback(true)}
+            onOpenPlaybooks={() => setView('playbooks')} />
   );
 
   if (loading) {
