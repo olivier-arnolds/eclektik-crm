@@ -380,6 +380,82 @@ export default async function handler(req, res) {
       });
     }
 
+    // ── FIND LINKEDIN-URL FOR A CONTACT (search by name + company) ──
+    // Body: { contact_id }
+    if (action === 'find-contact-linkedin' && req.method === 'POST') {
+      if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+      const { contact_id } = req.body || {};
+      if (!contact_id) return res.status(400).json({ error: 'contact_id required' });
+
+      const { data: contact, error: getErr } = await supabase
+        .from('contacts')
+        .select('id, first_name, last_name, full_name, company_name, companies(name)')
+        .eq('id', contact_id)
+        .single();
+      if (getErr || !contact) return res.status(404).json({ error: 'contact not found' });
+
+      const firstName = (contact.first_name || '').trim();
+      const lastName = (contact.last_name || '').trim();
+      const fullName = `${firstName} ${lastName}`.trim() || contact.full_name || '';
+      if (!fullName) return res.status(400).json({ error: 'contact has no name to search' });
+      const company = contact.company_name || contact.companies?.name || '';
+
+      const acctsResp = await unipileRequest('GET', '/accounts');
+      const liAcc = (acctsResp.data?.items || []).find(a => (a.type || '').toUpperCase() === 'LINKEDIN');
+      if (!liAcc) return res.status(400).json({ error: 'No LinkedIn account connected in Unipile' });
+
+      const searchBody = {
+        api: 'classic',
+        category: 'people',
+        keywords: `${fullName} ${company}`.trim(),
+      };
+      const searchResult = await unipileRequest('POST', `/linkedin/search?account_id=${liAcc.id}`, searchBody);
+      if (searchResult.error || !searchResult.data) {
+        return res.status(400).json({ error: searchResult.error || 'search failed' });
+      }
+
+      const items = searchResult.data.items || searchResult.data.data || [];
+      if (items.length === 0) {
+        return res.status(200).json({ success: false, reason: 'no-results' });
+      }
+
+      const firstLower = firstName.toLowerCase();
+      const lastLower = lastName.toLowerCase();
+      const exactMatch = items.find(c => {
+        const candFn = (c.first_name || '').toLowerCase();
+        const candLn = (c.last_name || '').toLowerCase();
+        return candFn === firstLower && candLn === lastLower;
+      });
+      const fuzzyMatch = !exactMatch && items.find(c => {
+        const candFn = (c.first_name || '').toLowerCase();
+        const candLn = (c.last_name || '').toLowerCase();
+        return candFn.includes(firstLower) && candLn.includes(lastLower);
+      });
+      const match = exactMatch || fuzzyMatch;
+
+      if (!match) {
+        return res.status(200).json({ success: false, reason: 'no-name-match', candidates: items.length });
+      }
+
+      const url = match.profile_url
+        || match.public_profile_url
+        || (match.public_identifier ? `https://www.linkedin.com/in/${match.public_identifier}` : null);
+      if (!url) {
+        return res.status(200).json({ success: false, reason: 'no-url-in-match' });
+      }
+
+      const { error: updErr } = await supabase.from('contacts').update({ linkedin_url: url }).eq('id', contact_id);
+      if (updErr) return res.status(500).json({ error: updErr.message });
+
+      return res.status(200).json({
+        success: true,
+        contact_id,
+        linkedin_url: url,
+        matched_name: `${match.first_name || ''} ${match.last_name || ''}`.trim(),
+        match_type: exactMatch ? 'exact' : 'fuzzy',
+      });
+    }
+
     // ── ENRICH CONTACT FROM LINKEDIN PROFILE ──
     // Body: { contact_id, linkedin_url }
     if (action === 'enrich-contact' && req.method === 'POST') {

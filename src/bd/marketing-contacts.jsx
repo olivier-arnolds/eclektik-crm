@@ -65,36 +65,58 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
   const [enrichProgress, setEnrichProgress] = useState({ done: 0, total: 0 });
 
   async function enrichSelected() {
-    const eligible = filtered.filter(c => selected.has(c.id) && c.linkedin_url);
-    if (eligible.length === 0) {
-      alert('Geen geselecteerde contacten met LinkedIn-URL.');
+    const selectedContacts = filtered.filter(c => selected.has(c.id));
+    if (selectedContacts.length === 0) return;
+
+    const without = selectedContacts.filter(c => !c.linkedin_url);
+    const withUrl = selectedContacts.filter(c => c.linkedin_url);
+
+    const planLines = [];
+    if (without.length > 0) planLines.push(`- ${without.length} zonder LinkedIn-URL → zoeken via Unipile en URL invullen`);
+    if (withUrl.length > 0) planLines.push(`- ${withUrl.length} met LinkedIn-URL → profile fetchen en title refreshen`);
+    if (!confirm(`Enrich plan:\n${planLines.join('\n')}\n\nDoorgaan? (~0.8s per contact)`)) {
       return;
     }
-    const skipped = selected.size - eligible.length;
-    if (!confirm(`Enrich ${eligible.length} contact${eligible.length === 1 ? '' : 'en'} via LinkedIn?${skipped > 0 ? ` (${skipped} zonder LinkedIn-URL worden overgeslagen)` : ''}\n\nElk roept Unipile aan voor profile-fetch en update title (+ first/last name als leeg).`)) {
-      return;
-    }
+
     setEnriching(true);
-    setEnrichProgress({ done: 0, total: eligible.length });
-    let succeeded = 0, failed = 0;
-    for (let i = 0; i < eligible.length; i++) {
-      const c = eligible[i];
+    setEnrichProgress({ done: 0, total: selectedContacts.length });
+    let urlFound = 0, titleRefreshed = 0, noResults = 0, failed = 0;
+
+    for (let i = 0; i < selectedContacts.length; i++) {
+      const c = selectedContacts[i];
+      const hasUrl = !!c.linkedin_url;
       try {
-        const resp = await fetch('/api/unipile?action=enrich-contact', {
+        const action = hasUrl ? 'enrich-contact' : 'find-contact-linkedin';
+        const body = hasUrl
+          ? { contact_id: c.id, linkedin_url: c.linkedin_url }
+          : { contact_id: c.id };
+        const resp = await fetch(`/api/unipile?action=${action}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contact_id: c.id, linkedin_url: c.linkedin_url }),
+          body: JSON.stringify(body),
         });
         const data = await resp.json();
-        if (data.success) succeeded++; else failed++;
+        if (data.success) {
+          if (hasUrl) titleRefreshed++; else urlFound++;
+        } else if (data.reason) {
+          noResults++;
+        } else {
+          failed++;
+        }
       } catch {
         failed++;
       }
-      setEnrichProgress({ done: i + 1, total: eligible.length });
-      if (i < eligible.length - 1) await new Promise(r => setTimeout(r, 600));
+      setEnrichProgress({ done: i + 1, total: selectedContacts.length });
+      if (i < selectedContacts.length - 1) await new Promise(r => setTimeout(r, 800));
     }
+
     setEnriching(false);
-    alert(`Enrich klaar: ${succeeded} succes, ${failed} fout${skipped > 0 ? `, ${skipped} overgeslagen` : ''}.`);
+    const lines = [];
+    if (urlFound > 0) lines.push(`✓ ${urlFound} LinkedIn-URL gevonden`);
+    if (titleRefreshed > 0) lines.push(`✓ ${titleRefreshed} title refreshed`);
+    if (noResults > 0) lines.push(`⊘ ${noResults} geen match in LinkedIn-search`);
+    if (failed > 0) lines.push(`✗ ${failed} fout`);
+    alert(`Enrich klaar:\n${lines.join('\n')}`);
     if (refetch) refetch();
   }
   const [savingEmail, setSavingEmail] = useState(false);
