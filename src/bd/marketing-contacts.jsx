@@ -435,7 +435,8 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
                 title={c.do_not_email ? 'Opt-in: mag wel gemaild worden' : 'Opt-out: niet meer mailen'}
                 style={{
                   background: 'transparent', border: 'none', cursor: 'pointer',
-                  fontSize: 14, padding: '2px 6px', flexShrink: 0,
+                  fontSize: 18, padding: '2px 6px', flexShrink: 0,
+                  lineHeight: 1,
                   opacity: c.do_not_email ? 1 : 0.4,
                 }}>
                 {c.do_not_email ? '🚫' : '✉'}
