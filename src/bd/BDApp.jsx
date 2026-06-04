@@ -282,6 +282,7 @@ export default function BDApp() {
           <>
             <div className="divider" />
             <AccountsLane
+              onToggleCollapse={() => setExpandedLane('left')}
               context={rightContext}
               accounts={accounts}
               contacts={contacts}
@@ -302,6 +303,36 @@ export default function BDApp() {
               allTags={allTags}
             />
           </>
+        )}
+
+        {/* Floating re-open button — visible when right pane (Account 360) is collapsed */}
+        {!showRight && (
+          <button
+            onClick={() => setExpandedLane(null)}
+            title="Account-paneel weer openen"
+            style={{
+              position: 'fixed',
+              right: 0,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              width: 22,
+              height: 44,
+              padding: 0,
+              background: 'var(--bg-1)',
+              border: '0.5px solid var(--sep)',
+              borderRight: 'none',
+              borderRadius: '4px 0 0 4px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 14,
+              color: 'var(--text-3)',
+              zIndex: 50,
+              boxShadow: '-2px 0 6px rgba(0,0,0,0.06)',
+            }}>
+            ‹
+          </button>
         )}
 
         {/* Global search results overlay (only when user is typing ≥2 chars) */}

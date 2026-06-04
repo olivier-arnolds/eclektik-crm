@@ -145,32 +145,29 @@ function DealTypePill({ deal, refetch }) {
   );
 }
 
-// Drag-handle on the left edge of the Accounts lane to resize its width.
-// Persists to localStorage and applies via CSS var on document root.
-function LaneResizer() {
-  const onMouseDown = (e) => {
-    e.preventDefault();
-    e.currentTarget.classList.add('dragging');
-    const startX = e.clientX;
-    const root = document.documentElement;
-    const startWidth = parseInt(getComputedStyle(root).getPropertyValue('--acc-lane-width')) || 480;
-    const handle = e.currentTarget;
-    const onMove = (ev) => {
-      const dx = startX - ev.clientX; // drag left = wider
-      const next = Math.min(900, Math.max(320, startWidth + dx));
-      root.style.setProperty('--acc-lane-width', next + 'px');
-    };
-    const onUp = () => {
-      const final = getComputedStyle(root).getPropertyValue('--acc-lane-width').trim();
-      try { localStorage.setItem('acc-lane-width', final); } catch (_) {}
-      handle.classList.remove('dragging');
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onUp);
-    };
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
-  };
-  return <div className="lane-accounts-resizer" onMouseDown={onMouseDown} title="Drag to resize" />;
+// Collapse-button on the left edge of the Accounts lane.
+// Replaces the older drag-handle (resize functionality removed; clean toggle UI).
+function LaneCollapseButton({ onToggle }) {
+  if (!onToggle) return null;
+  return (
+    <button
+      onClick={onToggle}
+      title="Account-paneel verbergen"
+      className="lane-accounts-resizer"
+      style={{
+        position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)',
+        width: 22, height: 44, padding: 0,
+        background: 'var(--bg-1)',
+        border: '0.5px solid var(--sep)',
+        borderRadius: '4px 0 0 4px',
+        cursor: 'pointer',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 14, color: 'var(--text-3)',
+        zIndex: 2,
+      }}>
+      ›
+    </button>
+  );
 }
 import ExpandableRow from './expandable-row';
 import { InlineContactDetail, InlineMeetingDetail, InlineDealDetail, InlineAccountDetails, InlineTaskDetail } from './inline-details';
@@ -178,7 +175,7 @@ import { supabase } from '../supabase';
 import { syncMyCalendar, getSharedEventsForAccount, buildDedupKey } from './sync-events';
 import { useAuth } from '../lib/auth';
 
-export default function AccountsLane({ context, accounts, contacts, deals, rawItems, comms, graphEmails, events, graphEvents, tasks, onPickAccount, onCompose, onOpenDeal, onSelectComm, search, refetch, refetchGraph, allTags }) {
+export default function AccountsLane({ context, accounts, contacts, deals, rawItems, comms, graphEmails, events, graphEvents, tasks, onPickAccount, onCompose, onOpenDeal, onSelectComm, search, refetch, refetchGraph, allTags, onToggleCollapse }) {
   // Merge DB events + graph events for context resolution
   const allEvents = useMemo(() => {
     const mappedGraph = (graphEvents || []).map(e => ({
@@ -208,7 +205,7 @@ export default function AccountsLane({ context, accounts, contacts, deals, rawIt
     return (
       <>
         <AccountsList accounts={accounts} contacts={contacts} deals={deals} onPickAccount={onPickAccount} search={search}
-          onAddAccount={() => setShowAddAccount(true)} />
+          onAddAccount={() => setShowAddAccount(true)} onToggleCollapse={onToggleCollapse} />
         {showAddAccount && (
           <AddAccountModal
             onClose={() => setShowAddAccount(false)}
@@ -225,7 +222,7 @@ export default function AccountsLane({ context, accounts, contacts, deals, rawIt
   }
 
   return <AccountDetail {...resolved} accounts={accounts} contacts={contacts} deals={deals} rawItems={rawItems} comms={comms} graphEmails={graphEmails} events={allEvents} tasks={tasks}
-    onPickAccount={onPickAccount} onCompose={onCompose} onOpenDeal={onOpenDeal} onSelectComm={onSelectComm} refetch={refetch} allTags={allTags} />;
+    onPickAccount={onPickAccount} onCompose={onCompose} onOpenDeal={onOpenDeal} onSelectComm={onSelectComm} refetch={refetch} allTags={allTags} onToggleCollapse={onToggleCollapse} />;
 }
 
 function resolveContext(context, data) {
@@ -365,7 +362,7 @@ const sectionLabel = {
   padding: '8px 12px 4px',
 };
 
-function AccountsList({ accounts, contacts, deals, onPickAccount, search, onAddAccount }) {
+function AccountsList({ accounts, contacts, deals, onPickAccount, search, onAddAccount, onToggleCollapse }) {
   const q = (search || '').toLowerCase();
   const [typeFilters, setTypeFilters] = useState([]);
   const [nameFilter, setNameFilter] = useState('');
@@ -453,7 +450,7 @@ function AccountsList({ accounts, contacts, deals, onPickAccount, search, onAddA
 
   return (
     <div className="lane lane-accounts">
-      <LaneResizer />
+      <LaneCollapseButton onToggle={onToggleCollapse} />
       <div className="lane-header">
         <div className="lane-title">
           <span className="lane-title-label">Accounts</span>
@@ -601,7 +598,7 @@ function AccountsList({ accounts, contacts, deals, onPickAccount, search, onAddA
   );
 }
 
-function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems, comms, graphEmails, events, tasks, onPickAccount, onCompose, onOpenDeal, onSelectComm, refetch, allTags }) {
+function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems, comms, graphEmails, events, tasks, onPickAccount, onCompose, onOpenDeal, onSelectComm, refetch, allTags, onToggleCollapse }) {
   const [showAddContact, setShowAddContact] = useState(false);
   const [showSearchContact, setShowSearchContact] = useState(false);
   const [showLinkExisting, setShowLinkExisting] = useState(false);
@@ -777,7 +774,7 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
 
   return (
     <div className="lane lane-accounts">
-      <LaneResizer />
+      <LaneCollapseButton onToggle={onToggleCollapse} />
       <div className="lane-header">
         <div className="lane-title">
           <button className="btn-ghost tiny" onClick={() => onPickAccount && onPickAccount(null)}><I.back /></button>
