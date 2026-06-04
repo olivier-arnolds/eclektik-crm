@@ -173,9 +173,40 @@ import ExpandableRow from './expandable-row';
 import { InlineContactDetail, InlineMeetingDetail, InlineDealDetail, InlineAccountDetails, InlineTaskDetail } from './inline-details';
 import { supabase } from '../supabase';
 import { syncMyCalendar, getSharedEventsForAccount, buildDedupKey } from './sync-events';
+import { getChannelMessages } from '../lib/graph';
 import { useAuth } from '../lib/auth';
 
+<<<<<<< HEAD
 export default function AccountsLane({ context, accounts, contacts, deals, rawItems, comms, graphEmails, events, graphEvents, tasks, onPickAccount, onCompose, onOpenDeal, onSelectComm, search, refetch, refetchGraph, allTags, onToggleCollapse }) {
+=======
+// Per-client internal Teams channel mapping. Keyed by a lowercase substring of
+// the account name. Posts from these channels are folded into the account's
+// AI summary as INTERNAL context (Eclectik colleagues coordinating about the
+// client — not client-facing comms). To link a channel, open it in Teams →
+// "Get link to channel" → the groupId is the team id and the 19:...@thread.tacv2
+// segment is the channel id.
+//
+// NOTE: reading channel messages needs the Graph admin-consent scopes
+// Team.ReadBasic.All + Channel.ReadBasic.All + ChannelMessage.Read.All. Until
+// those are consented the fetch returns 403 and is skipped silently — nothing
+// breaks, the channel stream is simply empty.
+const ACCOUNT_TEAMS_CHANNELS = [
+  {
+    match: 'imc',
+    teamId: '0d78a0bf-a4e8-441d-bc21-fefa037dca52',
+    channelId: '19:5e5b760d72564a53a5d35ea734f59500@thread.tacv2',
+    channelName: 'IMC Trading',
+  },
+];
+
+function teamsChannelForAccount(account) {
+  const name = (account?.name || '').toLowerCase();
+  if (!name) return null;
+  return ACCOUNT_TEAMS_CHANNELS.find((c) => name.includes(c.match)) || null;
+}
+
+export default function AccountsLane({ context, accounts, contacts, deals, rawItems, comms, graphEmails, events, graphEvents, tasks, onPickAccount, onCompose, onOpenDeal, onSelectComm, search, refetch, refetchGraph, allTags }) {
+>>>>>>> adc52c0 (Add Summary section to Account 360 with AI brief + Teams channel)
   // Merge DB events + graph events for context resolution
   const allEvents = useMemo(() => {
     const mappedGraph = (graphEvents || []).map(e => ({
@@ -610,6 +641,13 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
   // Shared calendar events for this account (synced from all users' Outlook)
   const [sharedEvents, setSharedEvents] = useState([]);
   const [syncingEvents, setSyncingEvents] = useState(false);
+  // Internal Teams channel posts for this account (if a channel is linked)
+  const [channelMsgs, setChannelMsgs] = useState([]);
+  // AI summary brief
+  const [brief, setBrief] = useState(null);
+  const [briefAt, setBriefAt] = useState(null);
+  const [briefLoading, setBriefLoading] = useState(false);
+  const [briefError, setBriefError] = useState(null);
 
   const { session } = useAuth();
   const userEmail = session?.user?.email || '';
@@ -646,6 +684,40 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
     })();
     return () => { cancelled = true; };
   }, [account?.id, userEmail, userName]);
+
+  // Reset the brief and pull any linked internal Teams channel on account change.
+  useEffect(() => {
+    setBrief(null);
+    setBriefAt(null);
+    setBriefError(null);
+    setChannelMsgs([]);
+    if (!account?.id) return;
+    let cancelled = false;
+    (async () => {
+      // Try to load a previously generated brief (table is optional).
+      try {
+        const { data } = await supabase
+          .from('account_briefs')
+          .select('brief, generated_at')
+          .eq('company_id', account.id)
+          .maybeSingle();
+        if (!cancelled && data?.brief) {
+          setBrief(data.brief);
+          setBriefAt(data.generated_at);
+        }
+      } catch (_) { /* table missing → ephemeral mode */ }
+
+      // Pull internal Teams channel messages if this account has one linked.
+      const ch = teamsChannelForAccount(account);
+      if (ch && localStorage.getItem('graph_token')) {
+        try {
+          const msgs = await getChannelMessages(ch.teamId, ch.channelId, 30);
+          if (!cancelled) setChannelMsgs((msgs || []).map((m) => ({ ...m, channelName: ch.channelName })));
+        } catch (_) { /* missing scope / consent → skip silently */ }
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [account?.id]);
 
   // LinkedIn posts (fetched live from Unipile + cached in Supabase)
   const {
@@ -760,6 +832,62 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
     : tasks.filter(t => t.accountId === account.id);
   const openTasks = accTasks.filter(t => !t.done);
   const doneTasks = accTasks.filter(t => t.done);
+
+  // ---- AI summary: merge every interaction stream into one normalized list ----
+  const stripTags = (s) => (s || '')
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/\s+/g, ' ').trim();
+
+  const interactions = useMemo(() => {
+    const out = [];
+    (accEvents || []).forEach((e) => out.push({
+      type: 'meeting', channel: e.channel === 'teams' ? 'Teams meeting' : 'meeting',
+      date: e.startISO, who: e.attendees, title: e.title, text: e.bodyPreview || '',
+    }));
+    (allComms || []).forEach((c) => out.push({
+      type: c.channel === 'note' ? 'note' : (c.channel || 'email'),
+      channel: c.channel || 'email', direction: c.dir === 'out' ? 'outbound' : (c.channel === 'note' ? '' : 'inbound'),
+      date: c.ts, who: c.from, title: c.subject, text: c.preview || '',
+    }));
+    (channelMsgs || []).forEach((m) => out.push({
+      type: 'team-channel', internal: true, channel: 'Teams channel',
+      date: m.date, who: m.from, title: m.channelName || 'Team channel', text: stripTags(m.body),
+    }));
+    (accTasks || []).forEach((t) => out.push({
+      type: 'task', date: t.dueDate || '', who: t.ownerRaw || t.owner || '',
+      title: t.title, direction: t.done ? 'done' : 'open',
+      text: t.done ? 'Task completed' : `Open task${t.dueLabel ? ', due ' + t.dueLabel : ''}${t.overdue ? ' (overdue)' : ''}`,
+    }));
+    (accDeals || []).forEach((d) => out.push({
+      type: 'deal', date: d.modifiedDate || d.createdDate || '', title: `Deal: ${d.title}`,
+      text: `Stage ${STAGE_TINT[d.stage]?.label || d.stage}${d.value ? ' · ' + fmtMoney(d.value) : ''}`,
+    }));
+    return out.filter((x) => x.title || x.text);
+  }, [accEvents, allComms, channelMsgs, accTasks, accDeals]);
+
+  const channelLinked = !!teamsChannelForAccount(account);
+
+  const generateBrief = async () => {
+    if (!account?.id || briefLoading) return;
+    setBriefLoading(true);
+    setBriefError(null);
+    try {
+      const resp = await fetch('/api/account-summary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ companyId: account.id, accountName: account.name, interactions }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Failed');
+      setBrief(data.brief);
+      setBriefAt(data.generatedAt);
+    } catch (e) {
+      setBriefError(e.message || 'Could not generate brief');
+    }
+    setBriefLoading(false);
+  };
 
   const runHighlightAction = (action) => {
     if (action.kind === 'reply' && onCompose) {
@@ -1036,6 +1164,20 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
                 />
               ))}
             </div>
+          </Section>
+        )}
+
+        {account.id && (
+          <Section label="Summary">
+            <AccountBrief
+              brief={brief}
+              briefAt={briefAt}
+              loading={briefLoading}
+              error={briefError}
+              onGenerate={generateBrief}
+              interactions={interactions}
+              channelLinked={channelLinked}
+            />
           </Section>
         )}
 
@@ -1406,6 +1548,80 @@ function AddTaskInline({ accountId, onDone, onCancel }) {
         </button>
         <button className="btn-ghost tiny" onClick={onCancel}>Cancel</button>
       </div>
+    </div>
+  );
+}
+
+// Account 360 AI summary: a short relationship brief + "needs attention" list,
+// generated from the merged interaction streams via /api/account-summary.
+function AccountBrief({ brief, briefAt, loading, error, onGenerate, interactions, channelLinked }) {
+  const pill = {
+    fontSize: 11, padding: '2px 8px', borderRadius: 999, border: '0.5px solid var(--sep)',
+    color: 'var(--text-3)', whiteSpace: 'nowrap',
+  };
+  const warnPill = { ...pill, color: 'var(--warn)', borderColor: 'var(--warn)', background: 'var(--warn-tint)' };
+  const dated = (interactions || []).map(i => i.date).filter(Boolean).map(d => new Date(d)).filter(d => !isNaN(d));
+  const lastTouch = dated.length ? new Date(Math.max(...dated)) : null;
+  const attention = brief?.attention || [];
+
+  return (
+    <div style={{ padding: '4px 0' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
+        {lastTouch && <span style={pill}>last touch {fmtRelative(lastTouch.toISOString())}</span>}
+        <span style={pill}>{(interactions || []).length} interactions</span>
+        {channelLinked && <span style={{ ...pill, color: 'var(--accent)', borderColor: 'var(--accent)' }}>team channel linked</span>}
+        {attention.length > 0 && <span style={warnPill}>{attention.length} need{attention.length === 1 ? 's' : ''} attention</span>}
+      </div>
+
+      {!brief && !loading && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-start' }}>
+          <div style={{ fontSize: 12, color: 'var(--text-3)', lineHeight: 1.5 }}>
+            Generate an AI brief of what's happened with this client — across meetings, email, LinkedIn, notes, tasks and the team channel.
+          </div>
+          <button className="btn-ghost tiny" onClick={onGenerate} style={{ color: 'var(--accent)' }}>✨ Generate brief</button>
+        </div>
+      )}
+
+      {loading && <div style={{ fontSize: 13, color: 'var(--text-3)' }}>Generating brief…</div>}
+
+      {error && !loading && (
+        <div style={{ fontSize: 12, color: 'var(--warn)' }}>
+          {error} <button className="btn-ghost tiny" onClick={onGenerate} style={{ color: 'var(--accent)' }}>Retry</button>
+        </div>
+      )}
+
+      {brief && !loading && (
+        <div>
+          {(brief.paragraphs || []).map((p, i) => (
+            <p key={i} style={{ fontSize: 13.5, lineHeight: 1.7, margin: '0 0 10px 0', color: 'var(--text-1)' }}>
+              <strong style={{ fontWeight: 600 }}>{p.heading}. </strong>{p.body}
+            </p>
+          ))}
+
+          {attention.length > 0 && (
+            <div style={{
+              marginTop: 6, border: '0.5px solid var(--warn)', background: 'var(--warn-tint)',
+              borderRadius: 8, padding: '10px 12px',
+            }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--warn)', marginBottom: 6 }}>Needs attention</div>
+              <ul style={{ margin: 0, paddingLeft: 16 }}>
+                {attention.map((a, i) => (
+                  <li key={i} style={{ fontSize: 13, lineHeight: 1.55, color: 'var(--text-1)', marginBottom: 3 }}>
+                    {a.text}{a.meta && <span style={{ color: 'var(--text-3)', fontSize: 12 }}> — {a.meta}</span>}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <div style={{ marginTop: 10, display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
+              {briefAt ? `Generated ${fmtRelative(briefAt)}` : 'AI-generated · verify before relying on it'}
+            </span>
+            <button className="btn-ghost tiny" onClick={onGenerate} style={{ color: 'var(--accent)' }}>↻ Refresh</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
