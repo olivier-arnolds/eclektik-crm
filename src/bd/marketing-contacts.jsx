@@ -83,7 +83,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
 
     setEnriching(true);
     setEnrichProgress({ done: 0, total: selectedContacts.length });
-    let urlFound = 0, titleRefreshed = 0, noResults = 0, failed = 0;
+    let urlFound = 0, titleRefreshed = 0, noResults = 0, noCompany = 0, failed = 0;
 
     for (let i = 0; i < selectedContacts.length; i++) {
       const c = selectedContacts[i];
@@ -101,6 +101,8 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
         const data = await resp.json();
         if (data.success) {
           if (hasUrl) titleRefreshed++; else urlFound++;
+        } else if (data.reason === 'no-company') {
+          noCompany++;
         } else if (data.reason) {
           noResults++;
         } else {
@@ -118,6 +120,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
     if (urlFound > 0) lines.push(`✓ ${urlFound} LinkedIn-URL gevonden`);
     if (titleRefreshed > 0) lines.push(`✓ ${titleRefreshed} title refreshed`);
     if (noResults > 0) lines.push(`⊘ ${noResults} geen match in LinkedIn-search`);
+    if (noCompany > 0) lines.push(`⊘ ${noCompany} geen company in contact (geen veilige search)`);
     if (failed > 0) lines.push(`✗ ${failed} fout`);
     alert(`Enrich klaar:\n${lines.join('\n')}`);
     if (refetch) refetch();

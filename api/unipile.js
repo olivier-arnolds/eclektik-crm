@@ -404,15 +404,22 @@ export default async function handler(req, res) {
       const liAcc = (acctsResp.data?.items || []).find(a => (a.type || '').toUpperCase() === 'LINKEDIN');
       if (!liAcc) return res.status(400).json({ error: 'No LinkedIn account connected in Unipile' });
 
-      // Multi-attempt search: probeer meerdere keyword-combos tot er resultaten zijn.
-      // Lost o.a. op: gepensioneerde contacten (geen current_company match), nicknames,
-      // typos. Volgorde van specifiek naar breed.
+      // Conservatieve multi-attempt: alleen searches MET company als disambiguator.
+      // De "first+last" en "last alleen" attempts uit eerdere iteratie zijn weggehaald
+      // omdat ze te veel false-positives geven (bv. 'Smith' / 'Jansen' matchen verkeerde
+      // personen). Als een contact geen company_name heeft, faalt de enrich met
+      // reason 'no-company' — bewuste trade-off voor accuracy boven recall.
+      if (!company) {
+        return res.status(200).json({
+          success: false,
+          reason: 'no-company',
+          message: 'Contact heeft geen company_name; geen veilige search mogelijk',
+        });
+      }
       const attempts = [
-        company ? `${fullName} ${company}` : '',
-        company ? `${lastName} ${company}` : '',
-        firstName && lastName ? `${firstName} ${lastName}` : '',
-        lastName,
-      ].filter(Boolean);
+        `${fullName} ${company}`,
+        `${lastName} ${company}`,
+      ];
 
       let items = [];
       let workingAttempt = null;
@@ -445,27 +452,20 @@ export default async function handler(req, res) {
         return (m ? m[1] : '').toLowerCase();
       };
 
-      // Tier 1: slug bevat BEIDE first + last (sterk match)
+      // Tier 1: slug bevat BEIDE first + last (sterk match, bv. 'seymourdebbie' voor Debbie Seymour)
       const exactMatch = items.find(c => {
         const slug = slugOf(c);
         return firstLower && lastLower && slug.includes(firstLower) && slug.includes(lastLower);
       });
-      // Tier 2: slug bevat last + headline mentions company (last name vaak in slug, company-context confirmt)
-      const lastWithCompanyInHeadline = !exactMatch && companyLower.length > 2 && items.find(c => {
+      // Tier 2: slug bevat last + headline mentions company (voor nickname-cases)
+      const lastWithCompanyInHeadline = !exactMatch && items.find(c => {
         const slug = slugOf(c);
         const headline = (c.headline || c.occupation || '').toLowerCase();
         return slug.includes(lastLower) && headline.includes(companyLower);
       });
-      // Tier 3: slug bevat last, en search was specifiek (>=2 woorden). Risk-tolerant fallback.
-      const lastInSlugSpecificSearch = !exactMatch && !lastWithCompanyInHeadline && (() => {
-        const matches = items.filter(c => slugOf(c).includes(lastLower));
-        const wasNarrowSearch = workingAttempt && workingAttempt.includes(' ');
-        return wasNarrowSearch && matches.length === 1 ? matches[0] : null;
-      })();
-      const match = exactMatch || lastWithCompanyInHeadline || lastInSlugSpecificSearch;
+      const match = exactMatch || lastWithCompanyInHeadline;
       const matchType = exactMatch ? 'first+last-in-slug'
         : lastWithCompanyInHeadline ? 'last-in-slug+company-in-headline'
-        : lastInSlugSpecificSearch ? 'last-in-slug+narrow-search'
         : null;
 
       if (!match) {
