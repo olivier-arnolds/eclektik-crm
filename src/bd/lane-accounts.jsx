@@ -176,9 +176,6 @@ import { syncMyCalendar, getSharedEventsForAccount, buildDedupKey } from './sync
 import { getChannelMessages } from '../lib/graph';
 import { useAuth } from '../lib/auth';
 
-<<<<<<< HEAD
-export default function AccountsLane({ context, accounts, contacts, deals, rawItems, comms, graphEmails, events, graphEvents, tasks, onPickAccount, onCompose, onOpenDeal, onSelectComm, search, refetch, refetchGraph, allTags, onToggleCollapse }) {
-=======
 // Per-client internal Teams channel mapping. Keyed by a lowercase substring of
 // the account name. Posts from these channels are folded into the account's
 // AI summary as INTERNAL context (Eclectik colleagues coordinating about the
@@ -205,8 +202,7 @@ function teamsChannelForAccount(account) {
   return ACCOUNT_TEAMS_CHANNELS.find((c) => name.includes(c.match)) || null;
 }
 
-export default function AccountsLane({ context, accounts, contacts, deals, rawItems, comms, graphEmails, events, graphEvents, tasks, onPickAccount, onCompose, onOpenDeal, onSelectComm, search, refetch, refetchGraph, allTags }) {
->>>>>>> adc52c0 (Add Summary section to Account 360 with AI brief + Teams channel)
+export default function AccountsLane({ context, accounts, contacts, deals, rawItems, comms, graphEmails, events, graphEvents, tasks, onPickAccount, onCompose, onOpenDeal, onSelectComm, search, refetch, refetchGraph, allTags, onToggleCollapse }) {
   // Merge DB events + graph events for context resolution
   const allEvents = useMemo(() => {
     const mappedGraph = (graphEvents || []).map(e => ({

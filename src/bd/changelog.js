@@ -19,9 +19,35 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.6.2';
+export const CURRENT_VERSION = '1.7.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.7.0',
+    date: '2026-06-04T18:07:19Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feature',
+    title: 'Account 360 — AI Summary brief + internal Teams channel stream',
+    summary:
+      'New "Summary" section at the top of every Account 360, above Meetings: ' +
+      'stat pills (last touch, interaction count, team-channel-linked, items ' +
+      'needing attention), an AI-written brief of what has happened across every ' +
+      'channel, and a "Needs attention" list. Merges meetings, email, LinkedIn, ' +
+      'notes, tasks and deal-stage changes, plus — per client — a linked internal ' +
+      'Teams channel (IMC Trading seeded). Generated on demand via the new ' +
+      '/api/account-summary endpoint (Claude Sonnet), optional caching to account_briefs.',
+    changes: [
+      'Collapsible "Summary" Section above Meetings in AccountDetail with the AccountBrief component (stat pills, brief paragraphs, Needs-attention list, Generate/Refresh).',
+      'New /api/account-summary.js endpoint: assembles the normalized interaction list and returns a structured JSON brief via Claude Sonnet; best-effort persistence to an optional account_briefs table (ephemeral fallback).',
+      'Per-client internal Teams channel via ACCOUNT_TEAMS_CHANNELS (seeded with IMC Trading) using getChannelMessages(); guarded — silently skipped until Graph channel scopes are admin-consented, so login is unaffected.',
+      'Added schema_account_briefs.sql (optional caching table).',
+    ],
+    files: [
+      'api/account-summary.js', 'schema_account_briefs.sql',
+      'src/bd/lane-accounts.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json',
+    ],
+    gitTag: 'v1.7.0',
+  },
   {
     version: '1.6.2',
     date: '2026-06-03T18:00:00Z',
