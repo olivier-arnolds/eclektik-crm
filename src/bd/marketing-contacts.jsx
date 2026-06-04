@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import TagChip from './tag-chip';
 import BulkTagModal from './marketing-bulk-tag-modal';
+import ContactDetailModal from './contact-detail-modal';
 import { useAuth } from '../lib/auth';
 import { supabase } from '../supabase';
 
@@ -63,6 +64,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
   const [optOutOverrides, setOptOutOverrides] = useState({}); // { [contactId]: boolean } — local optimistic state
   const [enriching, setEnriching] = useState(false);
   const [enrichProgress, setEnrichProgress] = useState({ done: 0, total: 0 });
+  const [openContactId, setOpenContactId] = useState(null);
 
   async function enrichSelected() {
     const selectedContacts = filtered.filter(c => selected.has(c.id));
@@ -491,7 +493,12 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
                 onClick={e => e.stopPropagation()}
                 style={{ flexShrink: 0 }} />
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 12, fontWeight: 500 }}>{c.name}</div>
+                <div
+                  onClick={e => { e.stopPropagation(); setOpenContactId(c.id); }}
+                  title="Open contact-details"
+                  style={{ fontSize: 12, fontWeight: 500, cursor: 'pointer', display: 'inline-block' }}>
+                  {c.name}
+                </div>
                 <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{c.role}{c.account ? ` · ${c.account}` : ''}</div>
               </div>
               {(() => {
@@ -590,6 +597,13 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
           userEmail={userEmail}
           onClose={() => setShowBulkTag(false)}
           onComplete={() => { setSelected(new Set()); if (refetch) refetch(); }}
+        />
+      )}
+      {openContactId && (
+        <ContactDetailModal
+          contactId={openContactId}
+          onClose={() => setOpenContactId(null)}
+          refetch={refetch}
         />
       )}
     </div>
