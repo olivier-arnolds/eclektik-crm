@@ -19,9 +19,25 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.10.2';
+export const CURRENT_VERSION = '1.10.3';
 
 export const CHANGELOG = [
+  {
+    version: '1.10.3',
+    date: '2026-06-06T10:00:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'fix',
+    title: 'Tasks: "With" picker also on the new-task quick-add',
+    summary:
+      'The "With (Eclectik)" selector was only on the task editors, not the ' +
+      'Account 360 quick-add form, so you could not set it when creating a task. ' +
+      'Added it there (next to For), saving with_contact_id on insert.',
+    changes: [
+      'AddTaskInline (lane-accounts.jsx): added the eclectik_team "With" select + with_contact_id on insert; form grid reflowed to 2×2 (Due / For / With / Priority).',
+    ],
+    files: ['src/bd/lane-accounts.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.10.3',
+  },
   {
     version: '1.10.2',
     date: '2026-06-05T16:10:00Z',

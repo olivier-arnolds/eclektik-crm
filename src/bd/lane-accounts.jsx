@@ -1489,9 +1489,28 @@ function TeamDots({ deal }) {
 function AddTaskInline({ accountId, onDone, onCancel }) {
   const [title, setTitle] = useState('');
   const [owner, setOwner] = useState('');
+  const [withId, setWithId] = useState('');
+  const [team, setTeam] = useState([]);
   const [due, setDue] = useState('');
   const [priority, setPriority] = useState('Normal');
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    supabase.from('account_links')
+      .select('contact_id, contacts:contact_id(id, full_name, first_name, last_name)')
+      .eq('link_type', 'eclectik_team')
+      .then(({ data }) => {
+        const seen = new Map();
+        (data || []).forEach(l => {
+          const c = l.contacts;
+          if (c && !seen.has(c.id)) {
+            const name = `${c.first_name || ''} ${c.last_name || ''}`.trim() || c.full_name || '(no name)';
+            seen.set(c.id, { id: c.id, name });
+          }
+        });
+        setTeam([...seen.values()].sort((a, b) => a.name.localeCompare(b.name)));
+      });
+  }, []);
 
   const fieldStyle = {
     padding: '4px 6px', borderRadius: 4, border: '0.5px solid var(--sep)',
@@ -1505,7 +1524,7 @@ function AddTaskInline({ accountId, onDone, onCancel }) {
     setSaving(true);
     const { error } = await supabase.from('tasks').insert({
       title: title.trim(), company_id: accountId, status: 'pending',
-      owner: owner || null, due_date: due || null, priority,
+      owner: owner || null, with_contact_id: withId || null, due_date: due || null, priority,
     });
     setSaving(false);
     if (error) { alert('Could not add task: ' + error.message); return; }
@@ -1517,7 +1536,7 @@ function AddTaskInline({ accountId, onDone, onCancel }) {
       <input autoFocus value={title} onChange={e => setTitle(e.target.value)}
         onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') onCancel(); }}
         placeholder="Task title…" style={fieldStyle} />
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <div style={labelStyle}>Due date</div>
           <input type="date" value={due} onChange={e => setDue(e.target.value)} style={fieldStyle} />
@@ -1527,6 +1546,13 @@ function AddTaskInline({ accountId, onDone, onCancel }) {
           <select value={owner} onChange={e => setOwner(e.target.value)} style={fieldStyle}>
             <option value="">—</option>
             {['Marco', 'Olivier', 'Yarmilla'].map(n => <option key={n} value={n}>{n}</option>)}
+          </select>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <div style={labelStyle}>With (Eclectik)</div>
+          <select value={withId} onChange={e => setWithId(e.target.value)} style={fieldStyle}>
+            <option value="">—</option>
+            {team.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
           </select>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
