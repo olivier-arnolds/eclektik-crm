@@ -19,9 +19,30 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.10.1';
+export const CURRENT_VERSION = '1.10.2';
 
 export const CHANGELOG = [
+  {
+    version: '1.10.2',
+    date: '2026-06-05T16:10:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feature',
+    title: 'War room: per-column hour totals + used/remaining hour bars',
+    summary:
+      'Each people column header now shows the total allocated hours across all ' +
+      'projects in brackets — CS (Xh) / PS (Yh) / Support (Zh). Under each ' +
+      'person, a small hour bar shows used (green) vs remaining (red) of their ' +
+      'allocated hours. The "used hours" source is not wired yet (placeholder = 0, ' +
+      'so bars read all-remaining for now) — to be pointed at the right field later.',
+    changes: [
+      'Column headers sum allocated hours: CS / PS / Support (Xh).',
+      'HourBar under each name: green blocks = used, red = remaining (~10h per block).',
+      'Reads cs_used_hours / ps_used_hours / other_used_hours — currently undefined (0) pending the chosen used-hours field.',
+      'Deal value shown after the project name, pulled from the matched company\'s running CRM deal(s).',
+    ],
+    files: ['src/bd/lane-warroom.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.10.2',
+  },
   {
     version: '1.10.1',
     date: '2026-06-05T15:45:00Z',
