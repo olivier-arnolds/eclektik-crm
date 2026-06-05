@@ -152,7 +152,12 @@ function SidePanel({ title, data, accent, link }) {
       </div>
       <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>{data.name || <em style={{ color: '#9ca3af' }}>—</em>}</div>
       <div style={{ fontSize: 12, color: 'var(--text-2)', marginBottom: 8 }}>{data.title || <em style={{ color: '#9ca3af' }}>—</em>}</div>
-      <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{data.company || <em style={{ color: '#9ca3af' }}>—</em>}</div>
+      <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
+        {data.company || <em style={{ color: '#9ca3af' }}>—</em>}
+        {data.company_note && (
+          <span title={data.company_note} style={{ fontSize: 9, marginLeft: 6, color: '#92400e', cursor: 'help' }}>ⓘ</span>
+        )}
+      </div>
       {link && (
         <a href={link} target="_blank" rel="noreferrer"
           style={{ display: 'inline-block', marginTop: 10, fontSize: 11, color: accent }}>

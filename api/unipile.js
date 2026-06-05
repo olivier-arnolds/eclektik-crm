@@ -538,20 +538,19 @@ export default async function handler(req, res) {
       const linkedinLastName = p.last_name || '';
       const linkedinName = `${linkedinFirstName} ${linkedinLastName}`.trim() || p.name || '';
       const linkedinHeadline = p.headline || p.occupation || '';
-      // Current company — broad scan over alle bekende Unipile-shapes
-      const linkedinCompany =
-        p.current_company?.name
-        || p.company?.name
-        || p.organization?.name
-        || p.company
-        || p.organization
-        || p.current_position?.company?.name
-        || p.current_position?.company
-        || p.work_experience?.[0]?.company
-        || p.work_experience?.[0]?.company_name
-        || (Array.isArray(p.positions) && (p.positions[0]?.company?.name || p.positions[0]?.company_name || p.positions[0]?.company))
-        || (Array.isArray(p.experience) && (p.experience[0]?.company?.name || p.experience[0]?.company_name || p.experience[0]?.company))
-        || '';
+      // Current company — Unipile's basic user-profile endpoint retourneert geen
+      // work_experience of current_company. Beste fallback: parsen uit headline
+      // ('Title at Company' / 'Title @ Company' / 'Title | Company' patterns).
+      let linkedinCompany = '';
+      const headlineForCompany = (p.headline || p.occupation || '').trim();
+      const patterns = [
+        /\s+(?:at|@)\s+(.+?)(?:\s*[\|·•]|\s*$)/i,  // "Title at Company"
+        /\s+[\|·•]\s+(.+?)(?:\s*[\|·•]|\s*$)/,      // "Title | Company"
+      ];
+      for (const re of patterns) {
+        const m = headlineForCompany.match(re);
+        if (m && m[1]) { linkedinCompany = m[1].trim(); break; }
+      }
 
       // DB side
       const dbName = contact.full_name || `${contact.first_name || ''} ${contact.last_name || ''}`.trim();
@@ -559,14 +558,15 @@ export default async function handler(req, res) {
       const dbTitle = contact.title || '';
 
       // Match score: 100 = perfect, 0 = nothing matches
+      // Names worden zwaarder gewogen omdat LinkedIn-company niet altijd beschikbaar is.
       const norm = s => (s || '').toLowerCase().trim();
       let score = 0;
-      if (norm(linkedinFirstName) && norm(linkedinFirstName) === norm(contact.first_name)) score += 35;
-      else if (norm(linkedinFirstName) && (norm(linkedinFirstName).includes(norm(contact.first_name)) || norm(contact.first_name).includes(norm(linkedinFirstName)))) score += 20;
-      if (norm(linkedinLastName) && norm(linkedinLastName) === norm(contact.last_name)) score += 35;
-      else if (norm(linkedinLastName) && (norm(linkedinLastName).includes(norm(contact.last_name)) || norm(contact.last_name).includes(norm(linkedinLastName)))) score += 20;
+      if (norm(linkedinFirstName) && norm(linkedinFirstName) === norm(contact.first_name)) score += 40;
+      else if (norm(linkedinFirstName) && (norm(linkedinFirstName).includes(norm(contact.first_name)) || norm(contact.first_name).includes(norm(linkedinFirstName)))) score += 25;
+      if (norm(linkedinLastName) && norm(linkedinLastName) === norm(contact.last_name)) score += 40;
+      else if (norm(linkedinLastName) && (norm(linkedinLastName).includes(norm(contact.last_name)) || norm(contact.last_name).includes(norm(linkedinLastName)))) score += 25;
+      // Company-boost als beschikbaar (van headline-parse) — geen straf als afwezig
       if (norm(linkedinCompany) && norm(dbCompany) && (norm(linkedinCompany).includes(norm(dbCompany)) || norm(dbCompany).includes(norm(linkedinCompany)))) score += 20;
-      // Also boost if company appears in headline (covers retired/recent-changes)
       else if (norm(dbCompany).length > 2 && norm(linkedinHeadline).includes(norm(dbCompany))) score += 15;
       score = Math.min(100, score);
 
@@ -582,13 +582,11 @@ export default async function handler(req, res) {
         linkedin: {
           name: linkedinName,
           company: linkedinCompany,
+          company_note: linkedinCompany ? null : 'Unipile basic-profile geeft geen current_company; alleen geparsed uit headline indien aanwezig',
           title: linkedinHeadline,
-          profile_url: contact.linkedin_url, // we doublechecken het bestaande URL-slug
+          profile_url: contact.linkedin_url,
         },
         match_score: score,
-        // Debug: top-level keys + first work-experience entry voor inspectie
-        debug_profile_keys: Object.keys(p),
-        debug_first_experience: (p.work_experience?.[0] || p.experience?.[0] || p.positions?.[0]) || null,
       });
     }
 
