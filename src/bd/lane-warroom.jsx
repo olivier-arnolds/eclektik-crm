@@ -48,15 +48,25 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount }
 
   const accById = useMemo(() => new Map(accounts.map(a => [a.id, a])), [accounts]);
 
-  // Deal value for a project's company: prefer the running (active/onboarding)
-  // deals; fall back to all of that company's deals. Summed if several.
+  // Deal value for a project's company = its RUNNING deals only (active /
+  // onboarding). We do NOT fall back to past/lost deals — that was inflating
+  // values (e.g. IMC, whose only running stage is none; its other deals are
+  // past/won/lost and shouldn't count here).
   const dealValueFor = useCallback((companyId) => {
     if (!companyId) return 0;
-    const ds = (deals || []).filter(d => d.accountId === companyId);
-    if (!ds.length) return 0;
-    const running = ds.filter(d => ['active', 'onboarding'].includes(d.stage));
-    return (running.length ? running : ds).reduce((s, d) => s + (Number(d.value) || 0), 0);
+    return (deals || [])
+      .filter(d => d.accountId === companyId && ['active', 'onboarding'].includes(d.stage))
+      .reduce((s, d) => s + (Number(d.value) || 0), 0);
   }, [deals]);
+
+  // Active/onboarding CRM deals whose company has NO row in the delivery sheet
+  // — i.e. running per the CRM but missing from the war-room. Shown at the top.
+  const missing = useMemo(() => {
+    const have = new Set((rows || []).map(r => r.company_id).filter(Boolean));
+    return (deals || [])
+      .filter(d => ['active', 'onboarding'].includes(d.stage) && d.accountId && !have.has(d.accountId))
+      .sort((a, b) => (Number(b.value) || 0) - (Number(a.value) || 0));
+  }, [deals, rows]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -123,6 +133,25 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount }
         </button>
       </div>
 
+      {missing.length > 0 && (
+        <div style={{ marginBottom: 14, border: '0.5px solid var(--warn)', background: 'var(--warn-tint)', borderRadius: 8, padding: '9px 12px' }}>
+          <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--warn)', marginBottom: 6 }}>
+            In CRM "active" but not in the sheet · {missing.length}
+          </div>
+          {missing.map(d => {
+            const acc = d.accountId ? accById.get(d.accountId) : null;
+            return (
+              <div key={d.id} style={{ fontSize: 12, display: 'flex', gap: 8, alignItems: 'baseline', padding: '2px 0' }}>
+                <span style={{ fontWeight: 500, color: acc && onPickAccount ? 'var(--accent)' : 'inherit', cursor: acc && onPickAccount ? 'pointer' : 'default' }}
+                  onClick={() => acc && onPickAccount && onPickAccount(acc)}>{acc?.name || d.account || '—'}</span>
+                <span style={{ color: 'var(--text-3)' }}>{d.title}</span>
+                <span style={{ marginLeft: 'auto', fontWeight: 500, fontVariantNumeric: 'tabular-nums' }}>{d.value ? fmtMoney(d.value) : ''}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-2)', margin: '6px 0' }}>
         Glint delivery — running projects · {delivery.length}
       </div>
@@ -147,7 +176,13 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount }
                     : <span style={{ fontWeight: 500 }}>{r.client_name}</span>}
                   <div style={sub}>
                     {r.project_name || ''}
-                    {(() => { const v = dealValueFor(r.company_id); return v ? <span style={{ color: 'var(--text-2)', fontWeight: 500 }}> · {fmtMoney(v)}</span> : null; })()}
+                    {(() => {
+                      const v = dealValueFor(r.company_id);
+                      if (!v) return null;
+                      const h = (Number(r.cs_hours) || 0) + (Number(r.ps_hours) || 0) + (Number(r.other_hours) || 0);
+                      const rate = h > 0 ? Math.round(v / h) : null;
+                      return <span style={{ color: 'var(--text-2)', fontWeight: 500 }}> · {fmtMoney(v)}{rate ? ` (€${rate}/h)` : ''}</span>;
+                    })()}
                   </div>
                 </td>
                 <td style={td}><PersonCell name={r.cs_owner} hours={r.cs_hours} used={r.cs_used_hours} /></td>
