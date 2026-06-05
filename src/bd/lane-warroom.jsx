@@ -2,47 +2,18 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '../supabase';
 import { fmtRelative } from './atoms';
 
-// War-room: one screen spanning the commercial pipeline (from the CRM) and the
-// running Glint delivery projects (synced from Yarmilla's Master Project
-// Overview into public.glint_delivery). Health is auto-derived from status,
-// priority, milestone proximity and the follow-up flag.
+// War-room: the running Glint delivery projects, synced from Yarmilla's Master
+// Project Overview into public.glint_delivery. People (CS / PS / support) are
+// shown in their own columns, with the operational detail (survey-live dates,
+// dependencies) in Details. Rows order by urgency: Not started first, then by
+// soonest milestone.
 
 const SOURCE_URL = 'https://eclectikadmin-my.sharepoint.com/personal/yarmilla_eclectik_co/Documents/Chatbestanden%20van%20Microsoft%20Teams/Master_Project_Overview.xlsx';
 
-function daysUntil(d) {
-  if (!d) return null;
-  return Math.round((new Date(d) - new Date()) / 86400000);
-}
-
-// → { c: 'r'|'a'|'g', why } from the signals we have on each delivery row.
-function deliveryHealth(r) {
-  const today = new Date().toISOString().slice(0, 10);
-  const notes = (r.notes || '').toLowerCase();
-  const blocked = /block|no access|can only watch|slipped|delay|stuck/.test(notes);
-  const ms = r.next_milestone_date;
-  const d = daysUntil(ms);
-  const soon = ms && ms >= today && d <= 14;
-  const overdue = ms && ms < today && (r.status || '') !== 'Completed';
-  if ((r.status || '') === 'Not started' || blocked) {
-    return { c: 'r', why: blocked ? 'Blocked / slipped' : 'Not started' };
-  }
-  const bits = [];
-  if ((r.priority || '').toLowerCase() === 'high') bits.push('High priority');
-  if (r.follow_up) bits.push('Follow-up: ' + r.follow_up);
-  if (soon) bits.push(`milestone in ${d}d`);
-  if (overdue) bits.push('milestone passed');
-  if (bits.length) return { c: 'a', why: bits.join(' · ') };
-  return { c: 'g', why: 'On track' };
-}
-const RANK = { r: 0, a: 1, g: 2 };
-const DOT = { r: '#E24B4A', a: '#BA7517', g: '#1D9E75' };
-
-function teamLabel(r) {
-  const parts = [];
-  if (r.cs_owner && r.cs_owner !== 'N/A') parts.push(`${r.cs_owner}${r.cs_hours ? ` ${r.cs_hours}h` : ''}`);
-  if (r.ps_owner && r.ps_owner !== 'N/A') parts.push(`${r.ps_owner}${r.ps_hours ? ` ${r.ps_hours}h` : ''}`);
-  if (r.other_contractors && r.other_contractors !== 'N/A') parts.push(`+${r.other_contractors}`);
-  return parts;
+// Render one Eclectik person + hours, or — if empty / N/A.
+function person(name, hours) {
+  if (!name || String(name).trim() === '' || String(name).toUpperCase() === 'N/A') return '—';
+  return `${name}${hours ? ` · ${hours}h` : ''}`;
 }
 
 export default function WarRoomLane({ accounts = [], onPickAccount }) {
@@ -75,25 +46,23 @@ export default function WarRoomLane({ accounts = [], onPickAccount }) {
     setSyncing(false);
   };
 
+  // Order: Not started first, then soonest milestone, then the rest.
   const delivery = useMemo(() => {
-    return (rows || [])
-      .map(r => ({ ...r, _h: deliveryHealth(r) }))
-      .sort((a, b) => RANK[a._h.c] - RANK[b._h.c]);
+    const ms = (r) => r.next_milestone_date || '9999-12-31';
+    return [...(rows || [])].sort((a, b) => {
+      const na = (a.status || '') === 'Not started' ? 0 : 1;
+      const nb = (b.status || '') === 'Not started' ? 0 : 1;
+      if (na !== nb) return na - nb;
+      return ms(a).localeCompare(ms(b));
+    });
   }, [rows]);
 
-  const lastSynced = useMemo(() => {
-    const ts = rows.map(r => r.synced_at).filter(Boolean).sort().pop();
-    return ts || null;
-  }, [rows]);
-  const sheetModified = useMemo(() => {
-    const ts = rows.map(r => r.source_modified_at).filter(Boolean).sort().pop();
-    return ts || null;
-  }, [rows]);
+  const lastSynced = useMemo(() => rows.map(r => r.synced_at).filter(Boolean).sort().pop() || null, [rows]);
+  const sheetModified = useMemo(() => rows.map(r => r.source_modified_at).filter(Boolean).sort().pop() || null, [rows]);
 
   const th = { textAlign: 'left', fontWeight: 500, fontSize: 10.5, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text-3)', padding: '4px 8px', borderBottom: '0.5px solid var(--sep)' };
   const td = { padding: '7px 8px', borderBottom: '0.5px solid var(--sep)', verticalAlign: 'top', fontSize: 12.5 };
   const sub = { color: 'var(--text-3)', fontSize: 11 };
-  const dot = (c) => ({ display: 'inline-block', width: 9, height: 9, borderRadius: '50%', background: DOT[c], marginTop: 3, flex: 'none' });
   const chip = (bg, col) => ({ fontSize: 10.5, padding: '1px 7px', borderRadius: 4, background: bg, color: col, whiteSpace: 'nowrap' });
 
   return (
@@ -115,19 +84,19 @@ export default function WarRoomLane({ accounts = [], onPickAccount }) {
         </button>
       </div>
 
-      {/* In delivery */}
       <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-2)', margin: '6px 0' }}>
         Glint delivery — running projects · {delivery.length}
       </div>
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead><tr>
-          <th style={th}>Client · project</th><th style={th}>Health — why</th>
-          <th style={th}>Who's on it</th><th style={th}>Next milestone</th><th style={th}>Status</th>
+          <th style={th}>Client · project</th>
+          <th style={th}>CS</th><th style={th}>PS</th><th style={th}>Support</th>
+          <th style={th}>Milestone</th><th style={th}>Details</th><th style={th}>Status</th>
         </tr></thead>
         <tbody>
-          {loading && <tr><td style={td} colSpan={5}>Loading…</td></tr>}
+          {loading && <tr><td style={td} colSpan={7}>Loading…</td></tr>}
           {!loading && delivery.length === 0 && (
-            <tr><td style={{ ...td, color: 'var(--text-3)' }} colSpan={5}>No delivery rows yet — run the seed or hit Update.</td></tr>
+            <tr><td style={{ ...td, color: 'var(--text-3)' }} colSpan={7}>No delivery rows yet — run the seed or hit Update.</td></tr>
           )}
           {delivery.map(r => {
             const acc = r.company_id ? accById.get(r.company_id) : null;
@@ -139,11 +108,11 @@ export default function WarRoomLane({ accounts = [], onPickAccount }) {
                     : <span style={{ fontWeight: 500 }}>{r.client_name}</span>}
                   <div style={sub}>{r.project_name || ''}</div>
                 </td>
-                <td style={td}><div style={{ display: 'flex', gap: 6, alignItems: 'flex-start' }}>
-                  <span style={dot(r._h.c)} /><div style={{ fontSize: 11, color: 'var(--text-2)', lineHeight: 1.35 }}>{r._h.why}{r.priority ? ` · ${r.priority}` : ''}</div>
-                </div></td>
-                <td style={{ ...td, fontSize: 11 }}>{teamLabel(r).length ? teamLabel(r).map((t, i) => <div key={i}>{t}</div>) : <span style={sub}>—</span>}</td>
+                <td style={{ ...td, fontSize: 11.5 }}>{person(r.cs_owner, r.cs_hours)}</td>
+                <td style={{ ...td, fontSize: 11.5 }}>{person(r.ps_owner, r.ps_hours)}</td>
+                <td style={{ ...td, fontSize: 11.5 }}>{person(r.other_contractors, r.other_hours)}</td>
                 <td style={td}>{r.next_milestone_label || <span style={sub}>TBC</span>}</td>
+                <td style={{ ...td, fontSize: 11.5, color: 'var(--text-2)', maxWidth: 340, lineHeight: 1.4 }}>{r.notes || <span style={sub}>—</span>}</td>
                 <td style={td}><span style={chip(
                   r.status === 'Not started' ? 'rgba(226,75,74,.13)' : r.status === 'Completed' ? 'rgba(136,135,128,.15)' : 'rgba(29,158,117,.14)',
                   r.status === 'Not started' ? '#A32D2D' : r.status === 'Completed' ? '#5F5E5A' : '#0F6E56'

@@ -27,15 +27,20 @@ export const CHANGELOG = [
     date: '2026-06-05T15:45:00Z',
     author: 'Marco van Gelder (via Claude / Cowork)',
     type: 'refactor',
-    title: 'War room: focus on delivery — drop pipeline + Service column',
+    title: 'War room: delivery-focused grid with split people + details',
     summary:
-      'Trimmed the War room to the running Glint delivery grid: removed the ' +
-      'commercial-pipeline section and the Service column. "Health — why" stays — ' +
-      'the auto RAG dot plus the reason it was set (status / blocked / priority / ' +
-      'follow-up / milestone proximity).',
+      'Reworked the War room to focus on running Glint delivery. Removed the ' +
+      'commercial-pipeline section and the Service and Health columns. People are ' +
+      'now split into their own columns — CS · PS · Support (Eclectik owners + ' +
+      'hours from the sheet) — and the operational detail (survey-live dates, ' +
+      'dependencies) shows in a Details column. Columns: Client · project · CS · ' +
+      'PS · Support · Milestone · Details · Status. Rows still order by urgency ' +
+      '(Not started first, then soonest milestone).',
     changes: [
-      'Removed the Commercial pipeline table (and its deals dependency) from lane-warroom.jsx.',
-      'Removed the Service column from the delivery grid.',
+      'Removed the Commercial pipeline table (and deals dependency) from lane-warroom.jsx.',
+      'Split "Who\'s on it" into CS / PS / Support columns; removed Service and Health columns.',
+      'Added a Details column showing the project notes (e.g. survey-live / close dates).',
+      'Kept urgency ordering: Not started pinned, then soonest next-milestone date.',
     ],
     files: ['src/bd/lane-warroom.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
     gitTag: 'v1.10.1',
