@@ -55,6 +55,42 @@ export default function DoubleCheckLinkedInModal({ contactIds, onClose, refetch 
     advance('skipped');
   }
 
+  async function copyFromLinkedIn() {
+    if (!data) return;
+    const linkedin = data.linkedin;
+    // Splits naam naar first/last (eerste woord = first, rest = last)
+    const nameWords = (linkedin.name || '').trim().split(/\s+/);
+    const fields = {
+      first_name: nameWords[0] || undefined,
+      last_name: nameWords.slice(1).join(' ') || undefined,
+      title: linkedin.title || undefined,
+      company_name: linkedin.company || undefined,
+    };
+    const labels = Object.entries(fields).filter(([_, v]) => v).map(([k]) => k).join(', ');
+    if (!confirm(`Kopieer naar database: ${labels}?\n\nDit overschrijft de bestaande waardes.`)) return;
+    const resp = await fetch('/api/unipile?action=copy-linkedin-to-contact', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contact_id: currentId, fields }),
+    });
+    const result = await resp.json();
+    if (result.success) {
+      alert(`Gekopieerd: ${result.fieldsUpdated.join(', ')}.`);
+      // Refresh data zodat DB-side bijgewerkt zichtbaar wordt
+      setLoading(true);
+      const refresh = await fetch('/api/unipile?action=doublecheck-contact-linkedin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contact_id: currentId }),
+      });
+      const refreshed = await refresh.json();
+      if (refreshed.success) setData(refreshed);
+      setLoading(false);
+    } else {
+      alert('Kopiëren mislukt: ' + (result.error || 'onbekend'));
+    }
+  }
+
   // Final summary
   if (done) {
     const kept = Object.values(decisions).filter(v => v === 'kept').length;
@@ -117,9 +153,28 @@ export default function DoubleCheckLinkedInModal({ contactIds, onClose, refetch 
             </span>
           </div>
 
-          {/* Side-by-side */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          {/* Side-by-side met middle column voor per-field scores + copy-action */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px 1fr', gap: 12, alignItems: 'stretch' }}>
             <SidePanel title="In onze database" data={data.db} accent="#3b82f6" />
+            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', alignItems: 'center', padding: '60px 0' }}>
+              <ScoreLabel label="Naam" value={data.name_score} />
+              <button
+                onClick={copyFromLinkedIn}
+                title="Kopieer LinkedIn-gegevens naar onze database (naam, title, company)"
+                style={{
+                  background: '#fff',
+                  border: '1.5px solid var(--accent)',
+                  borderRadius: '50%',
+                  width: 40, height: 40,
+                  cursor: 'pointer',
+                  fontSize: 18,
+                  color: 'var(--accent)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                ←
+              </button>
+              <ScoreLabel label="Bedrijf" value={data.company_score} />
+            </div>
             <SidePanel title="Op LinkedIn" data={data.linkedin} accent="#0a66c2" link={data.linkedin.profile_url} />
           </div>
 
@@ -141,6 +196,27 @@ export default function DoubleCheckLinkedInModal({ contactIds, onClose, refetch 
         </div>
       )}
     </Modal>
+  );
+}
+
+function ScoreLabel({ label, value }) {
+  if (value === null || value === undefined) {
+    return (
+      <div style={{ textAlign: 'center' }}>
+        <div style={{ fontSize: 9, color: 'var(--text-3)', textTransform: 'uppercase', fontWeight: 600 }}>{label}</div>
+        <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>—</div>
+      </div>
+    );
+  }
+  const color = value >= 70 ? '#16a34a' : value >= 40 ? '#92400e' : '#dc2626';
+  const bg = value >= 70 ? '#dcfce7' : value >= 40 ? '#fef9c3' : '#fee2e2';
+  return (
+    <div style={{ textAlign: 'center' }}>
+      <div style={{ fontSize: 9, color: 'var(--text-3)', textTransform: 'uppercase', fontWeight: 600 }}>{label}</div>
+      <div style={{ fontSize: 13, fontWeight: 700, color, background: bg, padding: '2px 8px', borderRadius: 4, marginTop: 4 }}>
+        {value}%
+      </div>
+    </div>
   );
 }
 

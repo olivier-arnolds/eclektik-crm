@@ -578,18 +578,31 @@ export default async function handler(req, res) {
       const dbCompany = contact.company_name || contact.companies?.name || '';
       const dbTitle = contact.title || '';
 
-      // Match score: 100 = perfect, 0 = nothing matches
-      // Names worden zwaarder gewogen omdat LinkedIn-company niet altijd beschikbaar is.
+      // Per-field similarity scores (0-100) op basis van Jaccard over woord-sets.
+      // Geeft fijnkorrelige percentages zoals 50% voor 'Maria Del Mar' vs 'Mª Mar'.
       const norm = s => (s || '').toLowerCase().trim();
-      let score = 0;
-      if (norm(linkedinFirstName) && norm(linkedinFirstName) === norm(contact.first_name)) score += 40;
-      else if (norm(linkedinFirstName) && (norm(linkedinFirstName).includes(norm(contact.first_name)) || norm(contact.first_name).includes(norm(linkedinFirstName)))) score += 25;
-      if (norm(linkedinLastName) && norm(linkedinLastName) === norm(contact.last_name)) score += 40;
-      else if (norm(linkedinLastName) && (norm(linkedinLastName).includes(norm(contact.last_name)) || norm(contact.last_name).includes(norm(linkedinLastName)))) score += 25;
-      // Company-boost als beschikbaar (van headline-parse) — geen straf als afwezig
-      if (norm(linkedinCompany) && norm(dbCompany) && (norm(linkedinCompany).includes(norm(dbCompany)) || norm(dbCompany).includes(norm(linkedinCompany)))) score += 20;
-      else if (norm(dbCompany).length > 2 && norm(linkedinHeadline).includes(norm(dbCompany))) score += 15;
-      score = Math.min(100, score);
+      const tokens = s => new Set(norm(s).split(/\s+/).filter(t => t.length > 0));
+      const jaccard = (a, b) => {
+        const A = tokens(a), B = tokens(b);
+        if (A.size === 0 || B.size === 0) return 0;
+        const intersection = [...A].filter(w => B.has(w)).length;
+        const union = new Set([...A, ...B]).size;
+        return Math.round((intersection / union) * 100);
+      };
+      const containsScore = (a, b) => {
+        const na = norm(a), nb = norm(b);
+        if (!na || !nb) return 0;
+        if (na === nb) return 100;
+        if (na.includes(nb) || nb.includes(na)) return 80;
+        return jaccard(a, b);
+      };
+
+      const nameScore = jaccard(dbName, linkedinName);
+      const companyScore = (linkedinCompany || dbCompany) ? containsScore(linkedinCompany, dbCompany) : null;
+      const overallScore = companyScore !== null
+        ? Math.round((nameScore + companyScore) / 2)
+        : nameScore;
+      const score = overallScore;
 
       return res.status(200).json({
         success: true,
@@ -608,9 +621,35 @@ export default async function handler(req, res) {
           profile_url: contact.linkedin_url,
         },
         match_score: score,
+        name_score: nameScore,
+        company_score: companyScore,
         debug_experience_count: Array.isArray(experiences) ? experiences.length : 0,
         debug_first_experience: firstExp,
       });
+    }
+
+    // ── COPY LINKEDIN FIELDS TO CONTACT ──
+    // Body: { contact_id, fields: { first_name?, last_name?, title?, company_name? } }
+    if (action === 'copy-linkedin-to-contact' && req.method === 'POST') {
+      if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+      const { contact_id, fields } = req.body || {};
+      if (!contact_id || !fields || typeof fields !== 'object') {
+        return res.status(400).json({ error: 'contact_id and fields object required' });
+      }
+      // Whitelist + filter lege waarden
+      const allowed = ['first_name', 'last_name', 'title', 'company_name'];
+      const updates = {};
+      for (const key of allowed) {
+        if (typeof fields[key] === 'string' && fields[key].trim()) {
+          updates[key] = fields[key].trim();
+        }
+      }
+      if (Object.keys(updates).length === 0) {
+        return res.status(200).json({ success: true, fieldsUpdated: [], message: 'Geen velden om te kopiëren' });
+      }
+      const { error: updErr } = await supabase.from('contacts').update(updates).eq('id', contact_id);
+      if (updErr) return res.status(500).json({ error: updErr.message });
+      return res.status(200).json({ success: true, fieldsUpdated: Object.keys(updates), updates });
     }
 
     // ── ENRICH CONTACT FROM LINKEDIN PROFILE ──
