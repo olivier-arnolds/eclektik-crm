@@ -527,7 +527,9 @@ export default async function handler(req, res) {
       const liAcc = (acctsResp.data?.items || []).find(a => (a.type || '').toUpperCase() === 'LINKEDIN');
       if (!liAcc) return res.status(400).json({ error: 'No LinkedIn account connected in Unipile' });
 
-      const profileResp = await unipileRequest('GET', `/users/${encodeURIComponent(slug)}?account_id=${liAcc.id}`);
+      // linkedin_sections=* requests all profile sections (incl. experience).
+      // Zonder dit param geeft Unipile alleen basic profile fields terug.
+      const profileResp = await unipileRequest('GET', `/users/${encodeURIComponent(slug)}?account_id=${liAcc.id}&linkedin_sections=*`);
       if (profileResp.error || !profileResp.data) {
         return res.status(400).json({ error: profileResp.error || 'profile fetch failed', details: profileResp.details });
       }
@@ -538,18 +540,37 @@ export default async function handler(req, res) {
       const linkedinLastName = p.last_name || '';
       const linkedinName = `${linkedinFirstName} ${linkedinLastName}`.trim() || p.name || '';
       const linkedinHeadline = p.headline || p.occupation || '';
-      // Current company — Unipile's basic user-profile endpoint retourneert geen
-      // work_experience of current_company. Beste fallback: parsen uit headline
-      // ('Title at Company' / 'Title @ Company' / 'Title | Company' patterns).
+      // Met linkedin_sections=* krijgen we de full experience-array.
+      // Veld-naam-variaties: work_experience / experience / experiences / positions.
+      const experiences =
+        p.work_experience
+        || p.experience
+        || p.experiences
+        || p.positions
+        || [];
+      const firstExp = Array.isArray(experiences) ? experiences[0] : null;
       let linkedinCompany = '';
-      const headlineForCompany = (p.headline || p.occupation || '').trim();
-      const patterns = [
-        /\s+(?:at|@)\s+(.+?)(?:\s*[\|·•]|\s*$)/i,  // "Title at Company"
-        /\s+[\|·•]\s+(.+?)(?:\s*[\|·•]|\s*$)/,      // "Title | Company"
-      ];
-      for (const re of patterns) {
-        const m = headlineForCompany.match(re);
-        if (m && m[1]) { linkedinCompany = m[1].trim(); break; }
+      let linkedinExpTitle = '';
+      if (firstExp) {
+        linkedinCompany = firstExp.company?.name
+          || firstExp.company_name
+          || firstExp.company
+          || firstExp.organization?.name
+          || firstExp.organization
+          || '';
+        linkedinExpTitle = firstExp.title || firstExp.position || firstExp.role || '';
+      }
+      // Fallback: parse uit headline als experience-array leeg is
+      if (!linkedinCompany) {
+        const headlineForCompany = (p.headline || p.occupation || '').trim();
+        const patterns = [
+          /\s+(?:at|@)\s+(.+?)(?:\s*[\|·•]|\s*$)/i,
+          /\s+[\|·•]\s+(.+?)(?:\s*[\|·•]|\s*$)/,
+        ];
+        for (const re of patterns) {
+          const m = headlineForCompany.match(re);
+          if (m && m[1]) { linkedinCompany = m[1].trim(); break; }
+        }
       }
 
       // DB side
@@ -582,11 +603,13 @@ export default async function handler(req, res) {
         linkedin: {
           name: linkedinName,
           company: linkedinCompany,
-          company_note: linkedinCompany ? null : 'Unipile basic-profile geeft geen current_company; alleen geparsed uit headline indien aanwezig',
-          title: linkedinHeadline,
+          company_note: linkedinCompany ? null : 'Geen company gevonden in profile-experience of headline',
+          title: linkedinExpTitle || linkedinHeadline,
           profile_url: contact.linkedin_url,
         },
         match_score: score,
+        debug_experience_count: Array.isArray(experiences) ? experiences.length : 0,
+        debug_first_experience: firstExp,
       });
     }
 
