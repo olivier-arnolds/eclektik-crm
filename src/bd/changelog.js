@@ -19,9 +19,37 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.9.0';
+export const CURRENT_VERSION = '1.10.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.10.0',
+    date: '2026-06-05T15:20:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feature',
+    title: 'War room — pipeline + running Glint projects on one screen',
+    summary:
+      'New "War room" tab: the commercial pipeline (from the CRM) and the running ' +
+      'Glint delivery projects on one grid. Delivery rows are synced from ' +
+      'Yarmilla\'s Master Project Overview into glint_delivery (CS/PS owner + hours, ' +
+      'status, priority, milestone dates, notes, follow-up). Health is auto-derived ' +
+      '(status + priority + milestone proximity + follow-up/blocked signals) and ' +
+      'rows sort by urgency. Header shows the source file, when the sheet was last ' +
+      'edited, when we last synced, and an Update button. Delivery rows link to the ' +
+      'Account 360 by company match.',
+    changes: [
+      'New War-room tab (src/bd/lane-warroom.jsx) wired into BDApp NAV_VIEWS + Topbar; reads glint_delivery + open pipeline deals.',
+      'New table public.glint_delivery (schema_glint_delivery.sql) + one-time seed of current rows (seed_glint_delivery.sql). RUN BOTH in Supabase.',
+      'New /api/glint-sync.js: reads the Master Project Overview workbook via Microsoft Graph (app-only) and upserts rows; the Update button triggers it. GATED on Graph Files.Read.All consent + GRAPH_TENANT_ID/CLIENT_ID/CLIENT_SECRET env — returns 503 until configured, seeded data shows meanwhile.',
+      'Auto-health + soonest-of-three milestone (survey / insight-review / delivery-end) logic.',
+    ],
+    files: [
+      'src/bd/lane-warroom.jsx', 'src/bd/BDApp.jsx', 'src/bd/topbar.jsx',
+      'api/glint-sync.js', 'schema_glint_delivery.sql', 'seed_glint_delivery.sql',
+      'src/bd/changelog.js', 'VERSION', 'package.json',
+    ],
+    gitTag: 'v1.10.0',
+  },
   {
     version: '1.9.0',
     date: '2026-06-05T14:45:00Z',

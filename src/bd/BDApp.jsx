@@ -12,6 +12,7 @@ import FunnelLane from './lane-funnel';
 import CalendarLane from './lane-calendar';
 import CommsLane from './lane-comms';
 import ReportingLane from './lane-reporting';
+import WarRoomLane from './lane-warroom';
 import AccountsLane from './lane-accounts';
 import ComposeModal from './compose';
 import DealDetailModal from './deal-detail-modal';
@@ -26,9 +27,9 @@ import LogView from './log-view';
 import FeedbackModal from './feedback-modal';
 
 // The single set of left-pane views. The Account 360 always sits to the right.
-const NAV_VIEWS = ['funnel', 'meetings', 'tasks', 'comms', 'reporting', 'marketing', 'playbooks', 'admin', 'log'];
+const NAV_VIEWS = ['funnel', 'meetings', 'tasks', 'comms', 'warroom', 'reporting', 'marketing', 'playbooks', 'admin', 'log'];
 // Views whose left pane scrolls as one block (vs. lanes that manage their own scroll).
-const SCROLL_VIEWS = ['reporting', 'marketing', 'admin', 'log'];
+const SCROLL_VIEWS = ['warroom', 'reporting', 'marketing', 'admin', 'log'];
 
 export default function BDApp() {
   const [theme, setTheme] = useLocal('bd_theme', 'light');
@@ -255,6 +256,8 @@ export default function BDApp() {
     );
   } else if (activeView === 'reporting') {
     leftPane = <ReportingLane onPickAccount={pickAccount} accounts={accounts} />;
+  } else if (activeView === 'warroom') {
+    leftPane = <WarRoomLane accounts={accounts} deals={deals} onPickAccount={pickAccount} />;
   } else if (activeView === 'playbooks') {
     leftPane = <div className="lane" style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}><PlaybooksHub /></div>;
   } else if (activeView === 'marketing') {

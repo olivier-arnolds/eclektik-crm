@@ -39,6 +39,13 @@ export default function Topbar({ theme, setTheme, view, setView, layout, setLayo
           onClick={() => setView('comms')} title="Comms — email, Teams & LinkedIn">
           <I.inbox /> Comms
         </button>
+        <button className={view === 'warroom' ? 'on' : ''}
+          onClick={() => setView('warroom')} title="War room — pipeline & running projects">
+          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.4">
+            <circle cx="8" cy="8" r="5.5" /><circle cx="8" cy="8" r="1.6" fill="currentColor" stroke="none" />
+            <path d="M8 .5v2M8 13.5v2M.5 8h2M13.5 8h2" strokeLinecap="round" />
+          </svg> War room
+        </button>
         <button className={view === 'reporting' ? 'on' : ''}
           onClick={() => setView('reporting')} title="Reporting — revenue & pipeline">
           <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.4">
