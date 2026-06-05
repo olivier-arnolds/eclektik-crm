@@ -19,9 +19,27 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.10.0';
+export const CURRENT_VERSION = '1.10.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.10.1',
+    date: '2026-06-05T15:45:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'refactor',
+    title: 'War room: focus on delivery — drop pipeline + Service column',
+    summary:
+      'Trimmed the War room to the running Glint delivery grid: removed the ' +
+      'commercial-pipeline section and the Service column. "Health — why" stays — ' +
+      'the auto RAG dot plus the reason it was set (status / blocked / priority / ' +
+      'follow-up / milestone proximity).',
+    changes: [
+      'Removed the Commercial pipeline table (and its deals dependency) from lane-warroom.jsx.',
+      'Removed the Service column from the delivery grid.',
+    ],
+    files: ['src/bd/lane-warroom.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.10.1',
+  },
   {
     version: '1.10.0',
     date: '2026-06-05T15:20:00Z',
