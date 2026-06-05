@@ -219,9 +219,9 @@ export default function DoubleCheckLinkedInModal({ contactIds, onClose, refetch 
               {showCopyPicker && (
                 <div style={{
                   position: 'absolute',
-                  top: '50%',
+                  bottom: 'calc(50% + 30px)',
                   left: '50%',
-                  transform: 'translate(-50%, 30px)',
+                  transform: 'translateX(-50%)',
                   background: '#fff',
                   border: '0.5px solid var(--sep)',
                   borderRadius: 6,
