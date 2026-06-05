@@ -19,9 +19,27 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.10.3';
+export const CURRENT_VERSION = '1.11.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.11.0',
+    date: '2026-06-06T11:00:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feature',
+    title: 'Clients: add State field + backfill US states from location',
+    summary:
+      'Added a "State" field to clients (companies), editable in the Account 360 ' +
+      'detail panel next to City. Backfilled the state for all 46 US clients from ' +
+      'their city/address/postal code (schema_companies_state.sql, run in ' +
+      'Supabase). Non-US clients left blank.',
+    changes: [
+      'New companies.state column + one-time backfill of US clients (schema_companies_state.sql).',
+      'Editable "State" field in InlineAccountDetails (inline-details.jsx), after City.',
+    ],
+    files: ['schema_companies_state.sql', 'src/bd/inline-details.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.11.0',
+  },
   {
     version: '1.10.3',
     date: '2026-06-06T10:00:00Z',

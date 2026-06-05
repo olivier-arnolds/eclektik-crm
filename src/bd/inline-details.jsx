@@ -698,6 +698,7 @@ export function InlineAccountDetails({ accountId, onPickAccount }) {
         <InlineField label="Industry" value={row.industry} onSave={v => saveField('industry', v)} colspan={2} />
         <InlineField label="Address" value={row.address} onSave={v => saveField('address', v)} colspan={2} />
         <InlineField label="City" value={row.city} onSave={v => saveField('city', v)} />
+        <InlineField label="State" value={row.state} onSave={v => saveField('state', v)} />
         <InlineField label="Postal code" value={row.postal_code} onSave={v => saveField('postal_code', v)} />
         <InlineField label="Country" value={row.country} onSave={v => saveField('country', v)} />
         <InlineField label="Employees" value={row.employee_count} onSave={v => saveField('employee_count', v)} />
