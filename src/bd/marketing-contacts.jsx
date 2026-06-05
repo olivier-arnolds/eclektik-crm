@@ -3,6 +3,7 @@ import TagChip from './tag-chip';
 import BulkTagModal from './marketing-bulk-tag-modal';
 import ContactDetailModal from './contact-detail-modal';
 import DoubleCheckLinkedInModal from './marketing-doublecheck-modal';
+import EmailSuggestModal from './marketing-email-suggest-modal';
 import { useAuth } from '../lib/auth';
 import { supabase } from '../supabase';
 
@@ -69,6 +70,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
   const [showDoublecheck, setShowDoublecheck] = useState(null); // array of contact-ids als open
   const [lushaFinding, setLushaFinding] = useState(false);
   const [lushaProgress, setLushaProgress] = useState({ done: 0, total: 0 });
+  const [showEmailSuggest, setShowEmailSuggest] = useState(false);
 
   async function findEmailsViaLusha() {
     const eligible = filtered.filter(c => selected.has(c.id) && !c.email && c.linkedin_url);
@@ -508,6 +510,14 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
               disabled={lushaFinding}>
               {lushaFinding ? `Lusha ${lushaProgress.done}/${lushaProgress.total}…` : 'Find emails (Lusha)'}
             </button>
+            <button className="btn-ghost tiny"
+              onClick={() => {
+                const eligible = filtered.filter(c => selected.has(c.id) && !c.email);
+                if (eligible.length === 0) { alert('Geen geselecteerde contacten zonder email.'); return; }
+                setShowEmailSuggest(true);
+              }}>
+              Email suggesties (patroon)
+            </button>
             <button className="btn-primary tiny" disabled={!onComposeCampaign}
               onClick={() => {
                 if (!onComposeCampaign) return;
@@ -661,6 +671,14 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
         <DoubleCheckLinkedInModal
           contactIds={showDoublecheck}
           onClose={() => setShowDoublecheck(null)}
+          refetch={refetch}
+        />
+      )}
+      {showEmailSuggest && (
+        <EmailSuggestModal
+          allContacts={contacts}
+          selectedIds={selected}
+          onClose={() => setShowEmailSuggest(false)}
           refetch={refetch}
         />
       )}
