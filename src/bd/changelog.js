@@ -19,9 +19,28 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.11.0';
+export const CURRENT_VERSION = '1.11.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.11.1',
+    date: '2026-06-06T12:00:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'fix',
+    title: 'Tasks "With" picker: dedupe roster + drop email-as-name junk',
+    summary:
+      'The "With (Eclectik)" dropdown showed duplicate and malformed entries (e.g. ' +
+      '"Heidi@eclectik.co" alongside "Heidi Muhle", a duplicate Kirsty). It now ' +
+      'dedupes people by name and skips entries whose name is blank or just an ' +
+      'email address. Applied in all three task forms (detail modal, inline panel, ' +
+      'quick-add). NOTE: Olivier still won\'t appear until he is tagged as an ' +
+      'Eclectik-team contact (he currently has no eclectik_team link).',
+    changes: [
+      'Roster build dedupes by normalized name and filters out email-as-name / blank entries (task-detail-modal.jsx, inline-details.jsx, lane-accounts.jsx).',
+    ],
+    files: ['src/bd/task-detail-modal.jsx', 'src/bd/inline-details.jsx', 'src/bd/lane-accounts.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.11.1',
+  },
   {
     version: '1.11.0',
     date: '2026-06-06T11:00:00Z',

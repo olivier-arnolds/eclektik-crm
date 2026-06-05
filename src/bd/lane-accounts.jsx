@@ -1503,10 +1503,11 @@ function AddTaskInline({ accountId, onDone, onCancel }) {
         const seen = new Map();
         (data || []).forEach(l => {
           const c = l.contacts;
-          if (c && !seen.has(c.id)) {
-            const name = `${c.first_name || ''} ${c.last_name || ''}`.trim() || c.full_name || '(no name)';
-            seen.set(c.id, { id: c.id, name });
-          }
+          if (!c) return;
+          const name = `${c.first_name || ''} ${c.last_name || ''}`.trim() || c.full_name || '';
+          if (!name || name.includes('@')) return;        // skip blank / email-as-name junk
+          const key = name.toLowerCase().replace(/\s+/g, ' ').trim();
+          if (!seen.has(key)) seen.set(key, { id: c.id, name });
         });
         setTeam([...seen.values()].sort((a, b) => a.name.localeCompare(b.name)));
       });
