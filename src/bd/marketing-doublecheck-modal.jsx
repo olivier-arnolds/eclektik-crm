@@ -12,6 +12,7 @@ export default function DoubleCheckLinkedInModal({ contactIds, onClose, refetch 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [decisions, setDecisions] = useState({}); // { [contactId]: 'kept' | 'cleared' | 'skipped' }
+  const [appAlert, setAppAlert] = useState(null); // { type: 'error'|'success'|'warning', message: string }
 
   const currentId = contactIds[index];
   const total = contactIds.length;
@@ -47,7 +48,7 @@ export default function DoubleCheckLinkedInModal({ contactIds, onClose, refetch 
 
   async function decideIncorrect() {
     const { error } = await supabase.from('contacts').update({ linkedin_url: null }).eq('id', currentId);
-    if (error) { alert('Wissen mislukt: ' + error.message); return; }
+    if (error) { setAppAlert({ type: 'error', message: 'Wissen mislukt: ' + error.message }); return; }
     advance('cleared');
   }
 
@@ -68,7 +69,16 @@ export default function DoubleCheckLinkedInModal({ contactIds, onClose, refetch 
   useEffect(() => {
     setShowCopyPicker(false);
     setCopyPick({ first_name: false, last_name: false, title: true, company_name: false });
+    setAppAlert(null);
   }, [currentId]);
+
+  // Auto-clear success-banner na 3 seconden
+  useEffect(() => {
+    if (appAlert?.type === 'success') {
+      const t = setTimeout(() => setAppAlert(null), 3000);
+      return () => clearTimeout(t);
+    }
+  }, [appAlert]);
 
   async function doCopy() {
     if (!data) return;
@@ -81,7 +91,7 @@ export default function DoubleCheckLinkedInModal({ contactIds, onClose, refetch 
     if (copyPick.company_name && linkedin.company) fields.company_name = linkedin.company;
 
     if (Object.keys(fields).length === 0) {
-      alert('Geen velden geselecteerd om te kopiëren.');
+      setAppAlert({ type: 'warning', message: 'Geen velden geselecteerd om te kopiëren.' });
       return;
     }
     setShowCopyPicker(false);
@@ -102,8 +112,9 @@ export default function DoubleCheckLinkedInModal({ contactIds, onClose, refetch 
       const refreshed = await refresh.json();
       if (refreshed.success) setData(refreshed);
       setLoading(false);
+      setAppAlert({ type: 'success', message: `Gekopieerd: ${result.fieldsUpdated.join(', ')}.` });
     } else {
-      alert('Kopiëren mislukt: ' + (result.error || 'onbekend'));
+      setAppAlert({ type: 'error', message: 'Kopiëren mislukt: ' + (result.error || 'onbekend') });
     }
   }
 
@@ -137,6 +148,22 @@ export default function DoubleCheckLinkedInModal({ contactIds, onClose, refetch 
         <h2 style={{ fontSize: 14, margin: 0 }}>Doublecheck LinkedIn ({index + 1} / {total})</h2>
         <button onClick={onClose} style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 18, color: 'var(--text-3)' }}>×</button>
       </div>
+
+      {appAlert && (
+        <div style={{
+          padding: '8px 12px',
+          marginBottom: 12,
+          borderRadius: 4,
+          fontSize: 12,
+          background: appAlert.type === 'error' ? '#fef2f2' : appAlert.type === 'warning' ? '#fef9c3' : '#dcfce7',
+          color: appAlert.type === 'error' ? '#991b1b' : appAlert.type === 'warning' ? '#92400e' : '#166534',
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+        }}>
+          <span>{appAlert.message}</span>
+          <button onClick={() => setAppAlert(null)}
+            style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 14, color: 'inherit', padding: '0 4px' }}>×</button>
+        </div>
+      )}
 
       {loading && <div style={{ padding: 30, textAlign: 'center', color: 'var(--text-3)' }}>Loading…</div>}
       {error && (
