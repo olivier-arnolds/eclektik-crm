@@ -55,19 +55,37 @@ export default function DoubleCheckLinkedInModal({ contactIds, onClose, refetch 
     advance('skipped');
   }
 
-  async function copyFromLinkedIn() {
+  // Copy-popover state — title default geselecteerd, rest niet
+  const [showCopyPicker, setShowCopyPicker] = useState(false);
+  const [copyPick, setCopyPick] = useState({
+    first_name: false,
+    last_name: false,
+    title: true,
+    company_name: false,
+  });
+
+  // Reset picker bij wisselen van contact
+  useEffect(() => {
+    setShowCopyPicker(false);
+    setCopyPick({ first_name: false, last_name: false, title: true, company_name: false });
+  }, [currentId]);
+
+  async function doCopy() {
     if (!data) return;
     const linkedin = data.linkedin;
-    // Splits naam naar first/last (eerste woord = first, rest = last)
     const nameWords = (linkedin.name || '').trim().split(/\s+/);
-    const fields = {
-      first_name: nameWords[0] || undefined,
-      last_name: nameWords.slice(1).join(' ') || undefined,
-      title: linkedin.title || undefined,
-      company_name: linkedin.company || undefined,
-    };
-    const labels = Object.entries(fields).filter(([_, v]) => v).map(([k]) => k).join(', ');
-    if (!confirm(`Kopieer naar database: ${labels}?\n\nDit overschrijft de bestaande waardes.`)) return;
+    const fields = {};
+    if (copyPick.first_name && nameWords[0]) fields.first_name = nameWords[0];
+    if (copyPick.last_name && nameWords.slice(1).length) fields.last_name = nameWords.slice(1).join(' ');
+    if (copyPick.title && linkedin.title) fields.title = linkedin.title;
+    if (copyPick.company_name && linkedin.company) fields.company_name = linkedin.company;
+
+    if (Object.keys(fields).length === 0) {
+      alert('Geen velden geselecteerd om te kopiëren.');
+      return;
+    }
+    setShowCopyPicker(false);
+
     const resp = await fetch('/api/unipile?action=copy-linkedin-to-contact', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -75,8 +93,6 @@ export default function DoubleCheckLinkedInModal({ contactIds, onClose, refetch 
     });
     const result = await resp.json();
     if (result.success) {
-      alert(`Gekopieerd: ${result.fieldsUpdated.join(', ')}.`);
-      // Refresh data zodat DB-side bijgewerkt zichtbaar wordt
       setLoading(true);
       const refresh = await fetch('/api/unipile?action=doublecheck-contact-linkedin', {
         method: 'POST',
@@ -156,23 +172,65 @@ export default function DoubleCheckLinkedInModal({ contactIds, onClose, refetch 
           {/* Side-by-side met middle column voor per-field scores + copy-action */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 80px 1fr', gap: 12, alignItems: 'stretch' }}>
             <SidePanel title="In onze database" data={data.db} accent="#3b82f6" />
-            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', alignItems: 'center', padding: '60px 0' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'space-between', alignItems: 'center', padding: '60px 0', position: 'relative' }}>
               <ScoreLabel label="Naam" value={data.name_score} />
               <button
-                onClick={copyFromLinkedIn}
-                title="Kopieer LinkedIn-gegevens naar onze database (naam, title, company)"
+                onClick={() => setShowCopyPicker(v => !v)}
+                title="Kies welke LinkedIn-velden je wilt kopiëren"
                 style={{
-                  background: '#fff',
+                  background: showCopyPicker ? 'var(--accent)' : '#fff',
+                  color: showCopyPicker ? '#fff' : 'var(--accent)',
                   border: '1.5px solid var(--accent)',
                   borderRadius: '50%',
                   width: 40, height: 40,
                   cursor: 'pointer',
                   fontSize: 18,
-                  color: 'var(--accent)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
                 ←
               </button>
+              {showCopyPicker && (
+                <div style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  transform: 'translate(-50%, 30px)',
+                  background: '#fff',
+                  border: '0.5px solid var(--sep)',
+                  borderRadius: 6,
+                  padding: 12,
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+                  zIndex: 10,
+                  minWidth: 200,
+                }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', marginBottom: 8 }}>
+                    Velden om te kopiëren
+                  </div>
+                  {[
+                    { key: 'title', label: 'Functie / title' },
+                    { key: 'first_name', label: 'Voornaam' },
+                    { key: 'last_name', label: 'Achternaam' },
+                    { key: 'company_name', label: 'Bedrijfsnaam' },
+                  ].map(f => (
+                    <label key={f.key} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, padding: '3px 0', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={!!copyPick[f.key]}
+                        onChange={() => setCopyPick(p => ({ ...p, [f.key]: !p[f.key] }))}
+                      />
+                      {f.label}
+                    </label>
+                  ))}
+                  <div style={{ display: 'flex', gap: 6, marginTop: 12, justifyContent: 'flex-end' }}>
+                    <button onClick={() => setShowCopyPicker(false)} style={{ padding: '4px 10px', fontSize: 11, background: '#fff', color: 'var(--text-3)', border: '0.5px solid var(--sep)', borderRadius: 4, cursor: 'pointer' }}>
+                      Annuleer
+                    </button>
+                    <button onClick={doCopy} style={{ padding: '4px 12px', fontSize: 11, background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 4, cursor: 'pointer', fontWeight: 600 }}>
+                      Kopieer
+                    </button>
+                  </div>
+                </div>
+              )}
               <ScoreLabel label="Bedrijf" value={data.company_score} />
             </div>
             <SidePanel title="Op LinkedIn" data={data.linkedin} accent="#0a66c2" link={data.linkedin.profile_url} />
