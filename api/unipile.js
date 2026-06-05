@@ -538,11 +538,19 @@ export default async function handler(req, res) {
       const linkedinLastName = p.last_name || '';
       const linkedinName = `${linkedinFirstName} ${linkedinLastName}`.trim() || p.name || '';
       const linkedinHeadline = p.headline || p.occupation || '';
-      // Current company: probably nested in work_experience or position
+      // Current company — broad scan over alle bekende Unipile-shapes
       const linkedinCompany =
         p.current_company?.name
+        || p.company?.name
+        || p.organization?.name
+        || p.company
+        || p.organization
+        || p.current_position?.company?.name
+        || p.current_position?.company
         || p.work_experience?.[0]?.company
-        || (Array.isArray(p.positions) && p.positions[0]?.company_name)
+        || p.work_experience?.[0]?.company_name
+        || (Array.isArray(p.positions) && (p.positions[0]?.company?.name || p.positions[0]?.company_name || p.positions[0]?.company))
+        || (Array.isArray(p.experience) && (p.experience[0]?.company?.name || p.experience[0]?.company_name || p.experience[0]?.company))
         || '';
 
       // DB side
@@ -578,6 +586,9 @@ export default async function handler(req, res) {
           profile_url: contact.linkedin_url, // we doublechecken het bestaande URL-slug
         },
         match_score: score,
+        // Debug: top-level keys + first work-experience entry voor inspectie
+        debug_profile_keys: Object.keys(p),
+        debug_first_experience: (p.work_experience?.[0] || p.experience?.[0] || p.positions?.[0]) || null,
       });
     }
 
