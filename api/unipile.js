@@ -504,6 +504,83 @@ export default async function handler(req, res) {
       });
     }
 
+    // ── DOUBLECHECK CONTACT'S LINKEDIN-URL: side-by-side data ──
+    // Body: { contact_id }
+    if (action === 'doublecheck-contact-linkedin' && req.method === 'POST') {
+      if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
+      const { contact_id } = req.body || {};
+      if (!contact_id) return res.status(400).json({ error: 'contact_id required' });
+
+      const { data: contact, error: getErr } = await supabase
+        .from('contacts')
+        .select('id, first_name, last_name, full_name, title, linkedin_url, company_name, companies(name)')
+        .eq('id', contact_id)
+        .single();
+      if (getErr || !contact) return res.status(404).json({ error: 'contact not found' });
+      if (!contact.linkedin_url) return res.status(400).json({ error: 'contact has no linkedin_url to doublecheck' });
+
+      const slugMatch = contact.linkedin_url.match(/linkedin\.com\/in\/([^\/\?]+)/);
+      if (!slugMatch) return res.status(400).json({ error: 'invalid LinkedIn URL on contact' });
+      const slug = slugMatch[1];
+
+      const acctsResp = await unipileRequest('GET', '/accounts');
+      const liAcc = (acctsResp.data?.items || []).find(a => (a.type || '').toUpperCase() === 'LINKEDIN');
+      if (!liAcc) return res.status(400).json({ error: 'No LinkedIn account connected in Unipile' });
+
+      const profileResp = await unipileRequest('GET', `/users/${encodeURIComponent(slug)}?account_id=${liAcc.id}`);
+      if (profileResp.error || !profileResp.data) {
+        return res.status(400).json({ error: profileResp.error || 'profile fetch failed', details: profileResp.details });
+      }
+      const p = profileResp.data;
+
+      // Extract from profile — multiple possible field names per Unipile shape
+      const linkedinFirstName = p.first_name || '';
+      const linkedinLastName = p.last_name || '';
+      const linkedinName = `${linkedinFirstName} ${linkedinLastName}`.trim() || p.name || '';
+      const linkedinHeadline = p.headline || p.occupation || '';
+      // Current company: probably nested in work_experience or position
+      const linkedinCompany =
+        p.current_company?.name
+        || p.work_experience?.[0]?.company
+        || (Array.isArray(p.positions) && p.positions[0]?.company_name)
+        || '';
+
+      // DB side
+      const dbName = contact.full_name || `${contact.first_name || ''} ${contact.last_name || ''}`.trim();
+      const dbCompany = contact.company_name || contact.companies?.name || '';
+      const dbTitle = contact.title || '';
+
+      // Match score: 100 = perfect, 0 = nothing matches
+      const norm = s => (s || '').toLowerCase().trim();
+      let score = 0;
+      if (norm(linkedinFirstName) && norm(linkedinFirstName) === norm(contact.first_name)) score += 35;
+      else if (norm(linkedinFirstName) && (norm(linkedinFirstName).includes(norm(contact.first_name)) || norm(contact.first_name).includes(norm(linkedinFirstName)))) score += 20;
+      if (norm(linkedinLastName) && norm(linkedinLastName) === norm(contact.last_name)) score += 35;
+      else if (norm(linkedinLastName) && (norm(linkedinLastName).includes(norm(contact.last_name)) || norm(contact.last_name).includes(norm(linkedinLastName)))) score += 20;
+      if (norm(linkedinCompany) && norm(dbCompany) && (norm(linkedinCompany).includes(norm(dbCompany)) || norm(dbCompany).includes(norm(linkedinCompany)))) score += 20;
+      // Also boost if company appears in headline (covers retired/recent-changes)
+      else if (norm(dbCompany).length > 2 && norm(linkedinHeadline).includes(norm(dbCompany))) score += 15;
+      score = Math.min(100, score);
+
+      return res.status(200).json({
+        success: true,
+        contact_id,
+        db: {
+          name: dbName,
+          company: dbCompany,
+          title: dbTitle,
+          linkedin_url: contact.linkedin_url,
+        },
+        linkedin: {
+          name: linkedinName,
+          company: linkedinCompany,
+          title: linkedinHeadline,
+          profile_url: contact.linkedin_url, // we doublechecken het bestaande URL-slug
+        },
+        match_score: score,
+      });
+    }
+
     // ── ENRICH CONTACT FROM LINKEDIN PROFILE ──
     // Body: { contact_id, linkedin_url }
     if (action === 'enrich-contact' && req.method === 'POST') {

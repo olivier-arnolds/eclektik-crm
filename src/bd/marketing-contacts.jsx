@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import TagChip from './tag-chip';
 import BulkTagModal from './marketing-bulk-tag-modal';
 import ContactDetailModal from './contact-detail-modal';
+import DoubleCheckLinkedInModal from './marketing-doublecheck-modal';
 import { useAuth } from '../lib/auth';
 import { supabase } from '../supabase';
 
@@ -65,6 +66,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
   const [enriching, setEnriching] = useState(false);
   const [enrichProgress, setEnrichProgress] = useState({ done: 0, total: 0 });
   const [openContactId, setOpenContactId] = useState(null);
+  const [showDoublecheck, setShowDoublecheck] = useState(null); // array of contact-ids als open
 
   async function enrichSelected() {
     const selectedContacts = filtered.filter(c => selected.has(c.id));
@@ -457,6 +459,14 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
             <button className="btn-ghost tiny" onClick={enrichSelected} disabled={enriching}>
               {enriching ? `Enriching ${enrichProgress.done}/${enrichProgress.total}…` : 'Enrich via LinkedIn'}
             </button>
+            <button className="btn-ghost tiny"
+              onClick={() => {
+                const ids = filtered.filter(c => selected.has(c.id) && c.linkedin_url).map(c => c.id);
+                if (ids.length === 0) { alert('Geen geselecteerde contacten met LinkedIn-URL om te checken.'); return; }
+                setShowDoublecheck(ids);
+              }}>
+              Doublecheck LinkedIn
+            </button>
             <button className="btn-primary tiny" disabled={!onComposeCampaign}
               onClick={() => {
                 if (!onComposeCampaign) return;
@@ -603,6 +613,13 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
         <ContactDetailModal
           contactId={openContactId}
           onClose={() => setOpenContactId(null)}
+          refetch={refetch}
+        />
+      )}
+      {showDoublecheck && (
+        <DoubleCheckLinkedInModal
+          contactIds={showDoublecheck}
+          onClose={() => setShowDoublecheck(null)}
           refetch={refetch}
         />
       )}
