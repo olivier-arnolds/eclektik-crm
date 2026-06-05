@@ -19,9 +19,29 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.8.0';
+export const CURRENT_VERSION = '1.8.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.8.1',
+    date: '2026-06-04T18:07:19Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'fix',
+    title: 'Tasks: make "With" editable in the inline task panel too',
+    summary:
+      'v1.8.0 added the "With" field to the task modal, but the inline task panel ' +
+      '(opened when you click a task in the all-tasks list or calendar) had no ' +
+      '"With" selector. Added an editable single-select "With" there as well, next ' +
+      'to "For", so the field can be set wherever a task opens.',
+    changes: [
+      'inline-details.jsx (InlineTaskDetail): added the eclectik_team roster fetch and an editable "With" single-select next to "For"; widened the field grid to 5 columns.',
+    ],
+    files: [
+      'src/bd/inline-details.jsx',
+      'src/bd/changelog.js', 'VERSION', 'package.json',
+    ],
+    gitTag: 'v1.8.1',
+  },
   {
     version: '1.8.0',
     date: '2026-06-04T18:07:19Z',

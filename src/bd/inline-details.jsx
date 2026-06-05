@@ -950,6 +950,7 @@ export function InlineDealDetail({ deal, rawItems, onCompose, onOpenModal, refet
 export function InlineTaskDetail({ taskId, refetch }) {
   const [row, setRow] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [team, setTeam] = useState([]);
 
   useEffect(() => {
     if (!taskId) return;
@@ -957,6 +958,25 @@ export function InlineTaskDetail({ taskId, refetch }) {
     supabase.from('tasks').select('*').eq('id', taskId).single()
       .then(({ data }) => { setRow(data); setLoading(false); });
   }, [taskId]);
+
+  // Eclectik team roster for the "With" picker: distinct contacts linked to any
+  // account as link_type='eclectik_team'.
+  useEffect(() => {
+    supabase.from('account_links')
+      .select('contact_id, contacts:contact_id(id, full_name, first_name, last_name)')
+      .eq('link_type', 'eclectik_team')
+      .then(({ data }) => {
+        const seen = new Map();
+        (data || []).forEach(l => {
+          const c = l.contacts;
+          if (c && !seen.has(c.id)) {
+            const name = `${c.first_name || ''} ${c.last_name || ''}`.trim() || c.full_name || '(no name)';
+            seen.set(c.id, { id: c.id, name });
+          }
+        });
+        setTeam([...seen.values()].sort((a, b) => a.name.localeCompare(b.name)));
+      });
+  }, []);
 
   const update = async (patch) => {
     const { error } = await supabase.from('tasks').update(patch).eq('id', taskId);
@@ -970,7 +990,7 @@ export function InlineTaskDetail({ taskId, refetch }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       <InlineField label="Title" value={row.title} onSave={v => update({ title: v || row.title })} colspan={2} />
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 6 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr', gap: 6 }}>
         <InlineField label="Due date" value={row.due_date} type="date" onSave={v => update({ due_date: v || null })} />
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>For</div>
@@ -984,6 +1004,21 @@ export function InlineTaskDetail({ taskId, refetch }) {
             {['Marco', 'Olivier', 'Yarmilla'].map(n => <option key={n} value={n}>{n}</option>)}
             {row.owner && !['Marco', 'Olivier', 'Yarmilla'].includes(row.owner) && (
               <option value={row.owner}>{row.owner}</option>
+            )}
+          </select>
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>With</div>
+          <select value={row.with_contact_id || ''} onChange={e => update({ with_contact_id: e.target.value || null })}
+            style={{
+              padding: '4px 6px', borderRadius: 4, border: '0.5px solid var(--sep)',
+              background: 'var(--fill-1)', color: 'var(--text-1)', fontSize: 12,
+              fontFamily: 'var(--font)', outline: 'none',
+            }}>
+            <option value="">—</option>
+            {team.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+            {row.with_contact_id && !team.some(m => m.id === row.with_contact_id) && (
+              <option value={row.with_contact_id}>(linked member)</option>
             )}
           </select>
         </div>
