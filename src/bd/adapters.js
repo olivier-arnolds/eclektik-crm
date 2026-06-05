@@ -97,6 +97,8 @@ export function adaptContact(row, adaptedAccounts) {
   return {
     id: row.id,
     name: row.name || '',
+    first_name: row.first_name || '',
+    last_name: row.last_name || '',
     role: row.role || '',
     account: acc?.name || '',
     accountId: row.accountId,

@@ -10,6 +10,24 @@ function norm(s) {
     .replace(/[^a-z0-9]/g, '');
 }
 
+// Bepaal (first, last) van een contact. Prefer expliciete velden,
+// anders parse uit name (eerste woord = first, rest = last).
+// Werkt redelijk voor "Jan Jansen" en "Anne van der Berg" — bij de tweede
+// wordt last="van der Berg" wat voor patroon-matching correct is.
+function getFirstLast(c) {
+  const f = (c.first_name || '').trim();
+  const l = (c.last_name || '').trim();
+  if (f && l) return { first: f, last: l };
+  const name = (c.name || '').trim();
+  if (!name) return { first: f, last: l };
+  const parts = name.split(/\s+/);
+  if (parts.length === 1) return { first: f || parts[0], last: l };
+  return {
+    first: f || parts[0],
+    last: l || parts.slice(1).join(' '),
+  };
+}
+
 // Bouw local-part voor een patroon op basis van first/last.
 function buildLocal(pattern, first, last) {
   const f = norm(first);
@@ -59,12 +77,13 @@ function buildCompanyPatterns(contacts) {
   for (const c of contacts) {
     if (!c.accountId) continue;
     if (!c.email) continue;
-    if (!c.first_name || !c.last_name) continue;
+    const { first, last } = getFirstLast(c);
+    if (!first || !last) continue;
     const at = c.email.indexOf('@');
     if (at <= 0) continue;
     const local = c.email.slice(0, at);
     const domain = c.email.slice(at + 1).toLowerCase();
-    const pattern = detectPattern(local, c.first_name, c.last_name);
+    const pattern = detectPattern(local, first, last);
     if (!pattern) continue;
     if (!byCompany.has(c.accountId)) {
       byCompany.set(c.accountId, { patterns: new Map(), domains: new Map() });
@@ -123,10 +142,11 @@ export default function MarketingEmailSuggestModal({ allContacts, selectedIds, o
       if (!selectedIds.has(c.id)) continue;
       if (c.email) continue;
       if (!c.accountId) continue;
-      if (!c.first_name || !c.last_name) continue;
+      const { first, last } = getFirstLast(c);
+      if (!first || !last) continue;
       const cp = companyPatterns.get(c.accountId);
       if (!cp) continue;
-      const local = buildLocal(cp.pattern, c.first_name, c.last_name);
+      const local = buildLocal(cp.pattern, first, last);
       if (!local) continue;
       out.push({
         contactId: c.id,
