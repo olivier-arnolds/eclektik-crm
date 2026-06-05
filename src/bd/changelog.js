@@ -19,9 +19,35 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.8.1';
+export const CURRENT_VERSION = '1.9.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.9.0',
+    date: '2026-06-05T14:45:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feature',
+    title: 'Funnel: moving a deal to active/onboarding records it as Won',
+    summary:
+      'Dragging a deal to active or onboarding (an existing-customer / new-project ' +
+      'win) now also marks it status=Won with a close (won) date of today, instead ' +
+      'of leaving status empty. This makes new-project wins appear in the quarterly ' +
+      'Won + new/recurring reporting — previously they fell into an "unstatused-' +
+      'active" bucket excluded from the quarter breakdown, so a win like Alex Lee\'s ' +
+      'July 2026 project never scored. The deal still sits in the active/onboarding ' +
+      'funnel column (the funnel keys off stage, not status); the close date is ' +
+      'editable afterwards if the win belongs in a different quarter.',
+    changes: [
+      'stageUpdates() in adapters.js: for active/onboarding, set status=Won + close_date/actual_close_date=today (opportunities only) instead of clearing status.',
+      'No funnel change — display column still derives from stage, so won-active deals stay in the active column (matches existing active+Won deals).',
+      'Data: existing Alex Lee 2026 deal patched separately via SQL (db_revert_alexlee_active_won_2026-06-05.sql for rollback).',
+    ],
+    files: [
+      'src/bd/adapters.js',
+      'src/bd/changelog.js', 'VERSION', 'package.json',
+    ],
+    gitTag: 'v1.9.0',
+  },
   {
     version: '1.8.1',
     date: '2026-06-04T18:07:19Z',

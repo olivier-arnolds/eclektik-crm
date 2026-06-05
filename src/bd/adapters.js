@@ -265,12 +265,19 @@ export function stageUpdates(targetStage, dealTable) {
     updates.status = 'Lost';
     if (isOpp) updates.stage = 'past';
   } else if (['onboarding', 'active'].includes(targetStage)) {
+    // Existing-customer / new project secured. The deal stays in the active (or
+    // onboarding) funnel column — the funnel keys off `stage`, not `status` — but
+    // we also record it as a Won deal with a close (won) date of today, so it
+    // shows up in the quarterly won + new/recurring reporting (which counts
+    // status='Won' placed by close_date). The date is editable afterwards.
     updates.stage = targetStage;
     updates.sub_status = null;
-    // Reanimation: clear any leftover Won/Lost from a previous past/sleeping state
     if (isOpp) {
-      updates.status = null;
+      updates.status = 'Won';
       updates.status_reason = null;
+      const today = new Date().toISOString().slice(0, 10);
+      updates.close_date = today;
+      updates.actual_close_date = today;
     }
   } else {
     // qualify / develop / proposal
