@@ -194,6 +194,8 @@ export function adaptTask(row, rawItems, rawAccounts) {
     // Full owner name string (for display next to the due date in the
     // Account 360 view; the short MVG/OA/YK code lives in `owner`).
     ownerRaw: row.rawOwner || item?.owner || '',
+    // "With" — an Eclectik team member collaborating on the task (contact id).
+    withContactId: row.withContactId || null,
   };
 }
 

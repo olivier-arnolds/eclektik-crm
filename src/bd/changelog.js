@@ -19,9 +19,37 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.7.0';
+export const CURRENT_VERSION = '1.8.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.8.0',
+    date: '2026-06-04T18:07:19Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feature',
+    title: 'Tasks: "With" field — an Eclectik member on the task',
+    summary:
+      'Tasks now have a "With" field: a single Eclectik team member who joins or ' +
+      'collaborates on the task, separate from the owner (the "For" person). The ' +
+      'picker lists contacts tagged as Eclectik team (account_links link_type=' +
+      'eclectik_team). In the all-tasks list the "With" column sits next to "For" ' +
+      'and is sortable. Stored as a contact reference so names stay consistent.',
+    changes: [
+      'Added with_contact_id column to tasks (FK to contacts) — see schema_tasks_with_member.sql (run in Supabase).',
+      'task-detail-modal.jsx: new single-select "With (Eclectik)" dropdown, roster = distinct eclectik_team contacts; writes with_contact_id.',
+      'tasks-view.jsx: new sortable "With" column placed right after "For" (owner), resolving with_contact_id to the contact name.',
+      'Threaded withContactId through both task adapters (usePipelineData + adapters.js) for app-wide use.',
+    ],
+    files: [
+      'schema_tasks_with_member.sql',
+      'src/bd/task-detail-modal.jsx',
+      'src/bd/tasks-view.jsx',
+      'src/hooks/usePipelineData.js',
+      'src/bd/adapters.js',
+      'src/bd/changelog.js', 'VERSION', 'package.json',
+    ],
+    gitTag: 'v1.8.0',
+  },
   {
     version: '1.7.0',
     date: '2026-06-04T18:07:19Z',

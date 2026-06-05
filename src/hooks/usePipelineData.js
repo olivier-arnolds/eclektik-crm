@@ -145,6 +145,7 @@ function adaptTask(row) {
     overdue: isOverdue,
     done: row.status === 'done',
     rawOwner: row.owner || '',  // direct task-level owner, used by BD adapter
+    withContactId: row.with_contact_id || null,  // "With" — Eclectik member on the task
   }
 }
 

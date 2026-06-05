@@ -11,12 +11,33 @@ export default function TaskDetailModal({ taskId, accounts, onClose, refetch }) 
   const [accQuery, setAccQuery] = useState('');
   const [showAccPicker, setShowAccPicker] = useState(false);
 
+  const [team, setTeam] = useState([]);
+
   useEffect(() => {
     if (!taskId) return;
     setLoading(true);
     supabase.from('tasks').select('*').eq('id', taskId).single()
       .then(({ data }) => { setRow(data); setLoading(false); });
   }, [taskId]);
+
+  // Eclectik team roster for the "With" picker: distinct contacts linked to any
+  // account as link_type='eclectik_team'.
+  useEffect(() => {
+    supabase.from('account_links')
+      .select('contact_id, contacts:contact_id(id, full_name, first_name, last_name)')
+      .eq('link_type', 'eclectik_team')
+      .then(({ data }) => {
+        const seen = new Map();
+        (data || []).forEach(l => {
+          const c = l.contacts;
+          if (c && !seen.has(c.id)) {
+            const name = `${c.first_name || ''} ${c.last_name || ''}`.trim() || c.full_name || '(no name)';
+            seen.set(c.id, { id: c.id, name });
+          }
+        });
+        setTeam([...seen.values()].sort((a, b) => a.name.localeCompare(b.name)));
+      });
+  }, []);
 
   const update = async (patch) => {
     setSaving(true);
@@ -109,6 +130,21 @@ export default function TaskDetailModal({ taskId, accounts, onClose, refetch }) 
                   <option value="High">High</option>
                 </select>
               </div>
+            </div>
+
+            {/* With — an Eclectik team member joining this task */}
+            <div>
+              <div style={fieldLabel}>With (Eclectik)</div>
+              <select value={row.with_contact_id || ''}
+                onChange={e => update({ with_contact_id: e.target.value || null })}
+                style={fieldInput}>
+                <option value="">—</option>
+                {team.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                {/* keep the current value selectable even if not in the roster */}
+                {row.with_contact_id && !team.some(m => m.id === row.with_contact_id) && (
+                  <option value={row.with_contact_id}>(linked member)</option>
+                )}
+              </select>
             </div>
 
             {/* Account link */}
