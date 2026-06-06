@@ -27,7 +27,7 @@ import LogView from './log-view';
 import FeedbackModal from './feedback-modal';
 
 // The single set of left-pane views. The Account 360 always sits to the right.
-const NAV_VIEWS = ['funnel', 'warroom', 'tasks', 'reporting', 'meetings', 'comms', 'marketing', 'playbooks', 'admin', 'log'];
+const NAV_VIEWS = ['reporting', 'funnel', 'warroom', 'tasks', 'meetings', 'comms', 'marketing', 'playbooks', 'admin', 'log'];
 // Views whose left pane scrolls as one block (vs. lanes that manage their own scroll).
 const SCROLL_VIEWS = ['warroom', 'reporting', 'marketing', 'admin', 'log'];
 

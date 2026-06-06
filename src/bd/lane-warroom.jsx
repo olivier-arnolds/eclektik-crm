@@ -79,33 +79,43 @@ function InsightsMatrix({ accounts = [], pscByAccount = {}, onPickAccount }) {
   const { clients = [], sections = [], quarters = [], cells = {} } = data || {};
   if (!clients.length) return <div style={{ fontSize: 12, color: 'var(--text-3)' }}>No insights data.</div>;
 
+  // CRM customers not yet in People Science → appended under Pre-IR / pre-contract.
+  const ADECCO = 'Adecco Group';
+  const isCustomer = (a) => (a.type || '') === 'Customer' && a.name !== ADECCO;
+  const psAccountIds = new Set();
+  clients.forEach(c => { const a = matchAccount(c.name); if (a) psAccountIds.add(a.id); });
+  const extraRows = (accounts || [])
+    .filter(a => isCustomer(a) && !psAccountIds.has(a.id))
+    .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+    .map(a => ({ id: 'crm:' + a.id, name: a.name, isSub: false, cohort: 'pre', crmAccount: a, crmOnly: true }));
+  const allRows = [...clients, ...extraRows];
+
   const th2 = { fontWeight: 500, fontSize: 10.5, color: 'var(--text-3)', padding: '4px 8px', borderBottom: '0.5px solid var(--sep)', whiteSpace: 'nowrap' };
   const td2 = { padding: '6px 8px', borderBottom: '0.5px solid var(--sep)', fontSize: 12 };
   const dot = (c) => <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: c === 'green' ? '#1D9E75' : '#E24B4A' }} />;
-  const sectionList = sections.length ? sections : [{ key: null, label: '', count: clients.length }];
+  const baseSections = sections.length ? sections : [{ key: null, label: '', count: clients.length }];
+  const sectionList = baseSections.map(s => s.key === 'pre' ? { ...s, count: s.count + extraRows.length } : s);
 
   // People scientist for a client = the PSC member on the matched account's 360.
-  const psFor = (name) => {
-    const acc = matchAccount(name);
-    return acc ? (pscByAccount[acc.id] || '') : '';
-  };
+  const accountFor = (c) => c.crmAccount || matchAccount(c.name);
+  const psFor = (c) => { const a = accountFor(c); return a ? (pscByAccount[a.id] || '') : ''; };
   const sortRows = (list) => {
     if (sortKey === 'client') return [...list].sort((a, b) => a.name.localeCompare(b.name));
-    if (sortKey === 'ps') return [...list].sort((a, b) => (psFor(a.name) || '~').localeCompare(psFor(b.name) || '~'));
+    if (sortKey === 'ps') return [...list].sort((a, b) => (psFor(a) || '~').localeCompare(psFor(b) || '~'));
     return list; // section/display order
   };
   const sortMark = (k) => sortKey === k ? ' ↓' : '';
 
   const clientRow = (c) => {
-    const acc = matchAccount(c.name);
+    const acc = accountFor(c);
     return (
       <tr key={c.id}>
         <td style={{ ...td2, paddingLeft: c.isSub ? 22 : 8, fontWeight: c.isSub ? 400 : 500, position: 'sticky', left: 0, background: 'var(--bg-1)', whiteSpace: 'nowrap', color: acc && onPickAccount ? 'var(--accent)' : 'inherit', cursor: acc && onPickAccount ? 'pointer' : 'default' }}
           onClick={() => acc && onPickAccount && onPickAccount(acc)}
           title={acc ? `Open ${acc.name} (360)` : undefined}>
-          {c.name}
+          {c.name}{c.crmOnly && <span style={{ color: 'var(--text-3)', fontWeight: 400 }}> · CRM</span>}
         </td>
-        <td style={{ ...td2, whiteSpace: 'nowrap', color: 'var(--text-2)' }}>{psFor(c.name) || <span style={{ color: 'var(--text-3)' }}>—</span>}</td>
+        <td style={{ ...td2, whiteSpace: 'nowrap', color: 'var(--text-2)' }}>{psFor(c) || <span style={{ color: 'var(--text-3)' }}>—</span>}</td>
         {quarters.map(q => (
           <td key={q} style={{ ...td2, textAlign: 'center' }}>
             {cells[c.id]?.[q] ? dot(cells[c.id][q]) : <span style={{ color: 'var(--text-3)' }}>·</span>}
@@ -140,7 +150,7 @@ function InsightsMatrix({ accounts = [], pscByAccount = {}, onPickAccount }) {
                     </td>
                   </tr>
                 )}
-                {sortRows(clients.filter(c => s.key == null || c.cohort === s.key)).map(clientRow)}
+                {sortRows(allRows.filter(c => s.key == null || c.cohort === s.key)).map(clientRow)}
               </Fragment>
             ))}
           </tbody>

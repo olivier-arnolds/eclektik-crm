@@ -19,9 +19,28 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.13.2';
+export const CURRENT_VERSION = '1.13.3';
 
 export const CHANGELOG = [
+  {
+    version: '1.13.3',
+    date: '2026-06-06T18:45:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feature',
+    title: 'Insights: CRM customers not yet in People Science + Reporting tab first',
+    summary:
+      'Insights review now appends CRM customers (type Customer, Adecco excluded) ' +
+      'that are not yet in the People Science database under the "Pre-IR / ' +
+      'pre-contract" section, marked "· CRM" with no analysis dots and clickable ' +
+      'to their 360 — so the gap between served clients and analysed clients is ' +
+      'visible. Also moved the Reporting tab to first (before Funnel).',
+    changes: [
+      'lane-warroom.jsx InsightsMatrix: append CRM customers missing from People Science to the Pre-IR cohort (count includes them); "· CRM" tag; 360 click + PS column still resolve.',
+      'topbar.jsx + BDApp.jsx: Reporting moved to the first tab.',
+    ],
+    files: ['src/bd/lane-warroom.jsx', 'src/bd/topbar.jsx', 'src/bd/BDApp.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.13.3',
+  },
   {
     version: '1.13.2',
     date: '2026-06-06T18:00:00Z',

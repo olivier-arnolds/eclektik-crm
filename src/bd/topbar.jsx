@@ -24,6 +24,12 @@ export default function Topbar({ theme, setTheme, view, setView, layout, setLayo
       <div className="topbar-sep" />
 
       <div className="topbar-nav">
+        <button className={view === 'reporting' ? 'on' : ''}
+          onClick={() => setView('reporting')} title="Reporting — revenue & pipeline">
+          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.4">
+            <path d="M2 14h12M4 14V8M8 14V4M12 14v-7" strokeLinecap="round" />
+          </svg> Reporting
+        </button>
         <button className={view === 'funnel' ? 'on' : ''}
           onClick={() => setView('funnel')} title="Funnel — deal pipeline">
           <I.funnel /> Funnel
@@ -37,12 +43,6 @@ export default function Topbar({ theme, setTheme, view, setView, layout, setLayo
         </button>
         <button className={view === 'tasks' ? 'on' : ''} onClick={() => setView('tasks')} title="All open tasks">
           <I.check /> Tasks
-        </button>
-        <button className={view === 'reporting' ? 'on' : ''}
-          onClick={() => setView('reporting')} title="Reporting — revenue & pipeline">
-          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.4">
-            <path d="M2 14h12M4 14V8M8 14V4M12 14v-7" strokeLinecap="round" />
-          </svg> Reporting
         </button>
         <button className={view === 'meetings' ? 'on' : ''}
           onClick={() => setView('meetings')} title="Meetings — calendar & agenda">
