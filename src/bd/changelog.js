@@ -19,9 +19,28 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.12.1';
+export const CURRENT_VERSION = '1.13.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.13.0',
+    date: '2026-06-06T16:45:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feature',
+    title: 'Insights review: meta-page cohorts + click client → 360',
+    summary:
+      'Matched the Insights-review matrix to the People Science meta page: clients ' +
+      'are grouped under the same section headers — "Deeply analysed — IR read ' +
+      'end-to-end (15)" and "Pre-IR / pre-contract — predictive framing (6)" — in ' +
+      'the same order/names (cohort from client status; the meta pseudo-client is ' +
+      'excluded). Clicking a client name opens that account\'s 360 on the right.',
+    changes: [
+      'api/insights-review.js: returns cohort sections (active/closed = deep, pre-ir/pre-contract = pre) with counts; excludes the meta pseudo-client.',
+      'lane-warroom.jsx InsightsMatrix: renders section headers + counts; client name matched to the CRM account and clickable → opens Account 360.',
+    ],
+    files: ['api/insights-review.js', 'src/bd/lane-warroom.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.13.0',
+  },
   {
     version: '1.12.1',
     date: '2026-06-06T16:00:00Z',

@@ -35,7 +35,7 @@ export default async function handler(req, res) {
     }
     const ps = createClient(url, key);
     const [{ data: clients, error: e1 }, { data: cycles, error: e2 }, { data: analyses, error: e3 }] = await Promise.all([
-      ps.from('clients').select('id, name, slug, parent_slug, display_order'),
+      ps.from('clients').select('id, name, slug, parent_slug, display_order, status, meta'),
       ps.from('cycles').select('id, client_id, label, survey_date'),
       ps.from('analyses').select('cycle_id'),
     ]);
@@ -43,14 +43,33 @@ export default async function handler(req, res) {
 
     const analysedCycle = new Set((analyses || []).map(a => a.cycle_id));
 
-    // Rows = clients ordered by display_order, with sub-clients (parent_slug) kept
-    // directly under their parent.
-    const bySlug = new Map((clients || []).map(c => [c.slug, c]));
-    const rows = [...(clients || [])].sort((a, b) => {
-      const ra = a.parent_slug ? `${(bySlug.get(a.parent_slug)?.display_order ?? 999)}.${a.display_order}` : `${a.display_order}.0`;
-      const rb = b.parent_slug ? `${(bySlug.get(b.parent_slug)?.display_order ?? 999)}.${b.display_order}` : `${b.display_order}.0`;
-      return parseFloat(ra) - parseFloat(rb);
-    }).map(c => ({ id: c.id, name: c.name, isSub: !!c.parent_slug }));
+    // Cohorts mirror the People Science meta page: active/closed = deeply
+    // analysed, pre-ir/pre-contract = predictive framing. Exclude the
+    // "meta-analysis" pseudo-client. Children inherit their parent's cohort.
+    const real = (clients || []).filter(c => c.slug !== 'meta' && c?.meta?.kind !== 'meta');
+    const bySlug = new Map(real.map(c => [c.slug, c]));
+    const parentSlugs = new Set(real.filter(c => c.parent_slug).map(c => c.parent_slug));
+    const cohortOf = (c) => {
+      const base = c.parent_slug ? (bySlug.get(c.parent_slug) || c) : c;
+      return ['pre-ir', 'pre-contract'].includes(base.status) ? 'pre' : 'deep';
+    };
+    const orderKey = (c) => c.parent_slug
+      ? (bySlug.get(c.parent_slug)?.display_order ?? 999) + c.display_order / 1000
+      : c.display_order;
+
+    const SECTIONS = [
+      { key: 'deep', label: 'Deeply analysed — IR read end-to-end' },
+      { key: 'pre', label: 'Pre-IR / pre-contract — predictive framing' },
+    ];
+    const rows = [];
+    SECTIONS.forEach(s => {
+      real.filter(c => cohortOf(c) === s.key).sort((a, b) => orderKey(a) - orderKey(b))
+        .forEach(c => rows.push({ id: c.id, name: c.name, isSub: !!c.parent_slug, cohort: s.key }));
+    });
+    const sections = SECTIONS.map(s => ({
+      key: s.key, label: s.label,
+      count: real.filter(c => cohortOf(c) === s.key && !parentSlugs.has(c.slug)).length,
+    }));
 
     // Cells: per client, per quarter → 'green' (any analysed cycle) | 'red' (cycle, none analysed).
     const quarters = new Set();
@@ -72,7 +91,7 @@ export default async function handler(req, res) {
       return ya - yb || qa - qb;
     });
 
-    return res.status(200).json({ clients: rows, quarters: quarterList, cells });
+    return res.status(200).json({ clients: rows, sections, quarters: quarterList, cells });
   } catch (err) {
     console.error('insights-review error:', err);
     return res.status(502).json({ error: 'Failed to read People Science data: ' + (err?.message || String(err)) });

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, Fragment } from 'react';
 import { supabase } from '../supabase';
 import { fmtRelative, fmtMoney } from './atoms';
 
@@ -42,7 +42,9 @@ function PersonCell({ name, hours, used }) {
 
 // Insights-review matrix: clients × quarters, green = an analysis is on record
 // (from the People Science meta), red = a survey cycle exists but no analysis yet.
-function InsightsMatrix() {
+const normName = (s) => (s || '').toLowerCase().replace(/↳/g, '').replace(/\(.*?\)/g, '').replace(/[^a-z0-9]/g, '');
+
+function InsightsMatrix({ accounts = [], onPickAccount }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -53,14 +55,44 @@ function InsightsMatrix() {
       .finally(() => setLoading(false));
   }, []);
 
+  // Match a People Science client name to a CRM account (names differ a bit).
+  const accNorm = useMemo(() => accounts.map(a => ({ a, n: normName(a.name) })), [accounts]);
+  const matchAccount = useCallback((clientName) => {
+    const n = normName(clientName);
+    if (!n) return null;
+    let hit = accNorm.find(x => x.n === n)
+      || accNorm.find(x => x.n.length >= 3 && (x.n.includes(n) || n.includes(x.n)))
+      || accNorm.find(x => x.n.slice(0, 4) === n.slice(0, 4) && n.length >= 4);
+    return hit ? hit.a : null;
+  }, [accNorm]);
+
   if (loading) return <div style={{ fontSize: 12, color: 'var(--text-3)' }}>Loading…</div>;
   if (error) return <div style={{ fontSize: 12, color: 'var(--warn)' }}>{error}</div>;
-  const { clients = [], quarters = [], cells = {} } = data || {};
+  const { clients = [], sections = [], quarters = [], cells = {} } = data || {};
   if (!clients.length) return <div style={{ fontSize: 12, color: 'var(--text-3)' }}>No insights data.</div>;
 
   const th2 = { fontWeight: 500, fontSize: 10.5, color: 'var(--text-3)', padding: '4px 8px', borderBottom: '0.5px solid var(--sep)', whiteSpace: 'nowrap' };
   const td2 = { padding: '6px 8px', borderBottom: '0.5px solid var(--sep)', fontSize: 12 };
   const dot = (c) => <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: c === 'green' ? '#1D9E75' : '#E24B4A' }} />;
+  const sectionList = sections.length ? sections : [{ key: null, label: '', count: clients.length }];
+
+  const clientRow = (c) => {
+    const acc = matchAccount(c.name);
+    return (
+      <tr key={c.id}>
+        <td style={{ ...td2, paddingLeft: c.isSub ? 22 : 8, fontWeight: c.isSub ? 400 : 500, position: 'sticky', left: 0, background: 'var(--bg-1)', whiteSpace: 'nowrap', color: acc && onPickAccount ? 'var(--accent)' : 'inherit', cursor: acc && onPickAccount ? 'pointer' : 'default' }}
+          onClick={() => acc && onPickAccount && onPickAccount(acc)}
+          title={acc ? `Open ${acc.name} (360)` : undefined}>
+          {c.name}
+        </td>
+        {quarters.map(q => (
+          <td key={q} style={{ ...td2, textAlign: 'center' }}>
+            {cells[c.id]?.[q] ? dot(cells[c.id][q]) : <span style={{ color: 'var(--text-3)' }}>·</span>}
+          </td>
+        ))}
+      </tr>
+    );
+  };
 
   return (
     <div>
@@ -75,15 +107,17 @@ function InsightsMatrix() {
             {quarters.map(q => <th key={q} style={{ ...th2, textAlign: 'center' }}>{q}</th>)}
           </tr></thead>
           <tbody>
-            {clients.map(c => (
-              <tr key={c.id}>
-                <td style={{ ...td2, paddingLeft: c.isSub ? 22 : 8, fontWeight: c.isSub ? 400 : 500, position: 'sticky', left: 0, background: 'var(--bg-1)', whiteSpace: 'nowrap' }}>{c.name}</td>
-                {quarters.map(q => (
-                  <td key={q} style={{ ...td2, textAlign: 'center' }}>
-                    {cells[c.id]?.[q] ? dot(cells[c.id][q]) : <span style={{ color: 'var(--text-3)' }}>·</span>}
-                  </td>
-                ))}
-              </tr>
+            {sectionList.map(s => (
+              <Fragment key={s.key || 'all'}>
+                {s.label && (
+                  <tr>
+                    <td colSpan={quarters.length + 1} style={{ padding: '10px 8px 4px', fontSize: 11, fontWeight: 500, color: 'var(--text-2)', textTransform: 'none', position: 'sticky', left: 0, background: 'var(--bg-1)' }}>
+                      {s.label} <span style={{ color: 'var(--text-3)' }}>({s.count})</span>
+                    </td>
+                  </tr>
+                )}
+                {clients.filter(c => s.key == null || c.cohort === s.key).map(clientRow)}
+              </Fragment>
             ))}
           </tbody>
         </table>
@@ -198,7 +232,7 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount }
         )}
       </div>
 
-      {tab === 'insights' && <InsightsMatrix />}
+      {tab === 'insights' && <InsightsMatrix accounts={accounts} onPickAccount={onPickAccount} />}
 
       {tab === 'projects' && missing.length > 0 && (
         <div style={{ marginBottom: 14, border: '0.5px solid var(--warn)', background: 'var(--warn-tint)', borderRadius: 8, padding: '9px 12px' }}>
