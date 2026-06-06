@@ -140,7 +140,6 @@ function InsightsMatrix({ accounts = [], pscByAccount = {}, operationalAccIds = 
   // gap between cycles: default annual (4q), semi-annual (2q) only if cycles are
   // consistently ~2 apart. A single cycle still forecasts next year, same season.
   const predictFor = (c) => {
-    if (c.cohort === 'closed') return new Set(); // churned — don't forecast
     const acc = accountFor(c);
     const cm = cells[c.id] || {};
     const evts = new Set();
@@ -160,10 +159,16 @@ function InsightsMatrix({ accounts = [], pscByAccount = {}, operationalAccIds = 
       const g = gaps.length % 2 ? gaps[mid] : (gaps[mid - 1] + gaps[mid]) / 2;
       cadence = g <= 2.5 ? 2 : 4; // snap to semi-annual or annual
     }
+    // Surveys recur in the same SEASON each year. Lock onto the client's dominant
+    // survey quarter (mode of past cycles) and predict that season annually — twice
+    // a year if the cadence is semi-annual.
+    const seasonCount = {};
+    cycles.forEach(k => { const s = ((k - 1) % 4) + 1; seasonCount[s] = (seasonCount[s] || 0) + 1; });
+    let season = ((cycles[cycles.length - 1] - 1) % 4) + 1, best = -1;
+    for (const s in seasonCount) if (seasonCount[s] > best) { best = seasonCount[s]; season = +s; }
+    const seasons = cadence === 2 ? new Set([season, ((season + 1) % 4) + 1]) : new Set([season]);
     const out = new Set();
-    const maxK = horizonStart + 3;
-    let next = cycles[cycles.length - 1] + cadence, guard = 0;
-    while (next <= maxK && guard++ < 16) { if (next >= horizonStart) out.add(next); next += cadence; }
+    for (let k = horizonStart; k <= horizonStart + 3; k++) if (seasons.has(((k - 1) % 4) + 1)) out.add(k);
     return out;
   };
   const diamond = <span title="Predicted next activity (deal or PSC readout) — based on past cadence" style={{ display: 'inline-block', width: 8, height: 8, background: BLUE, transform: 'rotate(45deg)' }} />;

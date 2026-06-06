@@ -19,9 +19,43 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.18.1';
+export const CURRENT_VERSION = '1.18.3';
 
 export const CHANGELOG = [
+  {
+    version: '1.18.3',
+    date: '2026-06-06T13:40:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'improve',
+    title: 'Insights review forecast: season-aware (same quarter each year)',
+    summary:
+      'The forecast now locks onto the client\'s dominant survey season (the most common ' +
+      'quarter-of-year across their past cycles) and predicts that same quarter annually — ' +
+      'twice a year when the cadence is semi-annual — instead of stepping blindly from the ' +
+      'last event, which could land a quarter off.',
+    changes: [
+      'predictFor(): compute the modal survey quarter (Q1–Q4) from past cycles and forecast that season each year within the 4-quarter horizon.',
+      'Semi-annual clients get both seasons (the modal quarter and the one two quarters away).',
+    ],
+    note: 'Still a heuristic — assumes the client keeps surveying on their established annual beat.',
+    files: ['src/bd/lane-warroom.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.18.3',
+  },
+  {
+    version: '1.18.2',
+    date: '2026-06-06T13:20:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'improve',
+    title: 'Insights review forecast: include CLOSED clients',
+    summary:
+      'Forecast diamonds are now shown for churned (CLOSED cohort) clients too — useful as ' +
+      're-engagement / win-back prompts for when their next survey cycle would normally land.',
+    changes: [
+      'predictFor(): removed the CLOSED-cohort skip so closed clients also get cadence-based forecast diamonds.',
+    ],
+    files: ['src/bd/lane-warroom.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.18.2',
+  },
   {
     version: '1.18.1',
     date: '2026-06-06T13:00:00Z',
