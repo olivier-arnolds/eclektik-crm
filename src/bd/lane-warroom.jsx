@@ -113,11 +113,14 @@ function InsightsMatrix({ accounts = [], pscByAccount = {}, operationalAccIds = 
   const accountFor = (c) => c.crmAccount || matchAccount(c.name);
   const psFor = (c) => { const a = accountFor(c); return a ? (pscByAccount[a.id] || '') : ''; };
 
-  // Columns = PS survey quarters ∪ any quarter a deal was signed (so the ★ has a column).
+  // Columns = PS survey quarters ∪ any quarter a deal was signed (so the ❊ has a
+  // column), starting at 2024-Q4 (older baseline quarters are hidden).
+  const qkey = (q) => { const [y, n] = q.split('-Q').map(Number); return y * 4 + n; };
+  const MIN_Q = 2024 * 4 + 4; // 2024-Q4
   const allQuarters = (() => {
     const s = new Set(quarters);
     allRows.forEach(c => { const a = accountFor(c); if (a && signedByAccount[a.id]) signedByAccount[a.id].forEach(q => s.add(q)); });
-    return [...s].sort((a, b) => { const [ya, qa] = a.split('-Q').map(Number); const [yb, qb] = b.split('-Q').map(Number); return ya - yb || qa - qb; });
+    return [...s].filter(q => qkey(q) >= MIN_Q).sort((a, b) => qkey(a) - qkey(b));
   })();
   const sortRows = (list) => {
     if (sortKey === 'client') return [...list].sort((a, b) => a.name.localeCompare(b.name));

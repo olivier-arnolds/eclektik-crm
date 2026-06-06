@@ -19,9 +19,25 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.17.0';
+export const CURRENT_VERSION = '1.17.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.17.1',
+    date: '2026-06-07T08:00:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'refactor',
+    title: 'Insights review: matrix starts at 2024-Q4',
+    summary:
+      'The Insights review matrix now starts its quarter columns at 2024-Q4 — the ' +
+      'old 2022/2023 baseline quarters are hidden to keep it readable. Data is ' +
+      'unchanged; just the visible column range.',
+    changes: [
+      'lane-warroom.jsx: filter matrix quarter columns to 2024-Q4 onward.',
+    ],
+    files: ['src/bd/lane-warroom.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.17.1',
+  },
   {
     version: '1.17.0',
     date: '2026-06-06T23:40:00Z',
