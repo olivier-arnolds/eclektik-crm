@@ -19,9 +19,25 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.14.1';
+export const CURRENT_VERSION = '1.14.2';
 
 export const CHANGELOG = [
+  {
+    version: '1.14.2',
+    date: '2026-06-06T20:20:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'refactor',
+    title: 'Meetings: green dot instead of 📝 for stored notes/transcript',
+    summary:
+      'In the Account 360 Meetings list, a meeting that has a note/transcript ' +
+      'stored now shows a small green dot instead of the 📝 emoji (count kept ' +
+      'when more than one).',
+    changes: [
+      'lane-accounts.jsx: replaced the 📝 meeting-note indicator with a green dot.',
+    ],
+    files: ['src/bd/lane-accounts.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.14.2',
+  },
   {
     version: '1.14.1',
     date: '2026-06-06T20:00:00Z',

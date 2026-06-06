@@ -1205,9 +1205,10 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
                           </span>
                         )}
                         {noteCount > 0 && (
-                          <span title={`${noteCount} note${noteCount !== 1 ? 's' : ''}`}
-                            style={{ fontSize: 10, color: 'var(--accent)', fontFamily: 'var(--font-mono)', display: 'inline-flex', alignItems: 'center', gap: 2 }}>
-                            📝{noteCount > 1 ? noteCount : ''}
+                          <span title={`${noteCount} note${noteCount !== 1 ? 's' : ''} / transcript stored`}
+                            style={{ fontSize: 10, color: 'var(--text-3)', fontFamily: 'var(--font-mono)', display: 'inline-flex', alignItems: 'center', gap: 3 }}>
+                            <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#1D9E75' }} />
+                            {noteCount > 1 ? noteCount : ''}
                           </span>
                         )}
                         <span className="acc-comm-ts">{e.startISO ? new Date(e.startISO).toLocaleDateString('en', { day: 'numeric', month: 'short' }) : ''}</span>
