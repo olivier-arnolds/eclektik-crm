@@ -19,9 +19,27 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.11.1';
+export const CURRENT_VERSION = '1.11.2';
 
 export const CHANGELOG = [
+  {
+    version: '1.11.2',
+    date: '2026-06-06T13:00:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'refactor',
+    title: 'Status bar: show date + world clock (moved from meetings page)',
+    summary:
+      'Replaced the "unread / open / pipeline value" stats in the bottom status ' +
+      'bar (shown on every page) with the current date and the time-zone world ' +
+      'clock (Los Angeles → Sydney). The clock was removed from the meetings page ' +
+      'since it now lives globally in the status bar.',
+    changes: [
+      'statusbar.jsx: now renders "Eclectik BD · <user> · <date>" + the 8-city live world clock (updates every 30s).',
+      'lane-calendar.jsx: removed the TimezoneFooter (and getOffset) — relocated to the status bar.',
+    ],
+    files: ['src/bd/statusbar.jsx', 'src/bd/lane-calendar.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.11.2',
+  },
   {
     version: '1.11.1',
     date: '2026-06-06T12:00:00Z',

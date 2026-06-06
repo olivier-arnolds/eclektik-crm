@@ -366,8 +366,6 @@ export default function CalendarLane({ events: dbEvents, tasks: dbTasks, deals, 
         </div>
       </div>
 
-      <TimezoneFooter />
-
       {showNewMeeting && (
         <NewMeetingModal
           dayDate={new Date()}
@@ -534,66 +532,4 @@ function AddTaskModal({ day, dayDate, accounts, deals, onClose, onCreated }) {
   );
 }
 
-function TimezoneFooter() {
-  const [now, setNow] = useState(new Date());
-  useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 30_000);
-    return () => clearInterval(t);
-  }, []);
-
-  const zones = [
-    { label: 'Los Angeles', tz: 'America/Los_Angeles' },
-    { label: 'Chicago', tz: 'America/Chicago' },
-    { label: 'New York', tz: 'America/New_York' },
-    { label: 'London', tz: 'Europe/London' },
-    { label: 'Amsterdam', tz: 'Europe/Amsterdam', home: true },
-    { label: 'Dubai', tz: 'Asia/Dubai' },
-    { label: 'Singapore', tz: 'Asia/Singapore' },
-    { label: 'Sydney', tz: 'Australia/Sydney' },
-  ];
-
-  const fmt = (tz) => new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: tz, hour12: false }).format(now);
-  const offsetLabel = (tz) => {
-    const ref = getOffset('Europe/Amsterdam', now);
-    const here = getOffset(tz, now);
-    const diff = Math.round((here - ref) / 30) / 2;
-    if (diff === 0) return '±0';
-    const sign = diff > 0 ? '+' : '-';
-    const abs = Math.abs(diff);
-    const h = Math.floor(abs);
-    const m = Math.round((abs - h) * 60);
-    return `${sign}${h}${m ? ':' + String(m).padStart(2, '0') : ''}h`;
-  };
-  const isDay = (tz) => {
-    const h = parseInt(new Intl.DateTimeFormat('en-GB', { hour: '2-digit', timeZone: tz, hour12: false }).format(now), 10);
-    return h >= 7 && h < 19;
-  };
-
-  return (
-    <div className="tz-footer">
-      <div className="tz-label"><I.globe /><span>Time zones</span></div>
-      <div className="tz-strip">
-        {zones.map(z => (
-          <div key={z.label} className={`tz-cell ${z.home ? 'tz-cell-home' : ''}`}>
-            <span className={`tz-dot ${isDay(z.tz) ? 'tz-dot-day' : 'tz-dot-night'}`} />
-            <div className="tz-cell-inner">
-              <div className="tz-time">{fmt(z.tz)}</div>
-              <div className="tz-name">{z.label}</div>
-            </div>
-            <div className="tz-offset">{offsetLabel(z.tz)}</div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function getOffset(tz, date) {
-  const dtf = new Intl.DateTimeFormat('en-US', {
-    timeZone: tz, hour12: false,
-    year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit'
-  });
-  const parts = dtf.formatToParts(date).reduce((o, p) => { if (p.type !== 'literal') o[p.type] = parseInt(p.value, 10); return o; }, {});
-  const asUTC = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second);
-  return (asUTC - date.getTime()) / 60000;
-}
+// (Time-zone world clock moved to the global status bar — see statusbar.jsx)
