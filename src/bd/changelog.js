@@ -19,9 +19,25 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.16.0';
+export const CURRENT_VERSION = '1.16.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.16.1',
+    date: '2026-06-06T22:20:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feature',
+    title: 'Reporting: YoY row under the All-clients subtotal',
+    summary:
+      'Added a year-over-year row beneath the "All clients" subtotal in the All ' +
+      'clients · US & EMEA table — each quarter vs the same quarter last year ' +
+      '(green ▲ / red ▼ %), matching the Won-revenue-by-quarter chart.',
+    changes: [
+      'lane-reporting.jsx: YoY % row under the grand-total row in the clients table (from colTotals).',
+    ],
+    files: ['src/bd/lane-reporting.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.16.1',
+  },
   {
     version: '1.16.0',
     date: '2026-06-06T22:00:00Z',

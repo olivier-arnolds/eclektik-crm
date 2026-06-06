@@ -601,6 +601,19 @@ function ClientsTable({ m, onPick }) {
             {quarters.map((q) => <td key={q} style={{ padding: '7px 6px', textAlign: 'right', fontWeight: 500, ...mono }}>{m.colTotals[q] > 0 ? eur(m.colTotals[q]) : '·'}</td>)}
             <td style={{ padding: '7px 6px', textAlign: 'right', fontWeight: 500, ...mono }}>{eur(grand.total)}</td><td />
           </tr>
+          <tr>
+            <td style={{ padding: '4px 6px', ...muted, fontSize: 10 }} colSpan={2}>YoY vs same quarter last year</td>
+            {quarters.map((q) => {
+              const [yy, nn] = q.split('-Q');
+              const prev = m.colTotals[`${+yy - 1}-Q${nn}`];
+              if (prev == null || prev <= 0) return <td key={q} style={{ padding: '4px 6px', textAlign: 'right', ...muted }}>·</td>;
+              const cur = m.colTotals[q] || 0;
+              const up = cur >= prev;
+              const pct = Math.abs(Math.round(((cur - prev) / prev) * 100));
+              return <td key={q} style={{ padding: '4px 6px', textAlign: 'right', fontWeight: 500, fontSize: 10, color: up ? 'var(--good)' : '#E24B4A' }}>{up ? '▲' : '▼'}{pct}%</td>;
+            })}
+            <td /><td />
+          </tr>
         </tbody>
       </table>
       <div style={{ fontSize: 11, ...muted, marginTop: 10, lineHeight: 1.6 }}>
