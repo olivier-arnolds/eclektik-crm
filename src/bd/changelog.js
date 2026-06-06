@@ -19,9 +19,26 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.16.3';
+export const CURRENT_VERSION = '1.17.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.17.0',
+    date: '2026-06-06T23:40:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feature',
+    title: 'Insights review: ★ marks the quarter a deal was signed',
+    summary:
+      'The Insights review matrix now shows a gold ★ in the quarter a deal was ' +
+      'signed (from the CRM funnel, by close date) — alongside the analysis dots. ' +
+      'Quarter columns are extended to include any quarter a deal was signed, even ' +
+      'if there was no survey that quarter, so the star always has a column.',
+    changes: [
+      'lane-warroom.jsx: signedByAccount map (won opps → signed quarters per account); ★ rendered per client × quarter; columns = PS quarters ∪ signed quarters; legend updated.',
+    ],
+    files: ['src/bd/lane-warroom.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.17.0',
+  },
   {
     version: '1.16.3',
     date: '2026-06-06T23:00:00Z',

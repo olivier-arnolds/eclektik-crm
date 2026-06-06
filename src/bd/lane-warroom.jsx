@@ -51,7 +51,7 @@ const normName = (s) => (s || '').toLowerCase().replace(/↳/g, '').replace(/[^a
 // Eclectik-team links (which carry no role field).
 const PSC_NAMES = new Set(['avneetasolanki', 'kirstythompsonclarke', 'pabloborgespatel', 'paulmastrangelo', 'katefeeney']);
 
-function InsightsMatrix({ accounts = [], pscByAccount = {}, operationalAccIds = new Set(), onPickAccount }) {
+function InsightsMatrix({ accounts = [], pscByAccount = {}, operationalAccIds = new Set(), signedByAccount = {}, onPickAccount }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -112,6 +112,13 @@ function InsightsMatrix({ accounts = [], pscByAccount = {}, operationalAccIds = 
   // People scientist for a client = the PSC member on the matched account's 360.
   const accountFor = (c) => c.crmAccount || matchAccount(c.name);
   const psFor = (c) => { const a = accountFor(c); return a ? (pscByAccount[a.id] || '') : ''; };
+
+  // Columns = PS survey quarters ∪ any quarter a deal was signed (so the ★ has a column).
+  const allQuarters = (() => {
+    const s = new Set(quarters);
+    allRows.forEach(c => { const a = accountFor(c); if (a && signedByAccount[a.id]) signedByAccount[a.id].forEach(q => s.add(q)); });
+    return [...s].sort((a, b) => { const [ya, qa] = a.split('-Q').map(Number); const [yb, qb] = b.split('-Q').map(Number); return ya - yb || qa - qb; });
+  })();
   const sortRows = (list) => {
     if (sortKey === 'client') return [...list].sort((a, b) => a.name.localeCompare(b.name));
     if (sortKey === 'ps') return [...list].sort((a, b) => (psFor(a) || '~').localeCompare(psFor(b) || '~'));
@@ -131,11 +138,16 @@ function InsightsMatrix({ accounts = [], pscByAccount = {}, operationalAccIds = 
           {c.name}{c.crmOnly && <span style={{ color: 'var(--text-3)', fontWeight: 400 }}> · CRM</span>}
         </td>
         <td style={{ ...td2, whiteSpace: 'nowrap', color: 'var(--text-2)' }}>{psFor(c) || <span style={{ color: 'var(--text-3)' }}>—</span>}</td>
-        {quarters.map(q => (
-          <td key={q} style={{ ...td2, textAlign: 'center' }}>
-            {cells[c.id]?.[q] ? dot(cells[c.id][q]) : <span style={{ color: 'var(--text-3)' }}>·</span>}
-          </td>
-        ))}
+        {allQuarters.map(q => {
+          const v = cells[c.id]?.[q];
+          const signed = acc && signedByAccount[acc.id]?.has(q);
+          return (
+            <td key={q} style={{ ...td2, textAlign: 'center', whiteSpace: 'nowrap' }}>
+              {v ? dot(v) : (!signed && <span style={{ color: 'var(--text-3)' }}>·</span>)}
+              {signed && <span title="Deal signed" style={{ color: '#E0A100', marginLeft: v ? 3 : 0 }}>★</span>}
+            </td>
+          );
+        })}
         <td style={{ ...td2, minWidth: 200 }}>
           {acc ? (
             <input value={noteByAcc[acc.id] ?? ''}
@@ -157,7 +169,7 @@ function InsightsMatrix({ accounts = [], pscByAccount = {}, operationalAccIds = 
   return (
     <div>
       <div style={{ fontSize: 11, color: 'var(--text-3)', margin: '0 0 8px' }}>
-        <span style={{ color: '#1D9E75' }}>●</span> analysis on record · <span style={{ color: '#E24B4A' }}>●</span> survey, no analysis yet ·
+        <span style={{ color: '#1D9E75' }}>●</span> analysis on record · <span style={{ color: '#E24B4A' }}>●</span> survey, no analysis yet · <span style={{ color: '#E0A100' }}>★</span> deal signed · <span style={{ color: '#EAB308' }}>●</span> operational ·
         source: <a href="https://peoplescience.eclectik-insights.co/meta" target="_blank" rel="noreferrer" style={{ color: 'var(--accent)' }}>People Science meta</a>
       </div>
       <div style={{ overflowX: 'auto' }}>
@@ -167,7 +179,7 @@ function InsightsMatrix({ accounts = [], pscByAccount = {}, operationalAccIds = 
               onClick={() => setSortKey(k => k === 'client' ? null : 'client')} title="Sort by client">Client{sortMark('client')}</th>
             <th style={{ ...th2, textAlign: 'left', cursor: 'pointer' }}
               onClick={() => setSortKey(k => k === 'ps' ? null : 'ps')} title="Sort by people scientist">People scientist{sortMark('ps')}</th>
-            {quarters.map(q => <th key={q} style={{ ...th2, textAlign: 'center' }}>{q}</th>)}
+            {allQuarters.map(q => <th key={q} style={{ ...th2, textAlign: 'center' }}>{q}</th>)}
             <th style={{ ...th2, textAlign: 'left' }}>Note</th>
           </tr></thead>
           <tbody>
@@ -175,7 +187,7 @@ function InsightsMatrix({ accounts = [], pscByAccount = {}, operationalAccIds = 
               <Fragment key={s.key || 'all'}>
                 {s.label && (
                   <tr>
-                    <td colSpan={quarters.length + 3} style={{ padding: '10px 8px 4px', fontSize: 11, fontWeight: 500, color: 'var(--text-2)', textTransform: 'none', position: 'sticky', left: 0, background: 'var(--bg-1)' }}>
+                    <td colSpan={allQuarters.length + 3} style={{ padding: '10px 8px 4px', fontSize: 11, fontWeight: 500, color: 'var(--text-2)', textTransform: 'none', position: 'sticky', left: 0, background: 'var(--bg-1)' }}>
                       {s.label} <span style={{ color: 'var(--text-3)' }}>({s.count})</span>
                     </td>
                   </tr>
@@ -222,6 +234,24 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount }
           if (PSC_NAMES.has(normName(name)) && !m[l.account_id]) m[l.account_id] = name;
         });
         setPscByAccount(m);
+      });
+  }, []);
+
+  // Quarters in which a deal was signed (won), per account — drives the ★ marker.
+  const [signedByAccount, setSignedByAccount] = useState({});
+  useEffect(() => {
+    supabase.from('opportunities').select('company_id, close_date, actual_close_date').eq('status', 'Won')
+      .then(({ data }) => {
+        const m = {};
+        (data || []).forEach(o => {
+          const d = o.actual_close_date || o.close_date;
+          if (!o.company_id || !d) return;
+          const dt = new Date(d);
+          if (isNaN(dt)) return;
+          const q = `${dt.getUTCFullYear()}-Q${Math.floor(dt.getUTCMonth() / 3) + 1}`;
+          (m[o.company_id] = m[o.company_id] || new Set()).add(q);
+        });
+        setSignedByAccount(m);
       });
   }, []);
 
@@ -325,7 +355,7 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount }
         )}
       </div>
 
-      {tab === 'insights' && <InsightsMatrix accounts={accounts} pscByAccount={pscByAccount} operationalAccIds={operationalAccIds} onPickAccount={onPickAccount} />}
+      {tab === 'insights' && <InsightsMatrix accounts={accounts} pscByAccount={pscByAccount} operationalAccIds={operationalAccIds} signedByAccount={signedByAccount} onPickAccount={onPickAccount} />}
 
       {tab === 'projects' && missing.length > 0 && (
         <div style={{ marginBottom: 14, border: '0.5px solid var(--warn)', background: 'var(--warn-tint)', borderRadius: 8, padding: '9px 12px' }}>
