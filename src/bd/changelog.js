@@ -19,9 +19,27 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.17.5';
+export const CURRENT_VERSION = '1.17.6';
 
 export const CHANGELOG = [
+  {
+    version: '1.17.6',
+    date: '2026-06-06T12:00:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feature',
+    title: 'Insights review: "Previous" column for pre-2024-Q4 history',
+    summary:
+      'Added a "Previous" column to the Insights review matrix that collapses all ' +
+      'PSC history from before 2024-Q4 into a single dot (plus deal-signed marker). ' +
+      'It only appears when at least one client actually has pre-2024-Q4 data.',
+    changes: [
+      'lane-warroom.jsx: new prevFor()/hasPrevious logic aggregates pre-2024-Q4 cells.',
+      'Renders a "Previous" column (header, section labels, per-client dot) left of the dated quarters, separated by a divider.',
+      'Green/red dot follows the same rule as quarter cells; ❊ shown if a deal was signed before 2024-Q4.',
+    ],
+    files: ['src/bd/lane-warroom.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.17.6',
+  },
   {
     version: '1.17.5',
     date: '2026-06-07T09:50:00Z',

@@ -109,6 +109,18 @@ function InsightsMatrix({ accounts = [], pscByAccount = {}, operationalAccIds = 
     allRows.forEach(c => { const a = accountFor(c); if (a && signedByAccount[a.id]) signedByAccount[a.id].forEach(q => s.add(q)); });
     return [...s].filter(q => qkey(q) >= MIN_Q).sort((a, b) => qkey(a) - qkey(b));
   })();
+
+  // "Previous" = everything before 2024-Q4, collapsed into one cell.
+  const prevFor = (c) => {
+    const cm = cells[c.id] || {};
+    let dotVal = null;
+    for (const q in cm) { if (qkey(q) < MIN_Q) { if (cm[q] === 'green') { dotVal = 'green'; break; } dotVal = dotVal || 'red'; } }
+    const a = accountFor(c);
+    const signed = a && signedByAccount[a.id] && [...signedByAccount[a.id]].some(q => qkey(q) < MIN_Q);
+    return { dotVal, signed };
+  };
+  const hasPrevious = allRows.some(c => { const p = prevFor(c); return p.dotVal || p.signed; });
+  const prevTh = { ...th2, textAlign: 'center', borderRight: '0.5px solid var(--sep)' };
   const sortRows = (list) => {
     if (sortKey === 'client') return [...list].sort((a, b) => a.name.localeCompare(b.name));
     if (sortKey === 'ps') return [...list].sort((a, b) => (psFor(a) || '~').localeCompare(psFor(b) || '~'));
@@ -128,6 +140,15 @@ function InsightsMatrix({ accounts = [], pscByAccount = {}, operationalAccIds = 
           {c.name}{c.crmOnly && <span style={{ color: 'var(--text-3)', fontWeight: 400 }}> · CRM</span>}
         </td>
         <td style={{ ...td2, whiteSpace: 'nowrap', color: 'var(--text-2)' }}>{psFor(c) || <span style={{ color: 'var(--text-3)' }}>—</span>}</td>
+        {hasPrevious && (() => {
+          const p = prevFor(c);
+          return (
+            <td style={{ ...td2, textAlign: 'center', whiteSpace: 'nowrap', borderRight: '0.5px solid var(--sep)' }}>
+              {p.dotVal ? dot(p.dotVal) : (!p.signed && <span style={{ color: 'var(--text-3)' }}>·</span>)}
+              {p.signed && <span title="Deal signed (before 2024-Q4)" style={{ color: 'var(--text-1)', marginLeft: p.dotVal ? 3 : 0 }}>❊</span>}
+            </td>
+          );
+        })()}
         {allQuarters.map(q => {
           const v = cells[c.id]?.[q];
           const signed = acc && signedByAccount[acc.id]?.has(q);
@@ -155,6 +176,7 @@ function InsightsMatrix({ accounts = [], pscByAccount = {}, operationalAccIds = 
               onClick={() => setSortKey(k => k === 'client' ? null : 'client')} title="Sort by client">Client{sortMark('client')}</th>
             <th style={{ ...th2, textAlign: 'left', cursor: 'pointer' }}
               onClick={() => setSortKey(k => k === 'ps' ? null : 'ps')} title="Sort by people scientist">People scientist{sortMark('ps')}</th>
+            {hasPrevious && <th style={prevTh} />}
             {allQuarters.map(q => <th key={q} style={th2} />)}
           </tr></thead>
           <tbody>
@@ -165,6 +187,7 @@ function InsightsMatrix({ accounts = [], pscByAccount = {}, operationalAccIds = 
                     <td colSpan={2} style={{ padding: '10px 8px 4px', fontSize: 11, fontWeight: 500, color: 'var(--text-2)', position: 'sticky', left: 0, background: 'var(--bg-1)' }}>
                       {s.label} <span style={{ color: 'var(--text-3)' }}>({s.count})</span>
                     </td>
+                    {hasPrevious && <td style={{ padding: '10px 4px 4px', fontSize: 9.5, fontWeight: 500, color: 'var(--text-3)', textAlign: 'center', whiteSpace: 'nowrap', borderRight: '0.5px solid var(--sep)' }}>Previous</td>}
                     {allQuarters.map(q => <td key={q} style={{ padding: '10px 4px 4px', fontSize: 9.5, fontWeight: 500, color: 'var(--text-3)', textAlign: 'center', whiteSpace: 'nowrap' }}>{q}</td>)}
                   </tr>
                 )}
