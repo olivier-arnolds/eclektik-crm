@@ -573,6 +573,20 @@ function ClientsTable({ m, onPick }) {
       <td style={{ padding: 6, textAlign: 'right', fontWeight: 500, ...mono }}>{eur(st.total)}</td><td />
     </tr>
   );
+  const yoyRow = (qmap, key) => (
+    <tr key={key} style={{ background: 'var(--fill-1)' }}>
+      <td style={{ padding: '3px 6px', ...muted, fontSize: 9.5 }} colSpan={2}>↳ YoY vs last year</td>
+      {quarters.map((q) => {
+        const [yy, nn] = q.split('-Q');
+        const prev = qmap[`${+yy - 1}-Q${nn}`];
+        if (prev == null || prev <= 0) return <td key={q} style={{ padding: '3px 6px', textAlign: 'right', ...muted, fontSize: 9.5 }}>·</td>;
+        const cur = qmap[q] || 0; const up = cur >= prev;
+        const pct = Math.abs(Math.round(((cur - prev) / prev) * 100));
+        return <td key={q} style={{ padding: '3px 6px', textAlign: 'right', fontWeight: 500, fontSize: 9.5, color: up ? 'var(--good)' : '#E24B4A' }}>{up ? '▲' : '▼'}{pct}%</td>;
+      })}
+      <td /><td />
+    </tr>
+  );
   const SectionHead = (label) => (
     <tr><td colSpan={quarters.length + 4} style={{ padding: '7px 6px', background: 'var(--good-tint)', fontSize: 10.5, ...muted, letterSpacing: '0.04em' }}>{label}</td></tr>
   );
@@ -593,27 +607,17 @@ function ClientsTable({ m, onPick }) {
           {SectionHead(`UNITED STATES · ${us.length} CLIENTS`)}
           {us.map(Row)}
           {SubRow('US subtotal', subtotal(us))}
+          {yoyRow(subtotal(us).q, 'yoy-us')}
           {SectionHead(`EMEA · ${emea.length} CLIENTS`)}
           {emea.map(Row)}
           {SubRow('EMEA subtotal', subtotal(emea))}
+          {yoyRow(subtotal(emea).q, 'yoy-emea')}
           <tr style={{ borderTop: '0.5px solid var(--sep-strong)' }}>
             <td style={{ padding: '7px 6px', fontWeight: 500 }} colSpan={2}>All clients</td>
             {quarters.map((q) => <td key={q} style={{ padding: '7px 6px', textAlign: 'right', fontWeight: 500, ...mono }}>{m.colTotals[q] > 0 ? eur(m.colTotals[q]) : '·'}</td>)}
             <td style={{ padding: '7px 6px', textAlign: 'right', fontWeight: 500, ...mono }}>{eur(grand.total)}</td><td />
           </tr>
-          <tr>
-            <td style={{ padding: '4px 6px', ...muted, fontSize: 10 }} colSpan={2}>YoY vs same quarter last year</td>
-            {quarters.map((q) => {
-              const [yy, nn] = q.split('-Q');
-              const prev = m.colTotals[`${+yy - 1}-Q${nn}`];
-              if (prev == null || prev <= 0) return <td key={q} style={{ padding: '4px 6px', textAlign: 'right', ...muted }}>·</td>;
-              const cur = m.colTotals[q] || 0;
-              const up = cur >= prev;
-              const pct = Math.abs(Math.round(((cur - prev) / prev) * 100));
-              return <td key={q} style={{ padding: '4px 6px', textAlign: 'right', fontWeight: 500, fontSize: 10, color: up ? 'var(--good)' : '#E24B4A' }}>{up ? '▲' : '▼'}{pct}%</td>;
-            })}
-            <td /><td />
-          </tr>
+          {yoyRow(m.colTotals, 'yoy-all')}
         </tbody>
       </table>
       <div style={{ fontSize: 11, ...muted, marginTop: 10, lineHeight: 1.6 }}>

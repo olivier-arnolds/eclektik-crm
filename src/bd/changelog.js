@@ -19,9 +19,41 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.16.1';
+export const CURRENT_VERSION = '1.16.3';
 
 export const CHANGELOG = [
+  {
+    version: '1.16.3',
+    date: '2026-06-06T23:00:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'refactor',
+    title: 'Insights review: operational marker is now a yellow dot',
+    summary:
+      'The "still operational in projects" dot in front of a client name in ' +
+      'Insights review is now yellow instead of green, so it does not clash with ' +
+      'the green analysis dots in the quarter cells.',
+    changes: [
+      'lane-warroom.jsx: operational dot colour green → yellow (#EAB308).',
+    ],
+    files: ['src/bd/lane-warroom.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.16.3',
+  },
+  {
+    version: '1.16.2',
+    date: '2026-06-06T22:45:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feature',
+    title: 'Reporting: YoY split per region (US, EMEA) + total',
+    summary:
+      'The YoY row in the All clients · US & EMEA table is now split — a YoY line ' +
+      'under the US subtotal and under the EMEA subtotal (each vs its own same-' +
+      'quarter-last-year), plus the overall one under All clients.',
+    changes: [
+      'lane-reporting.jsx: reusable yoyRow helper; YoY line under US subtotal, EMEA subtotal, and the grand total.',
+    ],
+    files: ['src/bd/lane-reporting.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.16.2',
+  },
   {
     version: '1.16.1',
     date: '2026-06-06T22:20:00Z',

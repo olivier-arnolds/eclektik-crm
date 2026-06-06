@@ -127,7 +127,7 @@ function InsightsMatrix({ accounts = [], pscByAccount = {}, operationalAccIds = 
         <td style={{ ...td2, paddingLeft: c.isSub ? 22 : 8, fontWeight: c.isSub ? 400 : 500, position: 'sticky', left: 0, background: 'var(--bg-1)', whiteSpace: 'nowrap', color: acc && onPickAccount ? 'var(--accent)' : 'inherit', cursor: acc && onPickAccount ? 'pointer' : 'default' }}
           onClick={() => acc && onPickAccount && onPickAccount(acc)}
           title={acc ? `Open ${acc.name} (360)${operational ? ' · operational (running project)' : ''}` : undefined}>
-          <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', marginRight: 6, verticalAlign: 'middle', background: operational ? '#1D9E75' : 'transparent' }} />
+          <span title={operational ? 'Operational — running project' : undefined} style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', marginRight: 6, verticalAlign: 'middle', background: operational ? '#EAB308' : 'transparent' }} />
           {c.name}{c.crmOnly && <span style={{ color: 'var(--text-3)', fontWeight: 400 }}> · CRM</span>}
         </td>
         <td style={{ ...td2, whiteSpace: 'nowrap', color: 'var(--text-2)' }}>{psFor(c) || <span style={{ color: 'var(--text-3)' }}>—</span>}</td>
