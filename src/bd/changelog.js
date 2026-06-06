@@ -19,9 +19,25 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.17.1';
+export const CURRENT_VERSION = '1.17.2';
 
 export const CHANGELOG = [
+  {
+    version: '1.17.2',
+    date: '2026-06-07T08:30:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'refactor',
+    title: 'Insights review: repeat quarter labels on each section header',
+    summary:
+      'The cohort section header rows (Deeply analysed, Pre-IR / pre-contract, ' +
+      'CLOSED) now repeat the year-Qx quarter labels across their columns, so you ' +
+      'can read which column is which quarter without scrolling back to the top.',
+    changes: [
+      'lane-warroom.jsx: section header row shows the quarter labels per column (label spans the Client + People-scientist columns).',
+    ],
+    files: ['src/bd/lane-warroom.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.17.2',
+  },
   {
     version: '1.17.1',
     date: '2026-06-07T08:00:00Z',

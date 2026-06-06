@@ -190,9 +190,11 @@ function InsightsMatrix({ accounts = [], pscByAccount = {}, operationalAccIds = 
               <Fragment key={s.key || 'all'}>
                 {s.label && (
                   <tr>
-                    <td colSpan={allQuarters.length + 3} style={{ padding: '10px 8px 4px', fontSize: 11, fontWeight: 500, color: 'var(--text-2)', textTransform: 'none', position: 'sticky', left: 0, background: 'var(--bg-1)' }}>
+                    <td colSpan={2} style={{ padding: '10px 8px 4px', fontSize: 11, fontWeight: 500, color: 'var(--text-2)', position: 'sticky', left: 0, background: 'var(--bg-1)' }}>
                       {s.label} <span style={{ color: 'var(--text-3)' }}>({s.count})</span>
                     </td>
+                    {allQuarters.map(q => <td key={q} style={{ padding: '10px 4px 4px', fontSize: 9.5, fontWeight: 500, color: 'var(--text-3)', textAlign: 'center', whiteSpace: 'nowrap' }}>{q}</td>)}
+                    <td />
                   </tr>
                 )}
                 {sortRows(allRows.filter(c => s.key == null || c.cohort === s.key)).map(clientRow)}
