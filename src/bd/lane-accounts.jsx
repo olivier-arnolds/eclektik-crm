@@ -1196,7 +1196,6 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
                   <ExpandableRow key={e.id} accent="var(--accent)"
                     collapsed={(open) => (
                       <div className="acc-comm-row">
-                        {e.channel && <ChannelIcon ch={e.channel} size={11} />}
                         <span className="acc-comm-subj">{e.title}</span>
                         {ownerInitials.length > 0 && (
                           <span title={`Synced from: ${e.owners.join(', ')}`}

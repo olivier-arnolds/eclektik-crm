@@ -19,9 +19,24 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.14.2';
+export const CURRENT_VERSION = '1.14.3';
 
 export const CHANGELOG = [
+  {
+    version: '1.14.3',
+    date: '2026-06-06T20:35:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'refactor',
+    title: 'Meetings list: drop the redundant channel icon',
+    summary:
+      'Removed the per-row channel icon (the Teams "M") from the Account 360 ' +
+      'Meetings list — redundant, since everything in that section is a meeting.',
+    changes: [
+      'lane-accounts.jsx: removed ChannelIcon from meeting rows.',
+    ],
+    files: ['src/bd/lane-accounts.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.14.3',
+  },
   {
     version: '1.14.2',
     date: '2026-06-06T20:20:00Z',
