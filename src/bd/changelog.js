@@ -19,9 +19,26 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.13.0';
+export const CURRENT_VERSION = '1.13.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.13.1',
+    date: '2026-06-06T17:30:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feature',
+    title: 'Insights review: People scientist column (sortable)',
+    summary:
+      'Added a "People scientist" column next to Client in the Insights review ' +
+      'matrix, resolved from the delivery sheet PS owner (matched by client name). ' +
+      'Both the Client and People scientist column headers are clickable to sort ' +
+      'rows (within each cohort section); click again to clear back to section order.',
+    changes: [
+      'lane-warroom.jsx: psByName map (client → PS owner) passed into InsightsMatrix; new People scientist column; click-to-sort on Client / People scientist headers.',
+    ],
+    files: ['src/bd/lane-warroom.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.13.1',
+  },
   {
     version: '1.13.0',
     date: '2026-06-06T16:45:00Z',

@@ -44,10 +44,11 @@ function PersonCell({ name, hours, used }) {
 // (from the People Science meta), red = a survey cycle exists but no analysis yet.
 const normName = (s) => (s || '').toLowerCase().replace(/↳/g, '').replace(/\(.*?\)/g, '').replace(/[^a-z0-9]/g, '');
 
-function InsightsMatrix({ accounts = [], onPickAccount }) {
+function InsightsMatrix({ accounts = [], psByName = {}, onPickAccount }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [sortKey, setSortKey] = useState(null); // null = section order | 'client' | 'ps'
   useEffect(() => {
     fetch('/api/insights-review')
       .then(async r => { const j = await r.json().catch(() => ({})); if (r.ok) setData(j); else setError(j.error || 'Failed'); })
@@ -76,6 +77,21 @@ function InsightsMatrix({ accounts = [], onPickAccount }) {
   const dot = (c) => <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: c === 'green' ? '#1D9E75' : '#E24B4A' }} />;
   const sectionList = sections.length ? sections : [{ key: null, label: '', count: clients.length }];
 
+  // People scientist per client (from delivery PS owner), matched by name.
+  const psFor = (name) => {
+    const n = normName(name);
+    if (!n) return '';
+    if (psByName[n]) return psByName[n];
+    const k = Object.keys(psByName).find(key => key.length >= 3 && (key.includes(n) || n.includes(key)));
+    return k ? psByName[k] : '';
+  };
+  const sortRows = (list) => {
+    if (sortKey === 'client') return [...list].sort((a, b) => a.name.localeCompare(b.name));
+    if (sortKey === 'ps') return [...list].sort((a, b) => (psFor(a.name) || '~').localeCompare(psFor(b.name) || '~'));
+    return list; // section/display order
+  };
+  const sortMark = (k) => sortKey === k ? ' ↓' : '';
+
   const clientRow = (c) => {
     const acc = matchAccount(c.name);
     return (
@@ -85,6 +101,7 @@ function InsightsMatrix({ accounts = [], onPickAccount }) {
           title={acc ? `Open ${acc.name} (360)` : undefined}>
           {c.name}
         </td>
+        <td style={{ ...td2, whiteSpace: 'nowrap', color: 'var(--text-2)' }}>{psFor(c.name) || <span style={{ color: 'var(--text-3)' }}>—</span>}</td>
         {quarters.map(q => (
           <td key={q} style={{ ...td2, textAlign: 'center' }}>
             {cells[c.id]?.[q] ? dot(cells[c.id][q]) : <span style={{ color: 'var(--text-3)' }}>·</span>}
@@ -103,7 +120,10 @@ function InsightsMatrix({ accounts = [], onPickAccount }) {
       <div style={{ overflowX: 'auto' }}>
         <table style={{ borderCollapse: 'collapse' }}>
           <thead><tr>
-            <th style={{ ...th2, textAlign: 'left', position: 'sticky', left: 0, background: 'var(--bg-1)' }}>Client</th>
+            <th style={{ ...th2, textAlign: 'left', position: 'sticky', left: 0, background: 'var(--bg-1)', cursor: 'pointer' }}
+              onClick={() => setSortKey(k => k === 'client' ? null : 'client')} title="Sort by client">Client{sortMark('client')}</th>
+            <th style={{ ...th2, textAlign: 'left', cursor: 'pointer' }}
+              onClick={() => setSortKey(k => k === 'ps' ? null : 'ps')} title="Sort by people scientist">People scientist{sortMark('ps')}</th>
             {quarters.map(q => <th key={q} style={{ ...th2, textAlign: 'center' }}>{q}</th>)}
           </tr></thead>
           <tbody>
@@ -111,12 +131,12 @@ function InsightsMatrix({ accounts = [], onPickAccount }) {
               <Fragment key={s.key || 'all'}>
                 {s.label && (
                   <tr>
-                    <td colSpan={quarters.length + 1} style={{ padding: '10px 8px 4px', fontSize: 11, fontWeight: 500, color: 'var(--text-2)', textTransform: 'none', position: 'sticky', left: 0, background: 'var(--bg-1)' }}>
+                    <td colSpan={quarters.length + 2} style={{ padding: '10px 8px 4px', fontSize: 11, fontWeight: 500, color: 'var(--text-2)', textTransform: 'none', position: 'sticky', left: 0, background: 'var(--bg-1)' }}>
                       {s.label} <span style={{ color: 'var(--text-3)' }}>({s.count})</span>
                     </td>
                   </tr>
                 )}
-                {clients.filter(c => s.key == null || c.cohort === s.key).map(clientRow)}
+                {sortRows(clients.filter(c => s.key == null || c.cohort === s.key)).map(clientRow)}
               </Fragment>
             ))}
           </tbody>
@@ -134,6 +154,18 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount }
   const [syncMsg, setSyncMsg] = useState(null);
 
   const accById = useMemo(() => new Map(accounts.map(a => [a.id, a])), [accounts]);
+
+  // People scientist per client (from the delivery sheet's PS owner), keyed by
+  // normalized client name — used by the Insights review matrix.
+  const psByName = useMemo(() => {
+    const m = {};
+    (rows || []).forEach(r => {
+      if (r.client_name && r.ps_owner && String(r.ps_owner).toUpperCase() !== 'N/A') {
+        m[normName(r.client_name)] = r.ps_owner;
+      }
+    });
+    return m;
+  }, [rows]);
 
   // Deal value for a project's company = its RUNNING deals only (active /
   // onboarding). We do NOT fall back to past/lost deals — that was inflating
@@ -232,7 +264,7 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount }
         )}
       </div>
 
-      {tab === 'insights' && <InsightsMatrix accounts={accounts} onPickAccount={onPickAccount} />}
+      {tab === 'insights' && <InsightsMatrix accounts={accounts} psByName={psByName} onPickAccount={onPickAccount} />}
 
       {tab === 'projects' && missing.length > 0 && (
         <div style={{ marginBottom: 14, border: '0.5px solid var(--warn)', background: 'var(--warn-tint)', borderRadius: 8, padding: '9px 12px' }}>
