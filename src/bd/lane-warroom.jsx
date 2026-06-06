@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, Fragment } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef, Fragment } from 'react';
 import { supabase } from '../supabase';
 import { fmtRelative, fmtMoney } from './atoms';
 
@@ -75,7 +75,9 @@ function InsightsMatrix({ accounts = [], pscByAccount = {}, onPickAccount }) {
   }, [accNorm]);
 
   // Account-level notes (companies.notes) — editable here and in the 360.
+  // Auto-saves: debounced while typing + immediately on blur (moving to the next).
   const [noteByAcc, setNoteByAcc] = useState({});
+  const saveTimers = useRef({});
   useEffect(() => {
     supabase.from('companies').select('id, notes').then(({ data }) => {
       const m = {};
@@ -83,6 +85,7 @@ function InsightsMatrix({ accounts = [], pscByAccount = {}, onPickAccount }) {
       setNoteByAcc(m);
     });
   }, []);
+  const persistNote = (accId, val) => supabase.from('companies').update({ notes: val || null }).eq('id', accId);
 
   if (loading) return <div style={{ fontSize: 12, color: 'var(--text-3)' }}>Loading…</div>;
   if (error) return <div style={{ fontSize: 12, color: 'var(--warn)' }}>{error}</div>;
@@ -134,8 +137,13 @@ function InsightsMatrix({ accounts = [], pscByAccount = {}, onPickAccount }) {
         <td style={{ ...td2, minWidth: 200 }}>
           {acc ? (
             <input value={noteByAcc[acc.id] ?? ''}
-              onChange={e => setNoteByAcc(m => ({ ...m, [acc.id]: e.target.value }))}
-              onBlur={e => supabase.from('companies').update({ notes: e.target.value || null }).eq('id', acc.id)}
+              onChange={e => {
+                const val = e.target.value;
+                setNoteByAcc(m => ({ ...m, [acc.id]: val }));
+                clearTimeout(saveTimers.current[acc.id]);
+                saveTimers.current[acc.id] = setTimeout(() => persistNote(acc.id, val), 600);
+              }}
+              onBlur={e => { clearTimeout(saveTimers.current[acc.id]); persistNote(acc.id, e.target.value); }}
               placeholder="Add note…"
               style={{ width: '100%', minWidth: 180, padding: '3px 6px', fontSize: 11.5, border: '0.5px solid var(--sep)', borderRadius: 4, background: 'var(--fill-1)', color: 'var(--text-1)', fontFamily: 'var(--font)', outline: 'none' }} />
           ) : <span style={{ color: 'var(--text-3)' }}>—</span>}

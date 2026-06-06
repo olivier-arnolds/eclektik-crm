@@ -35,7 +35,7 @@ export const CHANGELOG = [
       '("Notes (account)"). One note per client, visible in both the portfolio ' +
       'overview and on the client side.',
     changes: [
-      'lane-warroom.jsx InsightsMatrix: editable Note column per row (writes companies.notes for the matched account; loads existing notes on open).',
+      'lane-warroom.jsx InsightsMatrix: editable Note column per row, auto-saves (debounced while typing + immediately on blur / moving to the next) to companies.notes for the matched account; loads existing notes on open.',
       'inline-details.jsx: "Notes (account)" field added to the Account 360 detail panel (same companies.notes field).',
       'Reuses existing companies.notes column — no schema change.',
     ],
