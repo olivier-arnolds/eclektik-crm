@@ -51,7 +51,7 @@ const normName = (s) => (s || '').toLowerCase().replace(/↳/g, '').replace(/[^a
 // Eclectik-team links (which carry no role field).
 const PSC_NAMES = new Set(['avneetasolanki', 'kirstythompsonclarke', 'pabloborgespatel', 'paulmastrangelo', 'katefeeney']);
 
-function InsightsMatrix({ accounts = [], pscByAccount = {}, onPickAccount }) {
+function InsightsMatrix({ accounts = [], pscByAccount = {}, operationalAccIds = new Set(), onPickAccount }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -121,11 +121,13 @@ function InsightsMatrix({ accounts = [], pscByAccount = {}, onPickAccount }) {
 
   const clientRow = (c) => {
     const acc = accountFor(c);
+    const operational = acc && operationalAccIds.has(acc.id);
     return (
       <tr key={c.id}>
         <td style={{ ...td2, paddingLeft: c.isSub ? 22 : 8, fontWeight: c.isSub ? 400 : 500, position: 'sticky', left: 0, background: 'var(--bg-1)', whiteSpace: 'nowrap', color: acc && onPickAccount ? 'var(--accent)' : 'inherit', cursor: acc && onPickAccount ? 'pointer' : 'default' }}
           onClick={() => acc && onPickAccount && onPickAccount(acc)}
-          title={acc ? `Open ${acc.name} (360)` : undefined}>
+          title={acc ? `Open ${acc.name} (360)${operational ? ' · operational (running project)' : ''}` : undefined}>
+          <span style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', marginRight: 6, verticalAlign: 'middle', background: operational ? '#1D9E75' : 'transparent' }} />
           {c.name}{c.crmOnly && <span style={{ color: 'var(--text-3)', fontWeight: 400 }}> · CRM</span>}
         </td>
         <td style={{ ...td2, whiteSpace: 'nowrap', color: 'var(--text-2)' }}>{psFor(c) || <span style={{ color: 'var(--text-3)' }}>—</span>}</td>
@@ -196,6 +198,13 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount }
   const [syncMsg, setSyncMsg] = useState(null);
 
   const accById = useMemo(() => new Map(accounts.map(a => [a.id, a])), [accounts]);
+
+  // Accounts that are still operational = have a delivery project that isn't Completed.
+  const operationalAccIds = useMemo(() => {
+    const s = new Set();
+    (rows || []).forEach(r => { if (r.company_id && (r.status || '') !== 'Completed') s.add(r.company_id); });
+    return s;
+  }, [rows]);
 
   // People scientist per account = the Eclectik-team member linked on the 360
   // whose name maps to the PSC (people science) role. Keyed by CRM account id.
@@ -305,6 +314,9 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount }
               {lastSynced ? <>synced {fmtRelative(lastSynced)}</> : 'not synced yet'}
               {syncMsg && <> · <span style={{ color: 'var(--text-2)' }}>{syncMsg}</span></>}
             </div>
+            <a href="/warroom-projects-field-guide.md" target="_blank" rel="noreferrer"
+              style={{ fontSize: 11, color: 'var(--accent)', whiteSpace: 'nowrap', alignSelf: 'center' }}
+              title="How to fill the project sheet — usage guide">📄 Field guide</a>
             <button className="btn-ghost tiny" onClick={update} disabled={syncing}
               style={{ color: 'var(--accent)', whiteSpace: 'nowrap' }} title="Pull the latest from Yarmilla's sheet">
               {syncing ? 'Updating…' : '↻ Update'}
@@ -313,7 +325,7 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount }
         )}
       </div>
 
-      {tab === 'insights' && <InsightsMatrix accounts={accounts} pscByAccount={pscByAccount} onPickAccount={onPickAccount} />}
+      {tab === 'insights' && <InsightsMatrix accounts={accounts} pscByAccount={pscByAccount} operationalAccIds={operationalAccIds} onPickAccount={onPickAccount} />}
 
       {tab === 'projects' && missing.length > 0 && (
         <div style={{ marginBottom: 14, border: '0.5px solid var(--warn)', background: 'var(--warn-tint)', borderRadius: 8, padding: '9px 12px' }}>

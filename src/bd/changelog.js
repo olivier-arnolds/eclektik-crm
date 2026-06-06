@@ -19,9 +19,27 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.15.2';
+export const CURRENT_VERSION = '1.16.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.16.0',
+    date: '2026-06-06T22:00:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feature',
+    title: 'Insights review: operational green dot + Projects field-guide link',
+    summary:
+      'In Insights review, a green dot now sits in front of any client that is ' +
+      'still operational (has a delivery project that is not Completed). And the ' +
+      'Projects tab header has a "📄 Field guide" link to the usage instructions ' +
+      'for the project sheet (served at /warroom-projects-field-guide.md).',
+    changes: [
+      'lane-warroom.jsx: green dot before operational clients (operationalAccIds from non-Completed glint_delivery projects).',
+      'lane-warroom.jsx: Projects header link to the field guide; guide copied to public/ so it is served.',
+    ],
+    files: ['src/bd/lane-warroom.jsx', 'public/warroom-projects-field-guide.md', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.16.0',
+  },
   {
     version: '1.15.2',
     date: '2026-06-06T21:35:00Z',
