@@ -1197,12 +1197,6 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
                     collapsed={(open) => (
                       <div className="acc-comm-row">
                         <span className="acc-comm-subj">{e.title}</span>
-                        {ownerInitials.length > 0 && (
-                          <span title={`Synced from: ${e.owners.join(', ')}`}
-                            style={{ fontSize: 9, color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>
-                            {ownerInitials.slice(0, 3).join('/')}
-                          </span>
-                        )}
                         {noteCount > 0 && (
                           <span title={`${noteCount} note${noteCount !== 1 ? 's' : ''} / transcript stored`}
                             style={{ fontSize: 10, color: 'var(--text-3)', fontFamily: 'var(--font-mono)', display: 'inline-flex', alignItems: 'center', gap: 3 }}>

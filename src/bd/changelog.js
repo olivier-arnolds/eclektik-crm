@@ -19,9 +19,25 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.15.1';
+export const CURRENT_VERSION = '1.15.2';
 
 export const CHANGELOG = [
+  {
+    version: '1.15.2',
+    date: '2026-06-06T21:35:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'refactor',
+    title: 'Meetings: remove the "synced from" initials (the M) from rows',
+    summary:
+      'The leading "M" on Account 360 meeting rows was the "synced from" owner-' +
+      'initials badge (e.g. Marco = M on every Boskalis meeting). Removed it so ' +
+      'meeting rows are just title · green dot (if note/transcript) · date.',
+    changes: [
+      'lane-accounts.jsx: removed the owner-initials "synced from" badge from meeting rows.',
+    ],
+    files: ['src/bd/lane-accounts.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.15.2',
+  },
   {
     version: '1.15.1',
     date: '2026-06-06T21:15:00Z',
