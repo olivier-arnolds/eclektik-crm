@@ -35,6 +35,7 @@ export const CHANGELOG = [
       'sheet PS owner. So it reflects who covers the client per the 360.',
     changes: [
       'lane-warroom.jsx: fetch eclectik_team links, pick the PSC member per account (PSC_NAMES, mirroring reporting ROLE_OVERRIDE); matrix resolves PS via matched account → 360 team.',
+      'Name matching keeps parenthetical acronyms so e.g. "ETF" matches "European Training Foundation (ETF)" (client now links to its 360).',
     ],
     files: ['src/bd/lane-warroom.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
     gitTag: 'v1.13.2',

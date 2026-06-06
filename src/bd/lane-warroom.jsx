@@ -42,7 +42,9 @@ function PersonCell({ name, hours, used }) {
 
 // Insights-review matrix: clients × quarters, green = an analysis is on record
 // (from the People Science meta), red = a survey cycle exists but no analysis yet.
-const normName = (s) => (s || '').toLowerCase().replace(/↳/g, '').replace(/\(.*?\)/g, '').replace(/[^a-z0-9]/g, '');
+// Normalize a name for matching. Keep parenthetical text (acronyms like
+// "(ETF)") so "ETF" still matches "European Training Foundation (ETF)".
+const normName = (s) => (s || '').toLowerCase().replace(/↳/g, '').replace(/[^a-z0-9]/g, '');
 
 // People scientists (PSC role), by normalized name — mirrors ROLE_OVERRIDE in
 // lane-reporting.jsx. Used to pick the people scientist off an account's
