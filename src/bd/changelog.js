@@ -19,9 +19,24 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.19.1';
+export const CURRENT_VERSION = '1.19.2';
 
 export const CHANGELOG = [
+  {
+    version: '1.19.2',
+    date: '2026-06-06T14:50:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'refactor',
+    title: 'Insights review: remove People scientist column',
+    summary:
+      'Dropped the People scientist column from the Insights review matrix — Client now leads ' +
+      'straight into the Previous / quarter columns.',
+    changes: [
+      'lane-warroom.jsx: removed the PS header and per-row cell, removed the PS sort toggle, and adjusted the region section header to a single leading column.',
+    ],
+    files: ['src/bd/lane-warroom.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.19.2',
+  },
   {
     version: '1.19.1',
     date: '2026-06-06T14:30:00Z',

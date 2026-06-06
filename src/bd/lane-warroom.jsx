@@ -191,7 +191,6 @@ function InsightsMatrix({ accounts = [], pscByAccount = {}, operationalAccIds = 
           <span title={operational ? 'Operational — running project' : undefined} style={{ display: 'inline-block', width: 8, height: 8, borderRadius: 1, marginRight: 6, verticalAlign: 'middle', background: operational ? BLUE : 'transparent' }} />
           {c.name}{c.crmOnly && <span style={{ color: 'var(--text-3)', fontWeight: 400 }}> · CRM</span>}
         </td>
-        <td style={{ ...td2, whiteSpace: 'nowrap', color: 'var(--text-2)' }}>{psFor(c) || <span style={{ color: 'var(--text-3)' }}>—</span>}</td>
         {hasPrevious && (() => {
           const p = prevFor(c);
           return (
@@ -230,8 +229,6 @@ function InsightsMatrix({ accounts = [], pscByAccount = {}, operationalAccIds = 
           <thead><tr>
             <th style={{ ...th2, textAlign: 'left', position: 'sticky', left: 0, background: 'var(--bg-1)', cursor: 'pointer' }}
               onClick={() => setSortKey(k => k === 'client' ? null : 'client')} title="Sort by client">Client{sortMark('client')}</th>
-            <th style={{ ...th2, textAlign: 'left', cursor: 'pointer' }}
-              onClick={() => setSortKey(k => k === 'ps' ? null : 'ps')} title="Sort by people scientist">People scientist{sortMark('ps')}</th>
             {hasPrevious && <th style={prevTh} />}
             {displayQuarters.map(q => <th key={q} style={{ ...th2, ...(qkey(q) === horizonStart ? { borderLeft: '1px dashed var(--sep)' } : null) }} />)}
           </tr></thead>
@@ -242,7 +239,7 @@ function InsightsMatrix({ accounts = [], pscByAccount = {}, operationalAccIds = 
               return (
                 <Fragment key={R}>
                   <tr>
-                    <td colSpan={2} style={{ padding: '10px 8px 4px', fontSize: 11, fontWeight: 600, color: 'var(--text-2)', position: 'sticky', left: 0, background: 'var(--bg-1)' }}>
+                    <td style={{ padding: '10px 8px 4px', fontSize: 11, fontWeight: 600, color: 'var(--text-2)', position: 'sticky', left: 0, background: 'var(--bg-1)' }}>
                       {R} <span style={{ color: 'var(--text-3)' }}>({list.length})</span>
                     </td>
                     {hasPrevious && <td style={{ padding: '10px 4px 4px', fontSize: 9.5, fontWeight: 500, color: 'var(--text-3)', textAlign: 'center', whiteSpace: 'nowrap', borderRight: '0.5px solid var(--sep)' }}>Previous</td>}
