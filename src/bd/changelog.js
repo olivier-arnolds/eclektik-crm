@@ -19,9 +19,30 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.18.0';
+export const CURRENT_VERSION = '1.18.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.18.1',
+    date: '2026-06-06T13:00:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'improve',
+    title: 'Insights review forecast: domain-aware engagement-survey cadence',
+    summary:
+      'The forecast diamonds now model an engagement-survey rhythm rather than raw event gaps. ' +
+      'A survey, its readout and the deal signing are clustered into one cycle, the cadence ' +
+      'defaults to annual (and drops to semi-annual only when cycles are consistently ~2 quarters ' +
+      'apart), and a single readout (e.g. Alex Lee) now forecasts next year in the same season.',
+    changes: [
+      'predictFor(): cluster events <=1 quarter apart into one survey cycle (stops survey+readout looking like a quarterly cadence).',
+      'Cadence snaps to annual (4q) by default, semi-annual (2q) only when cycle gaps are consistently ~2.',
+      'Single-cycle clients now forecast (annual) instead of being skipped.',
+      'Churned (CLOSED cohort) clients no longer get a forecast.',
+    ],
+    note: 'Still a heuristic anchored on engagement-survey norms, not a statistical model — verify against the real pipeline.',
+    files: ['src/bd/lane-warroom.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.18.1',
+  },
   {
     version: '1.18.0',
     date: '2026-06-06T12:30:00Z',

@@ -134,24 +134,36 @@ function InsightsMatrix({ accounts = [], pscByAccount = {}, operationalAccIds = 
   const futureQuarters = [0, 1, 2, 3].map(i => qFromKey(horizonStart + i));
   const futureSet = new Set(futureQuarters.map(qkey));
   const displayQuarters = [...allQuarters, ...futureQuarters];
+  // Engagement surveys run on a yearly ritual (sometimes semi-annual). So we don't
+  // read raw event gaps — a survey + its readout + the deal signing all belong to
+  // ONE cycle. We cluster events <=1 quarter apart into a cycle, then measure the
+  // gap between cycles: default annual (4q), semi-annual (2q) only if cycles are
+  // consistently ~2 apart. A single cycle still forecasts next year, same season.
   const predictFor = (c) => {
+    if (c.cohort === 'closed') return new Set(); // churned — don't forecast
     const acc = accountFor(c);
     const cm = cells[c.id] || {};
     const evts = new Set();
     for (const q in cm) evts.add(qkey(q));
     if (acc && signedByAccount[acc.id]) signedByAccount[acc.id].forEach(q => evts.add(qkey(q)));
     const keys = [...evts].sort((a, b) => a - b);
-    if (keys.length < 2) return new Set();
-    const gaps = [];
-    for (let i = 1; i < keys.length; i++) gaps.push(keys[i] - keys[i - 1]);
-    gaps.sort((a, b) => a - b);
-    const mid = Math.floor(gaps.length / 2);
-    let gap = gaps.length % 2 ? gaps[mid] : Math.round((gaps[mid - 1] + gaps[mid]) / 2);
-    gap = Math.max(1, gap);
+    if (!keys.length) return new Set();
+    // Collapse events within 1 quarter of each other into a single survey cycle.
+    const cycles = [keys[0]];
+    for (let i = 1; i < keys.length; i++) if (keys[i] - keys[i - 1] > 1) cycles.push(keys[i]);
+    let cadence = 4; // annual by default
+    if (cycles.length >= 2) {
+      const gaps = [];
+      for (let i = 1; i < cycles.length; i++) gaps.push(cycles[i] - cycles[i - 1]);
+      gaps.sort((a, b) => a - b);
+      const mid = Math.floor(gaps.length / 2);
+      const g = gaps.length % 2 ? gaps[mid] : (gaps[mid - 1] + gaps[mid]) / 2;
+      cadence = g <= 2.5 ? 2 : 4; // snap to semi-annual or annual
+    }
     const out = new Set();
     const maxK = horizonStart + 3;
-    let next = keys[keys.length - 1] + gap, guard = 0;
-    while (next <= maxK && guard++ < 16) { if (next >= horizonStart) out.add(next); next += gap; }
+    let next = cycles[cycles.length - 1] + cadence, guard = 0;
+    while (next <= maxK && guard++ < 16) { if (next >= horizonStart) out.add(next); next += cadence; }
     return out;
   };
   const diamond = <span title="Predicted next activity (deal or PSC readout) — based on past cadence" style={{ display: 'inline-block', width: 8, height: 8, background: BLUE, transform: 'rotate(45deg)' }} />;
