@@ -51,7 +51,9 @@ export default async function handler(req, res) {
     const parentSlugs = new Set(real.filter(c => c.parent_slug).map(c => c.parent_slug));
     const cohortOf = (c) => {
       const base = c.parent_slug ? (bySlug.get(c.parent_slug) || c) : c;
-      return ['pre-ir', 'pre-contract'].includes(base.status) ? 'pre' : 'deep';
+      if (base.status === 'closed') return 'closed';
+      if (['pre-ir', 'pre-contract'].includes(base.status)) return 'pre';
+      return 'deep';
     };
     const orderKey = (c) => c.parent_slug
       ? (bySlug.get(c.parent_slug)?.display_order ?? 999) + c.display_order / 1000
@@ -60,6 +62,7 @@ export default async function handler(req, res) {
     const SECTIONS = [
       { key: 'deep', label: 'Deeply analysed — IR read end-to-end' },
       { key: 'pre', label: 'Pre-IR / pre-contract — predictive framing' },
+      { key: 'closed', label: 'CLOSED — relationship-closed clients' },
     ];
     const rows = [];
     SECTIONS.forEach(s => {

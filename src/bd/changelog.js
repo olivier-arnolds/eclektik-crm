@@ -30,12 +30,13 @@ export const CHANGELOG = [
     title: 'Insights review: meta-page cohorts + click client → 360',
     summary:
       'Matched the Insights-review matrix to the People Science meta page: clients ' +
-      'are grouped under the same section headers — "Deeply analysed — IR read ' +
-      'end-to-end (15)" and "Pre-IR / pre-contract — predictive framing (6)" — in ' +
-      'the same order/names (cohort from client status; the meta pseudo-client is ' +
-      'excluded). Clicking a client name opens that account\'s 360 on the right.',
+      'are grouped under the same three section headers — "Deeply analysed — IR ' +
+      'read end-to-end", "Pre-IR / pre-contract — predictive framing", and ' +
+      '"CLOSED — relationship-closed clients" — in the same order/names (cohort ' +
+      'from client status; the meta pseudo-client excluded). Clicking a client ' +
+      'name opens that account\'s 360 on the right.',
     changes: [
-      'api/insights-review.js: returns cohort sections (active/closed = deep, pre-ir/pre-contract = pre) with counts; excludes the meta pseudo-client.',
+      'api/insights-review.js: returns three cohort sections with counts — deep (active), pre (pre-ir/pre-contract), closed (status closed); excludes the meta pseudo-client.',
       'lane-warroom.jsx InsightsMatrix: renders section headers + counts; client name matched to the CRM account and clickable → opens Account 360.',
     ],
     files: ['api/insights-review.js', 'src/bd/lane-warroom.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
