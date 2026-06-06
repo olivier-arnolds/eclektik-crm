@@ -182,7 +182,7 @@ function InsightsMatrix({ accounts = [], pscByAccount = {}, operationalAccIds = 
               onClick={() => setSortKey(k => k === 'client' ? null : 'client')} title="Sort by client">Client{sortMark('client')}</th>
             <th style={{ ...th2, textAlign: 'left', cursor: 'pointer' }}
               onClick={() => setSortKey(k => k === 'ps' ? null : 'ps')} title="Sort by people scientist">People scientist{sortMark('ps')}</th>
-            {allQuarters.map(q => <th key={q} style={{ ...th2, textAlign: 'center' }}>{q}</th>)}
+            {allQuarters.map(q => <th key={q} style={th2} />)}
             <th style={{ ...th2, textAlign: 'left' }}>Note</th>
           </tr></thead>
           <tbody>

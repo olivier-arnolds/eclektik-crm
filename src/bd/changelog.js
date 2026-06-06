@@ -19,9 +19,25 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.17.2';
+export const CURRENT_VERSION = '1.17.3';
 
 export const CHANGELOG = [
+  {
+    version: '1.17.3',
+    date: '2026-06-07T09:00:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'refactor',
+    title: 'Insights review: drop duplicate quarter labels in top header',
+    summary:
+      'Removed the year-Qx labels from the top header row (now that each section ' +
+      'header repeats them) to avoid the doubling. Client / People scientist / ' +
+      'Note labels stay in the top row.',
+    changes: [
+      'lane-warroom.jsx: top header quarter cells are now blank.',
+    ],
+    files: ['src/bd/lane-warroom.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.17.3',
+  },
   {
     version: '1.17.2',
     date: '2026-06-07T08:30:00Z',
