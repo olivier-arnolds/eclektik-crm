@@ -93,12 +93,14 @@ function InsightsMatrix({ accounts = [], pscByAccount = {}, operationalAccIds = 
   const th2 = { fontWeight: 500, fontSize: 10.5, color: 'var(--text-3)', padding: '4px 8px', borderBottom: '0.5px solid var(--sep)', whiteSpace: 'nowrap' };
   const td2 = { padding: '6px 8px', borderBottom: '0.5px solid var(--sep)', fontSize: 12 };
   const dot = (c) => <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: c === 'green' ? '#1D9E75' : '#E24B4A' }} />;
-  const baseSections = sections.length ? sections : [{ key: null, label: '', count: clients.length }];
-  const sectionList = baseSections.map(s => s.key === 'pre' ? { ...s, count: s.count + extraRows.length } : s);
 
   // People scientist for a client = the PSC member on the matched account's 360.
   const accountFor = (c) => c.crmAccount || matchAccount(c.name);
   const psFor = (c) => { const a = accountFor(c); return a ? (pscByAccount[a.id] || '') : ''; };
+
+  // Group by region like the Reporting view: US vs EMEA (missing country → EMEA).
+  const regionFor = (c) => (['US', 'United States'].includes(accountFor(c)?.country || '') ? 'US' : 'EMEA');
+  const REGIONS = ['US', 'EMEA'];
 
   // Columns = PS survey quarters ∪ any quarter a deal was signed (so the ❊ has a
   // column), starting at 2024-Q4 (older baseline quarters are hidden).
@@ -173,9 +175,8 @@ function InsightsMatrix({ accounts = [], pscByAccount = {}, operationalAccIds = 
   };
   const diamond = <span title="Predicted next activity (deal or PSC readout) — based on past cadence" style={{ display: 'inline-block', width: 8, height: 8, background: BLUE, transform: 'rotate(45deg)' }} />;
   const sortRows = (list) => {
-    if (sortKey === 'client') return [...list].sort((a, b) => a.name.localeCompare(b.name));
     if (sortKey === 'ps') return [...list].sort((a, b) => (psFor(a) || '~').localeCompare(psFor(b) || '~'));
-    return list; // section/display order
+    return [...list].sort((a, b) => a.name.localeCompare(b.name)); // default + 'client' → alphabetical
   };
   const sortMark = (k) => sortKey === k ? ' ↓' : '';
 
@@ -235,20 +236,22 @@ function InsightsMatrix({ accounts = [], pscByAccount = {}, operationalAccIds = 
             {displayQuarters.map(q => <th key={q} style={{ ...th2, ...(qkey(q) === horizonStart ? { borderLeft: '1px dashed var(--sep)' } : null) }} />)}
           </tr></thead>
           <tbody>
-            {sectionList.map(s => (
-              <Fragment key={s.key || 'all'}>
-                {s.label && (
+            {REGIONS.map(R => {
+              const list = sortRows(allRows.filter(c => regionFor(c) === R));
+              if (!list.length) return null;
+              return (
+                <Fragment key={R}>
                   <tr>
-                    <td colSpan={2} style={{ padding: '10px 8px 4px', fontSize: 11, fontWeight: 500, color: 'var(--text-2)', position: 'sticky', left: 0, background: 'var(--bg-1)' }}>
-                      {s.label} <span style={{ color: 'var(--text-3)' }}>({s.count})</span>
+                    <td colSpan={2} style={{ padding: '10px 8px 4px', fontSize: 11, fontWeight: 600, color: 'var(--text-2)', position: 'sticky', left: 0, background: 'var(--bg-1)' }}>
+                      {R} <span style={{ color: 'var(--text-3)' }}>({list.length})</span>
                     </td>
                     {hasPrevious && <td style={{ padding: '10px 4px 4px', fontSize: 9.5, fontWeight: 500, color: 'var(--text-3)', textAlign: 'center', whiteSpace: 'nowrap', borderRight: '0.5px solid var(--sep)' }}>Previous</td>}
                     {displayQuarters.map(q => { const fut = futureSet.has(qkey(q)); return <td key={q} style={{ padding: '10px 4px 4px', fontSize: 9.5, fontWeight: 500, color: fut ? BLUE : 'var(--text-3)', fontStyle: fut ? 'italic' : 'normal', textAlign: 'center', whiteSpace: 'nowrap', ...(qkey(q) === horizonStart ? { borderLeft: '1px dashed var(--sep)' } : null) }}>{q}</td>; })}
                   </tr>
-                )}
-                {sortRows(allRows.filter(c => s.key == null || c.cohort === s.key)).map(clientRow)}
-              </Fragment>
-            ))}
+                  {list.map(clientRow)}
+                </Fragment>
+              );
+            })}
           </tbody>
         </table>
       </div>

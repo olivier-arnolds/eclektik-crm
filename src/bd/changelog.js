@@ -19,9 +19,29 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.18.3';
+export const CURRENT_VERSION = '1.19.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.19.0',
+    date: '2026-06-06T14:10:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feature',
+    title: 'Insights review: grouped by region (US / EMEA) like Reporting',
+    summary:
+      'The Insights review matrix is now grouped by region — US and EMEA sections — the same way ' +
+      'the Reporting view splits clients, instead of the People Science cohorts (Deeply analysed / ' +
+      'Pre-IR / CLOSED). Region is taken from each client\'s matched CRM account country (US / United ' +
+      'States = US, everything else = EMEA, missing country defaults to EMEA).',
+    changes: [
+      'lane-warroom.jsx: tbody now iterates US then EMEA, each with a count header.',
+      'regionFor() derives region from the matched account country, mirroring the Reporting view.',
+      'Rows sort alphabetically by name within each region (people-scientist sort still available).',
+      'Removed the cohort-based section logic (sectionList/baseSections).',
+    ],
+    files: ['src/bd/lane-warroom.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.19.0',
+  },
   {
     version: '1.18.3',
     date: '2026-06-06T13:40:00Z',
