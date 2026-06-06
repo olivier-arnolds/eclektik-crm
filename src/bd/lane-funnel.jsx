@@ -264,12 +264,17 @@ export default function FunnelLane({ deals, accounts, contacts, filters, setFilt
 
 function DealCard({ deal, accounts, dragging, onDragStart, onDragEnd, onClick, onEdit, pendingSuggestions = [] }) {
   const account = accounts.find(a => a.id === deal.accountId);
+  // Region stripe: red = US, blue = EMEA (missing country → EMEA), like Reporting.
+  const isUS = ['US', 'United States'].includes(account?.country || '');
+  const stripe = isUS ? '#E24B4A' : '#3B82F6';
   return (
     <div className={`deal-card ${dragging ? 'deal-card-dragging' : ''}`}
       draggable
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
-      onClick={onClick}>
+      onClick={onClick}
+      style={{ borderLeft: `3px solid ${stripe}` }}
+      title={isUS ? 'US' : 'EMEA'}>
       <div className="deal-card-top">
         <AccountMark account={account} size={14} />
         <span className="deal-card-account">{account?.name || deal.account}</span>

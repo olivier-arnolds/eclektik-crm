@@ -19,9 +19,25 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.19.0';
+export const CURRENT_VERSION = '1.19.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.19.1',
+    date: '2026-06-06T14:30:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feature',
+    title: 'Funnel: region stripe on deal cards (red = US, blue = EMEA)',
+    summary:
+      'Every deal card in the funnel now has a colored left stripe by region — red for US, ' +
+      'blue for EMEA — derived from the linked account country (missing country → EMEA), ' +
+      'matching the Reporting / Insights review region split.',
+    changes: [
+      'lane-funnel.jsx: DealCard gets a 3px left border, red (#E24B4A) for US accounts, blue (#3B82F6) for EMEA, with a US/EMEA tooltip.',
+    ],
+    files: ['src/bd/lane-funnel.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.19.1',
+  },
   {
     version: '1.19.0',
     date: '2026-06-06T14:10:00Z',
