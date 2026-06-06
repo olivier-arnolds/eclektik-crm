@@ -19,9 +19,28 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.19.3';
+export const CURRENT_VERSION = '1.19.4';
 
 export const CHANGELOG = [
+  {
+    version: '1.19.4',
+    date: '2026-06-06T15:30:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'data',
+    title: 'Normalize companies.country to full country names',
+    summary:
+      'One-time data cleanup applied to the CRM: every country value normalized to a consistent ' +
+      'full English name. All US variants (US, USA, United States) unified to "United States" (46), ' +
+      'and ISO codes (CH, NL, GB, DE, …) collapsed into their full names so Reporting, Insights ' +
+      'review and the funnel region stripe all agree. NULL countries (40) left untouched.',
+    changes: [
+      'Applied UPDATE on companies.country mapping variants → canonical full names.',
+      'Saved the migration as sql/data_normalize_country_2026-06-06.sql for the record.',
+    ],
+    note: 'Data-only change (no app code). 40 companies still have no country and remain EMEA by the binary US/EMEA rule.',
+    files: ['sql/data_normalize_country_2026-06-06.sql', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.19.4',
+  },
   {
     version: '1.19.3',
     date: '2026-06-06T15:10:00Z',
