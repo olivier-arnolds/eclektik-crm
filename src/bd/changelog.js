@@ -19,9 +19,26 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.11.2';
+export const CURRENT_VERSION = '1.11.3';
 
 export const CHANGELOG = [
+  {
+    version: '1.11.3',
+    date: '2026-06-06T13:30:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'refactor',
+    title: 'Status bar: world clock inline (flat) instead of a block',
+    summary:
+      'Changed the status-bar world clock from a bordered block to inline ' +
+      'dot-separated segments, matching the "Eclectik BD · <user> · <date>" style ' +
+      '— e.g. "… · Amsterdam 08:02 ±0 · New York 02:02 -6h · …". Amsterdam is ' +
+      'emphasised as home.',
+    changes: [
+      'statusbar.jsx: render each location as a flat "City HH:MM offset" segment separated by ·, instead of the tz-strip cell block.',
+    ],
+    files: ['src/bd/statusbar.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.11.3',
+  },
   {
     version: '1.11.2',
     date: '2026-06-06T13:00:00Z',

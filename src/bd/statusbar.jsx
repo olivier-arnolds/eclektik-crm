@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 
 // Minutes that `tz` is ahead of UTC at the given moment.
 function getOffset(tz, date) {
@@ -40,10 +40,6 @@ export default function Statusbar({ userName = '' }) {
     const m = Math.round((abs - h) * 60);
     return `${sign}${h}${m ? ':' + String(m).padStart(2, '0') : ''}h`;
   };
-  const isDay = (tz) => {
-    const h = parseInt(new Intl.DateTimeFormat('en-GB', { hour: '2-digit', timeZone: tz, hour12: false }).format(now), 10);
-    return h >= 7 && h < 19;
-  };
 
   return (
     <div className="statusbar">
@@ -52,18 +48,14 @@ export default function Statusbar({ userName = '' }) {
       <span>{userName}</span>
       <span className="sep">·</span>
       <span>{dateLabel}</span>
-      <div className="tz-strip" style={{ marginLeft: 'auto' }}>
-        {ZONES.map(z => (
-          <div key={z.label} className={`tz-cell ${z.home ? 'tz-cell-home' : ''}`}>
-            <span className={`tz-dot ${isDay(z.tz) ? 'tz-dot-day' : 'tz-dot-night'}`} />
-            <div className="tz-cell-inner">
-              <div className="tz-time">{fmt(z.tz)}</div>
-              <div className="tz-name">{z.label}</div>
-            </div>
-            <div className="tz-offset">{offsetLabel(z.tz)}</div>
-          </div>
-        ))}
-      </div>
+      {ZONES.map(z => (
+        <Fragment key={z.label}>
+          <span className="sep">·</span>
+          <span style={z.home ? { color: 'var(--text-1)' } : undefined}>
+            {z.label} {fmt(z.tz)} {offsetLabel(z.tz)}
+          </span>
+        </Fragment>
+      ))}
     </div>
   );
 }
