@@ -29,8 +29,9 @@ export const CHANGELOG = [
     type: 'feature',
     title: 'Insights review: ★ marks the quarter a deal was signed',
     summary:
-      'The Insights review matrix now shows a gold ★ in the quarter a deal was ' +
-      'signed (from the CRM funnel, by close date) — alongside the analysis dots. ' +
+      'The Insights review matrix now shows a ❊ (black, white in dark mode) in the ' +
+      'quarter a deal was signed (from the CRM funnel, by close date) — alongside ' +
+      'the analysis dots. ' +
       'Quarter columns are extended to include any quarter a deal was signed, even ' +
       'if there was no survey that quarter, so the star always has a column.',
     changes: [

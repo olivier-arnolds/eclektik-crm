@@ -144,7 +144,7 @@ function InsightsMatrix({ accounts = [], pscByAccount = {}, operationalAccIds = 
           return (
             <td key={q} style={{ ...td2, textAlign: 'center', whiteSpace: 'nowrap' }}>
               {v ? dot(v) : (!signed && <span style={{ color: 'var(--text-3)' }}>·</span>)}
-              {signed && <span title="Deal signed" style={{ color: '#E0A100', marginLeft: v ? 3 : 0 }}>★</span>}
+              {signed && <span title="Deal signed" style={{ color: 'var(--text-1)', marginLeft: v ? 3 : 0 }}>❊</span>}
             </td>
           );
         })}
@@ -169,7 +169,7 @@ function InsightsMatrix({ accounts = [], pscByAccount = {}, operationalAccIds = 
   return (
     <div>
       <div style={{ fontSize: 11, color: 'var(--text-3)', margin: '0 0 8px' }}>
-        <span style={{ color: '#1D9E75' }}>●</span> analysis on record · <span style={{ color: '#E24B4A' }}>●</span> survey, no analysis yet · <span style={{ color: '#E0A100' }}>★</span> deal signed · <span style={{ color: '#EAB308' }}>●</span> operational ·
+        <span style={{ color: '#1D9E75' }}>●</span> analysis on record · <span style={{ color: '#E24B4A' }}>●</span> survey, no analysis yet · <span style={{ color: 'var(--text-1)' }}>❊</span> deal signed · <span style={{ color: '#EAB308' }}>●</span> operational ·
         source: <a href="https://peoplescience.eclectik-insights.co/meta" target="_blank" rel="noreferrer" style={{ color: 'var(--accent)' }}>People Science meta</a>
       </div>
       <div style={{ overflowX: 'auto' }}>
