@@ -149,7 +149,7 @@ function InsightsMatrix({ accounts = [], pscByAccount = {}, operationalAccIds = 
         source: <a href="https://peoplescience.eclectik-insights.co/meta" target="_blank" rel="noreferrer" style={{ color: 'var(--accent)' }}>People Science meta</a>
       </div>
       <div style={{ overflowX: 'auto' }}>
-        <table style={{ borderCollapse: 'collapse' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead><tr>
             <th style={{ ...th2, textAlign: 'left', position: 'sticky', left: 0, background: 'var(--bg-1)', cursor: 'pointer' }}
               onClick={() => setSortKey(k => k === 'client' ? null : 'client')} title="Sort by client">Client{sortMark('client')}</th>

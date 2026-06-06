@@ -19,9 +19,24 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.17.4';
+export const CURRENT_VERSION = '1.17.5';
 
 export const CHANGELOG = [
+  {
+    version: '1.17.5',
+    date: '2026-06-07T09:50:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'refactor',
+    title: 'Insights review: matrix uses full available width',
+    summary:
+      'The Insights review matrix table now stretches to the full available width ' +
+      'like the other pages, instead of sizing to its content.',
+    changes: [
+      'lane-warroom.jsx: matrix table set to width 100%.',
+    ],
+    files: ['src/bd/lane-warroom.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.17.5',
+  },
   {
     version: '1.17.4',
     date: '2026-06-07T09:30:00Z',
