@@ -19,9 +19,26 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.13.1';
+export const CURRENT_VERSION = '1.13.2';
 
 export const CHANGELOG = [
+  {
+    version: '1.13.2',
+    date: '2026-06-06T18:00:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'fix',
+    title: 'Insights review: people scientist from the 360 Eclectik team',
+    summary:
+      'The "People scientist" column now resolves from each account\'s 360 ' +
+      'Eclectik-team links (the team member whose name is a PSC role — Avneeta, ' +
+      'Kirsty, Pablo, Paul Mastrangelo, Kate Feeney), instead of the delivery ' +
+      'sheet PS owner. So it reflects who covers the client per the 360.',
+    changes: [
+      'lane-warroom.jsx: fetch eclectik_team links, pick the PSC member per account (PSC_NAMES, mirroring reporting ROLE_OVERRIDE); matrix resolves PS via matched account → 360 team.',
+    ],
+    files: ['src/bd/lane-warroom.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.13.2',
+  },
   {
     version: '1.13.1',
     date: '2026-06-06T17:30:00Z',

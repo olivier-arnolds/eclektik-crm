@@ -44,7 +44,12 @@ function PersonCell({ name, hours, used }) {
 // (from the People Science meta), red = a survey cycle exists but no analysis yet.
 const normName = (s) => (s || '').toLowerCase().replace(/↳/g, '').replace(/\(.*?\)/g, '').replace(/[^a-z0-9]/g, '');
 
-function InsightsMatrix({ accounts = [], psByName = {}, onPickAccount }) {
+// People scientists (PSC role), by normalized name — mirrors ROLE_OVERRIDE in
+// lane-reporting.jsx. Used to pick the people scientist off an account's
+// Eclectik-team links (which carry no role field).
+const PSC_NAMES = new Set(['avneetasolanki', 'kirstythompsonclarke', 'pabloborgespatel', 'paulmastrangelo', 'katefeeney']);
+
+function InsightsMatrix({ accounts = [], pscByAccount = {}, onPickAccount }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -77,13 +82,10 @@ function InsightsMatrix({ accounts = [], psByName = {}, onPickAccount }) {
   const dot = (c) => <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: c === 'green' ? '#1D9E75' : '#E24B4A' }} />;
   const sectionList = sections.length ? sections : [{ key: null, label: '', count: clients.length }];
 
-  // People scientist per client (from delivery PS owner), matched by name.
+  // People scientist for a client = the PSC member on the matched account's 360.
   const psFor = (name) => {
-    const n = normName(name);
-    if (!n) return '';
-    if (psByName[n]) return psByName[n];
-    const k = Object.keys(psByName).find(key => key.length >= 3 && (key.includes(n) || n.includes(key)));
-    return k ? psByName[k] : '';
+    const acc = matchAccount(name);
+    return acc ? (pscByAccount[acc.id] || '') : '';
   };
   const sortRows = (list) => {
     if (sortKey === 'client') return [...list].sort((a, b) => a.name.localeCompare(b.name));
@@ -155,17 +157,24 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount }
 
   const accById = useMemo(() => new Map(accounts.map(a => [a.id, a])), [accounts]);
 
-  // People scientist per client (from the delivery sheet's PS owner), keyed by
-  // normalized client name — used by the Insights review matrix.
-  const psByName = useMemo(() => {
-    const m = {};
-    (rows || []).forEach(r => {
-      if (r.client_name && r.ps_owner && String(r.ps_owner).toUpperCase() !== 'N/A') {
-        m[normName(r.client_name)] = r.ps_owner;
-      }
-    });
-    return m;
-  }, [rows]);
+  // People scientist per account = the Eclectik-team member linked on the 360
+  // whose name maps to the PSC (people science) role. Keyed by CRM account id.
+  const [pscByAccount, setPscByAccount] = useState({});
+  useEffect(() => {
+    supabase.from('account_links')
+      .select('account_id, contacts:contact_id(first_name, last_name, full_name)')
+      .eq('link_type', 'eclectik_team')
+      .then(({ data }) => {
+        const m = {};
+        (data || []).forEach(l => {
+          const c = l.contacts;
+          if (!c || !l.account_id) return;
+          const name = `${c.first_name || ''} ${c.last_name || ''}`.trim() || c.full_name || '';
+          if (PSC_NAMES.has(normName(name)) && !m[l.account_id]) m[l.account_id] = name;
+        });
+        setPscByAccount(m);
+      });
+  }, []);
 
   // Deal value for a project's company = its RUNNING deals only (active /
   // onboarding). We do NOT fall back to past/lost deals — that was inflating
@@ -264,7 +273,7 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount }
         )}
       </div>
 
-      {tab === 'insights' && <InsightsMatrix accounts={accounts} psByName={psByName} onPickAccount={onPickAccount} />}
+      {tab === 'insights' && <InsightsMatrix accounts={accounts} pscByAccount={pscByAccount} onPickAccount={onPickAccount} />}
 
       {tab === 'projects' && missing.length > 0 && (
         <div style={{ marginBottom: 14, border: '0.5px solid var(--warn)', background: 'var(--warn-tint)', borderRadius: 8, padding: '9px 12px' }}>
