@@ -19,9 +19,26 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.12.0';
+export const CURRENT_VERSION = '1.12.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.12.1',
+    date: '2026-06-06T16:00:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'fix',
+    title: 'insights-review: stop crashing, report config errors clearly',
+    summary:
+      'The /api/insights-review function 500-crashed (FUNCTION_INVOCATION_FAILED) ' +
+      'when PS_SUPABASE_URL/KEY were malformed, because the Supabase client was ' +
+      'created outside the try block. Now it validates the URL, trims the values, ' +
+      'and returns a clear JSON error instead of crashing.',
+    changes: [
+      'api/insights-review.js: createClient moved inside try; URL format validated + values trimmed; clearer error messages.',
+    ],
+    files: ['api/insights-review.js', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.12.1',
+  },
   {
     version: '1.12.0',
     date: '2026-06-06T15:00:00Z',

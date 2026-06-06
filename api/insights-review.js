@@ -26,9 +26,14 @@ export default async function handler(req, res) {
   if (!PS_URL || !PS_KEY) {
     return res.status(503).json({ error: 'People Science source not configured (PS_SUPABASE_URL / PS_SUPABASE_KEY).' });
   }
-  const ps = createClient(PS_URL, PS_KEY);
 
   try {
+    const url = (PS_URL || '').trim();
+    const key = (PS_KEY || '').trim();
+    if (!/^https:\/\/[a-z0-9-]+\.supabase\.co\/?$/.test(url)) {
+      return res.status(500).json({ error: `PS_SUPABASE_URL looks wrong: "${url.slice(0, 40)}". Expected https://<ref>.supabase.co` });
+    }
+    const ps = createClient(url, key);
     const [{ data: clients, error: e1 }, { data: cycles, error: e2 }, { data: analyses, error: e3 }] = await Promise.all([
       ps.from('clients').select('id, name, slug, parent_slug, display_order'),
       ps.from('cycles').select('id, client_id, label, survey_date'),
@@ -70,6 +75,6 @@ export default async function handler(req, res) {
     return res.status(200).json({ clients: rows, quarters: quarterList, cells });
   } catch (err) {
     console.error('insights-review error:', err);
-    return res.status(502).json({ error: 'Failed to read People Science data: ' + err.message });
+    return res.status(502).json({ error: 'Failed to read People Science data: ' + (err?.message || String(err)) });
   }
 }
