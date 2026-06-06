@@ -74,6 +74,16 @@ function InsightsMatrix({ accounts = [], pscByAccount = {}, onPickAccount }) {
     return hit ? hit.a : null;
   }, [accNorm]);
 
+  // Account-level notes (companies.notes) — editable here and in the 360.
+  const [noteByAcc, setNoteByAcc] = useState({});
+  useEffect(() => {
+    supabase.from('companies').select('id, notes').then(({ data }) => {
+      const m = {};
+      (data || []).forEach(r => { if (r.notes != null) m[r.id] = r.notes; });
+      setNoteByAcc(m);
+    });
+  }, []);
+
   if (loading) return <div style={{ fontSize: 12, color: 'var(--text-3)' }}>Loading…</div>;
   if (error) return <div style={{ fontSize: 12, color: 'var(--warn)' }}>{error}</div>;
   const { clients = [], sections = [], quarters = [], cells = {} } = data || {};
@@ -121,6 +131,15 @@ function InsightsMatrix({ accounts = [], pscByAccount = {}, onPickAccount }) {
             {cells[c.id]?.[q] ? dot(cells[c.id][q]) : <span style={{ color: 'var(--text-3)' }}>·</span>}
           </td>
         ))}
+        <td style={{ ...td2, minWidth: 200 }}>
+          {acc ? (
+            <input value={noteByAcc[acc.id] ?? ''}
+              onChange={e => setNoteByAcc(m => ({ ...m, [acc.id]: e.target.value }))}
+              onBlur={e => supabase.from('companies').update({ notes: e.target.value || null }).eq('id', acc.id)}
+              placeholder="Add note…"
+              style={{ width: '100%', minWidth: 180, padding: '3px 6px', fontSize: 11.5, border: '0.5px solid var(--sep)', borderRadius: 4, background: 'var(--fill-1)', color: 'var(--text-1)', fontFamily: 'var(--font)', outline: 'none' }} />
+          ) : <span style={{ color: 'var(--text-3)' }}>—</span>}
+        </td>
       </tr>
     );
   };
@@ -139,13 +158,14 @@ function InsightsMatrix({ accounts = [], pscByAccount = {}, onPickAccount }) {
             <th style={{ ...th2, textAlign: 'left', cursor: 'pointer' }}
               onClick={() => setSortKey(k => k === 'ps' ? null : 'ps')} title="Sort by people scientist">People scientist{sortMark('ps')}</th>
             {quarters.map(q => <th key={q} style={{ ...th2, textAlign: 'center' }}>{q}</th>)}
+            <th style={{ ...th2, textAlign: 'left' }}>Note</th>
           </tr></thead>
           <tbody>
             {sectionList.map(s => (
               <Fragment key={s.key || 'all'}>
                 {s.label && (
                   <tr>
-                    <td colSpan={quarters.length + 2} style={{ padding: '10px 8px 4px', fontSize: 11, fontWeight: 500, color: 'var(--text-2)', textTransform: 'none', position: 'sticky', left: 0, background: 'var(--bg-1)' }}>
+                    <td colSpan={quarters.length + 3} style={{ padding: '10px 8px 4px', fontSize: 11, fontWeight: 500, color: 'var(--text-2)', textTransform: 'none', position: 'sticky', left: 0, background: 'var(--bg-1)' }}>
                       {s.label} <span style={{ color: 'var(--text-3)' }}>({s.count})</span>
                     </td>
                   </tr>

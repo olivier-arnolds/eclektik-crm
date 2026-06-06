@@ -19,9 +19,29 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.13.3';
+export const CURRENT_VERSION = '1.14.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.14.0',
+    date: '2026-06-06T19:30:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feature',
+    title: 'Account-level notes — editable in Insights review + the 360',
+    summary:
+      'Added an editable, persisted account-level note (stored on companies.notes). ' +
+      'In the War room → Insights review there is now a "Note" column on every ' +
+      'line you can type into; the same note shows and edits in the Account 360 ' +
+      '("Notes (account)"). One note per client, visible in both the portfolio ' +
+      'overview and on the client side.',
+    changes: [
+      'lane-warroom.jsx InsightsMatrix: editable Note column per row (writes companies.notes for the matched account; loads existing notes on open).',
+      'inline-details.jsx: "Notes (account)" field added to the Account 360 detail panel (same companies.notes field).',
+      'Reuses existing companies.notes column — no schema change.',
+    ],
+    files: ['src/bd/lane-warroom.jsx', 'src/bd/inline-details.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.14.0',
+  },
   {
     version: '1.13.3',
     date: '2026-06-06T18:45:00Z',

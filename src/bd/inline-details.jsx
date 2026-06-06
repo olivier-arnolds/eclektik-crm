@@ -721,6 +721,7 @@ export function InlineAccountDetails({ accountId, onPickAccount }) {
         <InlineField label="Tagline" value={row.tagline} onSave={v => saveField('tagline', v)} colspan={2} />
         <InlineField label="Specialities" value={row.specialities} onSave={v => saveField('specialities', v)} type="textarea" colspan={2} />
         <InlineField label="Description" value={row.description} type="textarea" onSave={v => saveField('description', v)} colspan={2} />
+        <InlineField label="Notes (account)" value={row.notes} type="textarea" onSave={v => saveField('notes', v)} colspan={2} />
       </div>
     </div>
   );
