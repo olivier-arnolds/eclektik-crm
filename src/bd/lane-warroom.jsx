@@ -74,19 +74,6 @@ function InsightsMatrix({ accounts = [], pscByAccount = {}, operationalAccIds = 
     return hit ? hit.a : null;
   }, [accNorm]);
 
-  // Account-level notes (companies.notes) — editable here and in the 360.
-  // Auto-saves: debounced while typing + immediately on blur (moving to the next).
-  const [noteByAcc, setNoteByAcc] = useState({});
-  const saveTimers = useRef({});
-  useEffect(() => {
-    supabase.from('companies').select('id, notes').then(({ data }) => {
-      const m = {};
-      (data || []).forEach(r => { if (r.notes != null) m[r.id] = r.notes; });
-      setNoteByAcc(m);
-    });
-  }, []);
-  const persistNote = (accId, val) => supabase.from('companies').update({ notes: val || null }).eq('id', accId);
-
   if (loading) return <div style={{ fontSize: 12, color: 'var(--text-3)' }}>Loading…</div>;
   if (error) return <div style={{ fontSize: 12, color: 'var(--warn)' }}>{error}</div>;
   const { clients = [], sections = [], quarters = [], cells = {} } = data || {};
@@ -151,20 +138,6 @@ function InsightsMatrix({ accounts = [], pscByAccount = {}, operationalAccIds = 
             </td>
           );
         })}
-        <td style={{ ...td2, minWidth: 200 }}>
-          {acc ? (
-            <input value={noteByAcc[acc.id] ?? ''}
-              onChange={e => {
-                const val = e.target.value;
-                setNoteByAcc(m => ({ ...m, [acc.id]: val }));
-                clearTimeout(saveTimers.current[acc.id]);
-                saveTimers.current[acc.id] = setTimeout(() => persistNote(acc.id, val), 600);
-              }}
-              onBlur={e => { clearTimeout(saveTimers.current[acc.id]); persistNote(acc.id, e.target.value); }}
-              placeholder="Add note…"
-              style={{ width: '100%', minWidth: 180, padding: '3px 6px', fontSize: 11.5, border: '0.5px solid var(--sep)', borderRadius: 4, background: 'var(--fill-1)', color: 'var(--text-1)', fontFamily: 'var(--font)', outline: 'none' }} />
-          ) : <span style={{ color: 'var(--text-3)' }}>—</span>}
-        </td>
       </tr>
     );
   };
@@ -183,7 +156,6 @@ function InsightsMatrix({ accounts = [], pscByAccount = {}, operationalAccIds = 
             <th style={{ ...th2, textAlign: 'left', cursor: 'pointer' }}
               onClick={() => setSortKey(k => k === 'ps' ? null : 'ps')} title="Sort by people scientist">People scientist{sortMark('ps')}</th>
             {allQuarters.map(q => <th key={q} style={th2} />)}
-            <th style={{ ...th2, textAlign: 'left' }}>Note</th>
           </tr></thead>
           <tbody>
             {sectionList.map(s => (
@@ -194,7 +166,6 @@ function InsightsMatrix({ accounts = [], pscByAccount = {}, operationalAccIds = 
                       {s.label} <span style={{ color: 'var(--text-3)' }}>({s.count})</span>
                     </td>
                     {allQuarters.map(q => <td key={q} style={{ padding: '10px 4px 4px', fontSize: 9.5, fontWeight: 500, color: 'var(--text-3)', textAlign: 'center', whiteSpace: 'nowrap' }}>{q}</td>)}
-                    <td />
                   </tr>
                 )}
                 {sortRows(allRows.filter(c => s.key == null || c.cohort === s.key)).map(clientRow)}

@@ -19,9 +19,25 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.17.3';
+export const CURRENT_VERSION = '1.17.4';
 
 export const CHANGELOG = [
+  {
+    version: '1.17.4',
+    date: '2026-06-07T09:30:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'refactor',
+    title: 'Insights review: remove the Note column',
+    summary:
+      'Removed the per-line Note column from the Insights review matrix (added no ' +
+      'value there) and reclaimed the width. The account note is still editable in ' +
+      'the Account 360 ("Notes (account)").',
+    changes: [
+      'lane-warroom.jsx: dropped the Note column (header, cells, section placeholder) and its load/save code from the matrix.',
+    ],
+    files: ['src/bd/lane-warroom.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.17.4',
+  },
   {
     version: '1.17.3',
     date: '2026-06-07T09:00:00Z',
