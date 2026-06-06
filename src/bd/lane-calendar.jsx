@@ -408,7 +408,6 @@ function EventBlock({ ev, pos, deals, accounts, onSelect, onDelete }) {
       onClick={(e) => { e.stopPropagation(); onSelect && onSelect(); }}
     >
       <div className="cal-event-title">
-        {ev.channel === 'teams' && <ChannelIcon ch="teams" size={10} />}
         <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ev.title}</span>
         {isGraph && onDelete && (
           <button onClick={(e) => { e.stopPropagation(); onDelete(ev); }}

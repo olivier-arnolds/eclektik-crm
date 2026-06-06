@@ -401,7 +401,11 @@ function yTicks(max) { const t = []; for (let v = 0; v <= max; v += 50000) t.pus
 
 function WonByQuarterChart({ m }) {
   const { quarters, extQuarters, glint, roi, totals, trend, proposal } = m;
-  const { W, H, padL, padR, padT, padB } = CHART;
+  const { W, padL, padR, padT } = CHART;
+  // Extra bottom band (+16) for a YoY row below the quarter labels; plot area
+  // stays identical (H and padB both grow by the same amount).
+  const padB = CHART.padB + 16;
+  const H = CHART.H + 16;
   const plotW = W - padL - padR, plotH = H - padT - padB;
   // Forward axis = trend extension, extended (contiguously) to the proposal quarter.
   const startI = qIndex(extQuarters[0]);
@@ -413,6 +417,8 @@ function WonByQuarterChart({ m }) {
   const y = (v) => padT + plotH - (v / maxV) * plotH;
   const bw = (plotW / axis.length) * 0.26;
   const baseY = padT + plotH;
+  const labelY = baseY + 18;   // quarter labels just below the plot
+  const yoyY = baseY + 31;     // YoY row below the quarter labels
   const totalPts = quarters.map((q, i) => `${x[i]},${y(totals[q])}`).join(' ');
   const trendPts = extQuarters.map((_, i) => `${x[i]},${y(trend.trendVals[i])}`).join(' ');
   const crossI = trend.crossingLabel ? axis.indexOf(trend.crossingLabel) : -1;
@@ -449,7 +455,7 @@ function WonByQuarterChart({ m }) {
       <polyline points={trendPts} fill="none" stroke="var(--rep-trend)" strokeWidth="1.5" strokeDasharray="2 3" />
       <polyline points={totalPts} fill="none" stroke="var(--text-1)" strokeWidth="2" />
       {quarters.map((q, i) => <circle key={q} cx={x[i]} cy={y(totals[q])} r="3" fill="var(--text-1)" />)}
-      {/* YoY delta vs the same quarter last year, above each total point */}
+      {/* YoY delta vs the same quarter last year, below the quarter labels */}
       {quarters.map((q, i) => {
         const [yy, nn] = q.split('-Q');
         const prev = totals[`${+yy - 1}-Q${nn}`];
@@ -457,9 +463,9 @@ function WonByQuarterChart({ m }) {
         const up = totals[q] >= prev;
         const pct = Math.abs(Math.round(((totals[q] - prev) / prev) * 100));
         return (
-          <text key={'yoy' + q} x={x[i]} y={y(totals[q]) - 9} textAnchor="middle" fontSize="9" fontWeight="500"
+          <text key={'yoy' + q} x={x[i]} y={yoyY} textAnchor="middle" fontSize="9" fontWeight="500"
             fill={up ? 'var(--good)' : '#E24B4A'}>
-            {up ? '▲' : '▼'}{pct}% YoY
+            {up ? '▲' : '▼'}{pct}%
           </text>
         );
       })}
@@ -469,7 +475,7 @@ function WonByQuarterChart({ m }) {
           <text x={x[crossI]} y={y(TARGET_Q) - 10} textAnchor="middle" fontSize="10.5" fill="var(--rep-trend)">≈ {qShort(trend.crossingLabel)}</text>
         </g>
       )}
-      {axis.map((q, i) => <text key={q} x={x[i]} y={H - 8} textAnchor="middle" fontSize="9.5" fill={i === pi ? 'var(--text-2)' : 'var(--text-3)'}>{qShort(q)}</text>)}
+      {axis.map((q, i) => <text key={q} x={x[i]} y={labelY} textAnchor="middle" fontSize="9.5" fill={i === pi ? 'var(--text-2)' : 'var(--text-3)'}>{qShort(q)}</text>)}
     </svg>
   );
 }

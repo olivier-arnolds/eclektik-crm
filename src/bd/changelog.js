@@ -19,9 +19,26 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.15.0';
+export const CURRENT_VERSION = '1.15.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.15.1',
+    date: '2026-06-06T21:15:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'refactor',
+    title: 'YoY below the quarter labels + drop meeting icon on the calendar',
+    summary:
+      'Moved the YoY delta to a row below the Qx-yy labels on the Won-revenue-by-' +
+      'quarter chart (clearer to read). Also removed the Teams channel icon from ' +
+      'the Meetings calendar agenda rows (same redundant marker as in the 360).',
+    changes: [
+      'lane-reporting.jsx: YoY % now sits below the quarter labels (added a bottom band; plot area unchanged).',
+      'lane-calendar.jsx: removed the channel icon from calendar agenda event rows.',
+    ],
+    files: ['src/bd/lane-reporting.jsx', 'src/bd/lane-calendar.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.15.1',
+  },
   {
     version: '1.15.0',
     date: '2026-06-06T20:55:00Z',
