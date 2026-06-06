@@ -265,7 +265,8 @@ export default function FunnelLane({ deals, accounts, contacts, filters, setFilt
 function DealCard({ deal, accounts, dragging, onDragStart, onDragEnd, onClick, onEdit, pendingSuggestions = [] }) {
   const account = accounts.find(a => a.id === deal.accountId);
   // Region stripe: red = US, blue = EMEA (missing country → EMEA), like Reporting.
-  const isUS = ['US', 'United States'].includes(account?.country || '');
+  // NB: the adapter stores the country string on `account.region`.
+  const isUS = ['US', 'United States', 'USA'].includes(account?.region || account?.country || '');
   const stripe = isUS ? '#E24B4A' : '#3B82F6';
   return (
     <div className={`deal-card ${dragging ? 'deal-card-dragging' : ''}`}

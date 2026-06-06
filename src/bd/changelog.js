@@ -19,9 +19,28 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.19.2';
+export const CURRENT_VERSION = '1.19.3';
 
 export const CHANGELOG = [
+  {
+    version: '1.19.3',
+    date: '2026-06-06T15:10:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'fix',
+    title: 'Region detection: read account.region (country) + include USA',
+    summary:
+      'US deal cards showed no red stripe because the adapter stores the country string on ' +
+      'account.region, not account.country, so every account read as EMEA. Fixed the funnel ' +
+      'stripe and the Insights review US/EMEA grouping to read the right field, and added "USA" ' +
+      '(1 company) to the US match set alongside "US" / "United States".',
+    changes: [
+      'lane-funnel.jsx: DealCard region reads account.region (fallback country); US set now US / United States / USA.',
+      'lane-warroom.jsx: regionFor() reads account.region (fallback country); same US set — fixes Insights review grouping that previously put everyone under EMEA.',
+    ],
+    note: 'Verified against the DB: US clients are stored as US (33), United States (12) and USA (1). Companies with no country (40) still fall under EMEA by design.',
+    files: ['src/bd/lane-funnel.jsx', 'src/bd/lane-warroom.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.19.3',
+  },
   {
     version: '1.19.2',
     date: '2026-06-06T14:50:00Z',

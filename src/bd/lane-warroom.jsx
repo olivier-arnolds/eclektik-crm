@@ -99,7 +99,8 @@ function InsightsMatrix({ accounts = [], pscByAccount = {}, operationalAccIds = 
   const psFor = (c) => { const a = accountFor(c); return a ? (pscByAccount[a.id] || '') : ''; };
 
   // Group by region like the Reporting view: US vs EMEA (missing country → EMEA).
-  const regionFor = (c) => (['US', 'United States'].includes(accountFor(c)?.country || '') ? 'US' : 'EMEA');
+  // NB: the adapter stores the country string on account.region.
+  const regionFor = (c) => { const a = accountFor(c); return ['US', 'United States', 'USA'].includes(a?.region || a?.country || '') ? 'US' : 'EMEA'; };
   const REGIONS = ['US', 'EMEA'];
 
   // Columns = PS survey quarters ∪ any quarter a deal was signed (so the ❊ has a
