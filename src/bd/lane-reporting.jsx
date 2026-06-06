@@ -449,6 +449,20 @@ function WonByQuarterChart({ m }) {
       <polyline points={trendPts} fill="none" stroke="var(--rep-trend)" strokeWidth="1.5" strokeDasharray="2 3" />
       <polyline points={totalPts} fill="none" stroke="var(--text-1)" strokeWidth="2" />
       {quarters.map((q, i) => <circle key={q} cx={x[i]} cy={y(totals[q])} r="3" fill="var(--text-1)" />)}
+      {/* YoY delta vs the same quarter last year, above each total point */}
+      {quarters.map((q, i) => {
+        const [yy, nn] = q.split('-Q');
+        const prev = totals[`${+yy - 1}-Q${nn}`];
+        if (prev == null || prev <= 0) return null;
+        const up = totals[q] >= prev;
+        const pct = Math.abs(Math.round(((totals[q] - prev) / prev) * 100));
+        return (
+          <text key={'yoy' + q} x={x[i]} y={y(totals[q]) - 9} textAnchor="middle" fontSize="9" fontWeight="500"
+            fill={up ? 'var(--good)' : '#E24B4A'}>
+            {up ? '▲' : '▼'}{pct}% YoY
+          </text>
+        );
+      })}
       {crossI >= 0 && (
         <g>
           <circle cx={x[crossI]} cy={y(TARGET_Q)} r="5" fill="var(--rep-trend)" />
@@ -660,7 +674,7 @@ export default function ReportingLane({ onPickAccount, accounts = [] }) {
               </div>
             )}
 
-            <Panel title="Won revenue by quarter" hint={`Filled bars = won actuals by close date · hollow bars (${qShort(m.proposal.quarter)}) = open proposal pipeline by line, probability-weighted, not yet won · total + linear trend vs €250k/q target · R²=${m.trend.r2.toFixed(2)} (illustrative, not a forecast)`}>
+            <Panel title="Won revenue by quarter" hint={`Filled bars = won actuals by close date · hollow bars (${qShort(m.proposal.quarter)}) = open proposal pipeline by line, probability-weighted, not yet won · total + linear trend vs €250k/q target · R²=${m.trend.r2.toFixed(2)} (illustrative, not a forecast) · ▲/▼ % above each point = YoY vs the same quarter last year`}>
               <Legend items={[['Glint (won)', 'var(--good)'], ['ROI (won)', 'var(--accent)'], ['Proposals (open)', 'var(--text-3)', 'dashed'], ['Total (actual)', 'var(--text-1)', 'solid'], ['Target €250k/q', 'var(--text-3)', 'dashed'], ['Trend', 'var(--rep-trend)', 'dotted']]} />
               <WonByQuarterChart m={m} />
             </Panel>

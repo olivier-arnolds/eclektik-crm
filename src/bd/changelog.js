@@ -19,9 +19,26 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.14.3';
+export const CURRENT_VERSION = '1.15.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.15.0',
+    date: '2026-06-06T20:55:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feature',
+    title: 'Reporting: YoY delta on won revenue by quarter',
+    summary:
+      'The "Won revenue by quarter" chart now shows a year-over-year delta above ' +
+      'each quarter\'s total point — comparing it to the same quarter the previous ' +
+      'year (Q1 2026 vs Q1 2025, Q4 2025 vs Q4 2024, …). Green ▲ up / red ▼ down ' +
+      'with the % change. Shown only where the prior-year quarter is in range.',
+    changes: [
+      'lane-reporting.jsx QuarterBars: YoY % label per quarter (vs same quarter last year); panel hint updated.',
+    ],
+    files: ['src/bd/lane-reporting.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.15.0',
+  },
   {
     version: '1.14.3',
     date: '2026-06-06T20:35:00Z',
