@@ -19,9 +19,31 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.17.6';
+export const CURRENT_VERSION = '1.18.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.18.0',
+    date: '2026-06-06T12:30:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feature',
+    title: 'Insights review: 4-quarter forecast (blue diamonds) + operational = blue square',
+    summary:
+      'The Insights review matrix now extends 4 quarters into the future and marks, per client, ' +
+      'when the next deal or PSC readout is likely — a blue diamond — based on the historical ' +
+      'cadence (median gap between past events). The operational marker (was an orange/yellow dot) ' +
+      'is now a blue square.',
+    changes: [
+      'lane-warroom.jsx: added forecast horizon (4 future quarters past the latest actual quarter) shown as italic blue headers behind a dashed divider.',
+      'predictFor(): collects each client\'s past events (PSC readouts + signed deals), takes the median quarter-gap, and projects the rhythm forward; needs ≥2 past events.',
+      'Predicted quarters render a blue diamond (rotate-45 square).',
+      'Operational row marker changed from yellow dot (#EAB308) to blue square.',
+      'Legend updated for both new markers.',
+    ],
+    note: 'The forecast is a naive cadence extrapolation, not a statistical model — a planning prompt, not a probability.',
+    files: ['src/bd/lane-warroom.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.18.0',
+  },
   {
     version: '1.17.6',
     date: '2026-06-06T12:00:00Z',

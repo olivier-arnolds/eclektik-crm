@@ -121,6 +121,40 @@ function InsightsMatrix({ accounts = [], pscByAccount = {}, operationalAccIds = 
   };
   const hasPrevious = allRows.some(c => { const p = prevFor(c); return p.dotVal || p.signed; });
   const prevTh = { ...th2, textAlign: 'center', borderRight: '0.5px solid var(--sep)' };
+
+  // ── Forecast: extend 4 quarters past the latest actual quarter and predict the
+  // next deal / PSC readout per client from its historical cadence (median gap
+  // between past events). Naive extrapolation — a planning prompt, not a model.
+  const BLUE = '#3B82F6';
+  const qFromKey = (k) => { const n = ((k - 1) % 4) + 1; const y = Math.floor((k - 1) / 4); return `${y}-Q${n}`; };
+  const now = new Date();
+  const currentQk = now.getFullYear() * 4 + (Math.floor(now.getMonth() / 3) + 1);
+  const lastActualQk = allQuarters.length ? qkey(allQuarters[allQuarters.length - 1]) : currentQk;
+  const horizonStart = Math.max(lastActualQk, currentQk) + 1;
+  const futureQuarters = [0, 1, 2, 3].map(i => qFromKey(horizonStart + i));
+  const futureSet = new Set(futureQuarters.map(qkey));
+  const displayQuarters = [...allQuarters, ...futureQuarters];
+  const predictFor = (c) => {
+    const acc = accountFor(c);
+    const cm = cells[c.id] || {};
+    const evts = new Set();
+    for (const q in cm) evts.add(qkey(q));
+    if (acc && signedByAccount[acc.id]) signedByAccount[acc.id].forEach(q => evts.add(qkey(q)));
+    const keys = [...evts].sort((a, b) => a - b);
+    if (keys.length < 2) return new Set();
+    const gaps = [];
+    for (let i = 1; i < keys.length; i++) gaps.push(keys[i] - keys[i - 1]);
+    gaps.sort((a, b) => a - b);
+    const mid = Math.floor(gaps.length / 2);
+    let gap = gaps.length % 2 ? gaps[mid] : Math.round((gaps[mid - 1] + gaps[mid]) / 2);
+    gap = Math.max(1, gap);
+    const out = new Set();
+    const maxK = horizonStart + 3;
+    let next = keys[keys.length - 1] + gap, guard = 0;
+    while (next <= maxK && guard++ < 16) { if (next >= horizonStart) out.add(next); next += gap; }
+    return out;
+  };
+  const diamond = <span title="Predicted next activity (deal or PSC readout) — based on past cadence" style={{ display: 'inline-block', width: 8, height: 8, background: BLUE, transform: 'rotate(45deg)' }} />;
   const sortRows = (list) => {
     if (sortKey === 'client') return [...list].sort((a, b) => a.name.localeCompare(b.name));
     if (sortKey === 'ps') return [...list].sort((a, b) => (psFor(a) || '~').localeCompare(psFor(b) || '~'));
@@ -136,7 +170,7 @@ function InsightsMatrix({ accounts = [], pscByAccount = {}, operationalAccIds = 
         <td style={{ ...td2, paddingLeft: c.isSub ? 22 : 8, fontWeight: c.isSub ? 400 : 500, position: 'sticky', left: 0, background: 'var(--bg-1)', whiteSpace: 'nowrap', color: acc && onPickAccount ? 'var(--accent)' : 'inherit', cursor: acc && onPickAccount ? 'pointer' : 'default' }}
           onClick={() => acc && onPickAccount && onPickAccount(acc)}
           title={acc ? `Open ${acc.name} (360)${operational ? ' · operational (running project)' : ''}` : undefined}>
-          <span title={operational ? 'Operational — running project' : undefined} style={{ display: 'inline-block', width: 7, height: 7, borderRadius: '50%', marginRight: 6, verticalAlign: 'middle', background: operational ? '#EAB308' : 'transparent' }} />
+          <span title={operational ? 'Operational — running project' : undefined} style={{ display: 'inline-block', width: 8, height: 8, borderRadius: 1, marginRight: 6, verticalAlign: 'middle', background: operational ? BLUE : 'transparent' }} />
           {c.name}{c.crmOnly && <span style={{ color: 'var(--text-3)', fontWeight: 400 }}> · CRM</span>}
         </td>
         <td style={{ ...td2, whiteSpace: 'nowrap', color: 'var(--text-2)' }}>{psFor(c) || <span style={{ color: 'var(--text-3)' }}>—</span>}</td>
@@ -149,16 +183,20 @@ function InsightsMatrix({ accounts = [], pscByAccount = {}, operationalAccIds = 
             </td>
           );
         })()}
-        {allQuarters.map(q => {
+        {(() => { const pred = predictFor(c); return displayQuarters.map(q => {
+          const k = qkey(q);
           const v = cells[c.id]?.[q];
           const signed = acc && signedByAccount[acc.id]?.has(q);
+          const predicted = pred.has(k);
+          const divider = k === horizonStart ? { borderLeft: '1px dashed var(--sep)' } : null;
           return (
-            <td key={q} style={{ ...td2, textAlign: 'center', whiteSpace: 'nowrap' }}>
-              {v ? dot(v) : (!signed && <span style={{ color: 'var(--text-3)' }}>·</span>)}
+            <td key={q} style={{ ...td2, textAlign: 'center', whiteSpace: 'nowrap', ...divider }}>
+              {v ? dot(v) : ((!signed && !predicted) && <span style={{ color: 'var(--text-3)' }}>·</span>)}
               {signed && <span title="Deal signed" style={{ color: 'var(--text-1)', marginLeft: v ? 3 : 0 }}>❊</span>}
+              {predicted && diamond}
             </td>
           );
-        })}
+        }); })()}
       </tr>
     );
   };
@@ -166,7 +204,7 @@ function InsightsMatrix({ accounts = [], pscByAccount = {}, operationalAccIds = 
   return (
     <div>
       <div style={{ fontSize: 11, color: 'var(--text-3)', margin: '0 0 8px' }}>
-        <span style={{ color: '#1D9E75' }}>●</span> analysis on record · <span style={{ color: '#E24B4A' }}>●</span> survey, no analysis yet · <span style={{ color: 'var(--text-1)' }}>❊</span> deal signed · <span style={{ color: '#EAB308' }}>●</span> operational ·
+        <span style={{ color: '#1D9E75' }}>●</span> analysis on record · <span style={{ color: '#E24B4A' }}>●</span> survey, no analysis yet · <span style={{ color: 'var(--text-1)' }}>❊</span> deal signed · <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: 1, background: BLUE, verticalAlign: 'middle' }} /> operational · <span style={{ display: 'inline-block', width: 7, height: 7, background: BLUE, transform: 'rotate(45deg)', verticalAlign: 'middle' }} /> predicted next activity (forecast, next 4Q) ·
         source: <a href="https://peoplescience.eclectik-insights.co/meta" target="_blank" rel="noreferrer" style={{ color: 'var(--accent)' }}>People Science meta</a>
       </div>
       <div style={{ overflowX: 'auto' }}>
@@ -177,7 +215,7 @@ function InsightsMatrix({ accounts = [], pscByAccount = {}, operationalAccIds = 
             <th style={{ ...th2, textAlign: 'left', cursor: 'pointer' }}
               onClick={() => setSortKey(k => k === 'ps' ? null : 'ps')} title="Sort by people scientist">People scientist{sortMark('ps')}</th>
             {hasPrevious && <th style={prevTh} />}
-            {allQuarters.map(q => <th key={q} style={th2} />)}
+            {displayQuarters.map(q => <th key={q} style={{ ...th2, ...(qkey(q) === horizonStart ? { borderLeft: '1px dashed var(--sep)' } : null) }} />)}
           </tr></thead>
           <tbody>
             {sectionList.map(s => (
@@ -188,7 +226,7 @@ function InsightsMatrix({ accounts = [], pscByAccount = {}, operationalAccIds = 
                       {s.label} <span style={{ color: 'var(--text-3)' }}>({s.count})</span>
                     </td>
                     {hasPrevious && <td style={{ padding: '10px 4px 4px', fontSize: 9.5, fontWeight: 500, color: 'var(--text-3)', textAlign: 'center', whiteSpace: 'nowrap', borderRight: '0.5px solid var(--sep)' }}>Previous</td>}
-                    {allQuarters.map(q => <td key={q} style={{ padding: '10px 4px 4px', fontSize: 9.5, fontWeight: 500, color: 'var(--text-3)', textAlign: 'center', whiteSpace: 'nowrap' }}>{q}</td>)}
+                    {displayQuarters.map(q => { const fut = futureSet.has(qkey(q)); return <td key={q} style={{ padding: '10px 4px 4px', fontSize: 9.5, fontWeight: 500, color: fut ? BLUE : 'var(--text-3)', fontStyle: fut ? 'italic' : 'normal', textAlign: 'center', whiteSpace: 'nowrap', ...(qkey(q) === horizonStart ? { borderLeft: '1px dashed var(--sep)' } : null) }}>{q}</td>; })}
                   </tr>
                 )}
                 {sortRows(allRows.filter(c => s.key == null || c.cohort === s.key)).map(clientRow)}
