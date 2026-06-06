@@ -827,6 +827,16 @@ export function InlineDealDetail({ deal, rawItems, onCompose, onOpenModal, refet
     if (refetch) refetch();
   };
 
+  const deleteNote = async (idx) => {
+    if (!confirm('Delete this note?')) return;
+    const remaining = entries
+      .filter((_, i) => i !== idx)
+      .map(e => (e.dateStr ? `${e.dateStr}: ${e.text}` : e.text))
+      .join('\n');
+    await updateRow(deal.table, deal.id, { notes: remaining || null });
+    if (refetch) refetch();
+  };
+
   // Title field: opportunities → topic, leads → full_name
   const titleField = deal.table === 'opportunities' ? 'topic' : 'full_name';
   const titleValue = rawRow?.topic || rawRow?.full_name || deal.title;
@@ -883,6 +893,10 @@ export function InlineDealDetail({ deal, rawItems, onCompose, onOpenModal, refet
               <div style={{ fontSize: 12, color: 'var(--text-1)', lineHeight: 1.5, whiteSpace: 'pre-wrap', flex: 1 }}>
                 {e.text}
               </div>
+              <button onClick={() => deleteNote(i)} title="Delete this note"
+                style={{ flexShrink: 0, alignSelf: 'flex-start', background: 'none', border: 'none', color: 'var(--text-3)', cursor: 'pointer', fontSize: 14, lineHeight: 1, padding: '0 2px' }}>
+                ×
+              </button>
             </div>
           ))}
         </div>

@@ -19,9 +19,25 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.14.0';
+export const CURRENT_VERSION = '1.14.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.14.1',
+    date: '2026-06-06T20:00:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feature',
+    title: 'Deal notes: delete a note from the history',
+    summary:
+      'Each note in a deal\'s Notes history now has a × to delete it (e.g. a ' +
+      'duplicate added twice). It rebuilds the deal notes field without that ' +
+      'entry. Asks for confirmation first.',
+    changes: [
+      'inline-details.jsx InlineDealDetail: per-entry delete (×) — removes the entry and writes back the remaining dated notes.',
+    ],
+    files: ['src/bd/inline-details.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.14.1',
+  },
   {
     version: '1.14.0',
     date: '2026-06-06T19:30:00Z',
