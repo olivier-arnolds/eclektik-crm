@@ -28,17 +28,6 @@ export default function Topbar({ theme, setTheme, view, setView, layout, setLayo
           onClick={() => setView('funnel')} title="Funnel — deal pipeline">
           <I.funnel /> Funnel
         </button>
-        <button className={view === 'meetings' ? 'on' : ''}
-          onClick={() => setView('meetings')} title="Meetings — calendar & agenda">
-          <I.calendar /> Meetings
-        </button>
-        <button className={view === 'tasks' ? 'on' : ''} onClick={() => setView('tasks')} title="All open tasks">
-          <I.check /> Tasks
-        </button>
-        <button className={view === 'comms' ? 'on' : ''}
-          onClick={() => setView('comms')} title="Comms — email, Teams & LinkedIn">
-          <I.inbox /> Comms
-        </button>
         <button className={view === 'warroom' ? 'on' : ''}
           onClick={() => setView('warroom')} title="War room — pipeline & running projects">
           <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.4">
@@ -46,11 +35,22 @@ export default function Topbar({ theme, setTheme, view, setView, layout, setLayo
             <path d="M8 .5v2M8 13.5v2M.5 8h2M13.5 8h2" strokeLinecap="round" />
           </svg> War room
         </button>
+        <button className={view === 'tasks' ? 'on' : ''} onClick={() => setView('tasks')} title="All open tasks">
+          <I.check /> Tasks
+        </button>
         <button className={view === 'reporting' ? 'on' : ''}
           onClick={() => setView('reporting')} title="Reporting — revenue & pipeline">
           <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.4">
             <path d="M2 14h12M4 14V8M8 14V4M12 14v-7" strokeLinecap="round" />
           </svg> Reporting
+        </button>
+        <button className={view === 'meetings' ? 'on' : ''}
+          onClick={() => setView('meetings')} title="Meetings — calendar & agenda">
+          <I.calendar /> Meetings
+        </button>
+        <button className={view === 'comms' ? 'on' : ''}
+          onClick={() => setView('comms')} title="Comms — email, Teams & LinkedIn">
+          <I.inbox /> Comms
         </button>
         <button className={view === 'marketing' ? 'on' : ''}
           onClick={() => setView('marketing')} title="Marketing — segment & campaign">

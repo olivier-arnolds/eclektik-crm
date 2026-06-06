@@ -19,9 +19,25 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.11.3';
+export const CURRENT_VERSION = '1.11.4';
 
 export const CHANGELOG = [
+  {
+    version: '1.11.4',
+    date: '2026-06-06T14:00:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'refactor',
+    title: 'Reorder tabs: Funnel · War room · Tasks · Reporting first',
+    summary:
+      'Reordered the top navigation to Funnel, War room, Tasks, Reporting, then ' +
+      'the rest (Meetings, Comms, Marketing, Playbooks, Admin, Log).',
+    changes: [
+      'topbar.jsx: nav button order updated.',
+      'BDApp.jsx: NAV_VIEWS reordered to match.',
+    ],
+    files: ['src/bd/topbar.jsx', 'src/bd/BDApp.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.11.4',
+  },
   {
     version: '1.11.3',
     date: '2026-06-06T13:30:00Z',
