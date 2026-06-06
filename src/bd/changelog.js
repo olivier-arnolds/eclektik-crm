@@ -19,9 +19,29 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.11.4';
+export const CURRENT_VERSION = '1.12.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.12.0',
+    date: '2026-06-06T15:00:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feature',
+    title: 'War room: Insights review matrix (clients × quarters)',
+    summary:
+      'Added an "Insights review" sub-tab to the War room (beside Projects): a ' +
+      'matrix of clients × quarters with a green dot where an analysis is on record ' +
+      'in the People Science meta and red where a survey cycle exists but has no ' +
+      'analysis yet. Sub-clients (e.g. Sage Product / GTM) are nested under their ' +
+      'parent. Data comes from the People Science project via /api/insights-review.',
+    changes: [
+      'War room split into Projects | Insights review sub-tabs (lane-warroom.jsx).',
+      'New /api/insights-review.js reads the People Science Supabase (clients/cycles/analyses) and returns the client × quarter matrix. GATED on PS_SUPABASE_URL / PS_SUPABASE_KEY env (returns 503 until set).',
+      'Added docs/warroom-projects-field-guide.md — the field reference for Yarmilla (incl. how to mark a project finished).',
+    ],
+    files: ['src/bd/lane-warroom.jsx', 'api/insights-review.js', 'docs/warroom-projects-field-guide.md', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.12.0',
+  },
   {
     version: '1.11.4',
     date: '2026-06-06T14:00:00Z',

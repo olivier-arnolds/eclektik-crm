@@ -40,7 +40,60 @@ function PersonCell({ name, hours, used }) {
   );
 }
 
+// Insights-review matrix: clients × quarters, green = an analysis is on record
+// (from the People Science meta), red = a survey cycle exists but no analysis yet.
+function InsightsMatrix() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  useEffect(() => {
+    fetch('/api/insights-review')
+      .then(async r => { const j = await r.json().catch(() => ({})); if (r.ok) setData(j); else setError(j.error || 'Failed'); })
+      .catch(e => setError(e.message))
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) return <div style={{ fontSize: 12, color: 'var(--text-3)' }}>Loading…</div>;
+  if (error) return <div style={{ fontSize: 12, color: 'var(--warn)' }}>{error}</div>;
+  const { clients = [], quarters = [], cells = {} } = data || {};
+  if (!clients.length) return <div style={{ fontSize: 12, color: 'var(--text-3)' }}>No insights data.</div>;
+
+  const th2 = { fontWeight: 500, fontSize: 10.5, color: 'var(--text-3)', padding: '4px 8px', borderBottom: '0.5px solid var(--sep)', whiteSpace: 'nowrap' };
+  const td2 = { padding: '6px 8px', borderBottom: '0.5px solid var(--sep)', fontSize: 12 };
+  const dot = (c) => <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: c === 'green' ? '#1D9E75' : '#E24B4A' }} />;
+
+  return (
+    <div>
+      <div style={{ fontSize: 11, color: 'var(--text-3)', margin: '0 0 8px' }}>
+        <span style={{ color: '#1D9E75' }}>●</span> analysis on record · <span style={{ color: '#E24B4A' }}>●</span> survey, no analysis yet ·
+        source: <a href="https://peoplescience.eclectik-insights.co/meta" target="_blank" rel="noreferrer" style={{ color: 'var(--accent)' }}>People Science meta</a>
+      </div>
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ borderCollapse: 'collapse' }}>
+          <thead><tr>
+            <th style={{ ...th2, textAlign: 'left', position: 'sticky', left: 0, background: 'var(--bg-1)' }}>Client</th>
+            {quarters.map(q => <th key={q} style={{ ...th2, textAlign: 'center' }}>{q}</th>)}
+          </tr></thead>
+          <tbody>
+            {clients.map(c => (
+              <tr key={c.id}>
+                <td style={{ ...td2, paddingLeft: c.isSub ? 22 : 8, fontWeight: c.isSub ? 400 : 500, position: 'sticky', left: 0, background: 'var(--bg-1)', whiteSpace: 'nowrap' }}>{c.name}</td>
+                {quarters.map(q => (
+                  <td key={q} style={{ ...td2, textAlign: 'center' }}>
+                    {cells[c.id]?.[q] ? dot(cells[c.id][q]) : <span style={{ color: 'var(--text-3)' }}>·</span>}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 export default function WarRoomLane({ accounts = [], deals = [], onPickAccount }) {
+  const [tab, setTab] = useState('projects');
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
@@ -116,24 +169,38 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount }
 
   return (
     <div className="lane" style={{ flex: 1, minWidth: 0, overflow: 'auto', padding: 14 }}>
-      {/* Header: source + last updated + update */}
+      {/* Header: title + sub-tabs (+ source/update on the Projects tab) */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 12 }}>
         <div style={{ fontSize: 16, fontWeight: 500 }}>War room</div>
-        <div style={{ flex: 1 }} />
-        <div style={{ fontSize: 11, color: 'var(--text-3)', textAlign: 'right', lineHeight: 1.5 }}>
-          Source: <a href={SOURCE_URL} target="_blank" rel="noreferrer" style={{ color: 'var(--accent)' }}>Master Project Overview.xlsx</a>
-          {sheetModified && <> · sheet updated {fmtRelative(sheetModified)}</>}
-          <br />
-          {lastSynced ? <>synced {fmtRelative(lastSynced)}</> : 'not synced yet'}
-          {syncMsg && <> · <span style={{ color: 'var(--text-2)' }}>{syncMsg}</span></>}
+        <div style={{ display: 'flex', gap: 6 }}>
+          {[['projects', 'Projects'], ['insights', 'Insights review']].map(([t, label]) => (
+            <button key={t} className="btn-ghost tiny" onClick={() => setTab(t)}
+              style={{ fontWeight: tab === t ? 500 : 400, color: tab === t ? 'var(--text-1)' : 'var(--text-3)', borderBottom: `2px solid ${tab === t ? 'var(--accent)' : 'transparent'}`, borderRadius: 0 }}>
+              {label}
+            </button>
+          ))}
         </div>
-        <button className="btn-ghost tiny" onClick={update} disabled={syncing}
-          style={{ color: 'var(--accent)', whiteSpace: 'nowrap' }} title="Pull the latest from Yarmilla's sheet">
-          {syncing ? 'Updating…' : '↻ Update'}
-        </button>
+        <div style={{ flex: 1 }} />
+        {tab === 'projects' && (
+          <>
+            <div style={{ fontSize: 11, color: 'var(--text-3)', textAlign: 'right', lineHeight: 1.5 }}>
+              Source: <a href={SOURCE_URL} target="_blank" rel="noreferrer" style={{ color: 'var(--accent)' }}>Master Project Overview.xlsx</a>
+              {sheetModified && <> · sheet updated {fmtRelative(sheetModified)}</>}
+              <br />
+              {lastSynced ? <>synced {fmtRelative(lastSynced)}</> : 'not synced yet'}
+              {syncMsg && <> · <span style={{ color: 'var(--text-2)' }}>{syncMsg}</span></>}
+            </div>
+            <button className="btn-ghost tiny" onClick={update} disabled={syncing}
+              style={{ color: 'var(--accent)', whiteSpace: 'nowrap' }} title="Pull the latest from Yarmilla's sheet">
+              {syncing ? 'Updating…' : '↻ Update'}
+            </button>
+          </>
+        )}
       </div>
 
-      {missing.length > 0 && (
+      {tab === 'insights' && <InsightsMatrix />}
+
+      {tab === 'projects' && missing.length > 0 && (
         <div style={{ marginBottom: 14, border: '0.5px solid var(--warn)', background: 'var(--warn-tint)', borderRadius: 8, padding: '9px 12px' }}>
           <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--warn)', marginBottom: 6 }}>
             In CRM "active" but not in the sheet · {missing.length}
@@ -152,6 +219,7 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount }
         </div>
       )}
 
+      {tab === 'projects' && (<>
       <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-2)', margin: '6px 0' }}>
         Glint delivery — running projects · {delivery.length}
       </div>
@@ -199,6 +267,7 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount }
           })}
         </tbody>
       </table>
+      </>)}
     </div>
   );
 }
