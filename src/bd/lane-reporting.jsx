@@ -52,8 +52,22 @@ const ccShort = (c) => {
   return c ? (m[c] || c) : '—';
 };
 
+// Marco's authoritative role assignment (overrides whatever account_links.role
+// says). Keyed by normalised name; anyone not listed falls back to the link role.
+// Exported so the War room (coverage tab, insights CS/PS initials) shares it.
+const normNameKey = (s) => (s || '').toLowerCase().replace(/\s+/g, ' ').trim();
+export const ROLE_OVERRIDE = {
+  'angela schwingel': 'CSM', 'avneeta solanki': 'PSC', 'eric quintane': 'ROI',
+  'ezra fermanis': 'CSM', 'heidi muhle': 'CSM', 'ivan de las cuevas ruiz': 'CSM',
+  'kirsty thompson-clarke': 'PSC', 'manish goel': 'ROI', 'pablo borges patel': 'PSC',
+  'paul mastrangelo': 'PSC', 'simon boehm': 'rest', 'stephanie noack': 'CSM',
+  'yarmilla koenders': 'rest', 'kate feeney': 'PSC',
+};
+export const roleOverrideFor = (name) => ROLE_OVERRIDE[normNameKey(name)] || null;
+export const normLinkRole = (r) => (r === 'CSM' || r === 'PSC' || r === 'ROI') ? r : 'rest';
+
 // ───────────────────────── data hook ─────────────────────────
-function useReportingData() {
+export function useReportingData() {
   const [opps, setOpps] = useState(null);
   const [companies, setCompanies] = useState(null);
   const [links, setLinks] = useState(null);
@@ -91,7 +105,7 @@ function useReportingData() {
 }
 
 // ───────────────────────── metric computation ─────────────────────────
-function computeMetrics(opps, companies, links, teamContacts, cfg) {
+export function computeMetrics(opps, companies, links, teamContacts, cfg) {
   const byId = new Map(companies.map((c) => [c.id, c]));
   const isCustomer = (c) => c && c.type === 'Customer' && c.name !== ADECCO;
 
@@ -253,17 +267,7 @@ function computeMetrics(opps, companies, links, teamContacts, cfg) {
   // Team coverage matrix: Eclectik team members (columns) × clients (rows).
   // Person role from account_links.role; columns sorted CSM → PSC → ROI → rest.
   const ROLE_ORDER = { CSM: 0, PSC: 1, ROI: 2, rest: 3 };
-  const normRole = (r) => (r === 'CSM' || r === 'PSC' || r === 'ROI') ? r : 'rest';
-  // Marco's authoritative role assignment (overrides whatever account_links.role
-  // says). Keyed by normalised name; anyone not listed falls back to the link role.
-  const normName = (s) => s.toLowerCase().replace(/\s+/g, ' ').trim();
-  const ROLE_OVERRIDE = {
-    'angela schwingel': 'CSM', 'avneeta solanki': 'PSC', 'eric quintane': 'ROI',
-    'ezra fermanis': 'CSM', 'heidi muhle': 'CSM', 'ivan de las cuevas ruiz': 'CSM',
-    'kirsty thompson-clarke': 'PSC', 'manish goel': 'ROI', 'pablo borges patel': 'PSC',
-    'paul mastrangelo': 'PSC', 'simon boehm': 'rest', 'stephanie noack': 'CSM',
-    'yarmilla koenders': 'rest', 'kate feeney': 'PSC',
-  };
+  const normRole = normLinkRole; // shared with War room (see exports above)
   const ctById = new Map((teamContacts || []).map((c) => [c.id, c]));
   const personName = (c) => {
     const n = `${c.first_name || ''} ${c.last_name || ''}`.trim();
@@ -283,7 +287,7 @@ function computeMetrics(opps, companies, links, teamContacts, cfg) {
   const team = [...people.values()].map((p) => {
     let role = 'rest', best = 0;
     for (const k of ['CSM', 'PSC', 'ROI']) if ((p.roleCounts[k] || 0) > best) { role = k; best = p.roleCounts[k]; }
-    role = ROLE_OVERRIDE[normName(p.name)] || role;
+    role = roleOverrideFor(p.name) || role;
     return { name: p.name, role, clients: p.clients, n: p.clients.size, initials: p.name.split(' ').filter(Boolean).map((w) => w[0]).slice(0, 2).join('').toUpperCase() };
   }).sort((a, b) => ROLE_ORDER[a.role] - ROLE_ORDER[b.role] || a.name.localeCompare(b.name));
 
@@ -300,7 +304,8 @@ const ROLE_COLOR = { CSM: 'var(--good)', PSC: 'var(--accent)', ROI: 'var(--warn)
 
 // Eclectik team ↔ client coverage matrix. Clients down the side, team across
 // the top (grouped by role); a colored dot marks each covered crossing.
-function TeamCoverageMatrix({ m, onPick }) {
+// Exported: rendered in the War room's Coverage tab.
+export function TeamCoverageMatrix({ m, onPick }) {
   const { team, regionRows } = m;
   if (!team.length) return <div style={{ ...muted, fontSize: 12 }}>No Eclectik-team links found.</div>;
   const stickyName = { position: 'sticky', left: 0, zIndex: 1, background: 'var(--bg-1)' };
@@ -735,10 +740,6 @@ export default function ReportingLane({ onPickAccount, accounts = [] }) {
                 <span><Pill status="Dormant" /> no live/open</span><span><Pill status="Partner" /> won, not a Customer</span>
               </div>
               <ClientsTable m={m} onPick={pick} />
-            </Panel>
-
-            <Panel title="Client coverage · Eclectik team" hint="Who covers each client. Columns grouped CSM → PSC → ROI → leadership/other; a dot marks coverage. Click a client to open its 360.">
-              <TeamCoverageMatrix m={m} onPick={pick} />
             </Panel>
 
             <Panel title="Dormant clients" hint="Customers (excl. Adecco) with no live or open work — re-engagement candidates.">

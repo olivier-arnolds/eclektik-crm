@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef, Fragment } from 'react';
 import { supabase } from '../supabase';
 import { fmtRelative, fmtMoney } from './atoms';
+import { useReportingData, computeMetrics, TeamCoverageMatrix, roleOverrideFor, normLinkRole } from './lane-reporting';
 
 // War-room: the running Glint delivery projects, synced from Yarmilla's Master
 // Project Overview into public.glint_delivery. People (CS / PS / support) are
@@ -51,7 +52,7 @@ const normName = (s) => (s || '').toLowerCase().replace(/↳/g, '').replace(/[^a
 // Eclectik-team links (which carry no role field).
 const PSC_NAMES = new Set(['avneetasolanki', 'kirstythompsonclarke', 'pabloborgespatel', 'paulmastrangelo', 'katefeeney']);
 
-function InsightsMatrix({ accounts = [], pscByAccount = {}, operationalAccIds = new Set(), signedByAccount = {}, onPickAccount }) {
+function InsightsMatrix({ accounts = [], pscByAccount = {}, teamByAccount = {}, operationalAccIds = new Set(), signedByAccount = {}, onPickAccount }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -192,6 +193,14 @@ function InsightsMatrix({ accounts = [], pscByAccount = {}, operationalAccIds = 
           <span title={operational ? 'Operational — running project' : undefined} style={{ display: 'inline-block', width: 8, height: 8, borderRadius: 1, marginRight: 6, verticalAlign: 'middle', background: operational ? BLUE : 'transparent' }} />
           {c.name}{c.crmOnly && <span style={{ color: 'var(--text-3)', fontWeight: 400 }}> · CRM</span>}
         </td>
+        <td style={{ ...td2, whiteSpace: 'nowrap' }}>
+          {(acc && teamByAccount[acc.id] ? teamByAccount[acc.id] : []).map((p, i) => (
+            <span key={p.name} title={`${p.name} · ${p.role}`}
+              style={{ color: p.role === 'CSM' ? '#1D9E75' : 'var(--accent)', fontSize: 10.5, fontFamily: 'var(--font-mono)', marginLeft: i ? 6 : 0 }}>
+              {p.initials}
+            </span>
+          ))}
+        </td>
         {hasPrevious && (() => {
           const p = prevFor(c);
           return (
@@ -230,6 +239,7 @@ function InsightsMatrix({ accounts = [], pscByAccount = {}, operationalAccIds = 
           <thead><tr>
             <th style={{ ...th2, textAlign: 'left', position: 'sticky', left: 0, background: 'var(--bg-1)', cursor: 'pointer' }}
               onClick={() => setSortKey(k => k === 'client' ? null : 'client')} title="Sort by client">Client{sortMark('client')}</th>
+            <th style={{ ...th2, textAlign: 'left' }} title="CS (green) and PS (purple) contractors on the account">CS · PS</th>
             {hasPrevious && <th style={prevTh} />}
             {displayQuarters.map(q => <th key={q} style={{ ...th2, ...(qkey(q) === horizonStart ? { borderLeft: '1px dashed var(--sep)' } : null) }} />)}
           </tr></thead>
@@ -240,7 +250,7 @@ function InsightsMatrix({ accounts = [], pscByAccount = {}, operationalAccIds = 
               return (
                 <Fragment key={R}>
                   <tr>
-                    <td style={{ padding: '10px 8px 4px', fontSize: 11, fontWeight: 600, color: 'var(--text-2)', position: 'sticky', left: 0, background: 'var(--bg-1)' }}>
+                    <td colSpan={2} style={{ padding: '10px 8px 4px', fontSize: 11, fontWeight: 600, color: 'var(--text-2)', position: 'sticky', left: 0, background: 'var(--bg-1)' }}>
                       {R} <span style={{ color: 'var(--text-3)' }}>({list.length})</span>
                     </td>
                     {hasPrevious && <td style={{ padding: '10px 4px 4px', fontSize: 9.5, fontWeight: 500, color: 'var(--text-3)', textAlign: 'center', whiteSpace: 'nowrap', borderRight: '0.5px solid var(--sep)' }}>Previous</td>}
@@ -253,6 +263,27 @@ function InsightsMatrix({ accounts = [], pscByAccount = {}, operationalAccIds = 
           </tbody>
         </table>
       </div>
+    </div>
+  );
+}
+
+// Coverage tab: the "Client coverage · Eclectik team" matrix, moved here from
+// the Reporting page. Reuses Reporting's data hook + model + matrix component.
+function CoverageTab({ accounts = [], onPickAccount }) {
+  const { opps, companies, links, teamContacts, error, loading } = useReportingData();
+  const m = useMemo(
+    () => (opps && companies) ? computeMetrics(opps, companies, links || [], teamContacts || [], { countActiveAsWon: false, recurringLineLevel: false }) : null,
+    [opps, companies, links, teamContacts]
+  );
+  if (loading) return <div style={{ fontSize: 12, color: 'var(--text-3)' }}>Loading…</div>;
+  if (error) return <div style={{ fontSize: 12, color: 'var(--warn)' }}>{error}</div>;
+  if (!m) return null;
+  return (
+    <div>
+      <div style={{ fontSize: 12, color: 'var(--text-3)', margin: '0 0 8px' }}>
+        Who covers each client. Columns grouped CSM → PSC → ROI → leadership/other; a dot marks coverage. Click a client to open its 360.
+      </div>
+      <TeamCoverageMatrix m={m} onPick={(id) => { const acc = accounts.find(a => a.id === id); if (acc && onPickAccount) onPickAccount(acc); }} />
     </div>
   );
 }
@@ -276,19 +307,31 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount }
   // People scientist per account = the Eclectik-team member linked on the 360
   // whose name maps to the PSC (people science) role. Keyed by CRM account id.
   const [pscByAccount, setPscByAccount] = useState({});
+  // CS + PS contractors per account (initials shown in the Insights matrix).
+  const [teamByAccount, setTeamByAccount] = useState({});
   useEffect(() => {
     supabase.from('account_links')
-      .select('account_id, contacts:contact_id(first_name, last_name, full_name)')
+      .select('account_id, role, contacts:contact_id(first_name, last_name, full_name)')
       .eq('link_type', 'eclectik_team')
       .then(({ data }) => {
         const m = {};
+        const t = {};
         (data || []).forEach(l => {
           const c = l.contacts;
           if (!c || !l.account_id) return;
           const name = `${c.first_name || ''} ${c.last_name || ''}`.trim() || c.full_name || '';
           if (PSC_NAMES.has(normName(name)) && !m[l.account_id]) m[l.account_id] = name;
+          const role = roleOverrideFor(name) || normLinkRole(l.role);
+          if (role === 'CSM' || role === 'PSC') {
+            const arr = (t[l.account_id] = t[l.account_id] || []);
+            if (!arr.some(p => p.name === name)) {
+              arr.push({ name, role, initials: name.split(' ').filter(Boolean).map(w => w[0]).slice(0, 2).join('').toUpperCase() });
+            }
+          }
         });
+        Object.values(t).forEach(arr => arr.sort((a, b) => (a.role === b.role ? a.name.localeCompare(b.name) : a.role === 'CSM' ? -1 : 1)));
         setPscByAccount(m);
+        setTeamByAccount(t);
       });
   }, []);
 
@@ -382,7 +425,7 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount }
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 12 }}>
         <div style={{ fontSize: 16, fontWeight: 500 }}>War room</div>
         <div style={{ display: 'flex', gap: 6 }}>
-          {[['projects', 'Projects'], ['insights', 'Insights review']].map(([t, label]) => (
+          {[['projects', 'Projects'], ['insights', 'Insights review'], ['coverage', 'Client coverage']].map(([t, label]) => (
             <button key={t} className="btn-ghost tiny" onClick={() => setTab(t)}
               style={{ fontWeight: tab === t ? 500 : 400, color: tab === t ? 'var(--text-1)' : 'var(--text-3)', borderBottom: `2px solid ${tab === t ? 'var(--accent)' : 'transparent'}`, borderRadius: 0 }}>
               {label}
@@ -410,7 +453,9 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount }
         )}
       </div>
 
-      {tab === 'insights' && <InsightsMatrix accounts={accounts} pscByAccount={pscByAccount} operationalAccIds={operationalAccIds} signedByAccount={signedByAccount} onPickAccount={onPickAccount} />}
+      {tab === 'insights' && <InsightsMatrix accounts={accounts} pscByAccount={pscByAccount} teamByAccount={teamByAccount} operationalAccIds={operationalAccIds} signedByAccount={signedByAccount} onPickAccount={onPickAccount} />}
+
+      {tab === 'coverage' && <CoverageTab accounts={accounts} onPickAccount={onPickAccount} />}
 
       {tab === 'projects' && missing.length > 0 && (
         <div style={{ marginBottom: 14, border: '0.5px solid var(--warn)', background: 'var(--warn-tint)', borderRadius: 8, padding: '9px 12px' }}>

@@ -19,9 +19,29 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.20.0';
+export const CURRENT_VERSION = '1.21.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.21.0',
+    date: '2026-06-07T11:00:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feature',
+    title: 'War room: Client coverage tab (moved from Reporting) + CS/PS initials in Insights review',
+    summary:
+      'The "Client coverage · Eclectik team" matrix moved from the Reporting page to its own ' +
+      'War room tab (Projects | Insights review | Client coverage). The Insights review matrix ' +
+      'gained a CS · PS column right after the client name showing the initials of the CS (green) ' +
+      'and PS (purple) contractors covering that account.',
+    changes: [
+      'lane-reporting.jsx: exported useReportingData, computeMetrics, TeamCoverageMatrix; ROLE_OVERRIDE lifted to module scope and exported (roleOverrideFor / normLinkRole) as the single source of truth for roles; coverage Panel removed from the Reporting page.',
+      'lane-warroom.jsx: new Client coverage tab rendering TeamCoverageMatrix via the shared reporting hook/model; click-through to the 360 kept.',
+      'lane-warroom.jsx: eclectik_team fetch now also reads the link role and builds teamByAccount (CSM + PSC members, deduped, CS first) using the shared role override.',
+      'InsightsMatrix: "CS · PS" initials column after Client (hover shows the full name + role); region header spans adjusted.',
+    ],
+    files: ['src/bd/lane-reporting.jsx', 'src/bd/lane-warroom.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.21.0',
+  },
   {
     version: '1.20.0',
     date: '2026-06-06T16:10:00Z',
