@@ -58,6 +58,7 @@ function normalizeProductLine(v) {
 function adaptLead(row) {
   return {
     id: row.id,
+    dealNo: row.deal_no || '',
     funnelStage: 'lead',
     subStatus: row.sub_status || row.status || 'qualify',
     // Expose raw status so adaptDeal can disambiguate (e.g. won-leads stuck in close)
@@ -86,6 +87,7 @@ function adaptOpportunity(row) {
   const isProject = ['onboarding', 'active', 'inactive', 'past'].includes(stage)
   return {
     id: row.id,
+    dealNo: row.deal_no || '',
     funnelStage: stage,
     subStatus: row.sub_status || (isProject ? null : 'qualify'),
     sortDate: (row.updated_at || row.created_at || '').split('T')[0],

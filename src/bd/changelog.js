@@ -19,9 +19,50 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.21.0';
+export const CURRENT_VERSION = '1.22.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.22.1',
+    date: '2026-06-07T13:00:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'improve',
+    title: 'Numbering: all accounts get an A-#### number',
+    summary:
+      'Per standard CRM practice, the account number is no longer limited to Customers/Partners — ' +
+      'every account is numbered. Existing A-0001..A-0081 unchanged; the remaining 105 accounts ' +
+      'were backfilled chronologically as A-0082..A-0186, and the trigger now numbers every new account.',
+    changes: [
+      'Migration number_all_accounts: trigger condition dropped, remaining accounts backfilled, sequence advanced.',
+      'sql/schema_numbering_2026-06-07.sql updated to match.',
+      'War room Projects grid: account number (A-####) next to the client name and running deal number(s) (D-####) next to the deal value; same on the "in CRM but not in the sheet" block.',
+    ],
+    files: ['sql/schema_numbering_2026-06-07.sql', 'src/bd/lane-warroom.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.22.1',
+  },
+  {
+    version: '1.22.0',
+    date: '2026-06-07T12:30:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feature',
+    title: 'Account & deal numbering (A-#### / D-####) + Phase A dedupe + Pepkor deal move',
+    summary:
+      'Automatic numbering: every deal gets a D-#### number on creation (one sequence across ' +
+      'opportunities and leads), and every account that is or becomes Customer/Partner gets an ' +
+      'A-#### number — assigned by database triggers, so it works no matter where a row is created. ' +
+      'Existing rows backfilled chronologically (A-0001..A-0081, D-0001..D-0175). Also: merged ' +
+      'duplicate companies INTWO→Intwo and KMPG→KPMG (data-quality Phase A, with backups), and ' +
+      'moved the "Glint | eNPS conversion" deal from Pep core group to PEPKOR.',
+    changes: [
+      'DB migration account_and_deal_numbering: sequences, unique columns (companies.account_no, opportunities.deal_no, leads.deal_no), triggers on insert/update, chronological backfill — saved as sql/schema_numbering_2026-06-07.sql.',
+      'usePipelineData/adapters: dealNo and accountNo threaded through.',
+      'UI: deal number on funnel cards, inline deal detail and the deal modal (with account number); account number in the Account 360 hero and the accounts grid.',
+      'Phase A dedupe executed with backups (_dq_backup_companies_20260607 / _dq_backup_contacts_20260607): all child tables repointed, losers deleted (188→186 companies), INTWO company_name snapshots fixed.',
+      'Pepkor: Glint | eNPS conversion repointed from Pep core group to PEPKOR.',
+    ],
+    files: ['sql/schema_numbering_2026-06-07.sql', 'src/hooks/usePipelineData.js', 'src/bd/adapters.js', 'src/bd/lane-funnel.jsx', 'src/bd/inline-details.jsx', 'src/bd/deal-detail-modal.jsx', 'src/bd/lane-accounts.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.22.0',
+  },
   {
     version: '1.21.0',
     date: '2026-06-07T11:00:00Z',

@@ -357,12 +357,13 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount }
   // onboarding). We do NOT fall back to past/lost deals — that was inflating
   // values (e.g. IMC, whose only running stage is none; its other deals are
   // past/won/lost and shouldn't count here).
-  const dealValueFor = useCallback((companyId) => {
-    if (!companyId) return 0;
-    return (deals || [])
-      .filter(d => d.accountId === companyId && ['active', 'onboarding'].includes(d.stage))
-      .reduce((s, d) => s + (Number(d.value) || 0), 0);
+  const runningDealsFor = useCallback((companyId) => {
+    if (!companyId) return [];
+    return (deals || []).filter(d => d.accountId === companyId && ['active', 'onboarding'].includes(d.stage));
   }, [deals]);
+  const dealValueFor = useCallback((companyId) => {
+    return runningDealsFor(companyId).reduce((s, d) => s + (Number(d.value) || 0), 0);
+  }, [runningDealsFor]);
 
   // Active/onboarding CRM deals whose company has NO row in the delivery sheet
   // — i.e. running per the CRM but missing from the war-room. Shown at the top.
@@ -468,7 +469,9 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount }
               <div key={d.id} style={{ fontSize: 12, display: 'flex', gap: 8, alignItems: 'baseline', padding: '2px 0' }}>
                 <span style={{ fontWeight: 500, color: acc && onPickAccount ? 'var(--accent)' : 'inherit', cursor: acc && onPickAccount ? 'pointer' : 'default' }}
                   onClick={() => acc && onPickAccount && onPickAccount(acc)}>{acc?.name || d.account || '—'}</span>
+                {acc?.accountNo && <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-3)' }}>{acc.accountNo}</span>}
                 <span style={{ color: 'var(--text-3)' }}>{d.title}</span>
+                {d.dealNo && <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-3)' }}>{d.dealNo}</span>}
                 <span style={{ marginLeft: 'auto', fontWeight: 500, fontVariantNumeric: 'tabular-nums' }}>{d.value ? fmtMoney(d.value) : ''}</span>
               </div>
             );
@@ -499,14 +502,22 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount }
                   {acc && onPickAccount
                     ? <span onClick={() => onPickAccount(acc)} style={{ fontWeight: 500, color: 'var(--accent)', cursor: 'pointer' }}>{r.client_name}</span>
                     : <span style={{ fontWeight: 500 }}>{r.client_name}</span>}
+                  {acc?.accountNo && <span title="Account number" style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-3)', marginLeft: 6 }}>{acc.accountNo}</span>}
                   <div style={sub}>
                     {r.project_name || ''}
                     {(() => {
-                      const v = dealValueFor(r.company_id);
-                      if (!v) return null;
+                      const ds = runningDealsFor(r.company_id);
+                      const v = ds.reduce((s, d) => s + (Number(d.value) || 0), 0);
+                      if (!v && !ds.length) return null;
                       const h = (Number(r.cs_hours) || 0) + (Number(r.ps_hours) || 0) + (Number(r.other_hours) || 0);
-                      const rate = h > 0 ? Math.round(v / h) : null;
-                      return <span style={{ color: 'var(--text-2)', fontWeight: 500 }}> · {fmtMoney(v)}{rate ? ` (€${rate}/h)` : ''}</span>;
+                      const rate = h > 0 && v ? Math.round(v / h) : null;
+                      const nos = ds.map(d => d.dealNo).filter(Boolean).join(' ');
+                      return (
+                        <span style={{ color: 'var(--text-2)', fontWeight: 500 }}>
+                          {v ? <> · {fmtMoney(v)}{rate ? ` (€${rate}/h)` : ''}</> : null}
+                          {nos && <span title="Running deal number(s)" style={{ fontFamily: 'var(--font-mono)', fontWeight: 400, color: 'var(--text-3)', marginLeft: 6 }}>{nos}</span>}
+                        </span>
+                      );
                     })()}
                   </div>
                 </td>

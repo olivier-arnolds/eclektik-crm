@@ -301,6 +301,7 @@ function DealCard({ deal, accounts, dragging, onDragStart, onDragEnd, onClick, o
       )}
       <div className="deal-card-bottom">
         <span className="deal-card-value">{fmtMoney(deal.value)}</span>
+        {deal.dealNo && <span title="Deal number" style={{ fontSize: 9.5, fontFamily: 'var(--font-mono)', color: 'var(--text-3)', marginLeft: 6 }}>{deal.dealNo}</span>}
         <div className="deal-card-flags">
           <StaleDot days={deal.staleDays} />
           {deal.probability > 0 && <span>{deal.probability}%</span>}

@@ -844,6 +844,11 @@ export function InlineDealDetail({ deal, rawItems, onCompose, onOpenModal, refet
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {(deal.dealNo || rawRow?.deal_no) && (
+        <div style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-3)' }}>
+          {deal.dealNo || rawRow?.deal_no}
+        </div>
+      )}
       <InlineField label="Deal name" value={titleValue}
         onSave={v => updateField(titleField, v || titleValue)} colspan={2} />
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 6 }}>

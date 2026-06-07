@@ -82,8 +82,9 @@ export default function DealDetailModal({ deal, accounts, contacts, rawItems, on
               </div>
             )}
             <div style={{ fontSize: 10, color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>
+              {deal.dealNo && <span style={{ marginRight: 8 }}>{deal.dealNo}</span>}
               {account?.name ? (
-                <span>{account.name}</span>
+                <span>{account.name}{account.accountNo ? ` · ${account.accountNo}` : ''}</span>
               ) : (
                 <button
                   onClick={() => setLinkingAccount(v => !v)}

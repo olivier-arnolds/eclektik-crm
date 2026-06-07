@@ -613,6 +613,7 @@ function AccountsList({ accounts, contacts, deals, onPickAccount, search, onAddA
             <div style={{ flex: 1, minWidth: 0 }}>
               <div className="account-card-name">{a.name}</div>
               <div className="account-card-meta">
+                {a.accountNo && <><span style={{ fontFamily: 'var(--font-mono)' }}>{a.accountNo}</span><span className="sep">·</span></>}
                 <span>{a.type || '—'}</span>
                 {a.region && <><span className="sep">·</span><span>{a.region}</span></>}
                 {a.industry && <><span className="sep">·</span><span>{a.industry}</span></>}
@@ -929,6 +930,7 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
             )}
           </div>
           <div className="acc-hero-meta">
+            {account.accountNo && <><span style={{ fontFamily: 'var(--font-mono)' }}>{account.accountNo}</span><span className="sep">·</span></>}
             <span>{account.type || '—'}</span>
             {account.tier && <><span className="sep">·</span><span>{account.tier}</span></>}
             {account.region && <><span className="sep">·</span><span>{account.region}</span></>}

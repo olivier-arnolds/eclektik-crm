@@ -47,6 +47,7 @@ export function adaptDeal(item, rawAccounts, rawContacts) {
 
   return {
     id: item.id,
+    dealNo: item.dealNo || '',
     title: item.title || 'Untitled',
     account: acc?.name || '',
     accountId: acc?.id,
@@ -74,6 +75,7 @@ export function adaptDeal(item, rawAccounts, rawContacts) {
 export function adaptAccount(row) {
   return {
     id: row.id,
+    accountNo: row.account_no || '',
     name: row.name || '',
     type: row.type || 'Customer',
     tier: row.tier || '',
