@@ -19,9 +19,24 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.22.1';
+export const CURRENT_VERSION = '1.22.2';
 
 export const CHANGELOG = [
+  {
+    version: '1.22.2',
+    date: '2026-06-07T13:30:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'improve',
+    title: 'Reporting: average deal size in Win / loss by line',
+    summary:
+      'The Win / loss by line table now has an "Avg deal" column — average won deal size ' +
+      '(won value ÷ won count) per product line, placed between Won value and Lost est.',
+    changes: [
+      'lane-reporting.jsx: Avg deal column added to the Win / loss by line table.',
+    ],
+    files: ['src/bd/lane-reporting.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.22.2',
+  },
   {
     version: '1.22.1',
     date: '2026-06-07T13:00:00Z',

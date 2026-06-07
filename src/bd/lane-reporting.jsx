@@ -717,7 +717,9 @@ export default function ReportingLane({ onPickAccount, accounts = [] }) {
                 <thead><tr style={{ textAlign: 'left', fontWeight: 400, ...muted }}>
                   <th style={{ padding: '4px 6px', fontWeight: 400 }}>Line</th><th style={{ padding: '4px 6px', fontWeight: 400, textAlign: 'right' }}>Won n</th>
                   <th style={{ padding: '4px 6px', fontWeight: 400, textAlign: 'right' }}>Lost n</th><th style={{ padding: '4px 6px', fontWeight: 400, textAlign: 'right' }}>Win rate</th>
-                  <th style={{ padding: '4px 6px', fontWeight: 400, textAlign: 'right' }}>Won value</th><th style={{ padding: '4px 6px', fontWeight: 400, textAlign: 'right' }}>Lost est.</th>
+                  <th style={{ padding: '4px 6px', fontWeight: 400, textAlign: 'right' }}>Won value</th>
+                  <th style={{ padding: '4px 6px', fontWeight: 400, textAlign: 'right' }} title="Average won deal size (won value / won n)">Avg deal</th>
+                  <th style={{ padding: '4px 6px', fontWeight: 400, textAlign: 'right' }}>Lost est.</th>
                 </tr></thead>
                 <tbody>
                   {m.wl.map((r) => (
@@ -727,6 +729,7 @@ export default function ReportingLane({ onPickAccount, accounts = [] }) {
                       <td style={{ padding: '4px 6px', textAlign: 'right', ...mono }}>{r.lostN}</td>
                       <td style={{ padding: '4px 6px', textAlign: 'right', ...mono }}>{(r.wonN + r.lostN) ? ((r.wonN / (r.wonN + r.lostN)) * 100).toFixed(0) + '%' : '—'}</td>
                       <td style={{ padding: '4px 6px', textAlign: 'right', fontWeight: 500, ...mono }}>{eur(r.wonVal)}</td>
+                      <td style={{ padding: '4px 6px', textAlign: 'right', ...mono }}>{r.wonN ? eur(r.wonVal / r.wonN) : '—'}</td>
                       <td style={{ padding: '4px 6px', textAlign: 'right', ...mono, ...muted }}>{eur(r.lostEst)}</td>
                     </tr>
                   ))}
