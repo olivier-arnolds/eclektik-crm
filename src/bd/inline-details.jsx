@@ -8,6 +8,7 @@ import TypePicker from './type-picker';
 import { useAuth } from '../lib/auth';
 import TagChip from './tag-chip';
 import TagPopover from './tag-popover';
+import DocLinksSection from './doc-links-section';
 
 // Inline editable field — click to edit, blur/Enter to save.
 export function InlineField({ label, value, onSave, type = 'text', colspan }) {
@@ -853,6 +854,9 @@ export function InlineDealDetail({ deal, rawItems, onCompose, onOpenModal, refet
         <InlineField label="Close date" value={rawRow?.close_date || rawRow?.est_close_date} type="date"
           onSave={v => updateField(deal.table === 'opportunities' ? 'est_close_date' : 'close_date', v)} />
       </div>
+
+      <DocLinksSection dealTable={deal.table} dealId={deal.id} accountId={deal.accountId || null}
+        label="Documents (SOW, proposal, …)" compact />
 
       <div>
         <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)', marginBottom: 4 }}>

@@ -7,6 +7,7 @@ import InactivateAccountModal from './inactivate-modal';
 import ContactDetailModal from './contact-detail-modal';
 import MeetingNoteModal from './meeting-note-modal';
 import AccountLinksSection from './account-links-section';
+import DocLinksSection from './doc-links-section';
 import LinkExistingContactModal from './link-existing-contact-modal';
 import TagChip from './tag-chip';
 import DuplicateContactsModal from './duplicate-contacts-modal';
@@ -1070,6 +1071,8 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
             onOpenContact={(id) => setDetailContactId(id)}
           />
         )}
+
+        {account.id && <DocLinksSection accountId={account.id} label="Documents" />}
 
         <Section label={`Open deals · ${openDeals.length}`}>
           <div className="deals-list">

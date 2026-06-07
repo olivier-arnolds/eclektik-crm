@@ -19,9 +19,28 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.19.4';
+export const CURRENT_VERSION = '1.20.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.20.0',
+    date: '2026-06-06T16:10:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feature',
+    title: 'Account 360: SharePoint document links (account-level + per deal)',
+    summary:
+      'The Account 360 now has a Documents section for SharePoint links (SOWs, proposals, …): ' +
+      'add a link with a name + URL, delete it, and click to open the document in a new browser ' +
+      'window. Each deal also gets its own Documents block in the inline deal detail.',
+    changes: [
+      'New document_links table in Supabase (account-level: account_id; per-deal: deal_table + deal_id), RLS for authenticated users — applied as migration create_document_links and saved as sql/schema_document_links.sql.',
+      'New doc-links-section.jsx: reusable DocLinksSection (list, add label+URL form, delete with confirm, opens links target=_blank); URLs without a scheme get https:// prefixed.',
+      'lane-accounts.jsx: Documents section in the 360 below Eclectik team.',
+      'inline-details.jsx: compact "Documents (SOW, proposal, …)" block inside InlineDealDetail.',
+    ],
+    files: ['sql/schema_document_links.sql', 'src/bd/doc-links-section.jsx', 'src/bd/lane-accounts.jsx', 'src/bd/inline-details.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.20.0',
+  },
   {
     version: '1.19.4',
     date: '2026-06-06T15:30:00Z',
