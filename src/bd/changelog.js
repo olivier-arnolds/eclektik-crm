@@ -19,9 +19,28 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.28.1';
+export const CURRENT_VERSION = '1.28.2';
 
 export const CHANGELOG = [
+  {
+    version: '1.28.2',
+    date: '2026-06-08T20:05:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'fix',
+    title: 'Currency picker also on the inline deal detail',
+    summary:
+      'The EUR/USD/GBP currency picker was only on the full DealDetailModal; added it to the inline deal detail (the expand used in the workspace and Account 360) under the Value/Probability/Close grid, so it is actually reachable.',
+    changes: [
+      'inline-details.jsx (InlineDealDetail): added a Currency select writing opportunities.currency.',
+    ],
+    files: [
+      'src/bd/inline-details.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.28.2',
+  },
   {
     version: '1.28.1',
     date: '2026-06-08T19:45:00Z',

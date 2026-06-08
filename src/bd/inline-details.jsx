@@ -859,6 +859,16 @@ export function InlineDealDetail({ deal, rawItems, onCompose, onOpenModal, refet
         <InlineField label="Close date" value={rawRow?.close_date || rawRow?.est_close_date} type="date"
           onSave={v => updateField(deal.table === 'opportunities' ? 'est_close_date' : 'close_date', v)} />
       </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>Currency</div>
+        <select value={/dollar|usd/i.test(rawRow?.currency || '') ? 'USD' : /pound|sterling|gbp/i.test(rawRow?.currency || '') ? 'GBP' : 'EUR'}
+          onChange={e => updateField('currency', e.target.value)}
+          style={{ padding: '3px 6px', borderRadius: 4, border: '0.5px solid var(--sep)', background: 'var(--fill-1)', fontSize: 12, fontFamily: 'inherit' }}>
+          <option value="EUR">EUR €</option>
+          <option value="USD">USD $</option>
+          <option value="GBP">GBP £</option>
+        </select>
+      </div>
 
       <DocLinksSection dealTable={deal.table} dealId={deal.id} accountId={deal.accountId || null}
         label="Documents (SOW, proposal, …)" compact />
