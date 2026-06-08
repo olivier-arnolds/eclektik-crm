@@ -19,9 +19,28 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.29.2';
+export const CURRENT_VERSION = '1.29.3';
 
 export const CHANGELOG = [
+  {
+    version: '1.29.3',
+    date: '2026-06-09T07:30:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'fix',
+    title: 'Gantt: smaller text',
+    summary:
+      'Further reduced the Gantt text and widened the viewBox so labels render smaller and in line with the rest of the lane (client 8, initials 6.5, months 7).',
+    changes: [
+      'lane-warroom.jsx ProjectsGantt: smaller fonts, wider viewBox, tighter rows.',
+    ],
+    files: [
+      'src/bd/lane-warroom.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.29.3',
+  },
   {
     version: '1.29.2',
     date: '2026-06-08T23:45:00Z',
