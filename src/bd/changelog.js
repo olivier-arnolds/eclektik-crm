@@ -19,9 +19,28 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.30.0';
+export const CURRENT_VERSION = '1.30.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.30.1',
+    date: '2026-06-09T09:10:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feat',
+    title: 'Waterfall: editable minimum, aligned axis + matching size',
+    summary:
+      'The minimum-per-quarter is now editable (input in the panel header, default €120k). The waterfall uses the same axis and dimensions as the charts above, so quarters line up column-for-column and the size matches.',
+    changes: [
+      'lane-reporting.jsx: minQ state + Min €k/q input; MinWaterfallChart uses the shared axis/CHART dims and takes a min prop.',
+    ],
+    files: [
+      'src/bd/lane-reporting.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.30.1',
+  },
   {
     version: '1.30.0',
     date: '2026-06-09T08:30:00Z',

@@ -558,40 +558,47 @@ function NewRecurringChart({ m }) {
 // Waterfall of cumulative won revenue vs the €120k/quarter minimum. Each quarter
 // steps the running balance by (won − MIN_Q); below 0 = behind the floor (red),
 // above 0 = ahead (green). Bar label = running cumulative.
-function MinWaterfallChart({ m }) {
-  const { quarters, totals } = m;
+function MinWaterfallChart({ m, min = MIN_Q }) {
+  const { quarters, extQuarters, proposal, totals } = m;
   const { W, padL, padR, padT } = CHART;
-  const padB = 28, H = 230;
+  const padB = CHART.padB + 16, H = CHART.H + 16;          // match the Won-by-quarter chart
   const plotW = W - padL - padR, plotH = H - padT - padB;
+  // Same axis as the charts above so quarter columns line up.
+  const startI = qIndex(extQuarters[0]);
+  const endI = Math.max(qIndex(extQuarters[extQuarters.length - 1]), qIndex(proposal.quarter));
+  const axis = []; for (let i = startI; i <= endI; i++) axis.push(qLabel(i));
+  const xi = (q) => axis.indexOf(q);
   let run = 0;
-  const steps = quarters.map((q) => { const delta = (totals[q] || 0) - MIN_Q; const from = run; run += delta; return { q, delta, from, to: run }; });
+  const steps = quarters.map((q) => { const delta = (totals[q] || 0) - min; const from = run; run += delta; return { q, delta, from, to: run }; });
   const vals = [0, ...steps.flatMap((s) => [s.from, s.to])];
   let lo = Math.min(...vals), hi = Math.max(...vals);
   const pad = Math.max(20000, (hi - lo) * 0.12); lo -= pad; hi += pad;
   const span = (hi - lo) || 1;
-  const x = steps.map((_, i) => padL + (plotW / steps.length) * (i + 0.5));
+  const x = axis.map((_, i) => padL + (plotW / axis.length) * (i + 0.5));
   const y = (v) => padT + plotH - ((v - lo) / span) * plotH;
-  const bw = (plotW / steps.length) * 0.46;
+  const bw = (plotW / axis.length) * 0.42;
   const fmt = (v) => (v >= 0 ? '+' : '') + eur(v);
   return (
     <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label="Cumulative won revenue vs €120k/quarter minimum" style={{ display: 'block' }}>
       <line x1={padL} x2={W - padR} y1={y(0)} y2={y(0)} stroke="var(--text-3)" strokeWidth="1.5" strokeDasharray="6 4" />
       <text x={padL - 6} y={y(0) - 3} textAnchor="end" fontSize="9.5" fill="var(--text-3)">on min</text>
-      {steps.map((s, i) => {
+      {steps.map((s, idx) => {
+        const i = xi(s.q); if (i < 0) return null;
         const yA = y(s.from), yB = y(s.to);
         const yTop = Math.min(yA, yB), h = Math.max(2, Math.abs(yB - yA));
         const col = s.to >= 0 ? 'var(--good)' : '#E24B4A';
+        const pi = idx > 0 ? xi(steps[idx - 1].q) : -1;
         return (
           <g key={s.q}>
-            {i > 0 && <line x1={x[i - 1] + bw / 2} x2={x[i] - bw / 2} y1={y(steps[i - 1].to)} y2={y(steps[i - 1].to)} stroke="var(--sep-strong)" strokeWidth="1" strokeDasharray="2 2" />}
+            {pi >= 0 && <line x1={x[pi] + bw / 2} x2={x[i] - bw / 2} y1={y(steps[idx - 1].to)} y2={y(steps[idx - 1].to)} stroke="var(--sep-strong)" strokeWidth="1" strokeDasharray="2 2" />}
             <rect x={x[i] - bw / 2} y={yTop} width={bw} height={h} rx="2" fill={col} opacity="0.85">
-              <title>{`${qShort(s.q)}: won ${eur(totals[s.q] || 0)} · this q ${fmt(s.delta)} vs €120k · cumulative ${fmt(s.to)}`}</title>
+              <title>{`${qShort(s.q)}: won ${eur(totals[s.q] || 0)} · this q ${fmt(s.delta)} vs min · cumulative ${fmt(s.to)}`}</title>
             </rect>
             <text x={x[i]} y={yTop - 4} textAnchor="middle" fontSize="9.5" fontWeight="500" fill={col}>{fmt(s.to)}</text>
-            <text x={x[i]} y={H - 8} textAnchor="middle" fontSize="9" fill="var(--text-3)">{qShort(s.q)}</text>
           </g>
         );
       })}
+      {axis.map((q, i) => <text key={q} x={x[i]} y={H - 8} textAnchor="middle" fontSize="9" fill="var(--text-3)">{qShort(q)}</text>)}
     </svg>
   );
 }
@@ -695,6 +702,7 @@ export default function ReportingLane({ onPickAccount, accounts = [] }) {
 
   // Live EUR conversion rates (ECB via frankfurter.app). usd/gbp = EUR per 1 unit.
   const [fx, setFx] = useState({ usd: 1, gbp: 1, date: null });
+  const [minQ, setMinQ] = useState(120000); // editable per-quarter minimum for the waterfall
   useEffect(() => {
     let cancelled = false;
     fetch('/api/fx-rates')
@@ -771,8 +779,10 @@ export default function ReportingLane({ onPickAccount, accounts = [] }) {
               <WonByQuarterChart m={m} />
             </Panel>
 
-            <Panel title="Cumulative vs €120k/q minimum (waterfall)" hint="Running balance stepped by (won revenue − €120k floor) each quarter. Below the dashed line = behind the minimum (red), above = ahead (green). The label on each bar is the running cumulative.">
-              <MinWaterfallChart m={m} />
+            <Panel title="Cumulative vs minimum (waterfall)"
+              hint={`Running balance stepped by (won revenue − €${Math.round(minQ / 1000)}k floor) each quarter. Below the dashed line = behind the minimum (red), above = ahead (green). The label on each bar is the running cumulative.`}
+              right={<label style={{ fontSize: 11, color: 'var(--text-3)', display: 'flex', alignItems: 'center', gap: 5 }}>Min €<input type="number" value={Math.round(minQ / 1000)} step="10" min="0" onChange={(e) => setMinQ((Number(e.target.value) || 0) * 1000)} style={{ width: 56, padding: '3px 5px', borderRadius: 'var(--radius-sm)', border: '0.5px solid var(--sep-strong)', background: 'var(--bg-1)', color: 'var(--text-1)', fontSize: 11 }} />k/q</label>}>
+              <MinWaterfallChart m={m} min={minQ} />
             </Panel>
 
             <Panel title="New vs recurring business by quarter" hint={`Full tone = new client, light tone = recurring · hollow bars (${qShort(m.proposal.quarter)}) = open proposal pipeline by line, probability-weighted, not yet won · recurring ${eur(m.recTotal)} of ${eur(m.kpi.wonRev)} won: Glint ${eur(m.recGlint)} · ROI ${eur(m.recRoi)} · ${m.recDeals} repeat deals`}>
