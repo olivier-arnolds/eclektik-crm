@@ -58,9 +58,28 @@ const SECTOR_OF = {
   'Property Development': 'Real Estate & Property', 'Property Management': 'Real Estate & Property',
 };
 
-// The 10 broad sectors (the values of SECTOR_OF). If an account's industry is
-// set directly to one of these in the Account 360, honour it as-is.
-const SECTORS = new Set(Object.values(SECTOR_OF));
+// Canonical broad sectors offered in the Account 360 industry dropdown. The
+// values of SECTOR_OF map raw industries into these; a few extra logical sectors
+// are added. Exported so the accounts dropdown and this breakdown stay in sync.
+export const SECTOR_OPTIONS = [
+  'Financial Services & Insurance',
+  'Technology & Software',
+  'Healthcare & Life Sciences',
+  'Manufacturing & Industrial',
+  'Energy, Resources & Agriculture',
+  'Consumer & Retail',
+  'Professional Services',
+  'Travel, Hospitality & Events',
+  'Public Sector, Education & Non-profit',
+  'Real Estate & Property',
+  'Media & Entertainment',
+  'Telecommunications',
+  'Transport & Logistics',
+  'Automotive',
+  'Construction & Engineering',
+];
+// If an account's industry is set directly to a sector name, honour it as-is.
+const SECTORS = new Set([...Object.values(SECTOR_OF), ...SECTOR_OPTIONS]);
 
 function sectorOf(industry) {
   const v = (industry || '').trim();

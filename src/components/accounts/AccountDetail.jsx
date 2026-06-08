@@ -6,6 +6,7 @@ import { useLinkedInPosts } from '../../hooks/useLinkedInPosts';
 import { useTeamsChannels } from '../../hooks/useTeamsChannels';
 import { useContactSearch } from '../../hooks/useContactSearch';
 import { supabase } from '../../supabase';
+import { SECTOR_OPTIONS } from '../../bd/industry-breakdown';
 import Chip from '../atoms/Chip';
 import Avatar from '../atoms/Avatar';
 import Btn from '../atoms/Btn';
@@ -267,7 +268,7 @@ export default function AccountDetail({ account, onBack, onSelectItem, onSelectC
     { title: "General", fields: [
       { label:"Company name", field:"name", value:account.name },
       { label:"Type", field:"type", value:account.type, dropdown:["Customer","Prospect","Partner","Friend","Klant","Big Four"] },
-      { label:"Industry", field:"industry", value:account.industry },
+      { label:"Industry", field:"industry", value:account.industry, dropdown: Array.from(new Set([account.industry, ...SECTOR_OPTIONS].filter(Boolean))) },
       { label:"Sub Industry", field:"sub_industry", value:account.sub_industry },
       { label:"Specialities", field:"specialities", value:account.specialities },
       { label:"Website", field:"website", value:account.website },

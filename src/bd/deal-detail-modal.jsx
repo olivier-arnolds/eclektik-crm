@@ -197,6 +197,15 @@ export default function DealDetailModal({ deal, accounts, contacts, rawItems, on
                 </button>
               )}
             </F>
+            <F label="Currency">
+              <select value={/dollar|usd/i.test(deal.currency || '') ? 'USD' : /pound|sterling|gbp/i.test(deal.currency || '') ? 'GBP' : 'EUR'}
+                onChange={(e) => updateField('currency', e.target.value)}
+                style={{ padding: '4px 6px', borderRadius: 4, border: '0.5px solid var(--sep)', background: 'var(--fill-1)', fontSize: 12 }}>
+                <option value="EUR">EUR €</option>
+                <option value="USD">USD $</option>
+                <option value="GBP">GBP £</option>
+              </select>
+            </F>
             <F label="Probability">
               {editingField === 'probability' ? (
                 <input autoFocus type="number" min="0" max="100" defaultValue={deal.probability}

@@ -84,7 +84,7 @@ export function useReportingData() {
     try {
       const [o, c, l, ct] = await Promise.all([
         supabase.from('opportunities')
-          .select('id,company_id,company_name,status,stage,product_line,est_revenue,actual_revenue,probability,close_date,actual_close_date')
+          .select('id,company_id,company_name,status,stage,product_line,est_revenue,actual_revenue,probability,close_date,actual_close_date,currency')
           .limit(2000),
         supabase.from('companies').select('id,name,type,country,industry').limit(2000),
         supabase.from('account_links').select('account_id,contact_id,role').eq('link_type', 'eclectik_team').limit(2000),
@@ -124,7 +124,12 @@ export function computeMetrics(opps, companies, links, teamContacts, cfg) {
   const lostN = lost.length;
   const winRate = (wonN + lostN) ? wonN / (wonN + lostN) : 0;
   const openGross = openP.reduce((s, o) => s + (num(o.est_revenue) || 0), 0);
-  const openWeighted = openP.reduce((s, o) => s + (num(o.est_revenue) || 0) * (num(o.probability) || 0) / 100, 0);
+  // Currency: convert USD/GBP est_revenue to EUR (live ECB rate) before weighting.
+  // cfg.fx = { usd, gbp } as EUR per 1 unit of that currency.
+  const fx = cfg.fx || {};
+  const curOf = (s) => { const t = String(s || '').toLowerCase(); if (t.includes('dollar') || t === 'usd' || t.includes('$')) return 'USD'; if (t.includes('pound') || t.includes('sterling') || t === 'gbp' || t.includes('£')) return 'GBP'; return 'EUR'; };
+  const toEur = (amt, currency) => { const c = curOf(currency); if (c === 'USD') return amt * (fx.usd || 1); if (c === 'GBP') return amt * (fx.gbp || 1); return amt; };
+  const openWeighted = openP.reduce((s, o) => s + toEur(num(o.est_revenue) || 0, o.currency) * (num(o.probability) || 0) / 100, 0);
 
   const customers = companies.filter(isCustomer);
   const activeCustomerIds = new Set(
@@ -178,7 +183,7 @@ export function computeMetrics(opps, companies, links, teamContacts, cfg) {
   const nowIdx = (() => { const d = new Date(); return d.getFullYear() * 4 + Math.floor(d.getMonth() / 3); })();
   const proposalQuarter = qLabel(nowIdx + 1);
   const propByLine = (L) => openP.filter((o) => lineOf(o) === L)
-    .reduce((s, o) => s + (num(o.est_revenue) || 0) * (num(o.probability) || 0) / 100, 0);
+    .reduce((s, o) => s + toEur(num(o.est_revenue) || 0, o.currency) * (num(o.probability) || 0) / 100, 0);
   const proposal = { quarter: proposalQuarter, glint: propByLine('Glint'), roi: propByLine('ROI') };
 
   // New vs recurring by line. Rank a company's won deals by close date,id.
@@ -427,7 +432,8 @@ function WonByQuarterChart({ m }) {
   const baseY = padT + plotH;
   const labelY = baseY + 18;   // quarter labels just below the plot
   const yoyY = baseY + 31;     // YoY row below the quarter labels
-  const totalPts = quarters.map((q, i) => `${x[i]},${y(totals[q])}`).join(' ');
+  const glintLinePts = quarters.map((q, i) => `${x[i]},${y(glint[q])}`).join(' ');
+  const roiLinePts = quarters.map((q, i) => `${x[i]},${y(roi[q])}`).join(' ');
   const trendPts = extQuarters.map((_, i) => `${x[i]},${y(trend.trendVals[i])}`).join(' ');
   const crossI = trend.crossingLabel ? axis.indexOf(trend.crossingLabel) : -1;
   return (
@@ -461,8 +467,8 @@ function WonByQuarterChart({ m }) {
         </g>
       )}
       <polyline points={trendPts} fill="none" stroke="var(--rep-trend)" strokeWidth="1.5" strokeDasharray="2 3" />
-      <polyline points={totalPts} fill="none" stroke="var(--text-1)" strokeWidth="2" />
-      {quarters.map((q, i) => <circle key={q} cx={x[i]} cy={y(totals[q])} r="3" fill="var(--text-1)" />)}
+      <polyline points={glintLinePts} fill="none" stroke="var(--good)" strokeWidth="1" opacity="0.85" />
+      <polyline points={roiLinePts} fill="none" stroke="var(--accent)" strokeWidth="1" opacity="0.85" />
       {/* YoY delta vs the same quarter last year, below the quarter labels */}
       {quarters.map((q, i) => {
         const [yy, nn] = q.split('-Q');
@@ -643,9 +649,20 @@ export default function ReportingLane({ onPickAccount, accounts = [] }) {
   const [recurringLineLevel, setRecurringLineLevel] = useState(false);
   const rootRef = useRef(null);
 
+  // Live EUR conversion rates (ECB via frankfurter.app). usd/gbp = EUR per 1 unit.
+  const [fx, setFx] = useState({ usd: 1, gbp: 1 });
+  useEffect(() => {
+    let cancelled = false;
+    fetch('https://api.frankfurter.app/latest?base=EUR&symbols=USD,GBP')
+      .then(r => r.json())
+      .then(j => { if (!cancelled && j && j.rates) setFx({ usd: j.rates.USD ? 1 / j.rates.USD : 1, gbp: j.rates.GBP ? 1 / j.rates.GBP : 1 }); })
+      .catch(() => { /* keep 1:1 fallback */ });
+    return () => { cancelled = true; };
+  }, []);
+
   const m = useMemo(
-    () => (opps && companies) ? computeMetrics(opps, companies, links || [], teamContacts || [], { countActiveAsWon, recurringLineLevel }) : null,
-    [opps, companies, links, teamContacts, countActiveAsWon, recurringLineLevel]
+    () => (opps && companies) ? computeMetrics(opps, companies, links || [], teamContacts || [], { countActiveAsWon, recurringLineLevel, fx }) : null,
+    [opps, companies, links, teamContacts, countActiveAsWon, recurringLineLevel, fx]
   );
 
   const pick = (id) => { if (onPickAccount) onPickAccount(accounts.find((a) => a.id === id) || { id }); };
@@ -706,7 +723,7 @@ export default function ReportingLane({ onPickAccount, accounts = [] }) {
             )}
 
             <Panel title="Won revenue by quarter" hint={`Filled bars = won actuals by close date · hollow bars (${qShort(m.proposal.quarter)}) = open proposal pipeline by line, probability-weighted, not yet won · total + linear trend vs €250k/q target · R²=${m.trend.r2.toFixed(2)} (illustrative, not a forecast) · ▲/▼ % above each point = YoY vs the same quarter last year`}>
-              <Legend items={[['Glint (won)', 'var(--good)'], ['ROI (won)', 'var(--accent)'], ['Proposals (open)', 'var(--text-3)', 'dashed'], ['Total (actual)', 'var(--text-1)', 'solid'], ['Target €250k/q', 'var(--text-3)', 'dashed'], ['Trend', 'var(--rep-trend)', 'dotted']]} />
+              <Legend items={[['Glint (won)', 'var(--good)'], ['ROI (won)', 'var(--accent)'], ['Proposals (open)', 'var(--text-3)', 'dashed'], ['Glint line', 'var(--good)', 'solid'], ['ROI line', 'var(--accent)', 'solid'], ['Target €250k/q', 'var(--text-3)', 'dashed'], ['Trend', 'var(--rep-trend)', 'dotted']]} />
               <WonByQuarterChart m={m} />
             </Panel>
 

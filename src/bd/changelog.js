@@ -19,9 +19,37 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.27.4';
+export const CURRENT_VERSION = '1.28.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.28.0',
+    date: '2026-06-08T19:20:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feat',
+    title: 'Deal currency + live FX in weighted forecast, Glint/ROI lines, industry dropdown',
+    summary:
+      'Deals can be set to EUR (default), USD or GBP (currency picker in the deal detail). In the weighted next-quarter forecast, USD/GBP amounts are converted to EUR at the live ECB rate before weighting. The won-revenue chart now shows two thin lines (Glint and ROI) instead of a single total. The Account 360 Industry field is now a dropdown of the broad sectors, with extra logical sectors added.',
+    changes: [
+      'Deal currency: EUR/USD/GBP picker (deal detail), threaded through the adapter chain (usePipelineData + adapters).',
+      'Reporting: weighted proposal forecast + Pipeline-weighted KPI convert USD/GBP to EUR via live frankfurter.app (ECB) rates.',
+      'Reporting chart: single total line replaced by thin Glint and ROI lines.',
+      'Account 360: Industry is a sector dropdown (shared SECTOR_OPTIONS); added Media & Entertainment, Telecommunications, Transport & Logistics, Automotive, Construction & Engineering.',
+      'Industry breakdown honours any sector chosen directly on an account.',
+    ],
+    files: [
+      'src/bd/lane-reporting.jsx',
+      'src/bd/deal-detail-modal.jsx',
+      'src/bd/adapters.js',
+      'src/hooks/usePipelineData.js',
+      'src/bd/industry-breakdown.jsx',
+      'src/components/accounts/AccountDetail.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.28.0',
+  },
   {
     version: '1.27.4',
     date: '2026-06-08T18:45:00Z',

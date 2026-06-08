@@ -63,6 +63,7 @@ export function adaptDeal(item, rawAccounts, rawContacts) {
     team: (item.team || '').split(',').map(s => s.trim()).filter(Boolean), // e.g. ["MVG", "OA"]
     staleDays: item.sortDate ? Math.floor((Date.now() - new Date(item.sortDate).getTime()) / 86400000) : 0,
     dealType: item.productLine || '',
+    currency: item.currency || 'EUR',
     closeDate: item.closeDate || '',
     description: item.notes || '',
     probability: Number(item.probability) || 0,
