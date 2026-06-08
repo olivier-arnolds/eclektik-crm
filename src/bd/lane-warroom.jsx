@@ -487,12 +487,12 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount }
         <thead><tr>
           <th style={th}>Client · project</th>
           <th style={th}>CS ({totals.cs}h)</th><th style={th}>PS ({totals.ps}h)</th><th style={th}>Support ({totals.other}h)</th>
-          <th style={th}>Milestone</th><th style={th}>Details</th><th style={th}>Status</th>
+          <th style={th}>Milestone</th><th style={th}>Timeline</th><th style={th}>Details</th><th style={th}>Status</th>
         </tr></thead>
         <tbody>
-          {loading && <tr><td style={td} colSpan={7}>Loading…</td></tr>}
+          {loading && <tr><td style={td} colSpan={8}>Loading…</td></tr>}
           {!loading && delivery.length === 0 && (
-            <tr><td style={{ ...td, color: 'var(--text-3)' }} colSpan={7}>No delivery rows yet — run the seed or hit Update.</td></tr>
+            <tr><td style={{ ...td, color: 'var(--text-3)' }} colSpan={8}>No delivery rows yet — run the seed or hit Update.</td></tr>
           )}
           {delivery.map(r => {
             const acc = r.company_id ? accById.get(r.company_id) : null;
@@ -525,6 +525,15 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount }
                 <td style={td}><PersonCell name={r.ps_owner} hours={r.ps_hours} used={r.ps_used_hours} /></td>
                 <td style={td}><PersonCell name={r.other_contractors} hours={r.other_hours} used={r.other_used_hours} /></td>
                 <td style={td}>{r.next_milestone_label || <span style={sub}>TBC</span>}</td>
+                <td style={td}>
+                  <div style={{ fontSize: 11, lineHeight: 1.35 }}>
+                    {r.ko_date ? <div><span style={sub}>KO</span> {r.ko_date}</div> : null}
+                    {(r.delivery_start || r.delivery_end)
+                      ? <div>{r.delivery_start || '?'} <span style={sub}>→</span> {r.delivery_end || '?'}</div>
+                      : null}
+                    {!r.ko_date && !r.delivery_start && !r.delivery_end ? <span style={sub}>—</span> : null}
+                  </div>
+                </td>
                 <td style={{ ...td, fontSize: 11.5, color: 'var(--text-2)', maxWidth: 340, lineHeight: 1.4 }}>{r.notes || <span style={sub}>—</span>}</td>
                 <td style={td}><span style={chip(
                   r.status === 'Not started' ? 'rgba(226,75,74,.13)' : r.status === 'Completed' ? 'rgba(136,135,128,.15)' : 'rgba(29,158,117,.14)',

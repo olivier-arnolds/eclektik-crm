@@ -121,6 +121,7 @@ export default async function handler(req, res) {
     survey: col('survey date'),
     ir: col('insight review date', 'insight review'),
     dend: col('expected delivery end', 'delivery end'),
+    dstart: col('expected delivery start', 'delivery start'),
     notes: col('key notes', 'notes', 'dependencies'),
     follow: col('follow-up', 'follow up'),
   };
@@ -156,6 +157,7 @@ export default async function handler(req, res) {
       survey_date: get(v, idx.survey),
       insight_review_date: get(v, idx.ir),
       delivery_end: get(v, idx.dend),
+      delivery_start: get(v, idx.dstart),
       notes: get(v, idx.notes),
       follow_up: get(v, idx.follow),
     };

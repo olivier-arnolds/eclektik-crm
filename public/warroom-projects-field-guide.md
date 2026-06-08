@@ -23,6 +23,7 @@ to mark a project **finished**.
 | **KO date** | Kick-off date. | A date (any clear format). |
 | **Survey date** | When the survey goes live / closes. | A date. **Important** — see "milestones" below. |
 | **Insight review date** | When the insight review / readout happens. | A date. |
+| **Expected delivery start** | When delivery work begins. | A date. |
 | **Expected delivery end** | When the project wraps. | A date. |
 | **Project status** | Where the project stands. | One of **`Not started`**, **`In progress`**, **`Completed`** (see below). |
 | **Priority** | How important / at-risk. | `Low`, `Medium`, `High`. |
@@ -45,6 +46,9 @@ out from: status (`Not started` → red), blocked/slipped wording in your notes,
 `High` priority, the follow-up flag, and how close the next milestone is. So if you
 write "data slipped" in the notes or set priority High, the row turns amber/red on
 its own.
+
+**Timeline column.** The war room shows a Timeline column with the **KO date** and the
+**delivery start → end** window, taken straight from the sheet.
 
 **Next milestone is automatic.** The war room shows the **soonest upcoming** of
 Survey date / Insight review date / Expected delivery end — labelled so you know
