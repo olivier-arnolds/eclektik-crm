@@ -3,6 +3,32 @@ import { supabase } from '../supabase';
 import { fmtRelative, fmtMoney } from './atoms';
 import { useReportingData, computeMetrics, TeamCoverageMatrix, roleOverrideFor, normLinkRole } from './lane-reporting';
 
+// ISO week number from a date.
+function isoWeek(d) {
+  const dt = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  const day = dt.getUTCDay() || 7;
+  dt.setUTCDate(dt.getUTCDate() + 4 - day);
+  const yearStart = new Date(Date.UTC(dt.getUTCFullYear(), 0, 1));
+  const week = Math.ceil((((dt - yearStart) / 86400000) + 1) / 7);
+  return { week, year: dt.getUTCFullYear() };
+}
+// Convert a date cell to a "wk NN ’YY" label. Real dates (yyyy-mm-dd or m/d/yyyy)
+// become week numbers; vague free text ("Mid June-26", "End of June") is left as-is.
+function weekLabel(s) {
+  if (!s) return null;
+  const t = String(s).trim();
+  let d = null, m;
+  if ((m = t.match(/^(\d{4})-(\d{2})-(\d{2})$/))) d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+  else if ((m = t.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})$/))) { const y = +m[3] < 100 ? 2000 + +m[3] : +m[3]; d = new Date(Date.UTC(y, +m[1] - 1, +m[2])); }
+  if (!d || isNaN(d)) return t;
+  const { week, year } = isoWeek(d);
+  return `wk ${week} ’${String(year).slice(2)}`;
+}
+// Replace an ISO date inside a milestone label with its week (e.g. "Survey 2026-09-01" → "Survey wk 36 ’26").
+function weekifyLabel(lbl) {
+  return lbl ? lbl.replace(/\d{4}-\d{2}-\d{2}/, (d) => weekLabel(d)) : lbl;
+}
+
 // War-room: the running Glint delivery projects, synced from Yarmilla's Master
 // Project Overview into public.glint_delivery. People (CS / PS / support) are
 // shown in their own columns, with the operational detail (survey-live dates,
@@ -533,10 +559,10 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount }
                 <td style={cTd}><PersonCell name={r.cs_owner} hours={r.cs_hours} used={r.cs_used_hours} /></td>
                 <td style={cTd}><PersonCell name={r.ps_owner} hours={r.ps_hours} used={r.ps_used_hours} /></td>
                 <td style={cTd}><PersonCell name={r.other_contractors} hours={r.other_hours} used={r.other_used_hours} /></td>
-                <td style={cTd}>{r.next_milestone_label || <span style={sub}>TBC</span>}</td>
-                <td style={{ ...cTd, fontSize: 11.5, whiteSpace: 'nowrap' }}>{r.ko_date || <span style={sub}>—</span>}</td>
-                <td style={{ ...cTd, fontSize: 11.5, whiteSpace: 'nowrap' }}>{r.delivery_start || <span style={sub}>—</span>}</td>
-                <td style={{ ...cTd, fontSize: 11.5, whiteSpace: 'nowrap' }}>{r.delivery_end || <span style={sub}>—</span>}</td>
+                <td style={cTd}>{r.next_milestone_label ? weekifyLabel(r.next_milestone_label) : <span style={sub}>TBC</span>}</td>
+                <td style={{ ...cTd, fontSize: 11.5, whiteSpace: 'nowrap' }}>{weekLabel(r.ko_date) || <span style={sub}>—</span>}</td>
+                <td style={{ ...cTd, fontSize: 11.5, whiteSpace: 'nowrap' }}>{weekLabel(r.delivery_start) || <span style={sub}>—</span>}</td>
+                <td style={{ ...cTd, fontSize: 11.5, whiteSpace: 'nowrap' }}>{weekLabel(r.delivery_end) || <span style={sub}>—</span>}</td>
                 <td style={cTd}><span style={chip(
                   r.status === 'Not started' ? 'rgba(226,75,74,.13)' : r.status === 'Completed' ? 'rgba(136,135,128,.15)' : 'rgba(29,158,117,.14)',
                   r.status === 'Not started' ? '#A32D2D' : r.status === 'Completed' ? '#5F5E5A' : '#0F6E56'

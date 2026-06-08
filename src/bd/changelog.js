@@ -19,9 +19,28 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.28.6';
+export const CURRENT_VERSION = '1.28.7';
 
 export const CHANGELOG = [
+  {
+    version: '1.28.7',
+    date: '2026-06-08T21:45:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feat',
+    title: 'War room Projects: KO / Start / End / survey shown as week numbers',
+    summary:
+      'The KO, Start and End columns (and the survey/milestone date) now display as ISO week numbers, e.g. "wk 32 ’26", instead of raw dates. Real dates are converted; vague free-text values ("Mid June-26") are left as-is.',
+    changes: [
+      'lane-warroom.jsx: weekLabel()/weekifyLabel() convert KO, delivery start/end and the next-milestone date to ISO week numbers.',
+    ],
+    files: [
+      'src/bd/lane-warroom.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.28.7',
+  },
   {
     version: '1.28.6',
     date: '2026-06-08T21:20:00Z',
