@@ -151,7 +151,7 @@ export default function FunnelLane({ deals, accounts, contacts, filters, setFilt
         </div>
         <div className="filter-group">
           <span className="filter-label">Type</span>
-          {['Glint', 'ROI', 'ROE', 'Other'].map(t => (
+          {['Glint', 'ROI', 'Seer', 'Insights', 'Other'].map(t => (
             <button key={t}
               className={`chip ${filters?.types?.includes(t) ? 'chip-on' : ''}`}
               onClick={() => setFilters({ ...filters, types: toggle(filters?.types || [], t) })}>

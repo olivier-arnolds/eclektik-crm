@@ -99,7 +99,8 @@ export function ConvertLeadModal({ deal, accounts, rawItems, onClose, onDone }) 
               <option value="">—</option>
               <option value="Glint">Glint</option>
               <option value="ROI">ROI</option>
-              <option value="ROE">ROE</option>
+              <option value="Seer">Seer</option>
+              <option value="Insights">Insights</option>
               <option value="Other">Other</option>
             </select>
           </div>

@@ -32,6 +32,8 @@ function lineOf(o) {
   pl = String(pl || '');
   if (pl.startsWith('Glint')) return 'Glint';
   if (pl === 'ROI') return 'ROI';
+  if (pl === 'Seer') return 'Seer';
+  if (pl === 'Insights') return 'Insights';
   return 'Other';
 }
 // Quarter of COALESCE(actual_close_date, close_date) → "YYYY-Qn".
@@ -200,14 +202,14 @@ export function computeMetrics(opps, companies, links, teamContacts, cfg) {
   let recGlint = 0, recRoi = 0, recTotal = 0, recDeals = 0;
   for (const o of won) {
     const q = quarterOf(o); if (!q || !(q in totals)) continue;
-    const l = lineOf(o); if (l === 'Other') continue;
+    const l = lineOf(o); if (l !== 'Glint' && l !== 'ROI') continue;
     const isNew = seqOf.get(o.id) === 'new'; const r = revenueOf(o);
     nr[`${l === 'Glint' ? 'glint' : 'roi'}${isNew ? 'New' : 'Rec'}`][q] += r;
     if (!isNew) { recTotal += r; recDeals++; if (l === 'Glint') recGlint += r; else recRoi += r; }
   }
 
   // Win / loss by line
-  const lines = ['Glint', 'ROI', 'Other'];
+  const lines = ['Glint', 'ROI', 'Seer', 'Insights', 'Other'];
   const wl = lines.map((L) => {
     const w = won.filter((o) => lineOf(o) === L);
     const lo = lost.filter((o) => lineOf(o) === L);

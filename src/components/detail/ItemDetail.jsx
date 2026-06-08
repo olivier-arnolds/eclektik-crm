@@ -314,7 +314,7 @@ export default function ItemDetail({ item, onBack, onSelectContact, extraTimelin
             <div style={{ background:"#FFFFFF", borderRadius:8, border:"0.5px solid #D3D1C7", padding:"12px 14px", marginBottom:10 }}>
               <div style={{ fontSize:10, fontWeight:500, color:"#888780", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:6 }}>Type / Product Line</div>
               <div style={{ fontSize:13 }}>
-                <EditableField value={item.productLine || ""} field="product_line" table={itemTable} rowId={item.id} type="multiselect" options={["Glint","ROI","ROE","Other"]} displayValue={item.productLine ? item.productLine.split(",").map(s=>s.trim()).filter(Boolean).join(", ") : "Select types..."} refetch={refetch} updateRow={updateRow} />
+                <EditableField value={item.productLine || ""} field="product_line" table={itemTable} rowId={item.id} type="multiselect" options={["Glint","ROI","Seer","Insights","Other"]} displayValue={item.productLine ? item.productLine.split(",").map(s=>s.trim()).filter(Boolean).join(", ") : "Select types..."} refetch={refetch} updateRow={updateRow} />
               </div>
             </div>
             <div style={{ background:"#FFFFFF", borderRadius:8, border:"0.5px solid #D3D1C7", padding:"12px 14px" }}>
@@ -587,7 +587,8 @@ export default function ItemDetail({ item, onBack, onSelectContact, extraTimelin
                   <option value="">Select...</option>
                   <option value="Glint">Glint</option>
                   <option value="ROI">ROI</option>
-                  <option value="ROE">ROE</option>
+                  <option value="Seer">Seer</option>
+                  <option value="Insights">Insights</option>
                   <option value="Other">Other</option>
                 </select>
               </div>

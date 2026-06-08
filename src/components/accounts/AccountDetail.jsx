@@ -371,6 +371,8 @@ export default function AccountDetail({ account, onBack, onSelectItem, onSelectC
                       <option value="People Science">People Science</option>
                       <option value="AI Transformation">AI Transformation</option>
                       <option value="ROI">ROI</option>
+                      <option value="Seer">Seer</option>
+                      <option value="Insights">Insights</option>
                       <option value="Technical">Technical</option>
                       <option value="Other">Other</option>
                     </select>

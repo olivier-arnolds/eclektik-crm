@@ -83,7 +83,7 @@ function EditableDealTitle({ deal, refetch }) {
 // Click-to-pick deal type (product line) chip used in the collapsed deal row.
 function DealTypePill({ deal, refetch }) {
   const [open, setOpen] = useState(false);
-  const opts = ['Glint', 'ROI', 'ROE', 'Other'];
+  const opts = ['Glint', 'ROI', 'Seer', 'Insights', 'Other'];
   const ref = useRef(null);
   useEffect(() => {
     if (!open) return;

@@ -105,7 +105,7 @@ export default function NewDealModal({ accounts, contacts, onClose, onCreated })
           )}
 
           <F label="Type / Product line">
-            {chipSingle(['Glint', 'ROI', 'ROE', 'Other'], dealType, setDealType)}
+            {chipSingle(['Glint', 'ROI', 'Seer', 'Insights', 'Other'], dealType, setDealType)}
           </F>
 
           <F label="Source">
