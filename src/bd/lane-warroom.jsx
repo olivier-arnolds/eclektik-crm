@@ -3,30 +3,47 @@ import { supabase } from '../supabase';
 import { fmtRelative, fmtMoney } from './atoms';
 import { useReportingData, computeMetrics, TeamCoverageMatrix, roleOverrideFor, normLinkRole } from './lane-reporting';
 
-// ISO week number from a date.
-function isoWeek(d) {
-  const dt = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+// ISO week label "wk NN ’YY" from y/mo(0-based)/d.
+function isoWeekStr(y, mo, d) {
+  const dt = new Date(Date.UTC(y, mo, d));
   const day = dt.getUTCDay() || 7;
   dt.setUTCDate(dt.getUTCDate() + 4 - day);
-  const yearStart = new Date(Date.UTC(dt.getUTCFullYear(), 0, 1));
-  const week = Math.ceil((((dt - yearStart) / 86400000) + 1) / 7);
-  return { week, year: dt.getUTCFullYear() };
+  const ys = new Date(Date.UTC(dt.getUTCFullYear(), 0, 1));
+  const week = Math.ceil((((dt - ys) / 86400000) + 1) / 7);
+  return `wk ${week} ’${String(dt.getUTCFullYear()).slice(2)}`;
 }
-// Convert a date cell to a "wk NN ’YY" label. Real dates (yyyy-mm-dd or m/d/yyyy)
-// become week numbers; vague free text ("Mid June-26", "End of June") is left as-is.
-function weekLabel(s) {
+const MON3 = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MON_IDX = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 };
+// Convert a date/phrase cell to a week number ("wk 32 ’26") or, for month-only
+// values, a month ("May ’26"). Handles exact dates and fuzzy phrases:
+// "End of Feb 2026", "beginning of march", "Mid June-26", "First week of June",
+// "w/c 13 July", "3rd June". Truly non-date text is returned unchanged.
+function dateLabel(s) {
   if (!s) return null;
   const t = String(s).trim();
-  let d = null, m;
-  if ((m = t.match(/^(\d{4})-(\d{2})-(\d{2})$/))) d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
-  else if ((m = t.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})$/))) { const y = +m[3] < 100 ? 2000 + +m[3] : +m[3]; d = new Date(Date.UTC(y, +m[1] - 1, +m[2])); }
-  if (!d || isNaN(d)) return t;
-  const { week, year } = isoWeek(d);
-  return `wk ${week} ’${String(year).slice(2)}`;
+  let m = t.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (m) return isoWeekStr(+m[1], +m[2] - 1, +m[3]);
+  m = t.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})$/);
+  if (m) { const y = +m[3] < 100 ? 2000 + +m[3] : +m[3]; return isoWeekStr(y, +m[1] - 1, +m[2]); }
+  const lo = t.toLowerCase();
+  const mon = lo.match(/(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/);
+  if (!mon) return t;
+  const mo = MON_IDX[mon[1]];
+  const y4 = lo.match(/(20\d{2})/), y2 = lo.match(/-(\d{2})\b/);
+  const y = y4 ? +y4[1] : y2 ? 2000 + +y2[1] : new Date().getUTCFullYear();
+  let day = null;
+  if (/\b(begin|beginning|early|start|first)\b/.test(lo)) day = 4;
+  else if (/\b(mid|middle)\b/.test(lo)) day = 15;
+  else if (/\b(end|late)\b/.test(lo)) day = 25;
+  const ord = lo.match(/\b(\d{1,2})\s*(?:st|nd|rd|th)\b/);
+  if (ord) day = +ord[1];
+  else { const dn = lo.match(/\b(\d{1,2})\s+(?:of\s+)?(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/); if (dn) day = +dn[1]; }
+  if (day != null && day >= 1 && day <= 31) return isoWeekStr(y, mo, day);
+  return `${MON3[mo]} ’${String(y).slice(2)}`;
 }
-// Replace an ISO date inside a milestone label with its week (e.g. "Survey 2026-09-01" → "Survey wk 36 ’26").
+// Convert any date inside a milestone label to a week (e.g. "Survey 2026-09-01" → "Survey wk 36 ’26").
 function weekifyLabel(lbl) {
-  return lbl ? lbl.replace(/\d{4}-\d{2}-\d{2}/, (d) => weekLabel(d)) : lbl;
+  return lbl ? lbl.replace(/\d{4}-\d{2}-\d{2}/, (d) => dateLabel(d)) : lbl;
 }
 
 // War-room: the running Glint delivery projects, synced from Yarmilla's Master
@@ -519,7 +536,7 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount }
         <thead><tr>
           <th style={th}>Client · project</th>
           <th style={th}>CS ({totals.cs}h)</th><th style={th}>PS ({totals.ps}h)</th><th style={th}>Support ({totals.other}h)</th>
-          <th style={th}>Milestone</th><th style={th}>KO</th><th style={th}>Start</th><th style={th}>End</th><th style={th}>Status</th>
+          <th style={th}>Delivery</th><th style={th}>KO</th><th style={th}>Start</th><th style={th}>End</th><th style={th}>Status</th>
         </tr></thead>
         <tbody>
           {loading && <tr><td style={td} colSpan={9}>Loading…</td></tr>}
@@ -560,9 +577,9 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount }
                 <td style={cTd}><PersonCell name={r.ps_owner} hours={r.ps_hours} used={r.ps_used_hours} /></td>
                 <td style={cTd}><PersonCell name={r.other_contractors} hours={r.other_hours} used={r.other_used_hours} /></td>
                 <td style={cTd}>{r.next_milestone_label ? weekifyLabel(r.next_milestone_label) : <span style={sub}>TBC</span>}</td>
-                <td style={{ ...cTd, fontSize: 11.5, whiteSpace: 'nowrap' }}>{weekLabel(r.ko_date) || <span style={sub}>—</span>}</td>
-                <td style={{ ...cTd, fontSize: 11.5, whiteSpace: 'nowrap' }}>{weekLabel(r.delivery_start) || <span style={sub}>—</span>}</td>
-                <td style={{ ...cTd, fontSize: 11.5, whiteSpace: 'nowrap' }}>{weekLabel(r.delivery_end) || <span style={sub}>—</span>}</td>
+                <td style={{ ...cTd, fontSize: 11.5, whiteSpace: 'nowrap' }}>{dateLabel(r.ko_date) || <span style={sub}>—</span>}</td>
+                <td style={{ ...cTd, fontSize: 11.5, whiteSpace: 'nowrap' }}>{dateLabel(r.delivery_start) || <span style={sub}>—</span>}</td>
+                <td style={{ ...cTd, fontSize: 11.5, whiteSpace: 'nowrap' }}>{dateLabel(r.delivery_end) || <span style={sub}>—</span>}</td>
                 <td style={cTd}><span style={chip(
                   r.status === 'Not started' ? 'rgba(226,75,74,.13)' : r.status === 'Completed' ? 'rgba(136,135,128,.15)' : 'rgba(29,158,117,.14)',
                   r.status === 'Not started' ? '#A32D2D' : r.status === 'Completed' ? '#5F5E5A' : '#0F6E56'

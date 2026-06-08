@@ -19,9 +19,28 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.28.7';
+export const CURRENT_VERSION = '1.28.8';
 
 export const CHANGELOG = [
+  {
+    version: '1.28.8',
+    date: '2026-06-08T22:10:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feat',
+    title: 'War room Projects: Milestone → Delivery; fuzzy dates → weeks/months',
+    summary:
+      'Renamed the Milestone column to Delivery. The Delivery/KO/Start/End columns now show a week number or a month for fuzzy entries too - "End of Feb 2026", "beginning of march", "Mid June-26", "First week of June", "w/c 13 July", "3rd June" all resolve to a week; bare months show as e.g. "May ’26".',
+    changes: [
+      'lane-warroom.jsx: dateLabel() parses fuzzy month phrases to ISO weeks (or a month label); Milestone column renamed Delivery.',
+    ],
+    files: [
+      'src/bd/lane-warroom.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.28.8',
+  },
   {
     version: '1.28.7',
     date: '2026-06-08T21:45:00Z',
