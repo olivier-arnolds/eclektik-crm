@@ -432,8 +432,7 @@ function WonByQuarterChart({ m }) {
   const baseY = padT + plotH;
   const labelY = baseY + 18;   // quarter labels just below the plot
   const yoyY = baseY + 31;     // YoY row below the quarter labels
-  const glintLinePts = quarters.map((q, i) => `${x[i]},${y(glint[q])}`).join(' ');
-  const roiLinePts = quarters.map((q, i) => `${x[i]},${y(roi[q])}`).join(' ');
+  const totalPts = quarters.map((q, i) => `${x[i]},${y(totals[q])}`).join(' ');
   const trendPts = extQuarters.map((_, i) => `${x[i]},${y(trend.trendVals[i])}`).join(' ');
   const crossI = trend.crossingLabel ? axis.indexOf(trend.crossingLabel) : -1;
   return (
@@ -467,8 +466,8 @@ function WonByQuarterChart({ m }) {
         </g>
       )}
       <polyline points={trendPts} fill="none" stroke="var(--rep-trend)" strokeWidth="1.5" strokeDasharray="2 3" />
-      <polyline points={glintLinePts} fill="none" stroke="var(--good)" strokeWidth="1" opacity="0.85" />
-      <polyline points={roiLinePts} fill="none" stroke="var(--accent)" strokeWidth="1" opacity="0.85" />
+      <polyline points={totalPts} fill="none" stroke="var(--text-1)" strokeWidth="2" />
+      {quarters.map((q, i) => <circle key={q} cx={x[i]} cy={y(totals[q])} r="3" fill="var(--text-1)" />)}
       {/* YoY delta vs the same quarter last year, below the quarter labels */}
       {quarters.map((q, i) => {
         const [yy, nn] = q.split('-Q');
@@ -723,7 +722,7 @@ export default function ReportingLane({ onPickAccount, accounts = [] }) {
             )}
 
             <Panel title="Won revenue by quarter" hint={`Filled bars = won actuals by close date · hollow bars (${qShort(m.proposal.quarter)}) = open proposal pipeline by line, probability-weighted, not yet won · total + linear trend vs €250k/q target · R²=${m.trend.r2.toFixed(2)} (illustrative, not a forecast) · ▲/▼ % above each point = YoY vs the same quarter last year`}>
-              <Legend items={[['Glint (won)', 'var(--good)'], ['ROI (won)', 'var(--accent)'], ['Proposals (open)', 'var(--text-3)', 'dashed'], ['Glint line', 'var(--good)', 'solid'], ['ROI line', 'var(--accent)', 'solid'], ['Target €250k/q', 'var(--text-3)', 'dashed'], ['Trend', 'var(--rep-trend)', 'dotted']]} />
+              <Legend items={[['Glint (won)', 'var(--good)'], ['ROI (won)', 'var(--accent)'], ['Proposals (open)', 'var(--text-3)', 'dashed'], ['Total (actual)', 'var(--text-1)', 'solid'], ['Target €250k/q', 'var(--text-3)', 'dashed'], ['Trend', 'var(--rep-trend)', 'dotted']]} />
               <WonByQuarterChart m={m} />
             </Panel>
 

@@ -19,9 +19,28 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.28.0';
+export const CURRENT_VERSION = '1.28.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.28.1',
+    date: '2026-06-08T19:45:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'fix',
+    title: 'Reporting: revert to single total revenue line',
+    summary:
+      'Reverted the won-revenue chart back to the single total (actual) line; the separate Glint/ROI lines added in 1.28.0 were not useful. Currency conversion and the industry dropdown from 1.28.0 are unchanged.',
+    changes: [
+      'lane-reporting.jsx: restored the single black total line + points; removed the per-line Glint/ROI lines.',
+    ],
+    files: [
+      'src/bd/lane-reporting.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.28.1',
+  },
   {
     version: '1.28.0',
     date: '2026-06-08T19:20:00Z',
