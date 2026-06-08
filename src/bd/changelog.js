@@ -19,9 +19,47 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.29.0';
+export const CURRENT_VERSION = '1.29.2';
 
 export const CHANGELOG = [
+  {
+    version: '1.29.2',
+    date: '2026-06-08T23:45:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'fix',
+    title: 'Gantt: smaller fonts in line with the rest of the lane',
+    summary:
+      'Reduced the Gantt font sizes and tightened the rows so it matches the surrounding War room typography (client 9.5, initials 7.5, month labels 8).',
+    changes: [
+      'lane-warroom.jsx ProjectsGantt: smaller fonts, tighter rowH/barH.',
+    ],
+    files: [
+      'src/bd/lane-warroom.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.29.2',
+  },
+  {
+    version: '1.29.1',
+    date: '2026-06-08T23:30:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'fix',
+    title: 'New vs recurring chart: stack the Q3 forecast + YoY indicators',
+    summary:
+      'The next-quarter (Q3 26) forecast in the New-vs-recurring chart is now a single stacked outlined bar (Glint + ROI) matching the historical bars, instead of two side-by-side bars. Added ▲/▼ YoY % above each quarter vs the same quarter last year.',
+    changes: [
+      'lane-reporting.jsx NewRecurringChart: stacked outlined proposal bar; per-quarter YoY % indicator.',
+    ],
+    files: [
+      'src/bd/lane-reporting.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.29.1',
+  },
   {
     version: '1.29.0',
     date: '2026-06-08T23:05:00Z',

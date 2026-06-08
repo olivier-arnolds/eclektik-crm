@@ -515,7 +515,6 @@ function NewRecurringChart({ m }) {
   const x = axis.map((_, i) => padL + (plotW / axis.length) * (i + 0.5));
   const y = (v) => padT + plotH - (v / maxV) * plotH;
   const bw = (plotW / axis.length) * 0.5;
-  const obw = (plotW / axis.length) * 0.26; // narrower outlined proposal bars (side-by-side)
   const baseY = padT + plotH;
   const segs = [['glintNew', 'var(--good)', 1], ['glintRec', 'var(--good)', 0.4], ['roiNew', 'var(--accent)', 1], ['roiRec', 'var(--accent)', 0.4]];
   return (
@@ -536,21 +535,17 @@ function NewRecurringChart({ m }) {
               return <rect key={k} x={x[i] - bw / 2} y={yTop} width={bw} height={h} fill={fill} fillOpacity={op} />;
             })}
             {stackTot(q) > 0 && <text x={x[i]} y={y(stackTot(q)) - 5} textAnchor="middle" fontSize="9.5" fill="var(--text-2)">{eur(stackTot(q))}</text>}
+            {(() => { const [yy, nn] = q.split('-Q'); const prev = stackTot(`${+yy - 1}-Q${nn}`); const cur = stackTot(q); if (!prev || prev <= 0 || !cur) return null; const up = cur >= prev; const pct = Math.abs(Math.round((cur - prev) / prev * 100)); return <text x={x[i]} y={y(cur) - 16} textAnchor="middle" fontSize="8.5" fontWeight="500" fill={up ? 'var(--good)' : '#E24B4A'}>{up ? '▲' : '▼'}{pct}%</text>; })()}
             <text x={x[i]} y={H - 8} textAnchor="middle" fontSize="9.5" fill="var(--text-3)">{qShort(q)}</text>
           </g>
         );
       })}
-      {/* Next-quarter open proposal pipeline by line — hollow/outlined bars (not yet won) */}
-      {pi >= 0 && proposal.glint > 0 && (
+      {/* Next-quarter open proposal pipeline — stacked outlined bar (not yet won) */}
+      {pi >= 0 && (proposal.glint > 0 || proposal.roi > 0) && (
         <g>
-          <rect x={x[pi] - obw - 1} y={y(proposal.glint)} width={obw} height={baseY - y(proposal.glint)} rx="2" fill="none" stroke="var(--good)" strokeWidth="1.5" strokeDasharray="3 2" />
-          <text x={x[pi] - obw / 2 - 1} y={y(proposal.glint) - 4} textAnchor="middle" fontSize="9.5" fill="var(--good)" opacity="0.8">{eur(proposal.glint)}</text>
-        </g>
-      )}
-      {pi >= 0 && proposal.roi > 0 && (
-        <g>
-          <rect x={x[pi] + 1} y={y(proposal.roi)} width={obw} height={baseY - y(proposal.roi)} rx="2" fill="none" stroke="var(--accent)" strokeWidth="1.5" strokeDasharray="3 2" />
-          <text x={x[pi] + obw / 2 + 1} y={y(proposal.roi) - 4} textAnchor="middle" fontSize="9.5" fill="var(--accent)" opacity="0.8">{eur(proposal.roi)}</text>
+          {proposal.glint > 0 && <rect x={x[pi] - bw / 2} y={y(proposal.glint)} width={bw} height={baseY - y(proposal.glint)} rx="2" fill="none" stroke="var(--good)" strokeWidth="1.5" strokeDasharray="3 2" />}
+          {proposal.roi > 0 && <rect x={x[pi] - bw / 2} y={y(proposal.glint + proposal.roi)} width={bw} height={y(proposal.glint) - y(proposal.glint + proposal.roi)} rx="2" fill="none" stroke="var(--accent)" strokeWidth="1.5" strokeDasharray="3 2" />}
+          <text x={x[pi]} y={y(proposal.glint + proposal.roi) - 5} textAnchor="middle" fontSize="9.5" fill="var(--text-2)" opacity="0.9">{eur(proposal.glint + proposal.roi)}</text>
         </g>
       )}
       {pi >= 0 && (proposal.glint > 0 || proposal.roi > 0) &&
