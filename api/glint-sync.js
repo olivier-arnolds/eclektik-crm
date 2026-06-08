@@ -79,11 +79,20 @@ function nextMilestone(row) {
 
 // Normalise a workbook cell to a trimmed string. Graph returns ISO datetimes for
 // real date cells (e.g. "2026-08-01T00:00:00Z") — keep just the date part.
+// Excel serial date (days since 1899-12-30) -> ISO yyyy-mm-dd.
+function serialToIso(n) {
+  const d = new Date(Date.UTC(1899, 11, 30) + Math.round(n) * 86400000);
+  return isNaN(d) ? null : d.toISOString().slice(0, 10);
+}
 function cellStr(v) {
   if (v === null || v === undefined) return '';
+  // Graph returns date cells as Excel serial NUMBERS — convert to ISO.
+  if (typeof v === 'number' && v >= 30000 && v <= 60000) return serialToIso(v) || String(v);
   const s = String(v).trim();
   const m = s.match(/^(\d{4}-\d{2}-\d{2})T/);
-  return m ? m[1] : s;
+  if (m) return m[1];
+  if (/^\d{5}(\.\d+)?$/.test(s)) { const n = parseFloat(s); if (n >= 30000 && n <= 60000) return serialToIso(n) || s; }
+  return s;
 }
 
 // Map one worksheet's usedRange values → glint_delivery rows.

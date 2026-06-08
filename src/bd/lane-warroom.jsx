@@ -23,6 +23,11 @@ function dateLabel(s) {
   const t = String(s).trim();
   let m = t.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (m) return isoWeekStr(+m[1], +m[2] - 1, +m[3]);
+  // Excel serial date number (days since 1899-12-30).
+  if (/^\d{5}(\.\d+)?$/.test(t)) {
+    const n = parseFloat(t);
+    if (n >= 30000 && n <= 60000) { const d = new Date(Date.UTC(1899, 11, 30) + Math.round(n) * 86400000); return isoWeekStr(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()); }
+  }
   m = t.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})$/);
   if (m) { const y = +m[3] < 100 ? 2000 + +m[3] : +m[3]; return isoWeekStr(y, +m[1] - 1, +m[2]); }
   const lo = t.toLowerCase();

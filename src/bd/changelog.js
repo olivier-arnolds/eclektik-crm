@@ -19,9 +19,31 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.28.8';
+export const CURRENT_VERSION = '1.28.9';
 
 export const CHANGELOG = [
+  {
+    version: '1.28.9',
+    date: '2026-06-08T22:40:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'fix',
+    title: 'War room dates: handle Excel serial numbers (KO/Start/End were showing 46235 etc.)',
+    summary:
+      'The Graph sync was storing date cells as raw Excel serial numbers (e.g. Trane Start = 46235 = 2026-08-01), which the week parser could not read. glint-sync now converts Excel serials to ISO dates, the week display also decodes serials defensively, and the existing serial values in glint_delivery were converted in place (backup _dq_backup_glint_delivery_20260608b).',
+    changes: [
+      'glint-sync.js: convert Excel serial date numbers to ISO on read.',
+      'lane-warroom.jsx: dateLabel() decodes Excel serials too.',
+      'Data: converted serial KO/Start/End/Survey/Insight-review values to ISO dates.',
+    ],
+    files: [
+      'api/glint-sync.js',
+      'src/bd/lane-warroom.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.28.9',
+  },
   {
     version: '1.28.8',
     date: '2026-06-08T22:10:00Z',
