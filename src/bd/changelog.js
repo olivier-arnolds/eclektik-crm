@@ -19,9 +19,28 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.29.4';
+export const CURRENT_VERSION = '1.30.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.30.0',
+    date: '2026-06-09T08:30:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feat',
+    title: 'Reporting: cumulative waterfall vs €120k/quarter minimum',
+    summary:
+      'Removed the flat €120k min line from the won-revenue chart and added a proper waterfall chart below it: the running balance steps by (won − €120k) each quarter (Q1 82k → −38k, then −72k, … turning green once cumulatively ahead of the floor). Red = behind the minimum, green = ahead; the dashed line is "on minimum".',
+    changes: [
+      'lane-reporting.jsx: removed min line/points from WonByQuarterChart; added MinWaterfallChart + its panel.',
+    ],
+    files: [
+      'src/bd/lane-reporting.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.30.0',
+  },
   {
     version: '1.29.4',
     date: '2026-06-09T07:55:00Z',

@@ -453,8 +453,6 @@ function WonByQuarterChart({ m }) {
         </g>
       ))}
       <line x1={padL} x2={W - padR} y1={y(TARGET_Q)} y2={y(TARGET_Q)} stroke="var(--text-3)" strokeWidth="1.5" strokeDasharray="6 4" />
-      <line x1={padL} x2={W - padR} y1={y(MIN_Q)} y2={y(MIN_Q)} stroke="#E24B4A" strokeWidth="1.25" strokeDasharray="2 3" />
-      <text x={W - padR} y={y(MIN_Q) - 3} textAnchor="end" fontSize="9" fill="#E24B4A">min {eur(MIN_Q)}/q</text>
       {quarters.map((q, i) => (
         <g key={q}>
           <rect x={x[i] - bw - 1} y={y(glint[q])} width={bw} height={padT + plotH - y(glint[q])} rx="2" fill="var(--good)" />
@@ -478,7 +476,7 @@ function WonByQuarterChart({ m }) {
       )}
       <polyline points={trendPts} fill="none" stroke="var(--rep-trend)" strokeWidth="1.5" strokeDasharray="2 3" />
       <polyline points={totalPts} fill="none" stroke="var(--text-1)" strokeWidth="2" />
-      {quarters.map((q, i) => <circle key={q} cx={x[i]} cy={y(totals[q])} r="3" fill={totals[q] < MIN_Q ? '#E24B4A' : 'var(--text-1)'}><title>{`${qShort(q)}: ${eur(totals[q])}${totals[q] < MIN_Q ? ' — below €120k min' : ''}`}</title></circle>)}
+      {quarters.map((q, i) => <circle key={q} cx={x[i]} cy={y(totals[q])} r="3" fill="var(--text-1)" />)}
       {/* YoY delta vs the same quarter last year, below the quarter labels */}
       {quarters.map((q, i) => {
         const [yy, nn] = q.split('-Q');
@@ -553,6 +551,47 @@ function NewRecurringChart({ m }) {
       )}
       {pi >= 0 && (proposal.glint > 0 || proposal.roi > 0) &&
         <text x={x[pi]} y={H - 8} textAnchor="middle" fontSize="9.5" fill="var(--text-2)">{qShort(proposal.quarter)}</text>}
+    </svg>
+  );
+}
+
+// Waterfall of cumulative won revenue vs the €120k/quarter minimum. Each quarter
+// steps the running balance by (won − MIN_Q); below 0 = behind the floor (red),
+// above 0 = ahead (green). Bar label = running cumulative.
+function MinWaterfallChart({ m }) {
+  const { quarters, totals } = m;
+  const { W, padL, padR, padT } = CHART;
+  const padB = 28, H = 230;
+  const plotW = W - padL - padR, plotH = H - padT - padB;
+  let run = 0;
+  const steps = quarters.map((q) => { const delta = (totals[q] || 0) - MIN_Q; const from = run; run += delta; return { q, delta, from, to: run }; });
+  const vals = [0, ...steps.flatMap((s) => [s.from, s.to])];
+  let lo = Math.min(...vals), hi = Math.max(...vals);
+  const pad = Math.max(20000, (hi - lo) * 0.12); lo -= pad; hi += pad;
+  const span = (hi - lo) || 1;
+  const x = steps.map((_, i) => padL + (plotW / steps.length) * (i + 0.5));
+  const y = (v) => padT + plotH - ((v - lo) / span) * plotH;
+  const bw = (plotW / steps.length) * 0.46;
+  const fmt = (v) => (v >= 0 ? '+' : '') + eur(v);
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label="Cumulative won revenue vs €120k/quarter minimum" style={{ display: 'block' }}>
+      <line x1={padL} x2={W - padR} y1={y(0)} y2={y(0)} stroke="var(--text-3)" strokeWidth="1.5" strokeDasharray="6 4" />
+      <text x={padL - 6} y={y(0) - 3} textAnchor="end" fontSize="9.5" fill="var(--text-3)">on min</text>
+      {steps.map((s, i) => {
+        const yA = y(s.from), yB = y(s.to);
+        const yTop = Math.min(yA, yB), h = Math.max(2, Math.abs(yB - yA));
+        const col = s.to >= 0 ? 'var(--good)' : '#E24B4A';
+        return (
+          <g key={s.q}>
+            {i > 0 && <line x1={x[i - 1] + bw / 2} x2={x[i] - bw / 2} y1={y(steps[i - 1].to)} y2={y(steps[i - 1].to)} stroke="var(--sep-strong)" strokeWidth="1" strokeDasharray="2 2" />}
+            <rect x={x[i] - bw / 2} y={yTop} width={bw} height={h} rx="2" fill={col} opacity="0.85">
+              <title>{`${qShort(s.q)}: won ${eur(totals[s.q] || 0)} · this q ${fmt(s.delta)} vs €120k · cumulative ${fmt(s.to)}`}</title>
+            </rect>
+            <text x={x[i]} y={yTop - 4} textAnchor="middle" fontSize="9.5" fontWeight="500" fill={col}>{fmt(s.to)}</text>
+            <text x={x[i]} y={H - 8} textAnchor="middle" fontSize="9" fill="var(--text-3)">{qShort(s.q)}</text>
+          </g>
+        );
+      })}
     </svg>
   );
 }
@@ -728,8 +767,12 @@ export default function ReportingLane({ onPickAccount, accounts = [] }) {
             )}
 
             <Panel title="Won revenue by quarter" hint={`Filled bars = won actuals by close date · hollow bars (${qShort(m.proposal.quarter)}) = open proposal pipeline by line, probability-weighted, not yet won · total + linear trend vs €250k/q target · R²=${m.trend.r2.toFixed(2)} (illustrative, not a forecast) · ▲/▼ % above each point = YoY vs the same quarter last year${m.proposal.fx && m.proposal.fx.count ? ` · ${qShort(m.proposal.quarter)} FX correction: ${m.proposal.fx.count} USD/GBP deal(s) converted to EUR (USD ${m.proposal.fx.usd.toFixed(2)}, GBP ${m.proposal.fx.gbp.toFixed(2)}), ${m.proposal.fx.deltaEur >= 0 ? '+' : '-'}€${Math.round(Math.abs(m.proposal.fx.deltaEur)).toLocaleString('en-US')} vs the raw figures · source ECB via frankfurter.dev${m.proposal.fx.date ? ' (rate date ' + m.proposal.fx.date + ')' : ''}` : ''}`}>
-              <Legend items={[['Glint (won)', 'var(--good)'], ['ROI (won)', 'var(--accent)'], ['Proposals (open)', 'var(--text-3)', 'dashed'], ['Total (actual)', 'var(--text-1)', 'solid'], ['Target €250k/q', 'var(--text-3)', 'dashed'], ['Min €120k/q', '#E24B4A', 'dotted'], ['Trend', 'var(--rep-trend)', 'dotted']]} />
+              <Legend items={[['Glint (won)', 'var(--good)'], ['ROI (won)', 'var(--accent)'], ['Proposals (open)', 'var(--text-3)', 'dashed'], ['Total (actual)', 'var(--text-1)', 'solid'], ['Target €250k/q', 'var(--text-3)', 'dashed'], ['Trend', 'var(--rep-trend)', 'dotted']]} />
               <WonByQuarterChart m={m} />
+            </Panel>
+
+            <Panel title="Cumulative vs €120k/q minimum (waterfall)" hint="Running balance stepped by (won revenue − €120k floor) each quarter. Below the dashed line = behind the minimum (red), above = ahead (green). The label on each bar is the running cumulative.">
+              <MinWaterfallChart m={m} />
             </Panel>
 
             <Panel title="New vs recurring business by quarter" hint={`Full tone = new client, light tone = recurring · hollow bars (${qShort(m.proposal.quarter)}) = open proposal pipeline by line, probability-weighted, not yet won · recurring ${eur(m.recTotal)} of ${eur(m.kpi.wonRev)} won: Glint ${eur(m.recGlint)} · ROI ${eur(m.recRoi)} · ${m.recDeals} repeat deals`}>
