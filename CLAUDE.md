@@ -26,8 +26,20 @@ of Dynamics for funnel, comms, calendar, accounts, marketing and admin.
 - **Verify in the browser before moving on.** Production testing is via the
   live Vercel deploy; hard refresh (Cmd+Shift+R) after deploy (~1-2 min).
 - Never run destructive git/DB ops without explicit confirmation.
-- Claude must not perform permanent deletions (DB rows, files) itself —
-  hand the user the SQL/command to run.
+- **Database — Supabase MCP.** Claude now has MCP access to the CRM project
+  (ref `jdzaypckluncdwsoxurs`) and the read-only People Science project
+  (`yvhiowhiertndhyahvgh`). Claude MAY apply migrations (`apply_migration`) and
+  data fixes (`execute_sql`) directly, but the protocol is mandatory:
+  (1) `create table _dq_backup_<t>_YYYYMMDD as select * from <t>` first;
+  (2) verify counts/samples before and after; (3) save the SQL into `sql/`;
+  (4) confirm with the user before irreversible deletes / merges. Older flow
+  (hand the user SQL for the Supabase SQL Editor) is still fine.
+- **Versioning discipline — every change.** Bump `VERSION` + `package.json`
+  `version`, add a `src/bd/changelog.js` entry (renders in the in-app Log tab),
+  tag the commit `v<version>`. Keep all three in lockstep.
+- **Build in the sandbox** can't wipe `dist/` (EPERM). Build to a throwaway:
+  `npx vite build --outDir "dist_v$(date +%s)"`, confirm "✓ built", `rm -rf dist_v*`.
+  (`dist_*` / `dist_check` are git-ignored.)
 - The team uses an in-app **💡 Feedback** workflow (see §6) to queue feature
   requests; Claude pulls them via `/api/next-feature-request`.
 
@@ -119,6 +131,20 @@ DB stores owner as a name string (sometimes just a first name). `ownerIdFromName
 in `adapters.js` maps both full and first names → MVG / OA / YK codes. Keep the
 first-name aliases in OWNER_ID in sync (a mismatch silently hid Marco's tasks).
 
+### Region (US / EMEA)
+`regionOf(country)` = US for `US / United States / USA`, else EMEA, missing → EMEA.
+**Gotcha:** the adapter exposes a company's country on **`account.region`**, not
+`account.country` (`adapters.js`: `region: row.country`). `companies.country` is
+normalized to full English names (`sql/data_normalize_country_*.sql`). The team
+role assignment (CSM/PSC/ROI) lives ONCE in `lane-reporting.jsx` (`ROLE_OVERRIDE`,
+exported as `roleOverrideFor` / `normLinkRole`) — War room imports it, don't fork.
+
+### Numbering (A-#### / D-####)
+DB triggers assign `companies.account_no` (ALL accounts) and a shared
+`opportunities.deal_no` / `leads.deal_no` sequence (CRM-wide unique). Defined in
+`sql/schema_numbering_2026-06-07.sql`; threaded through `usePipelineData`
+(`dealNo`) + `adapters.js` (`accountNo`/`dealNo`). Permanent — never reused.
+
 ## 5. External integrations & env (Vercel env vars)
 
 - **Supabase**: `VITE_SUPABASE_URL`, `VITE_SUPABASE_KEY` (anon, frontend),
@@ -162,10 +188,13 @@ first-name aliases in OWNER_ID in sync (a mismatch silently hid Marco's tasks).
 
 | Feature | Files |
 |---|---|
-| Funnel (7-stage, drag-drop, lead→opp promote) | `lane-funnel.jsx`, `adapters.js`, `lead-promote.js` |
-| Account 360 (open/active/**sleeping** projects, tasks with owner) | `lane-accounts.jsx` |
+| Funnel (7-stage, drag-drop, lead→opp promote, region stripe, D-#### on cards) | `lane-funnel.jsx`, `adapters.js`, `lead-promote.js` |
+| Account 360 (projects, tasks, AI brief, doc links, A-####, state) | `lane-accounts.jsx`, `api/account-summary.js`, `doc-links-section.jsx`, `account-links-section.jsx` |
+| Reporting (KPIs, won-rev/quarter + YoY, US/EMEA split, win/loss + avg deal) | `lane-reporting.jsx` |
+| War room — Projects (glint_delivery sync) / Insights review / Client coverage | `lane-warroom.jsx`, `api/glint-sync.js`, `api/insights-review.js` |
 | Comms — email/Teams/LinkedIn, threaded chat view | `lane-comms.jsx` |
 | LinkedIn live fetch + per-user inbox | `lane-comms.jsx` + `api/unipile.js` + `api/unipile-webhook.js` |
+| Tasks — "With" field (Eclectik-team member) alongside "For" | `tasks-view.jsx`, `task-detail-modal.jsx`, `inline-details.jsx` |
 | Marketing — contacts, tags, CSV export, email filter/inline-edit | `marketing-contacts.jsx`, `marketing-view.jsx` |
 | Feedback workflow | `feedback-modal.jsx`, `api/feedback-notify.js`, `api/next-feature-request.js`, `admin-view.jsx` |
 | Calendar / agenda (tasks filtered to current owner here, NOT in Account 360) | `lane-calendar.jsx` |
@@ -180,11 +209,17 @@ first-name aliases in OWNER_ID in sync (a mismatch silently hid Marco's tasks).
 - **Teams threading**: `getChatMessages` (lib/graph.js) returns PRE-normalized
   `{id, from(str), body(str), date}` for both chats and channels — don't
   re-parse raw Graph shape.
-- **Teams channels (workspace channels) are DISABLED**. The scopes
-  (Channel.ReadBasic.All, ChannelMessage.Read.All) are granted in Azure AD but
-  Microsoft's *protected APIs* tenant gate returns 403 on channel messages
-  without a separate approval/licensing. Don't re-enable without sorting the
-  Microsoft side first. (Reverted in commit `ef93c60`.)
+- **Teams workspace channels**: delegated scopes (Channel.ReadBasic.All,
+  ChannelMessage.Read.All) hit Microsoft's *protected APIs* 403 tenant gate.
+  Per-account channel reading was later wired behind **app-only** Graph creds
+  (`GRAPH_TENANT_ID/CLIENT_ID/CLIENT_SECRET` + Files.Read.All admin consent) —
+  inactive until those env vars exist. 1:1/group chats always worked.
+- **People Science Insights review** reads a SEPARATE Supabase project
+  (`yvhiowhiertndhyahvgh`, tables `clients`/`cycles`/`analyses`) via
+  `api/insights-review.js`. `PS_SUPABASE_KEY` MUST be the **service_role** key —
+  the anon key is blocked by PS's `is_eclectik_user()` RLS (caused a 500).
+  Quarter math uses 0-indexed months (`Math.floor(getUTCMonth()/3)+1`); don't
+  trust a 1-indexed `extract(month)` SQL quarter (off-by-one).
 - **Supabase JS client has no transactions** — multi-table ops
   (`lead-promote.js`) are best-effort and ordered for recoverable partial
   failure.

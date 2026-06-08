@@ -19,9 +19,29 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.22.2';
+export const CURRENT_VERSION = '1.22.3';
 
 export const CHANGELOG = [
+  {
+    version: '1.22.3',
+    date: '2026-06-07T14:00:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'docs',
+    title: 'README + CLAUDE.md brought fully up to date',
+    summary:
+      'Documentation refresh: README and CLAUDE.md now cover the War room (Projects/Insights/' +
+      'Coverage), Reporting, the AI Account 360 brief, SharePoint document links, the A-####/D-#### ' +
+      'numbering, the People Science cross-DB read and the new env vars — plus a "Conventions & ' +
+      'learned protocols" section (versioning discipline, Supabase MCP backup-first flow, sandbox ' +
+      'build workaround, region-field gotcha).',
+    changes: [
+      'README.md: refreshed features, API routes, DB/schema, env vars (PS_* + GRAPH_* app-only), project layout, Teams note; new Conventions & learned protocols section.',
+      'CLAUDE.md: DB-via-MCP protocol, versioning discipline, region/numbering domain notes, People Science service_role + quarter-math gotchas, updated feature map.',
+      '.gitignore: ignore throwaway dist_* / dist_check build dirs.',
+    ],
+    files: ['README.md', 'CLAUDE.md', '.gitignore', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.22.3',
+  },
   {
     version: '1.22.2',
     date: '2026-06-07T13:30:00Z',
