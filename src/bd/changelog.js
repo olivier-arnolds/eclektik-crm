@@ -19,9 +19,29 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.23.0';
+export const CURRENT_VERSION = '1.24.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.24.0',
+    date: '2026-06-08T14:30:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feat',
+    title: 'Reporting: expandable industry sectors',
+    summary:
+      'Industry breakdown sectors are now clickable - expanding a sector lists the client and prospect account names underneath, alphabetically.',
+    changes: [
+      'Reporting: click a sector row in the industry breakdown to reveal its client + prospect account names.',
+    ],
+    files: [
+      'src/bd/industry-breakdown.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.24.0',
+  },
+
   {
     version: '1.23.0',
     date: '2026-06-08T13:30:00Z',
