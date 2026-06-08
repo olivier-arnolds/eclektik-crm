@@ -83,7 +83,7 @@ export default function IndustryBreakdown({ companies = [] }) {
     }
     const sortAZ = (a, b) => String(a).localeCompare(String(b));
     Object.values(acc).forEach((s) => { s.clientNames.sort(sortAZ); s.prospectNames.sort(sortAZ); });
-    const list = Object.values(acc).sort((a, b) => (b.clients + b.prospects) - (a.clients + a.prospects));
+    const list = Object.values(acc).sort((a, b) => (b.clients - a.clients) || (b.prospects - a.prospects));
     const max = list.reduce((m, s) => Math.max(m, s.clients, s.prospects), 1);
     return { sectors: list, totalClients: tc, totalProspects: tp, maxVal: max };
   }, [companies]);

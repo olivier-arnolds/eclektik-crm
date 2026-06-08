@@ -19,9 +19,28 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.27.2';
+export const CURRENT_VERSION = '1.27.3';
 
 export const CHANGELOG = [
+  {
+    version: '1.27.3',
+    date: '2026-06-08T18:25:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'fix',
+    title: 'Reporting: sort industry breakdown by client count',
+    summary:
+      'The "Industries · clients vs prospects" section now orders sectors by number of clients (descending), with prospects as the tiebreaker, instead of by combined total.',
+    changes: [
+      'industry-breakdown.jsx: sort sectors by clients desc, then prospects desc.',
+    ],
+    files: [
+      'src/bd/industry-breakdown.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.27.3',
+  },
   {
     version: '1.27.2',
     date: '2026-06-08T18:05:00Z',
