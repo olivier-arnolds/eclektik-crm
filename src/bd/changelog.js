@@ -19,9 +19,28 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.27.3';
+export const CURRENT_VERSION = '1.27.4';
 
 export const CHANGELOG = [
+  {
+    version: '1.27.4',
+    date: '2026-06-08T18:45:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'fix',
+    title: 'Reporting: honour sector set directly on an account',
+    summary:
+      'If an account\'s industry is set to a broad sector name in the Account 360 (e.g. Douglas → "Consumer & Retail"), the industry breakdown now groups it under that sector instead of "Other". The section reads company industry live from the database.',
+    changes: [
+      'industry-breakdown.jsx: sectorOf() recognises when industry already holds a sector name.',
+    ],
+    files: [
+      'src/bd/industry-breakdown.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.27.4',
+  },
   {
     version: '1.27.3',
     date: '2026-06-08T18:25:00Z',

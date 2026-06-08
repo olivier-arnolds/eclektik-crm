@@ -58,9 +58,14 @@ const SECTOR_OF = {
   'Property Development': 'Real Estate & Property', 'Property Management': 'Real Estate & Property',
 };
 
+// The 10 broad sectors (the values of SECTOR_OF). If an account's industry is
+// set directly to one of these in the Account 360, honour it as-is.
+const SECTORS = new Set(Object.values(SECTOR_OF));
+
 function sectorOf(industry) {
   const v = (industry || '').trim();
   if (!v) return 'No industry';
+  if (SECTORS.has(v)) return v;        // industry already holds a sector name (set in 360)
   return SECTOR_OF[v] || 'Other';
 }
 
