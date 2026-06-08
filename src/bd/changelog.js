@@ -19,9 +19,28 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.28.5';
+export const CURRENT_VERSION = '1.28.6';
 
 export const CHANGELOG = [
+  {
+    version: '1.28.6',
+    date: '2026-06-08T21:20:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feat',
+    title: 'FX correction note: show source + rate date',
+    summary:
+      'The Q-forecast FX correction note now states the source and the rate date, e.g. "source ECB via frankfurter.dev (rate date 2026-06-08)".',
+    changes: [
+      'lane-reporting.jsx: fx state + proposal.fx carry the ECB rate date; appended source + rate date to the chart note.',
+    ],
+    files: [
+      'src/bd/lane-reporting.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.28.6',
+  },
   {
     version: '1.28.5',
     date: '2026-06-08T21:05:00Z',

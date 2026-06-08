@@ -191,7 +191,7 @@ export function computeMetrics(opps, companies, links, teamContacts, cfg) {
   const fxEur = fxOpen.reduce((s, o) => s + toEur(num(o.est_revenue) || 0, o.currency) * (num(o.probability) || 0) / 100, 0);
   const proposal = {
     quarter: proposalQuarter, glint: propByLine('Glint'), roi: propByLine('ROI'),
-    fx: { count: fxOpen.length, deltaEur: fxEur - fxRaw, usd: fx.usd, gbp: fx.gbp },
+    fx: { count: fxOpen.length, deltaEur: fxEur - fxRaw, usd: fx.usd, gbp: fx.gbp, date: fx.date || null },
   };
 
   // New vs recurring by line. Rank a company's won deals by close date,id.
@@ -657,12 +657,12 @@ export default function ReportingLane({ onPickAccount, accounts = [] }) {
   const rootRef = useRef(null);
 
   // Live EUR conversion rates (ECB via frankfurter.app). usd/gbp = EUR per 1 unit.
-  const [fx, setFx] = useState({ usd: 1, gbp: 1 });
+  const [fx, setFx] = useState({ usd: 1, gbp: 1, date: null });
   useEffect(() => {
     let cancelled = false;
     fetch('/api/fx-rates')
       .then(r => r.json())
-      .then(j => { if (!cancelled && j) setFx({ usd: Number(j.usd) || 1, gbp: Number(j.gbp) || 1 }); })
+      .then(j => { if (!cancelled && j) setFx({ usd: Number(j.usd) || 1, gbp: Number(j.gbp) || 1, date: j.date || null }); })
       .catch(() => { /* keep 1:1 fallback */ });
     return () => { cancelled = true; };
   }, []);
@@ -729,7 +729,7 @@ export default function ReportingLane({ onPickAccount, accounts = [] }) {
               </div>
             )}
 
-            <Panel title="Won revenue by quarter" hint={`Filled bars = won actuals by close date · hollow bars (${qShort(m.proposal.quarter)}) = open proposal pipeline by line, probability-weighted, not yet won · total + linear trend vs €250k/q target · R²=${m.trend.r2.toFixed(2)} (illustrative, not a forecast) · ▲/▼ % above each point = YoY vs the same quarter last year${m.proposal.fx && m.proposal.fx.count ? ` · ${qShort(m.proposal.quarter)} FX correction: ${m.proposal.fx.count} USD/GBP deal(s) converted to EUR (USD ${m.proposal.fx.usd.toFixed(2)}, GBP ${m.proposal.fx.gbp.toFixed(2)}), ${m.proposal.fx.deltaEur >= 0 ? '+' : '-'}€${Math.round(Math.abs(m.proposal.fx.deltaEur)).toLocaleString('en-US')} vs the raw figures` : ''}`}>
+            <Panel title="Won revenue by quarter" hint={`Filled bars = won actuals by close date · hollow bars (${qShort(m.proposal.quarter)}) = open proposal pipeline by line, probability-weighted, not yet won · total + linear trend vs €250k/q target · R²=${m.trend.r2.toFixed(2)} (illustrative, not a forecast) · ▲/▼ % above each point = YoY vs the same quarter last year${m.proposal.fx && m.proposal.fx.count ? ` · ${qShort(m.proposal.quarter)} FX correction: ${m.proposal.fx.count} USD/GBP deal(s) converted to EUR (USD ${m.proposal.fx.usd.toFixed(2)}, GBP ${m.proposal.fx.gbp.toFixed(2)}), ${m.proposal.fx.deltaEur >= 0 ? '+' : '-'}€${Math.round(Math.abs(m.proposal.fx.deltaEur)).toLocaleString('en-US')} vs the raw figures · source ECB via frankfurter.dev${m.proposal.fx.date ? ' (rate date ' + m.proposal.fx.date + ')' : ''}` : ''}`}>
               <Legend items={[['Glint (won)', 'var(--good)'], ['ROI (won)', 'var(--accent)'], ['Proposals (open)', 'var(--text-3)', 'dashed'], ['Total (actual)', 'var(--text-1)', 'solid'], ['Target €250k/q', 'var(--text-3)', 'dashed'], ['Trend', 'var(--rep-trend)', 'dotted']]} />
               <WonByQuarterChart m={m} />
             </Panel>
