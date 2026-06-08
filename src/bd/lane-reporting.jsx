@@ -9,6 +9,7 @@
 // that account's 360 in the persistent right pane.
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '../supabase';
+import IndustryBreakdown from './industry-breakdown';
 
 // ───────────────────────── canonical metric helpers ─────────────────────────
 const ADECCO = 'Adecco Group';
@@ -83,7 +84,7 @@ export function useReportingData() {
         supabase.from('opportunities')
           .select('id,company_id,company_name,status,stage,product_line,est_revenue,actual_revenue,probability,close_date,actual_close_date')
           .limit(2000),
-        supabase.from('companies').select('id,name,type,country').limit(2000),
+        supabase.from('companies').select('id,name,type,country,industry').limit(2000),
         supabase.from('account_links').select('account_id,contact_id,role').eq('link_type', 'eclectik_team').limit(2000),
         supabase.from('contacts').select('id,first_name,last_name,full_name,title').limit(2000),
       ]);
@@ -763,7 +764,9 @@ export default function ReportingLane({ onPickAccount, accounts = [] }) {
               </table>
             </Panel>
 
-            <div style={{ ...card, fontSize: 11.5, ...muted, lineHeight: 1.7 }}>
+            <IndustryBreakdown companies={companies} />
+
+              <div style={{ ...card, fontSize: 11.5, ...muted, lineHeight: 1.7 }}>
               <div style={{ fontWeight: 500, color: 'var(--text-2)', marginBottom: 4 }}>Methodology &amp; caveats</div>
               Revenue = COALESCE(actual, estimate, 0). Quarter = quarter of actual/expected close date. Won = status Won; Open pipeline = stage opportunity; weighted = Σ(estimate × probability). Probability is now stage-driven (set automatically on stage moves), so weighted pipeline behaves as a stage weighting rather than independent judgement — win rate is shown alongside as a cross-check. Customer = companies.type Customer (Adecco Group excluded; we deliver under LHH). Live = stage active/onboarding; active client = a Customer with any active/onboarding/opportunity deal; dormant = none. Region: US = country US/United States, else EMEA. New vs recurring ranks a client's won deals by close date ({recurringLineLevel ? 'per product line' : 'across all lines'}). Target = €1M/yr (€250k/q). Figures are operational CRM values, not reconciled finance actuals.
             </div>
