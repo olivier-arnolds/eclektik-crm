@@ -19,9 +19,28 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.27.0';
+export const CURRENT_VERSION = '1.27.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.27.1',
+    date: '2026-06-08T17:40:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'fix',
+    title: 'War room Projects: order by status (Not started → running → Completed)',
+    summary:
+      'The Projects table now sorts by project status - Not started first, In progress (running) next, Completed last - then by next milestone within each group.',
+    changes: [
+      'lane-warroom.jsx: 3-tier status ranking for the delivery table sort.',
+    ],
+    files: [
+      'src/bd/lane-warroom.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.27.1',
+  },
   {
     version: '1.27.0',
     date: '2026-06-08T17:15:00Z',

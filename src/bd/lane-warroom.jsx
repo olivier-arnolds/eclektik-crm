@@ -399,10 +399,16 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount }
   // Order: Not started first, then soonest milestone, then the rest.
   const delivery = useMemo(() => {
     const ms = (r) => r.next_milestone_date || '9999-12-31';
+    // Order by status: Not started → In progress (running) → Completed.
+    const rank = (r) => {
+      const s = (r.status || '').toLowerCase();
+      if (s === 'not started') return 0;
+      if (s === 'completed') return 2;
+      return 1; // In progress / anything else = running
+    };
     return [...(rows || [])].sort((a, b) => {
-      const na = (a.status || '') === 'Not started' ? 0 : 1;
-      const nb = (b.status || '') === 'Not started' ? 0 : 1;
-      if (na !== nb) return na - nb;
+      const ra = rank(a), rb = rank(b);
+      if (ra !== rb) return ra - rb;
       return ms(a).localeCompare(ms(b));
     });
   }, [rows]);
