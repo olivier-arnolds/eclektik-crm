@@ -9,6 +9,7 @@ import { useAuth } from '../lib/auth';
 import TagChip from './tag-chip';
 import TagPopover from './tag-popover';
 import DocLinksSection from './doc-links-section';
+import { SECTOR_OPTIONS } from './industry-breakdown';
 
 // Inline editable field — click to edit, blur/Enter to save.
 export function InlineField({ label, value, onSave, type = 'text', colspan }) {
@@ -696,7 +697,16 @@ export function InlineAccountDetails({ accountId, onPickAccount }) {
         </div>
         <InlineField label="Phone" value={row.phone} onSave={v => saveField('phone', v)} />
         <InlineField label="Email" value={row.email} type="email" onSave={v => saveField('email', v)} />
-        <InlineField label="Industry" value={row.industry} onSave={v => saveField('industry', v)} colspan={2} />
+        <div style={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'column', gap: 2 }}>
+          <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>Industry</div>
+          <select value={SECTOR_OPTIONS.includes(row.industry) ? row.industry : (row.industry ? '__current__' : '')}
+            onChange={e => { if (e.target.value !== '__current__') saveField('industry', e.target.value || null); }}
+            style={{ padding: '4px 6px', borderRadius: 4, border: '0.5px solid var(--sep)', background: 'var(--fill-1)', fontSize: 12, fontFamily: 'inherit' }}>
+            {!row.industry && <option value="">— select —</option>}
+            {row.industry && !SECTOR_OPTIONS.includes(row.industry) && <option value="__current__">{row.industry} (current)</option>}
+            {SECTOR_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
         <InlineField label="Address" value={row.address} onSave={v => saveField('address', v)} colspan={2} />
         <InlineField label="City" value={row.city} onSave={v => saveField('city', v)} />
         <InlineField label="State" value={row.state} onSave={v => saveField('state', v)} />

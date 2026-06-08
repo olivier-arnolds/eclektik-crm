@@ -19,9 +19,28 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.28.3';
+export const CURRENT_VERSION = '1.28.4';
 
 export const CHANGELOG = [
+  {
+    version: '1.28.4',
+    date: '2026-06-08T20:45:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'fix',
+    title: 'Account 360: industry dropdown on the actual (inline) account panel',
+    summary:
+      'The industry sector dropdown was added to the wrong account component in 1.28.0. Added it to the inline Account 360 panel (InlineAccountDetails) that the workspace actually uses, replacing the free-text Industry field. The current value is preserved as an option.',
+    changes: [
+      'inline-details.jsx (InlineAccountDetails): Industry is now a sector dropdown (shared SECTOR_OPTIONS), keeping any current raw value as an option.',
+    ],
+    files: [
+      'src/bd/inline-details.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.28.4',
+  },
   {
     version: '1.28.3',
     date: '2026-06-08T20:25:00Z',
