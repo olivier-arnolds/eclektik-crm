@@ -19,9 +19,30 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.28.4';
+export const CURRENT_VERSION = '1.28.5';
 
 export const CHANGELOG = [
+  {
+    version: '1.28.5',
+    date: '2026-06-08T21:05:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'fix',
+    title: 'FX rates: fetch server-side (rates were stuck at 1:1)',
+    summary:
+      'The live FX lookup failed because api.frankfurter.app now redirects to api.frankfurter.dev, which the browser fetch could not follow — so rates fell back to 1:1 (USD 1.00 / GBP 1.00, +€0). Added a server-side /api/fx-rates route (frankfurter.dev / ECB) that the Reporting lane calls same-origin, so conversion actually applies.',
+    changes: [
+      'api/fx-rates.js: new server-side endpoint returning EUR-per-USD/GBP (cached 1h), 1:1 fallback on failure.',
+      'lane-reporting.jsx: fetch /api/fx-rates instead of the third-party URL directly.',
+    ],
+    files: [
+      'api/fx-rates.js',
+      'src/bd/lane-reporting.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.28.5',
+  },
   {
     version: '1.28.4',
     date: '2026-06-08T20:45:00Z',

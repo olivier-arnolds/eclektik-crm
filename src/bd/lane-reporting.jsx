@@ -660,9 +660,9 @@ export default function ReportingLane({ onPickAccount, accounts = [] }) {
   const [fx, setFx] = useState({ usd: 1, gbp: 1 });
   useEffect(() => {
     let cancelled = false;
-    fetch('https://api.frankfurter.app/latest?base=EUR&symbols=USD,GBP')
+    fetch('/api/fx-rates')
       .then(r => r.json())
-      .then(j => { if (!cancelled && j && j.rates) setFx({ usd: j.rates.USD ? 1 / j.rates.USD : 1, gbp: j.rates.GBP ? 1 / j.rates.GBP : 1 }); })
+      .then(j => { if (!cancelled && j) setFx({ usd: Number(j.usd) || 1, gbp: Number(j.gbp) || 1 }); })
       .catch(() => { /* keep 1:1 fallback */ });
     return () => { cancelled = true; };
   }, []);
