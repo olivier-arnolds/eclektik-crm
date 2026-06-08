@@ -19,9 +19,34 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.25.0';
+export const CURRENT_VERSION = '1.26.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.26.0',
+    date: '2026-06-08T16:30:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feat',
+    title: 'War room Projects: KO date + delivery window from the master sheet',
+    summary:
+      'Added Expected delivery start to the glint_delivery schema + sync, and surfaced KO date, delivery start and delivery end as a new Timeline column in the War room Projects tab (project name and notes were already shown). Field guide updated.',
+    changes: [
+      'glint_delivery: new delivery_start column (backup _dq_backup_glint_delivery_20260608).',
+      'glint-sync.js: now maps the sheet Expected delivery start column.',
+      'War room Projects: new Timeline column showing KO date and the delivery start to end window.',
+      'Field guide: documented Expected delivery start and the Timeline column.',
+    ],
+    files: [
+      'api/glint-sync.js',
+      'src/bd/lane-warroom.jsx',
+      'public/warroom-projects-field-guide.md',
+      'sql/schema_glint_delivery_delivery_start_2026-06-08.sql',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.26.0',
+  },
   {
     version: '1.25.0',
     date: '2026-06-08T15:30:00Z',
