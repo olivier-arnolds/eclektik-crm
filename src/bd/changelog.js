@@ -19,9 +19,31 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.27.1';
+export const CURRENT_VERSION = '1.27.2';
 
 export const CHANGELOG = [
+  {
+    version: '1.27.2',
+    date: '2026-06-08T18:05:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feat',
+    title: 'War room Projects: KO/Start/End columns, details on a second line, all clients clickable',
+    summary:
+      'Split the Timeline into separate KO, Start and End columns. Long project notes now render on their own full-width line under each project row (the top line keeps the markers). Also linked every delivery row to its CRM account so each client name opens its Account 360 (fixed a fuzzy-match that linked PIMCO Prima Real Estate to IMC).',
+    changes: [
+      'lane-warroom.jsx: separate KO / Start / End date columns (replacing the combined Timeline column).',
+      'lane-warroom.jsx: removed the inline Details column; notes shown on a second full-width line beneath each row.',
+      'Data: all 26 glint_delivery rows linked to CRM accounts; PIMCO Prima Real Estate corrected from IMC to PIMCO Prime Real Estate.',
+    ],
+    files: [
+      'src/bd/lane-warroom.jsx',
+      'sql/data_glint_delivery_rebuild_2026-06-08.sql',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.27.2',
+  },
   {
     version: '1.27.1',
     date: '2026-06-08T17:40:00Z',

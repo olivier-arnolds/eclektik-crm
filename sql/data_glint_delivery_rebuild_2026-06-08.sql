@@ -28,4 +28,15 @@ Then we can review, strategize, design, and plan for the October survey (we do 2
 ('Serco|SercoViewPoint_Sept2025|old','Serco','SercoViewPoint_Sept2025','CS and PS Support','UK','Completed','Low','Ezra Fermanis',40,'Paul Mastrangelo',65,'Angela Schwingel',10,NULL,NULL,NULL,'2026-06-03','2025-05-21','Delivery end 2026-06-03','2026-06-03',NULL,NULL,now()),
 ('Draper|Draper-Q3-2025|old','Draper','Draper-Q3-2025','PS support','US','Completed','Medium','Angela Schwingel',2,'Paul Mastrangelo',34,'N/A',0,NULL,NULL,NULL,'2026-06-03','2025-08-01','Delivery end 2026-06-03','2026-06-03','I x Insight Review has been delayed since the summer. Paul about to do final presentation after CHRO asked for some minor amendments. Paul awaiting for access to granted again to the platform so he can complete further updates. This should not roll over beyond end of January. They have asked for a lot which Paul has provided but they have strict instructions from me that any further support / changes will incur costs which they accept. 3-3 Paul still doesn''t have access. I sent an email to Vin today from my position.',NULL,now()),
 ('IMC|IMC Trading-Q1-Q2-2026|old','IMC','IMC Trading-Q1-Q2-2026','CS and PS Support / Insight review/','EU','Completed',NULL,'Ivan De Las Cuevas Ruiz',38,'Kirsty Thompson - Clarke',40,'N/A',0,'2026-03-12',NULL,NULL,'2026-05-05','2026-04-01','Delivery end 2026-05-05','2026-05-05',NULL,NULL,now());
+-- 1) exact normalised-name match
 update glint_delivery g set company_id=c.id from companies c where g.company_id is null and lower(regexp_replace(g.client_name,'[^a-z0-9]','','g'))=lower(regexp_replace(c.name,'[^a-z0-9]','','g'));
+-- 2) partial match (client name is a prefix/substring of the CRM account name or vice versa)
+update glint_delivery g set company_id=c.id from companies c where g.company_id is null and (
+  lower(regexp_replace(c.name,'[^a-z0-9]','','g')) like lower(regexp_replace(g.client_name,'[^a-z0-9]','','g'))||'%'
+  or lower(regexp_replace(g.client_name,'[^a-z0-9]','','g')) like lower(regexp_replace(c.name,'[^a-z0-9]','','g'))||'%'
+);
+-- 3) explicit aliases for names that differ on the sheet vs the CRM
+update glint_delivery g set company_id = m.cid from (
+  select 'PIMCO Prima Real Estate'::text as cn, (select id from companies where name='PIMCO Prime Real Estate' limit 1) as cid
+  union all select 'Breitling', (select id from companies where name ilike 'breitling' limit 1)
+) m where g.client_name = m.cn and g.company_id is null;

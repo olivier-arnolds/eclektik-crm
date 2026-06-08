@@ -493,18 +493,21 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount }
         <thead><tr>
           <th style={th}>Client · project</th>
           <th style={th}>CS ({totals.cs}h)</th><th style={th}>PS ({totals.ps}h)</th><th style={th}>Support ({totals.other}h)</th>
-          <th style={th}>Milestone</th><th style={th}>Timeline</th><th style={th}>Details</th><th style={th}>Status</th>
+          <th style={th}>Milestone</th><th style={th}>KO</th><th style={th}>Start</th><th style={th}>End</th><th style={th}>Status</th>
         </tr></thead>
         <tbody>
-          {loading && <tr><td style={td} colSpan={8}>Loading…</td></tr>}
+          {loading && <tr><td style={td} colSpan={9}>Loading…</td></tr>}
           {!loading && delivery.length === 0 && (
-            <tr><td style={{ ...td, color: 'var(--text-3)' }} colSpan={8}>No delivery rows yet — run the seed or hit Update.</td></tr>
+            <tr><td style={{ ...td, color: 'var(--text-3)' }} colSpan={9}>No delivery rows yet — run the seed or hit Update.</td></tr>
           )}
           {delivery.map(r => {
             const acc = r.company_id ? accById.get(r.company_id) : null;
+            const hasNotes = !!(r.notes && String(r.notes).trim());
+            const cTd = hasNotes ? { ...td, borderBottom: 'none' } : td; // keep details line attached to its row
             return (
-              <tr key={r.id}>
-                <td style={td}>
+              <Fragment key={r.id}>
+              <tr>
+                <td style={cTd}>
                   {acc && onPickAccount
                     ? <span onClick={() => onPickAccount(acc)} style={{ fontWeight: 500, color: 'var(--accent)', cursor: 'pointer' }}>{r.client_name}</span>
                     : <span style={{ fontWeight: 500 }}>{r.client_name}</span>}
@@ -527,25 +530,26 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount }
                     })()}
                   </div>
                 </td>
-                <td style={td}><PersonCell name={r.cs_owner} hours={r.cs_hours} used={r.cs_used_hours} /></td>
-                <td style={td}><PersonCell name={r.ps_owner} hours={r.ps_hours} used={r.ps_used_hours} /></td>
-                <td style={td}><PersonCell name={r.other_contractors} hours={r.other_hours} used={r.other_used_hours} /></td>
-                <td style={td}>{r.next_milestone_label || <span style={sub}>TBC</span>}</td>
-                <td style={td}>
-                  <div style={{ fontSize: 11, lineHeight: 1.35 }}>
-                    {r.ko_date ? <div><span style={sub}>KO</span> {r.ko_date}</div> : null}
-                    {(r.delivery_start || r.delivery_end)
-                      ? <div>{r.delivery_start || '?'} <span style={sub}>→</span> {r.delivery_end || '?'}</div>
-                      : null}
-                    {!r.ko_date && !r.delivery_start && !r.delivery_end ? <span style={sub}>—</span> : null}
-                  </div>
-                </td>
-                <td style={{ ...td, fontSize: 11.5, color: 'var(--text-2)', maxWidth: 340, lineHeight: 1.4 }}>{r.notes || <span style={sub}>—</span>}</td>
-                <td style={td}><span style={chip(
+                <td style={cTd}><PersonCell name={r.cs_owner} hours={r.cs_hours} used={r.cs_used_hours} /></td>
+                <td style={cTd}><PersonCell name={r.ps_owner} hours={r.ps_hours} used={r.ps_used_hours} /></td>
+                <td style={cTd}><PersonCell name={r.other_contractors} hours={r.other_hours} used={r.other_used_hours} /></td>
+                <td style={cTd}>{r.next_milestone_label || <span style={sub}>TBC</span>}</td>
+                <td style={{ ...cTd, fontSize: 11.5, whiteSpace: 'nowrap' }}>{r.ko_date || <span style={sub}>—</span>}</td>
+                <td style={{ ...cTd, fontSize: 11.5, whiteSpace: 'nowrap' }}>{r.delivery_start || <span style={sub}>—</span>}</td>
+                <td style={{ ...cTd, fontSize: 11.5, whiteSpace: 'nowrap' }}>{r.delivery_end || <span style={sub}>—</span>}</td>
+                <td style={cTd}><span style={chip(
                   r.status === 'Not started' ? 'rgba(226,75,74,.13)' : r.status === 'Completed' ? 'rgba(136,135,128,.15)' : 'rgba(29,158,117,.14)',
                   r.status === 'Not started' ? '#A32D2D' : r.status === 'Completed' ? '#5F5E5A' : '#0F6E56'
                 )}>{r.status || '—'}</span></td>
               </tr>
+              {hasNotes && (
+                <tr>
+                  <td colSpan={9} style={{ padding: '0 8px 8px 8px', borderBottom: '0.5px solid var(--sep)', fontSize: 11.5, color: 'var(--text-2)', lineHeight: 1.45 }}>
+                    <span style={{ ...sub, marginRight: 6 }}>↳ Details</span>{r.notes}
+                  </td>
+                </tr>
+              )}
+              </Fragment>
             );
           })}
         </tbody>
