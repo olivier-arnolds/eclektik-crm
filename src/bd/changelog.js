@@ -19,9 +19,28 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.28.2';
+export const CURRENT_VERSION = '1.28.3';
 
 export const CHANGELOG = [
+  {
+    version: '1.28.3',
+    date: '2026-06-08T20:25:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feat',
+    title: 'Won-revenue chart: note the FX correction applied to the Q3 forecast',
+    summary:
+      'The won-revenue panel hint now states the currency correction applied to the next-quarter weighted forecast: how many USD/GBP deals were converted to EUR, the rates used, and the net euro shift vs treating the raw numbers as euros.',
+    changes: [
+      'lane-reporting.jsx: proposal.fx (count, deltaEur, rates); chart hint shows the FX correction for the forecast quarter.',
+    ],
+    files: [
+      'src/bd/lane-reporting.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.28.3',
+  },
   {
     version: '1.28.2',
     date: '2026-06-08T20:05:00Z',
