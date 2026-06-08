@@ -14,6 +14,7 @@ import IndustryBreakdown from './industry-breakdown';
 // ───────────────────────── canonical metric helpers ─────────────────────────
 const ADECCO = 'Adecco Group';
 const TARGET_Q = 250000;          // €250k / quarter
+const MIN_Q = 120000;             // €120k / quarter minimum (floor)
 const US_COUNTRIES = ['US', 'United States'];
 
 const num = (v) => (v === null || v === undefined || v === '') ? null : Number(v);
@@ -452,6 +453,8 @@ function WonByQuarterChart({ m }) {
         </g>
       ))}
       <line x1={padL} x2={W - padR} y1={y(TARGET_Q)} y2={y(TARGET_Q)} stroke="var(--text-3)" strokeWidth="1.5" strokeDasharray="6 4" />
+      <line x1={padL} x2={W - padR} y1={y(MIN_Q)} y2={y(MIN_Q)} stroke="#E24B4A" strokeWidth="1.25" strokeDasharray="2 3" />
+      <text x={W - padR} y={y(MIN_Q) - 3} textAnchor="end" fontSize="9" fill="#E24B4A">min {eur(MIN_Q)}/q</text>
       {quarters.map((q, i) => (
         <g key={q}>
           <rect x={x[i] - bw - 1} y={y(glint[q])} width={bw} height={padT + plotH - y(glint[q])} rx="2" fill="var(--good)" />
@@ -475,7 +478,7 @@ function WonByQuarterChart({ m }) {
       )}
       <polyline points={trendPts} fill="none" stroke="var(--rep-trend)" strokeWidth="1.5" strokeDasharray="2 3" />
       <polyline points={totalPts} fill="none" stroke="var(--text-1)" strokeWidth="2" />
-      {quarters.map((q, i) => <circle key={q} cx={x[i]} cy={y(totals[q])} r="3" fill="var(--text-1)" />)}
+      {quarters.map((q, i) => <circle key={q} cx={x[i]} cy={y(totals[q])} r="3" fill={totals[q] < MIN_Q ? '#E24B4A' : 'var(--text-1)'}><title>{`${qShort(q)}: ${eur(totals[q])}${totals[q] < MIN_Q ? ' — below €120k min' : ''}`}</title></circle>)}
       {/* YoY delta vs the same quarter last year, below the quarter labels */}
       {quarters.map((q, i) => {
         const [yy, nn] = q.split('-Q');
@@ -725,7 +728,7 @@ export default function ReportingLane({ onPickAccount, accounts = [] }) {
             )}
 
             <Panel title="Won revenue by quarter" hint={`Filled bars = won actuals by close date · hollow bars (${qShort(m.proposal.quarter)}) = open proposal pipeline by line, probability-weighted, not yet won · total + linear trend vs €250k/q target · R²=${m.trend.r2.toFixed(2)} (illustrative, not a forecast) · ▲/▼ % above each point = YoY vs the same quarter last year${m.proposal.fx && m.proposal.fx.count ? ` · ${qShort(m.proposal.quarter)} FX correction: ${m.proposal.fx.count} USD/GBP deal(s) converted to EUR (USD ${m.proposal.fx.usd.toFixed(2)}, GBP ${m.proposal.fx.gbp.toFixed(2)}), ${m.proposal.fx.deltaEur >= 0 ? '+' : '-'}€${Math.round(Math.abs(m.proposal.fx.deltaEur)).toLocaleString('en-US')} vs the raw figures · source ECB via frankfurter.dev${m.proposal.fx.date ? ' (rate date ' + m.proposal.fx.date + ')' : ''}` : ''}`}>
-              <Legend items={[['Glint (won)', 'var(--good)'], ['ROI (won)', 'var(--accent)'], ['Proposals (open)', 'var(--text-3)', 'dashed'], ['Total (actual)', 'var(--text-1)', 'solid'], ['Target €250k/q', 'var(--text-3)', 'dashed'], ['Trend', 'var(--rep-trend)', 'dotted']]} />
+              <Legend items={[['Glint (won)', 'var(--good)'], ['ROI (won)', 'var(--accent)'], ['Proposals (open)', 'var(--text-3)', 'dashed'], ['Total (actual)', 'var(--text-1)', 'solid'], ['Target €250k/q', 'var(--text-3)', 'dashed'], ['Min €120k/q', '#E24B4A', 'dotted'], ['Trend', 'var(--rep-trend)', 'dotted']]} />
               <WonByQuarterChart m={m} />
             </Panel>
 

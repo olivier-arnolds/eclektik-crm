@@ -19,9 +19,28 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.29.3';
+export const CURRENT_VERSION = '1.29.4';
 
 export const CHANGELOG = [
+  {
+    version: '1.29.4',
+    date: '2026-06-09T07:55:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feat',
+    title: 'Won revenue chart: €120k/quarter minimum line',
+    summary:
+      'Added a red dotted minimum line at €120k/quarter on the Won-revenue-by-quarter chart. Quarters whose total falls below the minimum get a red point (with a tooltip), so you can see at a glance which quarters are under the floor.',
+    changes: [
+      'lane-reporting.jsx: MIN_Q = 120000; red dotted min line + below-minimum red points + legend entry.',
+    ],
+    files: [
+      'src/bd/lane-reporting.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.29.4',
+  },
   {
     version: '1.29.3',
     date: '2026-06-09T07:30:00Z',
