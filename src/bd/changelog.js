@@ -19,9 +19,31 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.26.0';
+export const CURRENT_VERSION = '1.27.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.27.0',
+    date: '2026-06-08T17:15:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feat',
+    title: 'War room sync reads MASTER + Old Projects tabs',
+    summary:
+      'Rewired glint-sync to read the actual workbook tabs - "MASTER – Project Overview" (current) and "Old Projects" (previous, shown Completed) - instead of a non-existent "Sheet1". Captures Expected delivery start, combines project + service type, and does a full refresh. Also rebuilt glint_delivery from the current master sheet (26 projects: 16 current + 10 previous).',
+    changes: [
+      'glint-sync.js: discovers worksheets and reads MASTER + Old Projects (ignores Contract durations); maps all five fields incl. delivery start; full-refresh upsert that drops rows no longer in the sheet.',
+      'Data: glint_delivery rebuilt from Master_Project_Overview.xlsx (backup _dq_backup_glint_delivery_20260608).',
+      'Note: the in-app Update button pulls live only once GRAPH_* credentials are set in Vercel.',
+    ],
+    files: [
+      'api/glint-sync.js',
+      'sql/data_glint_delivery_rebuild_2026-06-08.sql',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.27.0',
+  },
   {
     version: '1.26.0',
     date: '2026-06-08T16:30:00Z',

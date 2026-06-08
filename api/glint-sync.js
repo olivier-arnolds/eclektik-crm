@@ -1,7 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Syncs Yarmilla's "Master Project Overview.xlsx" into public.glint_delivery,
-// which powers the War-room tab's delivery layer.
+// which powers the War-room Projects tab (the operational delivery view).
+//
+// Reads BOTH project tabs:
+//   • "MASTER – Project Overview"  → current projects
+//   • "Old Projects"               → previous projects (forced status = Completed)
+// The "Contract durations" tab is ignored.
 //
 // ── PREREQUISITES (one-time, in Azure) ────────────────────────────────────
 // Reading a OneDrive/SharePoint workbook needs Microsoft Graph application
@@ -43,7 +48,6 @@ async function graphToken() {
 }
 
 // Best-effort parse of a free-text date cell into an ISO date (yyyy-mm-dd).
-// Handles "6/1/2026", "2026-05-19", "Mid June-26", "Apr-26", "Aug 2026".
 const MONTHS = { jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11 };
 function parseLooseDate(s) {
   if (!s) return null;
@@ -73,6 +77,91 @@ function nextMilestone(row) {
   return { label: `${pick.label} ${pick.date}`, date: pick.date };
 }
 
+// Normalise a workbook cell to a trimmed string. Graph returns ISO datetimes for
+// real date cells (e.g. "2026-08-01T00:00:00Z") — keep just the date part.
+function cellStr(v) {
+  if (v === null || v === undefined) return '';
+  const s = String(v).trim();
+  const m = s.match(/^(\d{4}-\d{2}-\d{2})T/);
+  return m ? m[1] : s;
+}
+
+// Map one worksheet's usedRange values → glint_delivery rows.
+// isOld = rows come from the "Old Projects" tab (shown as previous / Completed).
+function mapSheet(values, isOld) {
+  if (!Array.isArray(values) || values.length < 2) return [];
+  const header = values[0].map(h => String(h || '').toLowerCase());
+  const col = (...keys) => header.findIndex(h => keys.some(k => h.includes(k)));
+  const idx = {
+    client: col('client name'),
+    project: col('project name', 'yoobi'),
+    ptype: col('project type'),
+    service: col('service type'),
+    region: col('region'),
+    status: col('project status', 'status'),
+    priority: col('priority'),
+    cs_owner: col('cs owner'),
+    ps_owner: col('ps owner'),
+    other: col('other contractors', 'support'),
+    dstart: col('expected delivery start', 'delivery start'),
+    dend: col('expected delivery end', 'delivery end'),
+    ko: col('ko date'),
+    survey: col('survey date'),
+    ir: col('insight review date', 'insight review'),
+    notes: col('key notes', 'notes', 'dependencies'),
+    follow: col('follow-up', 'follow up'),
+  };
+  const get = (row, i) => (i >= 0 ? cellStr(row[i]) : '');
+  const rows = [];
+  let lastClient = '';
+  for (let r = 1; r < values.length; r++) {
+    const v = values[r];
+    let client = get(v, idx.client);
+    const project = get(v, idx.project);
+    if (client.toLowerCase() === 'onboardings') { lastClient = ''; continue; }
+    if (client) lastClient = client; else if (project) client = lastClient; // forward-fill
+    if (!client && !project) continue;
+    const ptype = get(v, idx.ptype), service = get(v, idx.service);
+    const serviceType = [ptype, service].filter(Boolean).join(' / ') || null;
+    const status = isOld ? 'Completed' : (get(v, idx.status) || null);
+    const base = {
+      client_name: client,
+      project_name: project || null,
+      service_type: serviceType,
+      region: get(v, idx.region) || null,
+      status,
+      priority: get(v, idx.priority) || null,
+      cs_owner: get(v, idx.cs_owner) || null,
+      ps_owner: get(v, idx.ps_owner) || null,
+      other_contractors: get(v, idx.other) || null,
+      delivery_start: get(v, idx.dstart) || null,
+      delivery_end: get(v, idx.dend) || null,
+      ko_date: get(v, idx.ko) || null,
+      survey_date: get(v, idx.survey) || null,
+      insight_review_date: get(v, idx.ir) || null,
+      notes: get(v, idx.notes) || null,
+      follow_up: get(v, idx.follow) || null,
+    };
+    const ms = nextMilestone(base);
+    rows.push({
+      ...base,
+      sheet_key: `${base.client_name}|${base.project_name || ''}${isOld ? '|old' : ''}`.slice(0, 200),
+      next_milestone_label: ms.label,
+      next_milestone_date: ms.date,
+    });
+  }
+  return rows;
+}
+
+async function readSheetValues(token, name) {
+  const url = `https://graph.microsoft.com/v1.0/drives/${DRIVE_ID}/items/${ITEM_ID}`
+    + `/workbook/worksheets('${encodeURIComponent(name)}')/usedRange?$select=values`;
+  const r = await fetch(url, { headers: { Authorization: 'Bearer ' + token } });
+  if (!r.ok) return null;
+  const j = await r.json();
+  return Array.isArray(j.values) ? j.values : null;
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
@@ -91,41 +180,35 @@ export default async function handler(req, res) {
     if (meta.ok) sourceModifiedAt = (await meta.json()).lastModifiedDateTime || null;
   } catch (_) { /* non-fatal */ }
 
-  // Read the first worksheet's used range.
-  const url = `https://graph.microsoft.com/v1.0/drives/${DRIVE_ID}/items/${ITEM_ID}/workbook/worksheets('Sheet1')/usedRange?$select=values`;
-  const r = await fetch(url, { headers: { Authorization: 'Bearer ' + token } });
-  if (!r.ok) {
-    const txt = await r.text();
-    return res.status(502).json({ error: 'Graph read failed', detail: txt.slice(0, 500) });
-  }
-  const { values } = await r.json();
-  if (!Array.isArray(values) || values.length < 2) {
-    return res.status(200).json({ synced: 0, note: 'No rows found' });
-  }
+  // Discover the worksheets and classify them. Robust to exact naming (en-dash,
+  // casing) by keyword match; falls back to sensible defaults.
+  let current = ['MASTER – Project Overview'];
+  let old = ['Old Projects'];
+  try {
+    const wl = await fetch(`https://graph.microsoft.com/v1.0/drives/${DRIVE_ID}/items/${ITEM_ID}/workbook/worksheets?$select=name`,
+      { headers: { Authorization: 'Bearer ' + token } });
+    if (wl.ok) {
+      const names = ((await wl.json()).value || []).map(w => w.name).filter(Boolean);
+      if (names.length) {
+        const lc = (s) => s.toLowerCase();
+        old = names.filter(n => lc(n).includes('old'));
+        current = names.filter(n => !lc(n).includes('old') && !lc(n).includes('contract'));
+      }
+    }
+  } catch (_) { /* use defaults */ }
 
-  // Map columns by fuzzy header match (the sheet has a banded header; we match
-  // on keywords). Header is assumed to be the first row of the used range.
-  const header = values[0].map(h => String(h || '').toLowerCase());
-  const col = (...keys) => header.findIndex(h => keys.some(k => h.includes(k)));
-  const idx = {
-    client: col('client name', 'client'),
-    project: col('project name', 'yoobi', 'project'),
-    service: col('service type', 'service'),
-    region: col('region'),
-    status: col('project status', 'status'),
-    priority: col('priority'),
-    cs_owner: col('cs owner'),
-    ps_owner: col('ps owner'),
-    other: col('other contractors', 'support'),
-    ko: col('ko date'),
-    survey: col('survey date'),
-    ir: col('insight review date', 'insight review'),
-    dend: col('expected delivery end', 'delivery end'),
-    dstart: col('expected delivery start', 'delivery start'),
-    notes: col('key notes', 'notes', 'dependencies'),
-    follow: col('follow-up', 'follow up'),
-  };
+  let rows = [];
+  for (const name of current) {
+    const v = await readSheetValues(token, name);
+    if (v) rows = rows.concat(mapSheet(v, false));
+  }
+  for (const name of old) {
+    const v = await readSheetValues(token, name);
+    if (v) rows = rows.concat(mapSheet(v, true));
+  }
+  if (!rows.length) return res.status(200).json({ synced: 0, note: 'No rows found' });
 
+  // Link to CRM accounts by normalised name.
   const { data: companies } = await supabase.from('companies').select('id, name');
   const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
   const matchCompany = (name) => {
@@ -136,48 +219,28 @@ export default async function handler(req, res) {
     const partial = (companies || []).find(c => norm(c.name).includes(n) || n.includes(norm(c.name)));
     return partial?.id || null;
   };
-  const get = (row, i) => (i >= 0 ? (row[i] ?? null) : null);
 
-  const rows = [];
-  for (let r2 = 1; r2 < values.length; r2++) {
-    const v = values[r2];
-    const client = get(v, idx.client);
-    if (!client || !String(client).trim()) continue;
-    const base = {
-      client_name: String(client).trim(),
-      project_name: get(v, idx.project),
-      service_type: get(v, idx.service),
-      region: get(v, idx.region),
-      status: get(v, idx.status),
-      priority: get(v, idx.priority),
-      cs_owner: get(v, idx.cs_owner),
-      ps_owner: get(v, idx.ps_owner),
-      other_contractors: get(v, idx.other),
-      ko_date: get(v, idx.ko),
-      survey_date: get(v, idx.survey),
-      insight_review_date: get(v, idx.ir),
-      delivery_end: get(v, idx.dend),
-      delivery_start: get(v, idx.dstart),
-      notes: get(v, idx.notes),
-      follow_up: get(v, idx.follow),
-    };
-    const ms = nextMilestone(base);
-    rows.push({
-      ...base,
-      sheet_key: `${base.client_name}|${base.project_name || ''}`.slice(0, 200),
-      next_milestone_label: ms.label,
-      next_milestone_date: ms.date,
-      company_id: matchCompany(base.client_name),
-      source_modified_at: sourceModifiedAt,
-      synced_at: new Date().toISOString(),
-    });
-  }
+  const nowIso = new Date().toISOString();
+  rows = rows.map(r => ({
+    ...r,
+    company_id: matchCompany(r.client_name),
+    source_modified_at: sourceModifiedAt,
+    synced_at: nowIso,
+  }));
 
+  // Full refresh: replace the table so removed/renamed rows don't linger.
+  const keep = rows.map(r => r.sheet_key);
   const errors = [];
   for (let i = 0; i < rows.length; i += 100) {
     const { error } = await supabase.from('glint_delivery')
       .upsert(rows.slice(i, i + 100), { onConflict: 'sheet_key' });
     if (error) errors.push(error.message);
   }
-  return res.status(200).json({ synced: rows.length, errors });
+  // Drop rows whose sheet_key is no longer present in the sheet.
+  if (keep.length) {
+    const { error } = await supabase.from('glint_delivery')
+      .delete().not('sheet_key', 'in', `(${keep.map(k => `"${k.replace(/"/g, '')}"`).join(',')})`);
+    if (error) errors.push('cleanup: ' + error.message);
+  }
+  return res.status(200).json({ synced: rows.length, current: current, old: old, errors });
 }
