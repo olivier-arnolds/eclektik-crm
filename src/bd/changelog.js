@@ -19,9 +19,38 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.24.0';
+export const CURRENT_VERSION = '1.25.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.25.0',
+    date: '2026-06-08T15:30:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feat',
+    title: 'Product line: add Seer, rename ROE to Insights',
+    summary:
+      'Added Seer as a product-line classification and renamed ROE to Insights across every deal/lead/account picker and filter, plus the Reporting Win/loss-by-line table. Behaves like Glint and ROI; the two quarterly charts stay Glint vs ROI.',
+    changes: [
+      'Product-line tag set is now Glint, ROI, Seer, Insights, Other - updated in the deal-detail picker, new-deal modal, convert/disqualify modal, lead modal, account new-opp form, item detail (multiselect + convert), funnel filter and swimlane filter.',
+      'Reporting: lineOf() recognises Seer and Insights; both appear in the Win/loss-by-line table; the new-vs-recurring chart is guarded to stay Glint/ROI only.',
+    ],
+    files: [
+      'src/bd/lane-reporting.jsx',
+      'src/bd/deal-detail-modal.jsx',
+      'src/bd/new-deal-modal.jsx',
+      'src/bd/convert-disqualify-modal.jsx',
+      'src/bd/lane-funnel.jsx',
+      'src/bd/lane-accounts.jsx',
+      'src/components/detail/ItemDetail.jsx',
+      'src/components/accounts/AccountDetail.jsx',
+      'src/components/forms/AddLeadModal.jsx',
+      'src/components/views/SwimlaneView.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.25.0',
+  },
   {
     version: '1.24.0',
     date: '2026-06-08T14:30:00Z',
