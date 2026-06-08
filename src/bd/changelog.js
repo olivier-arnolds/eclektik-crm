@@ -19,9 +19,33 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.22.3';
+export const CURRENT_VERSION = '1.23.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.23.0',
+    date: '2026-06-08T13:30:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feat',
+    title: 'Reporting: industries of clients vs prospects',
+    summary:
+      'New Reporting section breaking down accounts by broad industry sector, split into clients (type = Customer) and prospects (type = Prospect). Backfilled the missing companies.industry values so the breakdown has near-complete coverage (112 to 180 accounts with an industry).',
+    changes: [
+      'Reporting: added an "Industries - clients vs prospects" section grouped into 10 broad sectors, reading live company type + industry.',
+      'Data: backfilled industry for 6 clients, 39 prospects and 24 partners that previously had none; 5 small/unknown partners left blank by design.',
+      'Sector mapping kept as a single constant in industry-breakdown.jsx.',
+    ],
+    files: [
+      'src/bd/industry-breakdown.jsx',
+      'src/bd/lane-reporting.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+      'sql/data_fill_company_industries_2026-06-08.sql',
+    ],
+    gitTag: 'v1.23.0',
+  },
+
   {
     version: '1.22.3',
     date: '2026-06-07T14:00:00Z',
