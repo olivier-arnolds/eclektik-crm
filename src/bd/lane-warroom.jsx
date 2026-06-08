@@ -51,6 +51,86 @@ function weekifyLabel(lbl) {
   return lbl ? lbl.replace(/\d{4}-\d{2}-\d{2}/, (d) => dateLabel(d)) : lbl;
 }
 
+// Parse a date/phrase cell into a JS Date (UTC) or null. Same coverage as
+// dateLabel (ISO, m/d/y, Excel serial, fuzzy month phrases).
+function parseAnyDate(s) {
+  if (!s) return null;
+  const t = String(s).trim();
+  let m = t.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (m) return new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+  if (/^\d{5}(\.\d+)?$/.test(t)) { const n = parseFloat(t); if (n >= 30000 && n <= 60000) return new Date(Date.UTC(1899, 11, 30) + Math.round(n) * 86400000); }
+  m = t.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{2,4})$/);
+  if (m) { const y = +m[3] < 100 ? 2000 + +m[3] : +m[3]; return new Date(Date.UTC(y, +m[1] - 1, +m[2])); }
+  const lo = t.toLowerCase();
+  const mon = lo.match(/(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/);
+  if (!mon) return null;
+  const mo = MON_IDX[mon[1]];
+  const y4 = lo.match(/(20\d{2})/), y2 = lo.match(/-(\d{2})\b/);
+  const y = y4 ? +y4[1] : y2 ? 2000 + +y2[1] : new Date().getUTCFullYear();
+  let day = 15;
+  if (/\b(begin|beginning|early|start|first)\b/.test(lo)) day = 4;
+  else if (/\b(mid|middle)\b/.test(lo)) day = 15;
+  else if (/\b(end|late)\b/.test(lo)) day = 25;
+  const ord = lo.match(/\b(\d{1,2})\s*(?:st|nd|rd|th)\b/);
+  if (ord) day = +ord[1];
+  else { const dn = lo.match(/\b(\d{1,2})\s+(?:of\s+)?(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)/); if (dn) day = +dn[1]; }
+  return new Date(Date.UTC(y, mo, day));
+}
+
+// Gantt of the in-progress delivery projects: one bar per project (delivery
+// start → end), a KO marker, and a "today" line, on a month axis.
+function ProjectsGantt({ rows, accById, onPickAccount }) {
+  const items = (rows || [])
+    .filter((r) => (r.status || '').toLowerCase() === 'in progress')
+    .map((r) => ({ r, start: parseAnyDate(r.delivery_start), end: parseAnyDate(r.delivery_end), ko: parseAnyDate(r.ko_date) }))
+    .filter((it) => it.start || it.end);
+  if (!items.length) return null;
+  items.forEach((it) => { if (!it.start) it.start = it.end; if (!it.end) it.end = it.start; });
+  const all = items.flatMap((it) => [it.start, it.end, it.ko].filter(Boolean));
+  let min = new Date(Math.min(...all.map((d) => d.getTime())));
+  let max = new Date(Math.max(...all.map((d) => d.getTime())));
+  min = new Date(Date.UTC(min.getUTCFullYear(), min.getUTCMonth(), 1));
+  max = new Date(Date.UTC(max.getUTCFullYear(), max.getUTCMonth() + 1, 0));
+  items.sort((a, b) => a.start - b.start);
+  const W = 900, padL = 175, padR = 14, padT = 20, rowH = 28, barH = 11;
+  const plotW = W - padL - padR;
+  const span = Math.max(1, max - min);
+  const x = (d) => padL + ((d - min) / span) * plotW;
+  const H = padT + items.length * rowH + 8;
+  const months = []; let c = new Date(min);
+  while (c <= max) { months.push(new Date(c)); c = new Date(Date.UTC(c.getUTCFullYear(), c.getUTCMonth() + 1, 1)); }
+  const today = new Date();
+  const ini = (name) => { const n = String(name || '').trim(); if (!n || /^n\/?a$/i.test(n)) return ''; const p = n.split(/\s+/); return ((p[0][0] || '') + (p.length > 1 ? (p[p.length - 1][0] || '') : '')).toUpperCase(); };
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} width="100%" style={{ display: 'block' }}>
+      {months.map((mn, i) => (
+        <g key={i}>
+          <line x1={x(mn)} x2={x(mn)} y1={padT} y2={H - 4} stroke="var(--sep)" strokeWidth="1" />
+          <text x={x(mn) + 3} y={padT - 7} fontSize="9" fill="var(--text-3)">{MON3[mn.getUTCMonth()]}{mn.getUTCMonth() === 0 ? ` ’${String(mn.getUTCFullYear()).slice(2)}` : ''}</text>
+        </g>
+      ))}
+      {today >= min && today <= max && <line x1={x(today)} x2={x(today)} y1={padT - 2} y2={H - 4} stroke="#E24B4A" strokeWidth="1" strokeDasharray="3 2" />}
+      {items.map((it, i) => {
+        const y = padT + i * rowH + 6;
+        const acc = it.r.company_id ? accById.get(it.r.company_id) : null;
+        const x1 = x(it.start), x2 = Math.max(x(it.end), x1 + 3);
+        return (
+          <g key={it.r.id}>
+            <text x={4} y={y + barH - 2} fontSize="11" fill={acc && onPickAccount ? 'var(--accent)' : 'var(--text-2)'}
+              style={{ cursor: acc && onPickAccount ? 'pointer' : 'default' }}
+              onClick={() => acc && onPickAccount && onPickAccount(acc)}>{(it.r.client_name || '').slice(0, 24)}</text>
+            {(() => { const ii = [ini(it.r.cs_owner), ini(it.r.ps_owner), ini(it.r.other_contractors)].filter(Boolean).join(' · '); return ii ? <text x={4} y={y + barH + 9} fontSize="8.5" fill="var(--text-3)">{ii}</text> : null; })()}
+            <rect x={x1} y={y} width={x2 - x1} height={barH} rx="3" fill="var(--good)" opacity="0.85">
+              <title>{`${it.r.client_name}: ${it.r.delivery_start || '?'} → ${it.r.delivery_end || '?'}`}</title>
+            </rect>
+            {it.ko && <circle cx={x(it.ko)} cy={y + barH / 2} r="3.2" fill="var(--warn)" stroke="var(--bg-1)" strokeWidth="0.5"><title>{`KO ${it.r.ko_date}`}</title></circle>}
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
 // War-room: the running Glint delivery projects, synced from Yarmilla's Master
 // Project Overview into public.glint_delivery. People (CS / PS / support) are
 // shown in their own columns, with the operational detail (survey-live dates,
@@ -534,6 +614,18 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount }
       )}
 
       {tab === 'projects' && (<>
+      {(() => {
+        const ip = delivery.filter(r => (r.status || '').toLowerCase() === 'in progress');
+        return ip.length ? (
+          <div style={{ marginBottom: 14, padding: '10px 12px', border: '0.5px solid var(--sep)', borderRadius: 8, background: 'var(--bg-1)' }}>
+            <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-2)' }}>In-progress timeline · {ip.length}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-3)', margin: '2px 0 6px' }}>
+              Delivery window per project · <span style={{ color: 'var(--warn)' }}>● KO</span> · <span style={{ color: '#E24B4A' }}>┊ today</span> · initials = CS · PS · support
+            </div>
+            <ProjectsGantt rows={delivery} accById={accById} onPickAccount={onPickAccount} />
+          </div>
+        ) : null;
+      })()}
       <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-2)', margin: '6px 0' }}>
         Glint delivery — running projects · {delivery.length}
       </div>

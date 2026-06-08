@@ -19,9 +19,28 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.28.9';
+export const CURRENT_VERSION = '1.29.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.29.0',
+    date: '2026-06-08T23:05:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feat',
+    title: 'War room Projects: in-progress Gantt timeline',
+    summary:
+      'Added a Gantt chart at the top of the Projects tab showing the in-progress projects on a month axis: a delivery-window bar per project, a KO marker, a today line, the client name (click to open the 360) and the CS · PS · support initials.',
+    changes: [
+      'lane-warroom.jsx: ProjectsGantt (SVG) over the in-progress rows; parseAnyDate() shared with the week labels.',
+    ],
+    files: [
+      'src/bd/lane-warroom.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.29.0',
+  },
   {
     version: '1.28.9',
     date: '2026-06-08T22:40:00Z',
