@@ -225,9 +225,11 @@ DB triggers assign `companies.account_no` (ALL accounts) and a shared
   the anon key is blocked by PS's `is_eclectik_user()` RLS (caused a 500).
   Quarter math uses 0-indexed months (`Math.floor(getUTCMonth()/3)+1`); don't
   trust a 1-indexed `extract(month)` SQL quarter (off-by-one).
-- **Supabase JS client has no transactions** — multi-table ops
-  (`lead-promote.js`) are best-effort and ordered for recoverable partial
-  failure.
+- **Supabase JS client has no transactions** — multi-table ops from the
+  frontend should go through a Postgres function (rpc). Lead→opp promotion is
+  atomic since v1.36.0 via `promote_lead_to_opportunity()`
+  (`sql/schema_promote_lead_atomic_2026-06-09.sql`); it also carries the
+  lead's `deal_no` over. Don't reintroduce best-effort multi-step writes.
 - **Account 360 tasks** are intentionally NOT owner-filtered (shows all users +
   done tasks + owner name) — opposite of the agenda Tasks-row.
 - A deal moving to `sleeping` keeps its `company_id`; it's only invisible if a

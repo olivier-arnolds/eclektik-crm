@@ -19,9 +19,28 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.35.0';
+export const CURRENT_VERSION = '1.36.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.36.0',
+    date: '2026-06-09T21:28:01Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feat',
+    title: 'Data safety: atomic lead→opp promotion + fetch-limit warning banner',
+    summary:
+      'Two data-integrity fixes from the UX/architecture audit. (1) Lead→opportunity promotion is now ONE transactional Postgres function (promote_lead_to_opportunity, applied as migration promote_lead_to_opportunity_atomic) instead of four sequential best-effort writes — a failure halfway can no longer orphan child rows or delete a lead without its opportunity existing. Bonus: the lead\'s D-#### deal_no now carries over, so a deal keeps its number across promotion. Round-trip tested against production with throwaway data (insert lead + task → promote → verify opp/reparent/delete → clean up). (2) usePipelineData now reports when a table returns exactly its fetch cap (FETCH_LIMITS), and BDApp shows a dismissible warning banner naming the truncated tables — previously rows beyond the cap (e.g. >500 leads) silently vanished from the UI.',
+    changes: [
+      'sql/schema_promote_lead_atomic_2026-06-09.sql: new promote_lead_to_opportunity(p_lead_id, p_updates) function — atomic insert+reparent+delete, deal_no carry-over, safe text→uuid cast for parent_contact.',
+      'src/bd/lead-promote.js: now a single supabase.rpc() call; stageUpdates stays the single source of truth for stage fields.',
+      'src/hooks/usePipelineData.js: FETCH_LIMITS constant + truncation detection exposed as `truncated`.',
+      'src/bd/useBDData.js: passes `truncated` through.',
+      'src/bd/BDApp.jsx: dismissible warning banner when a fetch cap is hit.',
+      'CLAUDE.md: §8 transactions-gotcha updated — multi-table writes go through rpc now.',
+    ],
+    files: ['sql/schema_promote_lead_atomic_2026-06-09.sql', 'src/bd/lead-promote.js', 'src/hooks/usePipelineData.js', 'src/bd/useBDData.js', 'src/bd/BDApp.jsx', 'CLAUDE.md', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.36.0',
+  },
   {
     version: '1.35.0',
     date: '2026-06-09T20:55:18Z',
