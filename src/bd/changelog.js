@@ -19,9 +19,28 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.32.1';
+export const CURRENT_VERSION = '1.33.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.33.0',
+    date: '2026-06-09T11:30:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feat',
+    title: 'Customer journey reframed as a project-stage board',
+    summary:
+      'Reframed the Customer-journey board around projects (operational), not the commercial funnel. Now 6 lanes: Preparing for Launch (first) → Survey live → Close & results rollout → Insights review & action → Enablement & embedding → Off Rails (last). All projects are listed (no completed filter); churn/platform-risk projects auto-land in Off Rails; cards are bigger and more readable. Drag still persists to journey_stage.',
+    changes: [
+      'lane-warroom.jsx: 6-stage project board with Preparing for Launch + Off Rails; inference includes off-rails (Qualtrics/Workday) and prep; all projects shown (removed include-completed toggle); larger cards + wider lanes for readability.',
+    ],
+    files: [
+      'src/bd/lane-warroom.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.33.0',
+  },
   {
     version: '1.32.1',
     date: '2026-06-09T10:55:00Z',
