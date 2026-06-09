@@ -66,12 +66,16 @@ export default function SearchResultsPanel({
     };
   }, [q, accounts, contacts, deals, events, graphEvents, tasks]);
 
-  // Escape key closes
+  // Escape clears the search entirely (text + panel) — leaving the text in
+  // the box after Esc made the panel unreachable until you edited the query.
   useEffect(() => {
-    const handler = (e) => { if (e.key === 'Escape') onClose && onClose(); };
+    const handler = (e) => {
+      if (e.key !== 'Escape') return;
+      if (onClearSearch) onClearSearch(); else if (onClose) onClose();
+    };
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
-  }, [onClose]);
+  }, [onClose, onClearSearch]);
 
   // Per-group "show all" toggle (collapsed by default at 6)
   const [expanded, setExpanded] = useState(new Set());

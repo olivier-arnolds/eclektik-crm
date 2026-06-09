@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import './styles.css';
 import { useLocal } from './atoms';
 import { useAuth } from '../lib/auth';
@@ -92,6 +92,20 @@ export default function BDApp() {
     if (!NAV_VIEWS.includes(view)) setView(activeView);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Reset cross-view selection state when switching views. Without this, a
+  // deal picked in Funnel kept the right pane (and a hidden "filtered by
+  // account" scope on Comms) pinned to that account several views later
+  // (live-clickthrough finding, v1.38.0). Skip the initial mount so a
+  // restored session keeps its state.
+  const viewMountedRef = useRef(false);
+  useEffect(() => {
+    if (!viewMountedRef.current) { viewMountedRef.current = true; return; }
+    setRightContext(null);
+    setAccountScope(null);
+    setSelectedDeal(null);
+    setSelectedComm(null);
+  }, [activeView]);
 
   // Inbox emails + calendar events lifted to BDApp so they survive view switches
   const [graphEmails, setGraphEmails] = useState([]);
@@ -207,6 +221,7 @@ export default function BDApp() {
   const topbar = (
     <Topbar theme={theme} setTheme={setTheme} view={activeView} setView={setView}
             layout={layout} setLayout={setLayout} search={search} setSearch={setSearch}
+            onSearchFocus={() => setSearchPanelDismissed(false)}
             onEnrich={() => setShowEnrich(true)}
             onRefreshGraph={fetchGraphData} graphLoading={graphLoading}
             onOpenFeedback={() => setShowFeedback(true)}
