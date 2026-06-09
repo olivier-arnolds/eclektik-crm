@@ -438,6 +438,11 @@ const JOURNEY_PHASES = [
   { key: 'graveyard', lead: 'GY',  label: 'Graveyard',                when: 'dormant / closed',   action: 'Won or delivered but no live project — dormant. Warm renewal candidate for the next cycle.', sku: 'Re-engagement / renewal' },
 ];
 const LEAD_COLOR = { CS: '#185FA5', PS: '#0F6E56', OFF: '#C0392B', GY: '#6B7280' }; // CS · PS · off-rails · graveyard
+// Board columns: most lanes stand alone, but Launch sits under Configure and
+// Graveyard under Off Rails so the 9 lanes fit the screen width as 7 columns.
+const JOURNEY_COLUMNS = [
+  ['prep'], ['configure', 'launch'], ['live'], ['rollout'], ['review'], ['embed'], ['offrails', 'graveyard'],
+];
 const JOURNEY_KEYS = new Set(JOURNEY_PHASES.map(p => p.key));
 
 function phaseOfProject(r) {
@@ -480,7 +485,6 @@ function JourneyBoard({ rows = [], accById = new Map(), onPickAccount, onMove, a
   const card = (r) => {
     const acc = r.company_id ? accById.get(r.company_id) : null;
     const ps = hasPS(r.client_name);
-    const inits = [initialsOf(r.cs_owner), initialsOf(r.ps_owner), initialsOf(r.other_contractors)].filter(Boolean).join(' · ');
     return (
       <div key={r.id} draggable
         onDragStart={(e) => { e.dataTransfer.setData('text/plain', r.id); e.dataTransfer.effectAllowed = 'move'; }}
@@ -491,11 +495,8 @@ function JourneyBoard({ rows = [], accById = new Map(), onPickAccount, onMove, a
           <span onClick={() => acc && onPickAccount && onPickAccount(acc)}
             style={{ fontWeight: 600, fontSize: 13, color: acc && onPickAccount ? 'var(--accent)' : 'var(--text-1)', cursor: acc && onPickAccount ? 'pointer' : 'default' }}>{r.client_name}</span>
         </div>
-        {r.project_name && <div style={{ fontSize: 11, color: 'var(--text-2)', fontFamily: 'var(--font-mono)', marginTop: 3, lineHeight: 1.3 }}>{r.project_name}</div>}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 6, fontSize: 10.5, color: 'var(--text-3)' }}>
-          {inits && <span title="CS · PS · support" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-2)', fontWeight: 500 }}>{inits}</span>}
-          {r.next_milestone_label && <span style={{ fontFamily: 'var(--font-mono)' }}>◷ {r.next_milestone_label}</span>}
-        </div>
+        {r.project_name && <div style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 3, lineHeight: 1.3 }}>{r.project_name}</div>}
+        {r.project_no && <div style={{ fontSize: 10.5, color: 'var(--text-3)', fontFamily: 'var(--font-mono)', fontWeight: 600, marginTop: 4 }}>{r.project_no}</div>}
       </div>
     );
   };
@@ -506,34 +507,39 @@ function JourneyBoard({ rows = [], accById = new Map(), onPickAccount, onMove, a
         <b style={{ color: 'var(--text-2)' }}>Source: CRM database</b> (single source of truth · the project sheet is just an input view).
         Every Glint <b>project</b> by where it sits in the customer journey — operational, distinct from the commercial funnel.
         Lane colour = who leads: <span style={{ color: LEAD_COLOR.CS, fontWeight: 600 }}>■ CS</span> · <span style={{ color: LEAD_COLOR.PS, fontWeight: 600 }}>■ PS</span> · <span style={{ color: LEAD_COLOR.OFF, fontWeight: 600 }}>■ off rails</span>.
-        Dot = People Science analysis on record: <span style={{ color: '#1D9E75', fontWeight: 600 }}>● yes</span> · <span style={{ color: '#E24B4A', fontWeight: 600 }}>● none</span>. Initials = contractors on the assignment.
+        Dot = People Science analysis on record: <span style={{ color: '#1D9E75', fontWeight: 600 }}>● yes</span> · <span style={{ color: '#E24B4A', fontWeight: 600 }}>● none</span>. Each project carries its own CRM project id (P-####).
         Drag a card to move it between stages. <a href="/glint-customer-journey-playbook-2026-06-07.md" target="_blank" rel="noreferrer" style={{ color: 'var(--accent)' }}>Journey playbook</a>.
       </div>
-      <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 8, alignItems: 'flex-start' }}>
-        {JOURNEY_PHASES.map(p => {
-          const lc = LEAD_COLOR[p.lead];
-          const leadLabel = p.lead === 'OFF' ? 'needs attention' : p.lead === 'GY' ? 'dormant' : p.lead === 'MIX' ? 'CS + PS' : p.lead;
-          return (
-            <div key={p.key}
-              onDragOver={(e) => { e.preventDefault(); if (over !== p.key) setOver(p.key); }}
-              onDragLeave={() => setOver(o => (o === p.key ? null : o))}
-              onDrop={(e) => { e.preventDefault(); const id = e.dataTransfer.getData('text/plain'); setOver(null); if (id && onMove) onMove(id, p.key); }}
-              style={{ flex: '1 0 256px', minWidth: 256, background: over === p.key ? 'var(--fill-1)' : 'var(--bg-0)', border: `0.5px solid ${over === p.key ? lc : 'var(--sep)'}`, borderRadius: 10, padding: 11 }}>
-              <div style={{ borderTop: `3px solid ${lc}`, borderRadius: 2, paddingTop: 8 }}>
-                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 6 }}>
-                  <span style={{ fontWeight: 600, fontSize: 13 }}>{p.label}</span>
-                  <span style={{ fontSize: 12, fontFamily: 'var(--font-mono)', color: lc, fontWeight: 600 }}>{byPhase[p.key].length}</span>
+      <div style={{ display: 'flex', gap: 12, paddingBottom: 8, alignItems: 'flex-start' }}>
+        {JOURNEY_COLUMNS.map(col => (
+          <div key={col[0]} style={{ display: 'flex', flexDirection: 'column', gap: 12, flex: '1 1 0', minWidth: 0 }}>
+            {col.map(key => {
+              const p = JOURNEY_PHASES.find(x => x.key === key);
+              const lc = LEAD_COLOR[p.lead];
+              const leadLabel = p.lead === 'OFF' ? 'needs attention' : p.lead === 'GY' ? 'dormant' : p.lead === 'MIX' ? 'CS + PS' : p.lead;
+              return (
+                <div key={p.key}
+                  onDragOver={(e) => { e.preventDefault(); if (over !== p.key) setOver(p.key); }}
+                  onDragLeave={() => setOver(o => (o === p.key ? null : o))}
+                  onDrop={(e) => { e.preventDefault(); const id = e.dataTransfer.getData('text/plain'); setOver(null); if (id && onMove) onMove(id, p.key); }}
+                  style={{ background: over === p.key ? 'var(--fill-1)' : 'var(--bg-0)', border: `0.5px solid ${over === p.key ? lc : 'var(--sep)'}`, borderRadius: 10, padding: 11, boxSizing: 'border-box' }}>
+                  <div style={{ borderTop: `3px solid ${lc}`, borderRadius: 2, paddingTop: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 6 }}>
+                      <span style={{ fontWeight: 600, fontSize: 13 }}>{p.label}</span>
+                      <span style={{ fontSize: 12, fontFamily: 'var(--font-mono)', color: lc, fontWeight: 600 }}>{byPhase[p.key].length}</span>
+                    </div>
+                    <div style={{ fontSize: 10.5, color: 'var(--text-3)', fontFamily: 'var(--font-mono)', margin: '2px 0 5px' }}>{leadLabel} · {p.when}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-2)', lineHeight: 1.4, marginBottom: 5 }}>{p.action}</div>
+                    <div style={{ fontSize: 10.5, color: lc, fontWeight: 500, marginBottom: 10 }}>＋ {p.sku}</div>
+                  </div>
+                  {byPhase[p.key].length === 0
+                    ? <div style={{ fontSize: 11, color: 'var(--text-4)', fontStyle: 'italic', padding: '6px 2px' }}>{p.key === 'offrails' ? 'Nothing off rails 🎉' : p.key === 'embed' ? 'No one in a between-cycle retainer yet — the gap.' : 'Drop a project here'}</div>
+                    : byPhase[p.key].map(card)}
                 </div>
-                <div style={{ fontSize: 10.5, color: 'var(--text-3)', fontFamily: 'var(--font-mono)', margin: '2px 0 5px' }}>{leadLabel} · {p.when}</div>
-                <div style={{ fontSize: 11, color: 'var(--text-2)', lineHeight: 1.4, marginBottom: 5, minHeight: 46 }}>{p.action}</div>
-                <div style={{ fontSize: 10.5, color: lc, fontWeight: 500, marginBottom: 10 }}>＋ {p.sku}</div>
-              </div>
-              {byPhase[p.key].length === 0
-                ? <div style={{ fontSize: 11, color: 'var(--text-4)', fontStyle: 'italic', padding: '6px 2px' }}>{p.key === 'offrails' ? 'Nothing off rails 🎉' : p.key === 'embed' ? 'No one in a between-cycle retainer yet — the gap.' : 'Drop a project here'}</div>
-                : byPhase[p.key].map(card)}
-            </div>
-          );
-        })}
+              );
+            })}
+          </div>
+        ))}
       </div>
     </div>
   );

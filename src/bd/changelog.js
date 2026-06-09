@@ -19,9 +19,30 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.34.1';
+export const CURRENT_VERSION = '1.34.2';
 
 export const CHANGELOG = [
+  {
+    version: '1.34.2',
+    date: '2026-06-09T14:30:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feat',
+    title: 'Journey board: 7-column layout + unique CRM project id (P-####) per card',
+    summary:
+      'Reflowed the journey lanes into 7 columns (Launch stacked under Configure & QA, Graveyard under Off Rails) so the board fills the screen width instead of scrolling sideways. Every project now carries its own unique CRM project id (P-####, like A-#### / D-####); cards show client name + project name + project id + the People Science dot, and the sheet-derived milestone and contractor initials were removed.',
+    changes: [
+      'glint_delivery: new project_no (P-#### sequence + before-insert trigger), backfilled for all 40 rows (backup _dq_backup_glint_delivery_20260609d).',
+      'lane-warroom.jsx: JOURNEY_COLUMNS groups Configure+Launch and OffRails+Graveyard; cards show project_no, keep the PS dot, drop initials + milestone.',
+    ],
+    files: [
+      'src/bd/lane-warroom.jsx',
+      'sql/schema_glint_delivery_project_no_2026-06-09.sql',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.34.2',
+  },
   {
     version: '1.34.1',
     date: '2026-06-09T13:45:00Z',
