@@ -245,10 +245,11 @@ export default async function handler(req, res) {
       .upsert(rows.slice(i, i + 100), { onConflict: 'sheet_key' });
     if (error) errors.push(error.message);
   }
-  // Drop rows whose sheet_key is no longer present in the sheet.
+  // Drop rows whose sheet_key is no longer present in the sheet — but never
+  // touch manually-added rows (e.g. the Graveyard cards), which aren't on the sheet.
   if (keep.length) {
     const { error } = await supabase.from('glint_delivery')
-      .delete().not('sheet_key', 'in', `(${keep.map(k => `"${k.replace(/"/g, '')}"`).join(',')})`);
+      .delete().eq('manual', false).not('sheet_key', 'in', `(${keep.map(k => `"${k.replace(/"/g, '')}"`).join(',')})`);
     if (error) errors.push('cleanup: ' + error.message);
   }
   return res.status(200).json({ synced: rows.length, current: current, old: old, errors });

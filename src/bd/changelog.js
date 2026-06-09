@@ -19,9 +19,32 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.34.0';
+export const CURRENT_VERSION = '1.34.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.34.1',
+    date: '2026-06-09T13:45:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feat',
+    title: 'Journey board: Graveyard lane for Won-but-untracked Glint engagements',
+    summary:
+      'Added a Graveyard lane (after Off Rails) and seeded it with 13 Won/active Glint deals that had no delivery-project row (Boston Red Sox, Chugai, Eppendorf, EFTA, Liberty Global ×2, M&C Saatchi ×2, PEPKOR, TDIndustries, Westfalen ×2, PIMCO Prime). Added a glint_delivery.manual flag so these (and any future manual cards) survive the Graph sync cleanup.',
+    changes: [
+      'glint_delivery: new manual flag; 13 graveyard rows seeded from the opportunities (backup _dq_backup_glint_delivery_20260609c).',
+      'glint-sync.js: cleanup delete now skips manual=true rows.',
+      'lane-warroom.jsx: Graveyard lane (grey) after Off Rails.',
+    ],
+    files: [
+      'api/glint-sync.js',
+      'src/bd/lane-warroom.jsx',
+      'sql/data_glint_delivery_graveyard_2026-06-09.sql',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.34.1',
+  },
   {
     version: '1.34.0',
     date: '2026-06-09T13:10:00Z',

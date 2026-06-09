@@ -435,8 +435,9 @@ const JOURNEY_PHASES = [
   { key: 'review',    lead: 'PS',  label: 'Insights review & action', when: '1–3 wks after',      action: 'Insight Review + facilitated action-planning workshop; wk-4 / wk-8 check-ins.', sku: 'Action-planning workshop' },
   { key: 'embed',     lead: 'PS',  label: 'Enablement & embedding',   when: 'months after',       action: 'Manager/HRBP training, Team Conversations + Nudges, Pulse, quarterly retainer.', sku: 'Enablement + quarterly retainer' },
   { key: 'offrails',  lead: 'OFF', label: 'Off Rails',                when: 'needs attention',    action: 'Stalled, blocked, overdue or churn-risk — needs an intervention / save play.', sku: 'Recovery / re-engagement' },
+  { key: 'graveyard', lead: 'GY',  label: 'Graveyard',                when: 'dormant / closed',   action: 'Won or delivered but no live project — dormant. Warm renewal candidate for the next cycle.', sku: 'Re-engagement / renewal' },
 ];
-const LEAD_COLOR = { CS: '#185FA5', PS: '#0F6E56', OFF: '#C0392B' }; // CS technical · PS advisory · off-rails
+const LEAD_COLOR = { CS: '#185FA5', PS: '#0F6E56', OFF: '#C0392B', GY: '#6B7280' }; // CS · PS · off-rails · graveyard
 const JOURNEY_KEYS = new Set(JOURNEY_PHASES.map(p => p.key));
 
 function phaseOfProject(r) {
@@ -511,7 +512,7 @@ function JourneyBoard({ rows = [], accById = new Map(), onPickAccount, onMove, a
       <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 8, alignItems: 'flex-start' }}>
         {JOURNEY_PHASES.map(p => {
           const lc = LEAD_COLOR[p.lead];
-          const leadLabel = p.lead === 'OFF' ? 'needs attention' : p.lead === 'MIX' ? 'CS + PS' : p.lead;
+          const leadLabel = p.lead === 'OFF' ? 'needs attention' : p.lead === 'GY' ? 'dormant' : p.lead === 'MIX' ? 'CS + PS' : p.lead;
           return (
             <div key={p.key}
               onDragOver={(e) => { e.preventDefault(); if (over !== p.key) setOver(p.key); }}
