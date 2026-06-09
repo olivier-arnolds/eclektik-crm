@@ -536,6 +536,9 @@ function JourneyBoard({ rows = [], accById = new Map(), onPickAccount, onMove, a
           style={{ flex: '0 1 320px', fontSize: 12.5, padding: '6px 10px', borderRadius: 8, border: '0.5px solid var(--sep)', background: 'var(--bg-1)', color: 'var(--text-1)' }} />
         {ql && <span style={{ fontSize: 11.5, color: 'var(--text-3)' }}>{projects.length} match{projects.length === 1 ? '' : 'es'}<span onClick={() => setQ('')} style={{ marginLeft: 8, color: 'var(--accent)', cursor: 'pointer' }}>clear</span></span>}
       </div>
+      {ql && projects.length === 0 && (
+        <div style={{ fontSize: 12.5, color: 'var(--text-3)', fontStyle: 'italic', padding: '14px 2px' }}>No projects match “{q}”.</div>
+      )}
       <div style={{ display: 'flex', gap: 12, paddingBottom: 8, alignItems: 'flex-start' }}>
         {JOURNEY_COLUMNS.map(col => (
           <div key={col[0]} style={{ display: 'flex', flexDirection: 'column', gap: 12, flex: '1 1 0', minWidth: 0 }}>
@@ -575,8 +578,13 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount }
   const [tab, setTab] = useState('projects');
   const [rows, setRows] = useState([]);
   const moveJourney = useCallback(async (id, stage) => {
-    setRows(prev => prev.map(r => (r.id === id ? { ...r, journey_stage: stage } : r)));   // optimistic
-    try { await supabase.from('glint_delivery').update({ journey_stage: stage }).eq('id', id); } catch (_) { /* keep UI state */ }
+    let prevStage;
+    setRows(prev => prev.map(r => { if (r.id === id) { prevStage = r.journey_stage; return { ...r, journey_stage: stage }; } return r; }));   // optimistic
+    const { error } = await supabase.from('glint_delivery').update({ journey_stage: stage }).eq('id', id);
+    if (error) {   // roll the card back so the board matches the DB
+      console.warn('Journey move failed:', error.message);
+      setRows(prev => prev.map(r => (r.id === id ? { ...r, journey_stage: prevStage } : r)));
+    }
   }, []);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);

@@ -19,9 +19,27 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.34.5';
+export const CURRENT_VERSION = '1.34.6';
 
 export const CHANGELOG = [
+  {
+    version: '1.34.6',
+    date: '2026-06-09T17:30:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'fix',
+    title: 'QA round 2: error boundary, no-hang data load, drag rollback + full-app audit',
+    summary:
+      'Second audit pass over the modules round 1 skipped (War room, Calendar, Playbooks, app shell, auth, all /api endpoints, responsive, accessibility, performance). Fixes: a top-level ErrorBoundary so one crash no longer blanks the whole app; usePipelineData no longer hangs on "Loading…" if a query fails; journey drag now rolls back if the DB save fails; calendar task drag surfaces errors instead of failing silently; journey search shows a clear no-results message. Bigger items (unauthenticated /api endpoints, no mobile/responsive support, O(N²) adapters, accessibility) are documented in docs/ux-audit-2026-06-09.md for scheduling - they are projects, not quick wins.',
+    changes: [
+      'main.jsx: top-level ErrorBoundary with reload fallback.',
+      'usePipelineData.js: try/finally so loading always clears on fetch failure.',
+      'lane-warroom.jsx: moveJourney rolls back the card on a failed save; journey search empty-state.',
+      'lane-calendar.jsx: moveTaskToDate surfaces save errors.',
+      'docs/ux-audit-2026-06-09.md: expanded to full-coverage findings + prioritized roadmap.',
+    ],
+    files: ['src/main.jsx', 'src/hooks/usePipelineData.js', 'src/bd/lane-warroom.jsx', 'src/bd/lane-calendar.jsx', 'docs/ux-audit-2026-06-09.md', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.34.6',
+  },
   {
     version: '1.34.5',
     date: '2026-06-09T16:40:00Z',

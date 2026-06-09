@@ -212,6 +212,7 @@ export function usePipelineData() {
 
   const fetchAll = useCallback(async () => {
     setLoading(true)
+    try {
     const [
       { data: companiesRaw },
       { data: contactsRaw },
@@ -266,7 +267,11 @@ export function usePipelineData() {
     setComms((commsRaw || []).map(adaptComm))
     setCalEvents((calRaw || []).map(adaptCalEvent))
     setAllTags(tagsRaw || [])
-    setLoading(false)
+    } catch (e) {
+      console.error('Pipeline data load failed:', e)
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
   useEffect(() => { fetchAll() }, [fetchAll])

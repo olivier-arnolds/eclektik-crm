@@ -173,7 +173,8 @@ export default function CalendarLane({ events: dbEvents, tasks: dbTasks, deals, 
   const [draggingTaskId, setDraggingTaskId] = useState(null);
   const moveTaskToDate = async (taskId, newDateStr) => {
     setDraggingTaskId(null);
-    await supabase.from('tasks').update({ due_date: newDateStr }).eq('id', taskId);
+    const { error } = await supabase.from('tasks').update({ due_date: newDateStr }).eq('id', taskId);
+    if (error) { console.warn('Move task failed:', error.message); alert('Could not move the task: ' + error.message); return; }
     if (refetch) refetch();
   };
 
