@@ -92,7 +92,7 @@ function ProjectsGantt({ rows, accById, onPickAccount }) {
   min = new Date(Date.UTC(min.getUTCFullYear(), min.getUTCMonth(), 1));
   max = new Date(Date.UTC(max.getUTCFullYear(), max.getUTCMonth() + 1, 0));
   items.sort((a, b) => a.start - b.start);
-  const W = 1040, padL = 170, padR = 14, padT = 16, rowH = 21, barH = 8;
+  const W = 1040, padL = 170, padR = 14, padT = 16, rowH = 17, barH = 8;
   const plotW = W - padL - padR;
   const span = Math.max(1, max - min);
   const x = (d) => padL + ((d - min) / span) * plotW;
@@ -118,8 +118,10 @@ function ProjectsGantt({ rows, accById, onPickAccount }) {
           <g key={it.r.id}>
             <text x={4} y={y + barH - 1} fontSize="8" fill={acc && onPickAccount ? 'var(--accent)' : 'var(--text-2)'}
               style={{ cursor: acc && onPickAccount ? 'pointer' : 'default' }}
-              onClick={() => acc && onPickAccount && onPickAccount(acc)}>{(it.r.client_name || '').slice(0, 28)}</text>
-            {(() => { const ii = [ini(it.r.cs_owner), ini(it.r.ps_owner), ini(it.r.other_contractors)].filter(Boolean).join(' · '); return ii ? <text x={4} y={y + barH + 7} fontSize="6.5" fill="var(--text-3)">{ii}</text> : null; })()}
+              onClick={() => acc && onPickAccount && onPickAccount(acc)}>
+              {(it.r.client_name || '').slice(0, 22)}
+              {(() => { const ii = [ini(it.r.cs_owner), ini(it.r.ps_owner), ini(it.r.other_contractors)].filter(Boolean).join('·'); return ii ? <tspan fill="var(--text-3)" fontSize="7"> ({ii})</tspan> : null; })()}
+            </text>
             <rect x={x1} y={y} width={x2 - x1} height={barH} rx="3" fill="var(--good)" opacity="0.85">
               <title>{`${it.r.client_name}: ${it.r.delivery_start || '?'} → ${it.r.delivery_end || '?'}`}</title>
             </rect>

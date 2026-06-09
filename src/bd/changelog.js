@@ -19,9 +19,28 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.32.0';
+export const CURRENT_VERSION = '1.32.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.32.1',
+    date: '2026-06-09T10:55:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'fix',
+    title: 'Gantt: contractor initials inline in brackets behind the client name',
+    summary:
+      'In the War room Projects Gantt, the CS·PS·support initials now sit in brackets behind the client name on one line (e.g. "Trane Technologies (HM·PM)") instead of a second line; rows tightened.',
+    changes: [
+      'lane-warroom.jsx ProjectsGantt: initials as an inline tspan after the name; single-line rows (rowH 21 → 17).',
+    ],
+    files: [
+      'src/bd/lane-warroom.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.32.1',
+  },
   {
     version: '1.32.0',
     date: '2026-06-09T10:30:00Z',
