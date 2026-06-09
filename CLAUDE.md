@@ -108,6 +108,17 @@ useBDData (src/bd/useBDData.js)
 - **API** in `/api/*.js` (Vercel serverless). All use `SUPABASE_SERVICE_KEY`
   (bypasses RLS). Frontend uses the anon key + auth session (`authenticated`
   role).
+- **API auth (since v1.39.0)**: every non-webhook endpoint is guarded via
+  `api/_lib/guard.js` — `requireUser` (Supabase session JWT), `requireCron`
+  (Vercel cron; uses `CRON_SECRET` env if set, else `x-vercel-cron` header),
+  `requireQueueSecret` (`x-feature-queue-secret` for the Claude feature-pull
+  workflow). Frontend calls MUST use `apiFetch` from `src/lib/apiFetch.js`
+  (attaches the session token) — a bare `fetch('/api/…')` gets a 401.
+  Recommended Vercel env: set `CRON_SECRET` (Vercel auto-sends it on cron
+  invocations) and `FEATURE_QUEUE_SECRET`. Without the latter,
+  `/api/next-feature-request` needs a logged-in user; Claude can read the
+  `feature_requests` table via the Supabase MCP instead. Webhooks keep their
+  own validation (marketing-webhook: Svix signature).
 
 ## 4. Domain model
 
