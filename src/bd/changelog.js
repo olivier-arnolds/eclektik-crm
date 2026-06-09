@@ -19,9 +19,28 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.33.0';
+export const CURRENT_VERSION = '1.33.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.33.1',
+    date: '2026-06-09T12:05:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'fix',
+    title: 'Journey board: restore Configure & QA + Launch lanes; project name as ID (not account no.)',
+    summary:
+      'Restored the two lanes that got folded into "Preparing for Launch" — the board is now the full journey: Preparing for Launch → Configure & QA → Launch → Survey live → Close & results rollout → Insights review & action → Enablement & embedding → Off Rails. Cards now show the project name (mono) as the identifier instead of the account number, so account vs project numbering isn\'t mixed.',
+    changes: [
+      'lane-warroom.jsx: JOURNEY_PHASES back to 8 lanes (Configure & QA + Launch restored); removed account number from cards, project_name shown as the project id; legend trimmed.',
+    ],
+    files: [
+      'src/bd/lane-warroom.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.33.1',
+  },
   {
     version: '1.33.0',
     date: '2026-06-09T11:30:00Z',

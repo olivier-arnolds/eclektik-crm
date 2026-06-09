@@ -427,14 +427,16 @@ function CoverageTab({ accounts = [], onPickAccount }) {
 // Project-stage view of the Viva Glint customer journey (operational, not the
 // commercial funnel). First lane = pre-launch, last lane = Off Rails.
 const JOURNEY_PHASES = [
-  { key: 'prep',     lead: 'MIX', label: 'Preparing for Launch',     when: 'before go-live',   action: 'Strategy & listening design, survey build / QA, comms — everything before go-live.', sku: 'Vision & Strategy + CS config' },
-  { key: 'live',     lead: 'CS',  label: 'Survey live',              when: 'launch → close',   action: 'Announce, go live, monitor participation; 72h reminder (14-day window).', sku: 'Launch + CS bucket of hours' },
-  { key: 'rollout',  lead: 'PS',  label: 'Close & results rollout',  when: 'days after close', action: 'Release results; staged comms ~1 / 3–4 / 5–7 days after close.', sku: 'Managed results rollout' },
-  { key: 'review',   lead: 'PS',  label: 'Insights review & action', when: '1–3 wks after',    action: 'Insight Review + facilitated action-planning workshop; wk-4 / wk-8 check-ins.', sku: 'Action-planning workshop' },
-  { key: 'embed',    lead: 'PS',  label: 'Enablement & embedding',   when: 'months after',     action: 'Manager/HRBP training, Team Conversations + Nudges, Pulse, quarterly retainer.', sku: 'Enablement + quarterly retainer' },
-  { key: 'offrails', lead: 'OFF', label: 'Off Rails',                when: 'needs attention',  action: 'Stalled, blocked, overdue or churn-risk — needs an intervention / save play.', sku: 'Recovery / re-engagement' },
+  { key: 'prep',      lead: 'PS',  label: 'Preparing for Launch',     when: '~8 wks before',      action: 'Strategy & listening design; Vision & Strategy workshop; plan the cycle.', sku: 'Holistic Listening workshop' },
+  { key: 'configure', lead: 'CS',  label: 'Configure & QA',           when: '~4 wks before',      action: 'Build & test the survey; pick program type; draft comms.', sku: 'CS configuration' },
+  { key: 'launch',    lead: 'CS',  label: 'Launch',                   when: 'launch day',         action: 'Announce, go live, manager pre-brief, launch comms.', sku: 'Launch support' },
+  { key: 'live',      lead: 'CS',  label: 'Survey live',              when: 'fielding (2–3 wks)', action: 'Monitor participation; 72h reminder before close (14-day window).', sku: 'CS bucket of hours' },
+  { key: 'rollout',   lead: 'PS',  label: 'Close & results rollout',  when: 'days after close',   action: 'Release results; staged comms ~1 / 3–4 / 5–7 days after close.', sku: 'Managed results rollout' },
+  { key: 'review',    lead: 'PS',  label: 'Insights review & action', when: '1–3 wks after',      action: 'Insight Review + facilitated action-planning workshop; wk-4 / wk-8 check-ins.', sku: 'Action-planning workshop' },
+  { key: 'embed',     lead: 'PS',  label: 'Enablement & embedding',   when: 'months after',       action: 'Manager/HRBP training, Team Conversations + Nudges, Pulse, quarterly retainer.', sku: 'Enablement + quarterly retainer' },
+  { key: 'offrails',  lead: 'OFF', label: 'Off Rails',                when: 'needs attention',    action: 'Stalled, blocked, overdue or churn-risk — needs an intervention / save play.', sku: 'Recovery / re-engagement' },
 ];
-const LEAD_COLOR = { CS: '#185FA5', PS: '#0F6E56', MIX: '#6D5BD0', OFF: '#C0392B' }; // CS technical · PS advisory · both · off-rails
+const LEAD_COLOR = { CS: '#185FA5', PS: '#0F6E56', OFF: '#C0392B' }; // CS technical · PS advisory · off-rails
 const JOURNEY_KEYS = new Set(JOURNEY_PHASES.map(p => p.key));
 
 function phaseOfProject(r) {
@@ -474,9 +476,9 @@ function JourneyBoard({ rows = [], accById = new Map(), onPickAccount, onMove })
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap' }}>
           <span onClick={() => acc && onPickAccount && onPickAccount(acc)}
             style={{ fontWeight: 600, fontSize: 13, color: acc && onPickAccount ? 'var(--accent)' : 'var(--text-1)', cursor: acc && onPickAccount ? 'pointer' : 'default' }}>{r.client_name}</span>
-          {acc?.accountNo && <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-3)' }}>{acc.accountNo}</span>}
         </div>
-        {r.project_name && <div style={{ fontSize: 11.5, color: 'var(--text-3)', marginTop: 2, lineHeight: 1.3 }}>{r.project_name}</div>}
+        {/* project identifier = the project name (delivery projects have no numeric ID) */}
+        {r.project_name && <div style={{ fontSize: 11, color: 'var(--text-2)', fontFamily: 'var(--font-mono)', marginTop: 2, lineHeight: 1.3 }}>{r.project_name}</div>}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 6, fontSize: 10.5 }}>
           {r.next_milestone_label && <span style={{ color: 'var(--text-2)', fontFamily: 'var(--font-mono)' }}>◷ {r.next_milestone_label}</span>}
           {flags.map(f => (
@@ -493,7 +495,7 @@ function JourneyBoard({ rows = [], accById = new Map(), onPickAccount, onMove })
     <div>
       <div style={{ fontSize: 12.5, color: 'var(--text-3)', margin: '0 0 12px', lineHeight: 1.5 }}>
         Every Glint <b>project</b> by where it sits in the customer journey — operational, distinct from the commercial funnel.
-        Lane colour = who leads: <span style={{ color: LEAD_COLOR.CS, fontWeight: 600 }}>■ CS</span> · <span style={{ color: LEAD_COLOR.PS, fontWeight: 600 }}>■ PS</span> · <span style={{ color: LEAD_COLOR.MIX, fontWeight: 600 }}>■ both</span> · <span style={{ color: LEAD_COLOR.OFF, fontWeight: 600 }}>■ off rails</span>.
+        Lane colour = who leads: <span style={{ color: LEAD_COLOR.CS, fontWeight: 600 }}>■ CS</span> · <span style={{ color: LEAD_COLOR.PS, fontWeight: 600 }}>■ PS</span> · <span style={{ color: LEAD_COLOR.OFF, fontWeight: 600 }}>■ off rails</span>.
         Drag a card to move it between stages. <a href="/glint-customer-journey-playbook-2026-06-07.md" target="_blank" rel="noreferrer" style={{ color: 'var(--accent)' }}>Journey playbook</a>.
       </div>
       <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 8, alignItems: 'flex-start' }}>
