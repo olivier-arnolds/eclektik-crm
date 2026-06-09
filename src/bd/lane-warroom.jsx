@@ -496,7 +496,12 @@ function JourneyBoard({ rows = [], accById = new Map(), onPickAccount, onMove, a
             style={{ fontWeight: 600, fontSize: 13, color: acc && onPickAccount ? 'var(--accent)' : 'var(--text-1)', cursor: acc && onPickAccount ? 'pointer' : 'default' }}>{r.client_name}</span>
         </div>
         {r.project_name && <div style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 3, lineHeight: 1.3 }}>{r.project_name}</div>}
-        {r.project_no && <div style={{ fontSize: 10.5, color: 'var(--text-3)', fontFamily: 'var(--font-mono)', fontWeight: 600, marginTop: 4 }}>{r.project_no}</div>}
+        {(r.project_no || r.deal_no) && (
+          <div style={{ fontSize: 10.5, fontFamily: 'var(--font-mono)', marginTop: 4 }}>
+            <span style={{ color: 'var(--text-3)', fontWeight: 600 }}>{r.project_no}</span>
+            {r.deal_no && <span style={{ color: 'var(--text-4)', fontWeight: 500 }} title="Funnel deal"> · {r.deal_no}</span>}
+          </div>
+        )}
       </div>
     );
   };
@@ -507,7 +512,7 @@ function JourneyBoard({ rows = [], accById = new Map(), onPickAccount, onMove, a
         <b style={{ color: 'var(--text-2)' }}>Source: CRM database</b> (single source of truth · the project sheet is just an input view).
         Every Glint <b>project</b> by where it sits in the customer journey — operational, distinct from the commercial funnel.
         Lane colour = who leads: <span style={{ color: LEAD_COLOR.CS, fontWeight: 600 }}>■ CS</span> · <span style={{ color: LEAD_COLOR.PS, fontWeight: 600 }}>■ PS</span> · <span style={{ color: LEAD_COLOR.OFF, fontWeight: 600 }}>■ off rails</span>.
-        Dot = People Science analysis on record: <span style={{ color: '#1D9E75', fontWeight: 600 }}>● yes</span> · <span style={{ color: '#E24B4A', fontWeight: 600 }}>● none</span>. Each project carries its own CRM project id (P-####).
+        Dot = People Science analysis on record: <span style={{ color: '#1D9E75', fontWeight: 600 }}>● yes</span> · <span style={{ color: '#E24B4A', fontWeight: 600 }}>● none</span>. Each project carries its own project id (P-####) plus its linked funnel deal (D-####).
         Drag a card to move it between stages. <a href="/glint-customer-journey-playbook-2026-06-07.md" target="_blank" rel="noreferrer" style={{ color: 'var(--accent)' }}>Journey playbook</a>.
       </div>
       <div style={{ display: 'flex', gap: 12, paddingBottom: 8, alignItems: 'flex-start' }}>

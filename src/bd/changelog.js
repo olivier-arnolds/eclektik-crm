@@ -27,16 +27,18 @@ export const CHANGELOG = [
     date: '2026-06-09T14:30:00Z',
     author: 'Marco van Gelder (via Claude / Cowork)',
     type: 'feat',
-    title: 'Journey board: 7-column layout + unique CRM project id (P-####) per card',
+    title: 'Journey board: 7-column layout + project id (P-####) linked to funnel deal (D-####)',
     summary:
-      'Reflowed the journey lanes into 7 columns (Launch stacked under Configure & QA, Graveyard under Off Rails) so the board fills the screen width instead of scrolling sideways. Every project now carries its own unique CRM project id (P-####, like A-#### / D-####); cards show client name + project name + project id + the People Science dot, and the sheet-derived milestone and contractor initials were removed.',
+      'Reflowed the journey lanes into 7 columns (Launch stacked under Configure & QA, Graveyard under Off Rails) so the board fills the screen width instead of scrolling sideways. Every project now carries its own unique project id (P-####, like A-#### / D-####) plus its linked funnel deal number (D-####) for consistency with the sales funnel; cards show client name + project name + P-#### · D-#### + the People Science dot, and the sheet-derived milestone and contractor initials were removed. Also fixed 3 PIMCO Prime Real Estate projects that were mislinked to IMC company record.',
     changes: [
-      'glint_delivery: new project_no (P-#### sequence + before-insert trigger), backfilled for all 40 rows (backup _dq_backup_glint_delivery_20260609d).',
-      'lane-warroom.jsx: JOURNEY_COLUMNS groups Configure+Launch and OffRails+Graveyard; cards show project_no, keep the PS dot, drop initials + milestone.',
+      'glint_delivery: new project_no (P-#### sequence + before-insert trigger) and deal_no (linked funnel deal), backfilled for all 40 rows (backups _dq_backup_glint_delivery_20260609d / _e).',
+      'glint_delivery: repointed 3 PIMCO Prime Real Estate rows from IMC company to the correct company.',
+      'lane-warroom.jsx: JOURNEY_COLUMNS groups Configure+Launch and OffRails+Graveyard; cards show P-#### · D-####, keep the PS dot, drop initials + milestone.',
     ],
     files: [
       'src/bd/lane-warroom.jsx',
       'sql/schema_glint_delivery_project_no_2026-06-09.sql',
+      'sql/data_glint_delivery_deal_link_2026-06-09.sql',
       'src/bd/changelog.js',
       'VERSION',
       'package.json',
