@@ -19,9 +19,25 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.37.0';
+export const CURRENT_VERSION = '1.38.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.38.0',
+    date: '2026-06-09T22:02:16Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'fix',
+    title: 'Clickthrough round 2: no more stale cross-view context + predictable search dismiss',
+    summary:
+      'Two navigation-predictability fixes from the live clickthrough. (1) Switching views now resets the cross-view selection state (right-pane context, selected deal/comm, and the account scope). Previously a deal picked in Funnel kept the Account 360 pinned to that account across War room, Tasks, Meetings AND quietly left a "Filtered by account" scope on Comms — if you missed the banner, your inbox looked nearly empty. The initial mount is skipped so a restored session keeps its state. (2) Search: Esc now clears the whole search (text + panel) instead of leaving orphaned text that looked active but showed no results, and focusing the search field reopens the results panel when there is still a query (e.g. after dismissing with the ✕ button, which keeps the text).',
+    changes: [
+      'BDApp.jsx: view-switch effect resets rightContext / accountScope / selectedDeal / selectedComm (skips initial mount); passes onSearchFocus to Topbar.',
+      'search-results-panel.jsx: Esc calls onClearSearch (text + panel) instead of onClose (panel only).',
+      'topbar.jsx: search input onFocus reopens the results panel via onSearchFocus.',
+    ],
+    files: ['src/bd/BDApp.jsx', 'src/bd/search-results-panel.jsx', 'src/bd/topbar.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.38.0',
+  },
   {
     version: '1.37.0',
     date: '2026-06-09T21:55:53Z',
