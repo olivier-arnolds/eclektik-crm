@@ -83,7 +83,7 @@ export default function CalendarLane({ events: dbEvents, tasks: dbTasks, deals, 
   // Identify the logged-in user so we can keep the calendar private.
   // Tasks are filtered to current-user-only (or unassigned). Other users'
   // calendar EVENTS still surface via the explicit OA/YK overlay chips.
-  const { session } = useAuth();
+  const { session, hasGraphToken, reconnectMicrosoft } = useAuth();
   const currentOwner = ownerIdFromName(session?.user?.user_metadata?.full_name || '');
 
   // Adapt graphEvents from BDApp into our internal shape.
@@ -187,6 +187,14 @@ export default function CalendarLane({ events: dbEvents, tasks: dbTasks, deals, 
             Week {weekNumber} · {weekStart.toLocaleDateString('en', { day: 'numeric', month: 'short' })} – {dates[4].toLocaleDateString('en', { day: 'numeric', month: 'short' })}
           </span>
         </div>
+        {/* Without a Graph token the week renders empty and looks like "no
+            meetings". Mirror the Comms empty-state so the cause is visible. */}
+        {!hasGraphToken && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: 'var(--text-3)' }}>
+            <span>Microsoft is not connected — Outlook meetings are not shown.</span>
+            <button className="btn-primary tiny" onClick={reconnectMicrosoft}>Connect Microsoft</button>
+          </div>
+        )}
         <div className="lane-actions">
           <div className="overlay-group" title="Overlay colleague calendars">
             {['OA', 'YK'].map(k => {

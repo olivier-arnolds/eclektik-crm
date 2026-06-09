@@ -766,6 +766,10 @@ em { font-style: normal; }
   background: var(--fill-1);
   border-radius: var(--radius-sm);
 }
+/* Row actions that only appear on hover (e.g. "mark former") — keeps
+   contact rows clean without hiding the affordance. */
+.contact-card .hover-action { opacity: 0; transition: opacity 0.12s; }
+.contact-card:hover .hover-action, .contact-card .hover-action:focus-visible { opacity: 1; }
 .contact-name { font-size: 12px; font-weight: 500; color: var(--text-1); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .contact-role { font-size: 10px; color: var(--text-3); font-family: var(--font-mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 

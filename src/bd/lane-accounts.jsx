@@ -1014,7 +1014,12 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
                         </div>
                       )}
                     </div>
-                    <button className="btn-ghost tiny"
+                    {/* "mark former" is an action, not a status — revealed on
+                        row hover only (.contact-card:hover) so every contact
+                        doesn't permanently carry a "former?" question mark.
+                        "↻ restore" stays visible: the row is struck through,
+                        so the way back should be obvious. */}
+                    <button className={`btn-ghost tiny ${c.isFormer ? '' : 'hover-action'}`}
                       onClick={async (e) => {
                         e.stopPropagation();
                         const action = c.isFormer ? 'restore as current employee' : 'mark as FORMER (no longer at this account)';
@@ -1024,7 +1029,7 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
                       }}
                       title={c.isFormer ? 'Restore as current employee' : 'Mark as former employee (no longer at this account)'}
                       style={{ fontSize: 10, color: c.isFormer ? 'var(--accent)' : 'var(--text-3)', whiteSpace: 'nowrap' }}>
-                      {c.isFormer ? '↻ restore' : 'former?'}
+                      {c.isFormer ? '↻ restore' : 'mark former'}
                     </button>
                     <button className="icon-btn tiny"
                       onClick={async (e) => {

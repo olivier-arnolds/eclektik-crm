@@ -39,6 +39,19 @@ export default function BDApp() {
     return () => { document.body.classList.remove('theme-light', 'theme-dark'); };
   }, [theme]);
 
+  // Esc closes the topmost open modal. Every modal in the app closes on
+  // backdrop click, so clicking the last .modal-backdrop is behavior-
+  // equivalent — one listener covers all 20+ modals, present and future.
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return;
+      const backdrops = document.querySelectorAll('.modal-backdrop');
+      if (backdrops.length) backdrops[backdrops.length - 1].click();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+
   // Restore persisted Account-lane width on mount
   useEffect(() => {
     try {
@@ -328,7 +341,16 @@ export default function BDApp() {
               refetchGraph={fetchGraphData}
               onPickAccount={pickAccount}
               onCompose={openCompose}
-              onOpenDeal={selectDeal}
+              onOpenDeal={(d) => {
+                // Explicit "open" intent (Open deal button / deal row in the
+                // Account 360): ALWAYS open the modal. selectDeal suppresses
+                // it when the account is visible, which made the Open deal
+                // button a silent no-op (live-clickthrough bug, v1.37.0).
+                setSelectedDeal(d);
+                setRightContext({ type: 'deal', id: d.id });
+                setAccountScope(d.accountId || null);
+                setOpenDeal(d);
+              }}
               onSelectComm={selectCommHandler}
               allTags={allTags}
             />
