@@ -27,11 +27,12 @@ export const CHANGELOG = [
     date: '2026-06-09T15:10:00Z',
     author: 'Marco van Gelder (via Claude / Cowork)',
     type: 'feat',
-    title: 'Customer journey: contractor first names on the cards',
+    title: 'Customer journey: contractor first names on the cards + search box',
     summary:
-      'Each journey card now shows the first names of the contractors on the assignment, de-duplicated, under the P-#### · D-#### line and alongside the People Science dot. Sheet projects use their CS/PS owners; the Graveyard/owner-less cards fall back to the Eclektik account team (account_links, @eclectik.co only, so client/Microsoft contacts are never shown). 39 of 40 cards now carry names - only Eppendorf has no Eclektik consultant linked to its account.',
+      'Each journey card now shows the first names of the contractors on the assignment, de-duplicated, under the P-#### · D-#### line and alongside the People Science dot. Sheet projects use their CS/PS owners; the Graveyard/owner-less cards fall back to the Eclektik account team (account_links, @eclectik.co only, so client/Microsoft contacts are never shown). 39 of 40 cards now carry names - only Eppendorf has no Eclektik consultant linked to its account. Added a live search box that filters cards by client name OR contractor (and project/deal number) - e.g. "paul" shows every card Paul is on, "war" shows Warburtons.',
     changes: [
       'lane-warroom.jsx: firstNameOf() helper; cards render de-duplicated contractor first names from cs_owner / ps_owner / other_contractors.',
+      'lane-warroom.jsx: live search box filtering on client name, contractors, project_name, P-#### and D-####; lane counts follow the filter.',
       'glint_delivery: backfilled other_contractors for 13 owner-less cards from the Eclektik account team (backup _dq_backup_glint_delivery_20260609f).',
     ],
     files: ['src/bd/lane-warroom.jsx', 'sql/data_glint_delivery_contractor_fallback_2026-06-09.sql', 'src/bd/changelog.js', 'VERSION', 'package.json'],

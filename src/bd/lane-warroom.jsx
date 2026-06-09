@@ -483,9 +483,12 @@ function initialsOf(name) {
 
 function JourneyBoard({ rows = [], accById = new Map(), onPickAccount, onMove, analysedNames = [] }) {
   const [over, setOver] = useState(null);
+  const [q, setQ] = useState('');
   const analysedNorm = (analysedNames || []).map(s => (s || '').toLowerCase().replace(/[^a-z0-9]/g, ''));
   const hasPS = (name) => { const n = (name || '').toLowerCase().replace(/[^a-z0-9]/g, ''); if (!n) return false; return analysedNorm.some(a => a && (a === n || a.startsWith(n) || n.startsWith(a))); };
-  const projects = (rows || []).filter(r => r.client_name);   // all projects, every stage
+  const ql = q.trim().toLowerCase();
+  const matchText = (r) => `${r.client_name || ''} ${r.cs_owner || ''} ${r.ps_owner || ''} ${r.other_contractors || ''} ${r.project_name || ''} ${r.project_no || ''} ${r.deal_no || ''}`.toLowerCase();
+  const projects = (rows || []).filter(r => r.client_name).filter(r => !ql || matchText(r).includes(ql));   // all projects, every stage
   const byPhase = Object.fromEntries(JOURNEY_PHASES.map(p => [p.key, []]));
   projects.forEach(r => { byPhase[phaseOfProject(r)].push(r); });
 
@@ -526,6 +529,12 @@ function JourneyBoard({ rows = [], accById = new Map(), onPickAccount, onMove, a
         Lane colour = who leads: <span style={{ color: LEAD_COLOR.CS, fontWeight: 600 }}>■ CS</span> · <span style={{ color: LEAD_COLOR.PS, fontWeight: 600 }}>■ PS</span> · <span style={{ color: LEAD_COLOR.OFF, fontWeight: 600 }}>■ off rails</span>.
         Dot = People Science analysis on record: <span style={{ color: '#1D9E75', fontWeight: 600 }}>● yes</span> · <span style={{ color: '#E24B4A', fontWeight: 600 }}>● none</span>. Each project carries its own project id (P-####) plus its linked funnel deal (D-####). First names = contractors on the assignment.
         Drag a card to move it between stages. <a href="/glint-customer-journey-playbook-2026-06-07.md" target="_blank" rel="noreferrer" style={{ color: 'var(--accent)' }}>Journey playbook</a>.
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '0 0 12px' }}>
+        <input value={q} onChange={(e) => setQ(e.target.value)}
+          placeholder="Search client or contractor — e.g. paul, war…"
+          style={{ flex: '0 1 320px', fontSize: 12.5, padding: '6px 10px', borderRadius: 8, border: '0.5px solid var(--sep)', background: 'var(--bg-1)', color: 'var(--text-1)' }} />
+        {ql && <span style={{ fontSize: 11.5, color: 'var(--text-3)' }}>{projects.length} match{projects.length === 1 ? '' : 'es'}<span onClick={() => setQ('')} style={{ marginLeft: 8, color: 'var(--accent)', cursor: 'pointer' }}>clear</span></span>}
       </div>
       <div style={{ display: 'flex', gap: 12, paddingBottom: 8, alignItems: 'flex-start' }}>
         {JOURNEY_COLUMNS.map(col => (
