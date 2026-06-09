@@ -29,11 +29,12 @@ export const CHANGELOG = [
     type: 'feat',
     title: 'Customer journey: contractor first names on the cards',
     summary:
-      'Each journey card now shows the first names of the contractors on the assignment (from the project CS/PS owners, de-duplicated), under the P-#### · D-#### line and alongside the People Science dot. Graveyard cards have no owners so they show none.',
+      'Each journey card now shows the first names of the contractors on the assignment, de-duplicated, under the P-#### · D-#### line and alongside the People Science dot. Sheet projects use their CS/PS owners; the Graveyard/owner-less cards fall back to the Eclektik account team (account_links, @eclectik.co only, so client/Microsoft contacts are never shown). 39 of 40 cards now carry names - only Eppendorf has no Eclektik consultant linked to its account.',
     changes: [
       'lane-warroom.jsx: firstNameOf() helper; cards render de-duplicated contractor first names from cs_owner / ps_owner / other_contractors.',
+      'glint_delivery: backfilled other_contractors for 13 owner-less cards from the Eclektik account team (backup _dq_backup_glint_delivery_20260609f).',
     ],
-    files: ['src/bd/lane-warroom.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    files: ['src/bd/lane-warroom.jsx', 'sql/data_glint_delivery_contractor_fallback_2026-06-09.sql', 'src/bd/changelog.js', 'VERSION', 'package.json'],
     gitTag: 'v1.34.3',
   },
   {
