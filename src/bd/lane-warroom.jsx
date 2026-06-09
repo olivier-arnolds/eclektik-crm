@@ -494,6 +494,7 @@ function JourneyBoard({ rows = [], accById = new Map(), onPickAccount, onMove })
   return (
     <div>
       <div style={{ fontSize: 12.5, color: 'var(--text-3)', margin: '0 0 12px', lineHeight: 1.5 }}>
+        <b style={{ color: 'var(--text-2)' }}>Source: CRM database</b> (single source of truth · the project sheet is just an input view).
         Every Glint <b>project</b> by where it sits in the customer journey — operational, distinct from the commercial funnel.
         Lane colour = who leads: <span style={{ color: LEAD_COLOR.CS, fontWeight: 600 }}>■ CS</span> · <span style={{ color: LEAD_COLOR.PS, fontWeight: 600 }}>■ PS</span> · <span style={{ color: LEAD_COLOR.OFF, fontWeight: 600 }}>■ off rails</span>.
         Drag a card to move it between stages. <a href="/glint-customer-journey-playbook-2026-06-07.md" target="_blank" rel="noreferrer" style={{ color: 'var(--accent)' }}>Journey playbook</a>.

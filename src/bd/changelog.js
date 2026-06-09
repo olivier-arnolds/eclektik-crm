@@ -32,6 +32,8 @@ export const CHANGELOG = [
       'Restored the two lanes that got folded into "Preparing for Launch" — the board is now the full journey: Preparing for Launch → Configure & QA → Launch → Survey live → Close & results rollout → Insights review & action → Enablement & embedding → Off Rails. Cards now show the project name (mono) as the identifier instead of the account number, so account vs project numbering isn\'t mixed.',
     changes: [
       'lane-warroom.jsx: JOURNEY_PHASES back to 8 lanes (Configure & QA + Launch restored); removed account number from cards, project_name shown as the project id; legend trimmed.',
+      'Added a "Source: CRM database" note at the top of the board (single source of truth; sheet is just an input view).',
+      'Data: seeded journey_stage for all 27 projects from their notes/dates/milestones so every lane is populated; drag to fine-tune.',
     ],
     files: [
       'src/bd/lane-warroom.jsx',
