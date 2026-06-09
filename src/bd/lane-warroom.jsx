@@ -466,6 +466,13 @@ function projectFlags(r) {
   return flags;
 }
 
+// First name of a contractor ("Heidi Muhle" → "Heidi"); '' for blank / N/A.
+function firstNameOf(name) {
+  const n = String(name || '').trim();
+  if (!n || /^n\/?a$/i.test(n)) return '';
+  return n.split(/\s+/)[0];
+}
+
 // Initials of a contractor name ("Heidi Muhle" → "HM"); '' for blank / N/A.
 function initialsOf(name) {
   const n = String(name || '').trim();
@@ -485,6 +492,10 @@ function JourneyBoard({ rows = [], accById = new Map(), onPickAccount, onMove, a
   const card = (r) => {
     const acc = r.company_id ? accById.get(r.company_id) : null;
     const ps = hasPS(r.client_name);
+    const names = [...new Set(
+      [r.cs_owner, r.ps_owner, ...String(r.other_contractors || '').split(/[,;]/)]
+        .map(firstNameOf).filter(Boolean)
+    )].join(' · ');
     return (
       <div key={r.id} draggable
         onDragStart={(e) => { e.dataTransfer.setData('text/plain', r.id); e.dataTransfer.effectAllowed = 'move'; }}
@@ -502,6 +513,7 @@ function JourneyBoard({ rows = [], accById = new Map(), onPickAccount, onMove, a
             {r.deal_no && <span style={{ color: 'var(--text-4)', fontWeight: 500 }} title="Funnel deal"> · {r.deal_no}</span>}
           </div>
         )}
+        {names && <div style={{ fontSize: 10.5, color: 'var(--text-2)', marginTop: 4, fontWeight: 500 }} title="Contractors on this assignment">{names}</div>}
       </div>
     );
   };
@@ -512,7 +524,7 @@ function JourneyBoard({ rows = [], accById = new Map(), onPickAccount, onMove, a
         <b style={{ color: 'var(--text-2)' }}>Source: CRM database</b> (single source of truth · the project sheet is just an input view).
         Every Glint <b>project</b> by where it sits in the customer journey — operational, distinct from the commercial funnel.
         Lane colour = who leads: <span style={{ color: LEAD_COLOR.CS, fontWeight: 600 }}>■ CS</span> · <span style={{ color: LEAD_COLOR.PS, fontWeight: 600 }}>■ PS</span> · <span style={{ color: LEAD_COLOR.OFF, fontWeight: 600 }}>■ off rails</span>.
-        Dot = People Science analysis on record: <span style={{ color: '#1D9E75', fontWeight: 600 }}>● yes</span> · <span style={{ color: '#E24B4A', fontWeight: 600 }}>● none</span>. Each project carries its own project id (P-####) plus its linked funnel deal (D-####).
+        Dot = People Science analysis on record: <span style={{ color: '#1D9E75', fontWeight: 600 }}>● yes</span> · <span style={{ color: '#E24B4A', fontWeight: 600 }}>● none</span>. Each project carries its own project id (P-####) plus its linked funnel deal (D-####). First names = contractors on the assignment.
         Drag a card to move it between stages. <a href="/glint-customer-journey-playbook-2026-06-07.md" target="_blank" rel="noreferrer" style={{ color: 'var(--accent)' }}>Journey playbook</a>.
       </div>
       <div style={{ display: 'flex', gap: 12, paddingBottom: 8, alignItems: 'flex-start' }}>

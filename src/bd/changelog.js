@@ -19,9 +19,23 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.34.2';
+export const CURRENT_VERSION = '1.34.3';
 
 export const CHANGELOG = [
+  {
+    version: '1.34.3',
+    date: '2026-06-09T15:10:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feat',
+    title: 'Customer journey: contractor first names on the cards',
+    summary:
+      'Each journey card now shows the first names of the contractors on the assignment (from the project CS/PS owners, de-duplicated), under the P-#### · D-#### line and alongside the People Science dot. Graveyard cards have no owners so they show none.',
+    changes: [
+      'lane-warroom.jsx: firstNameOf() helper; cards render de-duplicated contractor first names from cs_owner / ps_owner / other_contractors.',
+    ],
+    files: ['src/bd/lane-warroom.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.34.3',
+  },
   {
     version: '1.34.2',
     date: '2026-06-09T14:30:00Z',
