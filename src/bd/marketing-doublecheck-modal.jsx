@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
+import { apiFetch } from '../lib/apiFetch';
 
 // Side-by-side LinkedIn-doublecheck modal.
 // Props:
@@ -23,7 +24,7 @@ export default function DoubleCheckLinkedInModal({ contactIds, onClose, refetch 
     setLoading(true);
     setError(null);
     setData(null);
-    fetch('/api/unipile?action=doublecheck-contact-linkedin', {
+    apiFetch('/api/unipile?action=doublecheck-contact-linkedin', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ contact_id: currentId }),
@@ -96,7 +97,7 @@ export default function DoubleCheckLinkedInModal({ contactIds, onClose, refetch 
     }
     setShowCopyPicker(false);
 
-    const resp = await fetch('/api/unipile?action=copy-linkedin-to-contact', {
+    const resp = await apiFetch('/api/unipile?action=copy-linkedin-to-contact', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ contact_id: currentId, fields }),
@@ -104,7 +105,7 @@ export default function DoubleCheckLinkedInModal({ contactIds, onClose, refetch 
     const result = await resp.json();
     if (result.success) {
       setLoading(true);
-      const refresh = await fetch('/api/unipile?action=doublecheck-contact-linkedin', {
+      const refresh = await apiFetch('/api/unipile?action=doublecheck-contact-linkedin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ contact_id: currentId }),

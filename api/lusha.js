@@ -1,3 +1,4 @@
+import { requireUser } from './_lib/guard.js';
 // Lusha email-finder proxy.
 // Action: find-email per contact_id. Lookup via LinkedIn URL.
 // Vereist LUSHA_API_KEY env var (door Olivier in Vercel gezet).
@@ -12,6 +13,10 @@ const LUSHA_API_KEY = process.env.LUSHA_API_KEY;
 const LUSHA_BASE = 'https://api.lusha.com';
 
 export default async function handler(req, res) {
+  // Auth guard (v1.39.0): only logged-in CRM users may call this endpoint.
+  const authedUser = await requireUser(req, res);
+  if (!authedUser) return;
+
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
   if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
   if (!LUSHA_API_KEY) return res.status(500).json({ error: 'LUSHA_API_KEY not configured in Vercel env vars' });

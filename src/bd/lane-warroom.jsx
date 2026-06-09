@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback, useRef, Fragment } from 'rea
 import { supabase } from '../supabase';
 import { fmtRelative, fmtMoney } from './atoms';
 import { useReportingData, computeMetrics, TeamCoverageMatrix, roleOverrideFor, normLinkRole } from './lane-reporting';
+import { apiFetch } from '../lib/apiFetch';
 
 // ISO week label "wk NN ’YY" from y/mo(0-based)/d.
 function isoWeekStr(y, mo, d) {
@@ -188,7 +189,7 @@ function InsightsMatrix({ accounts = [], pscByAccount = {}, teamByAccount = {}, 
   const [error, setError] = useState(null);
   const [sortKey, setSortKey] = useState(null); // null = section order | 'client' | 'ps'
   useEffect(() => {
-    fetch('/api/insights-review')
+    apiFetch('/api/insights-review')
       .then(async r => { const j = await r.json().catch(() => ({})); if (r.ok) setData(j); else setError(j.error || 'Failed'); })
       .catch(e => setError(e.message))
       .finally(() => setLoading(false));
@@ -593,7 +594,7 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount }
   const [analysedNames, setAnalysedNames] = useState([]);
   useEffect(() => {
     let cancelled = false;
-    fetch('/api/journey-analyses').then(r => r.json()).then(j => { if (!cancelled) setAnalysedNames(j.analysed || []); }).catch(() => {});
+    apiFetch('/api/journey-analyses').then(r => r.json()).then(j => { if (!cancelled) setAnalysedNames(j.analysed || []); }).catch(() => {});
     return () => { cancelled = true; };
   }, []);
 
@@ -688,7 +689,7 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount }
   const update = async () => {
     setSyncing(true); setSyncMsg(null);
     try {
-      const resp = await fetch('/api/glint-sync', { method: 'POST' });
+      const resp = await apiFetch('/api/glint-sync', { method: 'POST' });
       const data = await resp.json().catch(() => ({}));
       if (resp.ok) { setSyncMsg(`Synced ${data.synced ?? 0} rows`); await load(); }
       else setSyncMsg(data.error || 'Sync not available yet');

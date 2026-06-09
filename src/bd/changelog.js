@@ -19,9 +19,26 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.38.0';
+export const CURRENT_VERSION = '1.39.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.39.0',
+    date: '2026-06-09T22:13:29Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'fix',
+    title: 'Security: auth guard on all serverless API endpoints',
+    summary:
+      'Closes the highest-risk audit finding: 17 of the 19 /api endpoints ran with the Supabase service key (bypasses RLS) and accepted requests from anyone who knew the URL — including marketing-send (mass email), lusha (paid lookups), unipile (LinkedIn write actions), glint-sync (overwrites glint_delivery) and account-summary (client data + Anthropic spend). New shared guard in api/_lib/guard.js: requireUser verifies the caller\'s Supabase session JWT via auth.getUser; requireCron verifies Vercel cron invocations (CRON_SECRET if set, else the platform x-vercel-cron header); requireQueueSecret supports Claude\'s feature-request automation. Every frontend /api call (34 call sites across 22 files) now goes through src/lib/apiFetch.js, which attaches the session token. Webhooks keep their own validation (marketing-webhook: Svix signature; unipile-webhook: unchanged). Recommended follow-up in Vercel env: set CRON_SECRET (Vercel then signs cron calls automatically) and optionally FEATURE_QUEUE_SECRET for the Claude feature-pull workflow — without the latter, next-feature-request now requires a logged-in user (Claude can use the Supabase MCP instead).',
+    changes: [
+      'api/_lib/guard.js: requireUser (Supabase JWT), requireCron (CRON_SECRET / x-vercel-cron), requireQueueSecret.',
+      '12 user-facing endpoints guarded with requireUser; 3 cron endpoints with requireCron; admin-weekly-export dual (cron path vs manual Run-now); next-feature-request accepts queue secret OR user JWT.',
+      'src/lib/apiFetch.js: fetch wrapper that attaches the session access token; all 34 frontend /api call sites migrated (incl. multi-line fetches in useLinkedInMessages/useLinkedInPosts).',
+      'CLAUDE.md §5: documents the guard + recommended CRON_SECRET / FEATURE_QUEUE_SECRET env vars.',
+    ],
+    files: ['api/_lib/guard.js', 'src/lib/apiFetch.js', 'api/*.js (17 endpoints)', 'src (22 files, 34 call sites)', 'CLAUDE.md', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.39.0',
+  },
   {
     version: '1.38.0',
     date: '2026-06-09T22:02:16Z',

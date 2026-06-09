@@ -15,6 +15,7 @@ import Btn from '../atoms/Btn';
 import Chip from '../atoms/Chip';
 import Empty from '../atoms/Empty';
 import LinkedInCompose from '../forms/LinkedInCompose';
+import { apiFetch } from '../../lib/apiFetch';
 
 function EmailReply({ messageId, onSent }) {
   const [open, setOpen] = useState(false);
@@ -135,7 +136,7 @@ export default function ContactDetail({ contact, accounts, allItems, onBack, ref
       try {
         const accountId = await getLiAccountId();
         if (!accountId) { setConnectionLoading(false); return; }
-        const resp = await fetch(`/api/unipile?action=check-relation&account_id=${encodeURIComponent(accountId)}&linkedin_url=${encodeURIComponent(contact.linkedin_url)}`);
+        const resp = await apiFetch(`/api/unipile?action=check-relation&account_id=${encodeURIComponent(accountId)}&linkedin_url=${encodeURIComponent(contact.linkedin_url)}`);
         const data = await resp.json();
         if (data.success && data.data) {
           setConnectionStatus(data.data.relation || 'not_connected');
@@ -157,12 +158,12 @@ export default function ContactDetail({ contact, accounts, allItems, onBack, ref
       const accountId = await getLiAccountId();
       if (!accountId) { setSendingInvite(false); return; }
       // Resolve provider ID from LinkedIn URL
-      const resolveResp = await fetch(`/api/unipile?action=resolve-user&account_id=${accountId}&linkedin_url=${encodeURIComponent(contact.linkedin_url)}`);
+      const resolveResp = await apiFetch(`/api/unipile?action=resolve-user&account_id=${accountId}&linkedin_url=${encodeURIComponent(contact.linkedin_url)}`);
       const resolveData = await resolveResp.json();
       const providerId = resolveData.provider_id;
       if (!providerId) { setInviteResult('Could not resolve LinkedIn profile'); setSendingInvite(false); return; }
 
-      const resp = await fetch('/api/unipile?action=send-invite', {
+      const resp = await apiFetch('/api/unipile?action=send-invite', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ account_id: accountId, attendee_id: providerId, message: inviteMessage || undefined }),

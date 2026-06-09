@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useUnipileAccount } from './useUnipileAccount';
+import { apiFetch } from '../lib/apiFetch';
 
 export function useLinkedInMessages(contact, { enabled }) {
   const [messages, setMessages] = useState([]);
@@ -17,7 +18,7 @@ export function useLinkedInMessages(contact, { enabled }) {
           return;
         }
 
-        const resolveResp = await fetch(
+        const resolveResp = await apiFetch(
           `/api/unipile?action=resolve-user&account_id=${accountId}&linkedin_url=${encodeURIComponent(contact.linkedin_url)}`
         );
         const resolveData = await resolveResp.json();
@@ -27,7 +28,7 @@ export function useLinkedInMessages(contact, { enabled }) {
           return;
         }
 
-        const chatsResp = await fetch(
+        const chatsResp = await apiFetch(
           `/api/unipile?action=get-chats&account_id=${accountId}&limit=50`
         );
         const chatsData = await chatsResp.json();
@@ -35,7 +36,7 @@ export function useLinkedInMessages(contact, { enabled }) {
         const matchedChat = chats.find((c) => c.attendee_provider_id === providerId);
 
         if (matchedChat) {
-          const msgsResp = await fetch(
+          const msgsResp = await apiFetch(
             `/api/unipile?action=get-messages&chat_id=${matchedChat.id}`
           );
           const msgsData = await msgsResp.json();

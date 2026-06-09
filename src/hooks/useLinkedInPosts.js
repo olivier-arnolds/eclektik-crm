@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../supabase';
 import { useUnipileAccount } from './useUnipileAccount';
+import { apiFetch } from '../lib/apiFetch';
 
 const emptyForm = { author_name: '', content: '', post_url: '', post_date: '', tags: '' };
 
@@ -42,7 +43,7 @@ export function useLinkedInPosts(account, contacts, { enabled }) {
 
       if (account.linkedin_url) {
         try {
-          const resp = await fetch(
+          const resp = await apiFetch(
             `/api/unipile?action=get-posts&account_id=${encodeURIComponent(accountId)}&linkedin_url=${encodeURIComponent(account.linkedin_url)}`
           );
           const data = await resp.json();
@@ -65,7 +66,7 @@ export function useLinkedInPosts(account, contacts, { enabled }) {
       );
       for (const contact of contactsAtCompany.slice(0, 3)) {
         try {
-          const resp = await fetch(
+          const resp = await apiFetch(
             `/api/unipile?action=get-posts&account_id=${encodeURIComponent(accountId)}&linkedin_url=${encodeURIComponent(contact.linkedin_url)}`
           );
           const data = await resp.json();

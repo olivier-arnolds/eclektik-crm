@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../../supabase';
 import { traverseStep } from '../lib/playbookGraphTraversal';
 import { substituteMergeFields, isAiMode, buildAiPrompt, getManualBody, getEmailSubject } from '../lib/draftGeneration';
+import { apiFetch } from '../../../lib/apiFetch';
 
 export default function TestRunModal({ playbookId, nodes, edges, onClose }) {
   const [contacts, setContacts] = useState([]);
@@ -66,7 +67,7 @@ export default function TestRunModal({ playbookId, nodes, edges, onClose }) {
             const prompt = buildAiPrompt(eff.config, ctx);
             logs.push({ level: 'info', msg: `[${node.node_type}] AI-prompt resolved: ${prompt.slice(0, 100)}...` });
             try {
-              const resp = await fetch('/api/anthropic-generate', {
+              const resp = await apiFetch('/api/anthropic-generate', {
                 method: 'POST', headers: { 'Content-Type':'application/json' },
                 body: JSON.stringify({ prompt, max_tokens: 400 }),
               });

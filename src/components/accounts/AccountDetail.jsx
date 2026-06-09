@@ -12,6 +12,7 @@ import Avatar from '../atoms/Avatar';
 import Btn from '../atoms/Btn';
 import Empty from '../atoms/Empty';
 import ItemCard from '../cards/ItemCard';
+import { apiFetch } from '../../lib/apiFetch';
 
 // Compact inline row editor
 function PostText({ text }) {
@@ -138,7 +139,7 @@ export default function AccountDetail({ account, onBack, onSelectItem, onSelectC
   const generateInsight = async () => {
     setGenerating(true);
     try {
-      const resp = await fetch('/api/company-insights', {
+      const resp = await apiFetch('/api/company-insights', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ companyId: account.id, model: selectedModel }),
@@ -202,7 +203,7 @@ export default function AccountDetail({ account, onBack, onSelectItem, onSelectC
     setLoadingComments(prev => ({ ...prev, [postId]: true }));
     try {
       const accountId = await getUnipileAccountId();
-      const resp = await fetch(`/api/unipile?action=get-comments&post_id=${encodeURIComponent(postId)}&account_id=${encodeURIComponent(accountId)}`);
+      const resp = await apiFetch(`/api/unipile?action=get-comments&post_id=${encodeURIComponent(postId)}&account_id=${encodeURIComponent(accountId)}`);
       const data = await resp.json();
       const items = data.data?.items || data.data || [];
       setPostComments(prev => ({ ...prev, [postId]: Array.isArray(items) ? items : [] }));
@@ -222,7 +223,7 @@ export default function AccountDetail({ account, onBack, onSelectItem, onSelectC
     setLoadingReactions(prev => ({ ...prev, [postId]: true }));
     try {
       const accountId = await getUnipileAccountId();
-      const resp = await fetch(`/api/unipile?action=get-reactions&post_id=${encodeURIComponent(postId)}&account_id=${encodeURIComponent(accountId)}`);
+      const resp = await apiFetch(`/api/unipile?action=get-reactions&post_id=${encodeURIComponent(postId)}&account_id=${encodeURIComponent(accountId)}`);
       const data = await resp.json();
       const items = data.data?.items || data.data || [];
       setPostReactions(prev => ({ ...prev, [postId]: Array.isArray(items) ? items : [] }));

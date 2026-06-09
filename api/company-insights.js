@@ -1,3 +1,4 @@
+import { requireUser } from './_lib/guard.js';
 import { createClient } from '@supabase/supabase-js';
 import Anthropic from '@anthropic-ai/sdk';
 
@@ -49,6 +50,10 @@ async function fetchSubPages(baseUrl) {
 }
 
 export default async function handler(req, res) {
+  // Auth guard (v1.39.0): only logged-in CRM users may call this endpoint.
+  const authedUser = await requireUser(req, res);
+  if (!authedUser) return;
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }

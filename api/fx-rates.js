@@ -1,3 +1,4 @@
+import { requireUser } from './_lib/guard.js';
 // Live EUR conversion rates for the Reporting weighted forecast.
 // Fetched server-side (frankfurter.dev / ECB) so the browser calls a same-origin
 // endpoint — no CORS, CSP or ad-blocker issues. Returns EUR per 1 unit:
@@ -5,6 +6,10 @@
 // Falls back to 1:1 (no conversion) if the upstream is unavailable.
 
 export default async function handler(req, res) {
+  // Auth guard (v1.39.0): only logged-in CRM users may call this endpoint.
+  const authedUser = await requireUser(req, res);
+  if (!authedUser) return;
+
   try {
     const r = await fetch('https://api.frankfurter.dev/v1/latest?base=EUR&symbols=USD,GBP');
     const j = await r.json();

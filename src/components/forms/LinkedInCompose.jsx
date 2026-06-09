@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { apiFetch } from '../../lib/apiFetch';
 
 export default function LinkedInCompose({ open, onClose, contactName, linkedinUrl }) {
   const [text, setText] = useState('');
@@ -11,7 +12,7 @@ export default function LinkedInCompose({ open, onClose, contactName, linkedinUr
   useEffect(() => {
     if (open && !accountId) {
       setLoadingAccount(true);
-      fetch('/api/unipile?action=list-accounts')
+      apiFetch('/api/unipile?action=list-accounts')
         .then(r => r.json())
         .then(data => {
           if (data.success && data.data) {
@@ -39,7 +40,7 @@ export default function LinkedInCompose({ open, onClose, contactName, linkedinUr
     try {
       // Step 1: Resolve LinkedIn URL to provider ID
       setResult({ info: 'Looking up LinkedIn profile...' });
-      const resolveResp = await fetch(`/api/unipile?action=resolve-user&account_id=${accountId}&linkedin_url=${encodeURIComponent(linkedinUrl)}`);
+      const resolveResp = await apiFetch(`/api/unipile?action=resolve-user&account_id=${accountId}&linkedin_url=${encodeURIComponent(linkedinUrl)}`);
       const resolveData = await resolveResp.json();
 
       if (!resolveData.success || !resolveData.provider_id) {
@@ -50,7 +51,7 @@ export default function LinkedInCompose({ open, onClose, contactName, linkedinUr
 
       // Step 2: Start chat with the provider ID
       setResult({ info: 'Sending message...' });
-      const resp = await fetch('/api/unipile?action=start-chat', {
+      const resp = await apiFetch('/api/unipile?action=start-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

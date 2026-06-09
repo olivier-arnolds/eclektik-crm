@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { insertRow } from '../../hooks/useSupabase';
+import { apiFetch } from '../../lib/apiFetch';
 
 export default function AddCompanyModal({ open, onClose, refetch }) {
   const [form, setForm] = useState({ name: '', country: '', city: '', industry: '', website: '', type: 'Klant', phone: '', email: '', linkedin_url: '' });
@@ -35,7 +36,7 @@ export default function AddCompanyModal({ open, onClose, refetch }) {
     if (newCompany?.id && form.linkedin_url) {
       setEnriching(true);
       try {
-        await fetch('/api/unipile?action=enrich-company', {
+        await apiFetch('/api/unipile?action=enrich-company', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ company_id: newCompany.id, linkedin_url: form.linkedin_url }),

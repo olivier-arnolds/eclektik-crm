@@ -1,3 +1,4 @@
+import { requireUser } from './_lib/guard.js';
 import { createClient } from '@supabase/supabase-js';
 
 // Builds the Insights-review matrix for the War room: clients (rows) × quarters
@@ -23,6 +24,10 @@ function quarterOf(dateStr) {
 }
 
 export default async function handler(req, res) {
+  // Auth guard (v1.39.0): only logged-in CRM users may call this endpoint.
+  const authedUser = await requireUser(req, res);
+  if (!authedUser) return;
+
   if (!PS_URL || !PS_KEY) {
     return res.status(503).json({ error: 'People Science source not configured (PS_SUPABASE_URL / PS_SUPABASE_KEY).' });
   }

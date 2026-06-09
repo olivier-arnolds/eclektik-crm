@@ -1,3 +1,4 @@
+import { requireCron } from './_lib/guard.js';
 // Weekly cron - markeert oude pending suggestions als 'expired'.
 // Trigger: vercel.json cron, 0 6 * * 1 (6u maandag).
 
@@ -11,6 +12,9 @@ const supabase = createClient(
 const EXPIRY_DAYS = 14;
 
 export default async function handler(req, res) {
+  // Auth guard (v1.39.0): Vercel cron invocations only.
+  if (!requireCron(req, res)) return;
+
   try {
     const cutoff = new Date(Date.now() - EXPIRY_DAYS * 86400 * 1000).toISOString();
 

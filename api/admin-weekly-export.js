@@ -1,3 +1,4 @@
+import { requireUser, requireCron } from './_lib/guard.js';
 // Weekly database export — generates a single Markdown snapshot of the
 // CRM and emails it to the admin_jobs row's recipients.
 //
@@ -101,6 +102,15 @@ async function sendExport({ recipients, mdContent, stamp }) {
 }
 
 export default async function handler(req, res) {
+  // Auth guard (v1.39.0): cron path needs a cron invocation; the manual
+  // "Run now" path needs a logged-in CRM user.
+  if (req.method === 'GET' && req.query?.cron === '1') {
+    if (!requireCron(req, res)) return;
+  } else {
+    const authedUser = await requireUser(req, res);
+    if (!authedUser) return;
+  }
+
   if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
 
   const isCron = req.method === 'GET' && req.query?.cron === '1';

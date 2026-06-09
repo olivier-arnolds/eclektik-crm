@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
 import { useAuth } from '../lib/auth';
+import { apiFetch } from '../lib/apiFetch';
 
 // Admin view — two tabs: recurring jobs and feature-request inbox.
 // Visible only to users on the admin email list (gated in topbar).
@@ -227,7 +228,7 @@ function JobRow({ job, onChange }) {
     setBusy(true);
     setRunResult(null);
     try {
-      const resp = await fetch('/api/admin-weekly-export', { method: 'POST' });
+      const resp = await apiFetch('/api/admin-weekly-export', { method: 'POST' });
       const data = await resp.json();
       if (resp.ok) setRunResult({ ok: true, msg: 'Sent! Check your inbox.' });
       else setRunResult({ ok: false, msg: data?.error || `HTTP ${resp.status}` });

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { supabase } from '../supabase';
 import { useAuth } from '../lib/auth';
+import { apiFetch } from '../lib/apiFetch';
 
 // Submit feedback / feature request modal.
 // Anyone signed-in can submit. Anonymous-but-authenticated; submitter
@@ -80,7 +81,7 @@ export default function FeedbackModal({ open, onClose, onSubmitted }) {
       if (insErr) throw new Error(insErr.message);
 
       // Fire-and-forget admin notification (don't block close on this)
-      fetch('/api/feedback-notify', {
+      apiFetch('/api/feedback-notify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: data?.id }),

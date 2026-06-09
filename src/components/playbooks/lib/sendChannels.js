@@ -3,6 +3,7 @@
 // LinkedIn / WhatsApp / Instagram: via bestaande /api/unipile endpoint
 
 import { supabase } from '../../../supabase';
+import { apiFetch } from '../../../lib/apiFetch';
 
 export async function sendDraft(draft) {
   const fn = {
@@ -78,7 +79,7 @@ async function sendViaUnipile(draft, providerType) {
                    : contact?.instagram_username;
   if (!identifier) throw new Error(`Contact heeft geen ${providerType} identifier`);
 
-  const resp = await fetch('/api/unipile', {
+  const resp = await apiFetch('/api/unipile', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({

@@ -1,3 +1,4 @@
+import { requireUser, requireQueueSecret } from './_lib/guard.js';
 // GET  /api/next-feature-request          → returns the oldest 'approved' row
 // POST /api/next-feature-request           → marks a request as in_progress
 //   Body: { id }
@@ -13,6 +14,14 @@ const supabase = (process.env.VITE_SUPABASE_URL && process.env.SUPABASE_SERVICE_
   : null;
 
 export default async function handler(req, res) {
+  // Auth guard (v1.39.0): either the automation queue secret
+  // (x-feature-queue-secret, for Claude's feature-pull workflow) or a
+  // logged-in CRM user.
+  if (!requireQueueSecret(req)) {
+    const authedUser = await requireUser(req, res);
+    if (!authedUser) return;
+  }
+
   if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
 
   if (req.method === 'GET') {

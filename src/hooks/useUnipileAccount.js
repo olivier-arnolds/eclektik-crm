@@ -1,4 +1,5 @@
 import { useCallback, useRef } from 'react';
+import { apiFetch } from '../lib/apiFetch';
 
 export function useUnipileAccount() {
   const cachedId = useRef(null);
@@ -9,7 +10,7 @@ export function useUnipileAccount() {
     if (inflight.current) return inflight.current;
 
     inflight.current = (async () => {
-      const resp = await fetch('/api/unipile?action=list-accounts');
+      const resp = await apiFetch('/api/unipile?action=list-accounts');
       const data = await resp.json();
       if (!data.success || !data.data?.items?.length) return null;
       const liAcc =

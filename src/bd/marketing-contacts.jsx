@@ -6,6 +6,7 @@ import DoubleCheckLinkedInModal from './marketing-doublecheck-modal';
 import EmailSuggestModal from './marketing-email-suggest-modal';
 import { useAuth } from '../lib/auth';
 import { supabase } from '../supabase';
+import { apiFetch } from '../lib/apiFetch';
 
 // CSV escaping: wrap in double-quotes, double-up internal quotes.
 // Excel-compatible — newlines / commas / quotes inside fields preserved.
@@ -88,7 +89,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
     for (let i = 0; i < eligible.length; i++) {
       const c = eligible[i];
       try {
-        const resp = await fetch('/api/lusha?action=find-email', {
+        const resp = await apiFetch('/api/lusha?action=find-email', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ contact_id: c.id }),
@@ -135,7 +136,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
         const body = hasUrl
           ? { contact_id: c.id, linkedin_url: c.linkedin_url }
           : { contact_id: c.id };
-        const resp = await fetch(`/api/unipile?action=${action}`, {
+        const resp = await apiFetch(`/api/unipile?action=${action}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),

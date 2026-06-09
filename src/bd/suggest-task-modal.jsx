@@ -3,6 +3,7 @@ import { I } from './atoms';
 import { supabase } from '../supabase';
 import { graphGet } from '../lib/graph';
 import { useAuth } from '../lib/auth';
+import { apiFetch } from '../lib/apiFetch';
 
 // First names of CRM users (extend if more team members onboard).
 const TEAM = ['Marco', 'Olivier', 'Yarmilla'];
@@ -85,7 +86,7 @@ export default function SuggestTaskModal({ comm, accounts, contacts, onClose, on
       if (cancelled) return;
 
       try {
-        const r = await fetch('/api/suggest-task', {
+        const r = await apiFetch('/api/suggest-task', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '../supabase';
 import { useUnipileAccount } from './useUnipileAccount';
+import { apiFetch } from '../lib/apiFetch';
 
 export function useContactSearch(account, refetch) {
   const [showContactSearch, setShowContactSearch] = useState(false);
@@ -33,7 +34,7 @@ export function useContactSearch(account, refetch) {
           linkedin_url: account.linkedin_url,
         };
         if (loadMore && cursor) body.cursor = cursor;
-        const resp = await fetch('/api/unipile?action=search-people', {
+        const resp = await apiFetch('/api/unipile?action=search-people', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(body),

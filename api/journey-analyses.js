@@ -1,3 +1,4 @@
+import { requireUser } from './_lib/guard.js';
 import { createClient } from '@supabase/supabase-js';
 
 // Returns the set of People Science client names that have at least one analysis
@@ -11,6 +12,10 @@ const PS_URL = process.env.PS_SUPABASE_URL;
 const PS_KEY = process.env.PS_SUPABASE_KEY;
 
 export default async function handler(req, res) {
+  // Auth guard (v1.39.0): only logged-in CRM users may call this endpoint.
+  const authedUser = await requireUser(req, res);
+  if (!authedUser) return;
+
   if (!PS_URL || !PS_KEY) return res.status(200).json({ analysed: [], note: 'PS not configured' });
   try {
     const ps = createClient(PS_URL.trim(), PS_KEY.trim());

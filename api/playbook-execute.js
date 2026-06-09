@@ -1,3 +1,4 @@
+import { requireCron } from './_lib/guard.js';
 // Playbook execution cron — graph-traversal versie (Plan 3).
 //
 // Trigger: Vercel cron, 0 8 * * 1-5 (8u NL-tijd werkdagen, configured in vercel.json).
@@ -44,6 +45,9 @@ VOORKEUREN:
 Geef alleen de pure berichttekst terug, geen omhullende tekst, geen labels, geen "Hier is je bericht:".`;
 
 export default async function handler(req, res) {
+  // Auth guard (v1.39.0): Vercel cron invocations only.
+  if (!requireCron(req, res)) return;
+
   const force = req.query?.force === 'true';
   const stats = { processed: 0, drafts_created: 0, tasks_created: 0, completed: 0, errors: [] };
 

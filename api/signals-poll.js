@@ -1,3 +1,4 @@
+import { requireCron } from './_lib/guard.js';
 // Daily cron — pollt Unipile voor LinkedIn-posts per signal_subject,
 // dedupes via source_id, scoort via Claude, creëert suggestions bij score > 0.6.
 //
@@ -39,6 +40,9 @@ async function unipileGet(path) {
 }
 
 export default async function handler(req, res) {
+  // Auth guard (v1.39.0): Vercel cron invocations only.
+  if (!requireCron(req, res)) return;
+
   const force = req.query?.force === 'true';
   const limit = Number(req.query?.limit) || 50;
 

@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { getInitials, avatarColorFromName } from '../../lib/constants';
 import Avatar from '../atoms/Avatar';
+import { apiFetch } from '../../lib/apiFetch';
 
 // Unipile rate-limit guard — at most 80 enrich calls per modal run, leaving
 // 20 of the daily 100 budget for everything else.
@@ -76,7 +77,7 @@ export default function EnrichModal({ open, onClose, accounts, refetch }) {
       const acc = accounts.find(a => a.id === id);
       if (!acc?.linkedin_url) { failed++; setProgress({ done: i + 1, total: ids.length }); continue; }
       try {
-        const resp = await fetch('/api/unipile?action=enrich-company', {
+        const resp = await apiFetch('/api/unipile?action=enrich-company', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ company_id: id, linkedin_url: acc.linkedin_url }),

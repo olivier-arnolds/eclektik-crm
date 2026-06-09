@@ -1,3 +1,4 @@
+import { requireUser } from './_lib/guard.js';
 // Unipile API proxy — handles LinkedIn messaging, profile lookup, and posts
 // Routes: POST /api/unipile?action=send-message|start-chat|get-profile|get-posts
 
@@ -79,6 +80,10 @@ async function unipileRequest(method, path, body, isFormData) {
 }
 
 export default async function handler(req, res) {
+  // Auth guard (v1.39.0): only logged-in CRM users may call this endpoint.
+  const authedUser = await requireUser(req, res);
+  if (!authedUser) return;
+
   const { action } = req.query;
 
   // Debug endpoint — does NOT leak secret values

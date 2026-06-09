@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { I } from './atoms';
 import { insertRow } from '../hooks/useSupabase';
 import { supabase } from '../supabase';
+import { apiFetch } from '../lib/apiFetch';
 
 // Normalize a company name for similarity matching:
 // - lowercase, strip whitespace
@@ -131,7 +132,7 @@ export default function AddAccountModal({ onClose, onCreated, initialName, initi
     if (newCompany?.id && newCompany.linkedin_url) {
       setStatus('Enriching via LinkedIn…');
       try {
-        await fetch('/api/unipile?action=enrich-company', {
+        await apiFetch('/api/unipile?action=enrich-company', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ company_id: newCompany.id, linkedin_url: newCompany.linkedin_url }),

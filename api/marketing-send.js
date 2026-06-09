@@ -1,3 +1,4 @@
+import { requireUser } from './_lib/guard.js';
 // POST /api/marketing-send
 // Body: { campaign_id?, name, subject, preheader, html_body, from_name?, from_email?, reply_to?, audience_filter, recipients: [{contact_id, email, vars}] }
 // On success: returns { campaign_id, sent: N, failed: M, status: 'sent' | 'failed' }
@@ -37,6 +38,10 @@ async function resendSend({ from, to, subject, html, headers }) {
 }
 
 export default async function handler(req, res) {
+  // Auth guard (v1.39.0): only logged-in CRM users may call this endpoint.
+  const authedUser = await requireUser(req, res);
+  if (!authedUser) return;
+
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST required' });
   if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
   if (!process.env.RESEND_API_KEY) return res.status(500).json({ error: 'RESEND_API_KEY not configured' });

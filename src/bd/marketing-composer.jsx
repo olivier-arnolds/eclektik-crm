@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef } from 'react';
 import { useAuth } from '../lib/auth';
 import { renderTemplate, varsForContact, KNOWN_VARS } from '../lib/template-vars';
+import { apiFetch } from '../lib/apiFetch';
 
 // Composer for a Marketing campaign.
 // Props:
@@ -86,7 +87,7 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
     }
 
     try {
-      const resp = await fetch('/api/marketing-send', {
+      const resp = await apiFetch('/api/marketing-send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

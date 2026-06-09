@@ -12,6 +12,7 @@ import LinkExistingContactModal from './link-existing-contact-modal';
 import TagChip from './tag-chip';
 import DuplicateContactsModal from './duplicate-contacts-modal';
 import { useLinkedInPosts } from '../hooks/useLinkedInPosts';
+import { apiFetch } from '../lib/apiFetch';
 
 function PostText({ text }) {
   const [expanded, setExpanded] = useState(false);
@@ -872,7 +873,7 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
     setBriefLoading(true);
     setBriefError(null);
     try {
-      const resp = await fetch('/api/account-summary', {
+      const resp = await apiFetch('/api/account-summary', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ companyId: account.id, accountName: account.name, interactions }),

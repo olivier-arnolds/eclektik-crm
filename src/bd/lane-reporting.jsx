@@ -10,6 +10,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '../supabase';
 import IndustryBreakdown from './industry-breakdown';
+import { apiFetch } from '../lib/apiFetch';
 
 // ───────────────────────── canonical metric helpers ─────────────────────────
 const ADECCO = 'Adecco Group';
@@ -705,7 +706,7 @@ export default function ReportingLane({ onPickAccount, accounts = [] }) {
   const [minQ, setMinQ] = useState(120000); // editable per-quarter minimum for the waterfall
   useEffect(() => {
     let cancelled = false;
-    fetch('/api/fx-rates')
+    apiFetch('/api/fx-rates')
       .then(r => r.json())
       .then(j => { if (!cancelled && j) setFx({ usd: Number(j.usd) || 1, gbp: Number(j.gbp) || 1, date: j.date || null }); })
       .catch(() => { /* keep 1:1 fallback */ });

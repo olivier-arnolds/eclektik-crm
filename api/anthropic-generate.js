@@ -1,3 +1,4 @@
+import { requireUser } from './_lib/guard.js';
 // Server-side wrapper voor Claude API — gebruikt door test-run modus
 // in builder. Frontend kan niet direct Anthropic aanroepen (key zou
 // lekken).
@@ -26,6 +27,10 @@ VOORKEUREN:
 Geef alleen de pure berichttekst terug, geen omhullende tekst, geen labels, geen "Hier is je bericht:".`;
 
 export default async function handler(req, res) {
+  // Auth guard (v1.39.0): only logged-in CRM users may call this endpoint.
+  const authedUser = await requireUser(req, res);
+  if (!authedUser) return;
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }

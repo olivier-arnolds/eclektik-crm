@@ -1,3 +1,4 @@
+import { requireUser } from './_lib/guard.js';
 // POST /api/feedback-notify
 // Body: { id }
 // Sends an email to the admin list announcing a new feature_requests row.
@@ -13,6 +14,10 @@ const supabase = (process.env.VITE_SUPABASE_URL && process.env.SUPABASE_SERVICE_
   : null;
 
 export default async function handler(req, res) {
+  // Auth guard (v1.39.0): only logged-in CRM users may call this endpoint.
+  const authedUser = await requireUser(req, res);
+  if (!authedUser) return;
+
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST required' });
   if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
   if (!process.env.RESEND_API_KEY) return res.status(200).json({ skipped: 'no Resend key' });

@@ -10,6 +10,7 @@ import AddContactModal from './add-contact-modal';
 import CreateNoteModal from './create-note-modal';
 import LinkChatModal from './link-chat-modal';
 import SuggestTaskModal from './suggest-task-modal';
+import { apiFetch } from '../lib/apiFetch';
 
 const CHANNEL_OPTIONS = ['all', 'email', 'teams', 'linkedin'];
 const CHANNEL_LABELS = { all: 'All', email: 'Email', teams: 'Teams', linkedin: 'LinkedIn' };
@@ -201,7 +202,7 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
     }
     setLoadingLi(true);
     setLiError(null);
-    fetch(`/api/unipile?action=get-chats&account_id=${myUnipileAccountId}&limit=50`)
+    apiFetch(`/api/unipile?action=get-chats&account_id=${myUnipileAccountId}&limit=50`)
       .then(r => r.json())
       .then(j => {
         if (j.error) throw new Error(j.error);
@@ -212,7 +213,7 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
         // failures silently so a single broken chat doesn't blank the list).
         Promise.all(items.map(async chat => {
           try {
-            const r = await fetch(`/api/unipile?action=get-chat-attendees&chat_id=${chat.id}`);
+            const r = await apiFetch(`/api/unipile?action=get-chat-attendees&chat_id=${chat.id}`);
             const data = await r.json();
             const attendees = data.data?.items || [];
             // Pick the first attendee whose provider_id is NOT the logged-in user
@@ -708,7 +709,7 @@ function ChatThreadPane({ chat, channel, localMessages, userFirstName, myUnipile
     }
 
     if (channel === 'linkedin') {
-      fetch(`/api/unipile?action=get-messages&chat_id=${chat.chatId}`)
+      apiFetch(`/api/unipile?action=get-messages&chat_id=${chat.chatId}`)
         .then(r => r.json())
         .then(j => {
           if (j.error) throw new Error(j.error);
@@ -758,7 +759,7 @@ function ChatThreadPane({ chat, channel, localMessages, userFirstName, myUnipile
     try {
       let result;
       if (channel === 'linkedin') {
-        const resp = await fetch('/api/unipile?action=send-message', {
+        const resp = await apiFetch('/api/unipile?action=send-message', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ chat_id: chat.chatId, text }),
