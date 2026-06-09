@@ -420,22 +420,27 @@ function CoverageTab({ accounts = [], onPickAccount }) {
 // Maps each operational Glint project onto the Viva Glint listening loop and
 // shows the next best action + cross-sell SKU per phase. Grounded in
 // docs/glint-customer-journey-playbook-2026-06-07.md (MS Learn + PS data).
+// Seven-phase Viva Glint listening loop, split by who leads (CS technical / PS
+// advisory). Each phase carries its timing, next best action and cross-sell SKU.
 const JOURNEY_PHASES = [
-  { key: 'design',  label: 'Vision & Design',        when: 'T−8 to −3 wks',    action: 'Scope next cycle; run a paid Vision & Strategy / Holistic Listening workshop, design items.', sku: 'Holistic Listening workshop' },
-  { key: 'launch',  label: 'Launch & Fielding',      when: 'T−2 wks → close',  action: 'Comms kit, manager pre-brief, live-response monitoring.', sku: 'CS bucket of hours' },
-  { key: 'review',  label: 'Results & Insight Review', when: 'close +3d to +2 wks', action: 'Exec readout + Insight Review presentation.', sku: 'Board-narrative add-on' },
-  { key: 'enable',  label: 'Manager enablement',     when: 'close +2–4 wks',   action: 'ACT-conversation + HRBP training so managers act on results.', sku: 'Manager enablement SKU' },
-  { key: 'action',  label: 'Action & Focus Areas',   when: 'close +4 & +8 wks', action: 'Focus-area facilitation; week-4 / week-8 action check-ins.', sku: 'Action-coaching retainer' },
-  { key: 'sustain', label: 'Sustain / Pulse',        when: 'mid-cycle, +3–6 mo', action: 'Viva Pulse follow-up + quarterly engagement-health check + platform optimisation.', sku: 'Quarterly retainer' },
+  { key: 'design',    lead: 'PS', label: 'Strategy & design',         when: '~8 wks before',    action: 'Vision & Strategy / Holistic Listening workshop; plan the cycle, design items.', sku: 'Holistic Listening workshop' },
+  { key: 'configure', lead: 'CS', label: 'Configure & QA',           when: '~4 wks before',    action: 'Build & test the survey; pick program type; draft comms.', sku: 'CS configuration' },
+  { key: 'launch',    lead: 'CS', label: 'Launch',                   when: 'launch day',       action: 'Announce, go live, manager pre-brief, launch comms.', sku: 'Launch support' },
+  { key: 'live',      lead: 'CS', label: 'Survey live',              when: '2–3 wks live',     action: 'Monitor participation; 72h reminder before close (14-day window).', sku: 'CS bucket of hours' },
+  { key: 'rollout',   lead: 'PS', label: 'Close & results rollout',  when: 'days after close', action: 'Staged comms: ~1 day "what\'s next", ~3–4 days results, ~5–7 days manager guide.', sku: 'Managed results rollout' },
+  { key: 'review',    lead: 'PS', label: 'Insights review & action', when: '1–3 wks after',    action: 'Insight Review + facilitated action-planning workshop; wk-4 / wk-8 check-ins.', sku: 'Action-planning workshop' },
+  { key: 'embed',     lead: 'PS', label: 'Enablement & embedding',   when: 'months after',     action: 'Manager/HRBP training, Team Conversations + Nudges, Pulse, quarterly retainer.', sku: 'Enablement + quarterly retainer' },
 ];
-const PHASE_TINT = { design: '#6366F1', launch: '#3B82F6', review: '#1D9E75', enable: '#EAB308', action: '#E2734B', sustain: '#8B5CF6' };
+const LEAD_COLOR = { CS: '#185FA5', PS: '#0F6E56' };  // CS technical (blue) · PS advisory (teal)
+const JOURNEY_KEYS = new Set(JOURNEY_PHASES.map(p => p.key));
 
 function phaseOfProject(r) {
+  if (r.journey_stage && JOURNEY_KEYS.has(r.journey_stage)) return r.journey_stage; // manual placement wins
   const s = (r.status || '').toLowerCase();
-  if (s === 'completed') return 'sustain';        // finished a cycle → between-cycle, ripe for the retainer
+  if (s === 'completed') return 'embed';            // finished a cycle → between-cycle / retainer
   if (s === 'not started' || s === '') return 'design';
-  if (r.next_milestone_label || r.next_milestone_date) return 'review'; // in progress + a delivery milestone → at/near readout
-  return 'launch';
+  if (r.next_milestone_label || r.next_milestone_date) return 'review';
+  return 'live';
 }
 
 // Light keyword flags from the free-text notes — surface risk / expansion signals.
@@ -448,7 +453,8 @@ function projectFlags(r) {
   return flags;
 }
 
-function JourneyBoard({ rows = [], accById = new Map(), onPickAccount, includeCompleted }) {
+function JourneyBoard({ rows = [], accById = new Map(), onPickAccount, includeCompleted, onMove }) {
+  const [over, setOver] = useState(null);
   const projects = (rows || []).filter(r => r.client_name && (includeCompleted || (r.status || '').toLowerCase() !== 'completed'));
   const byPhase = Object.fromEntries(JOURNEY_PHASES.map(p => [p.key, []]));
   projects.forEach(r => { byPhase[phaseOfProject(r)].push(r); });
@@ -457,19 +463,19 @@ function JourneyBoard({ rows = [], accById = new Map(), onPickAccount, includeCo
     const acc = r.company_id ? accById.get(r.company_id) : null;
     const flags = projectFlags(r);
     return (
-      <div key={r.id} style={{ border: '0.5px solid var(--sep)', borderRadius: 7, padding: '7px 9px', marginBottom: 7, background: 'var(--bg-1)' }}>
+      <div key={r.id} draggable
+        onDragStart={(e) => { e.dataTransfer.setData('text/plain', r.id); e.dataTransfer.effectAllowed = 'move'; }}
+        style={{ border: '0.5px solid var(--sep)', borderRadius: 7, padding: '6px 9px', marginBottom: 7, background: 'var(--bg-1)', height: 74, boxSizing: 'border-box', overflow: 'hidden', cursor: 'grab' }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
           <span onClick={() => acc && onPickAccount && onPickAccount(acc)}
-            style={{ fontWeight: 600, fontSize: 12.5, color: acc && onPickAccount ? 'var(--accent)' : 'var(--text-1)', cursor: acc && onPickAccount ? 'pointer' : 'default' }}>
-            {r.client_name}
-          </span>
-          {acc?.accountNo && <span style={{ fontSize: 9.5, fontFamily: 'var(--font-mono)', color: 'var(--text-3)' }}>{acc.accountNo}</span>}
+            style={{ fontWeight: 600, fontSize: 12, color: acc && onPickAccount ? 'var(--accent)' : 'var(--text-1)', cursor: acc && onPickAccount ? 'pointer' : 'default', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.client_name}</span>
+          {acc?.accountNo && <span style={{ fontSize: 9, fontFamily: 'var(--font-mono)', color: 'var(--text-3)' }}>{acc.accountNo}</span>}
         </div>
-        {r.project_name && <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 1 }}>{r.project_name}</div>}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 5, fontSize: 10 }}>
-          {r.next_milestone_label && <span style={{ color: 'var(--text-2)', fontFamily: 'var(--font-mono)' }}>◷ {r.next_milestone_label}</span>}
-          {flags.map(f => (
-            <span key={f.label} style={{ padding: '1px 6px', borderRadius: 6, fontWeight: 500,
+        {r.project_name && <div style={{ fontSize: 10.5, color: 'var(--text-3)', marginTop: 1, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.project_name}</div>}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 5, fontSize: 9.5, overflow: 'hidden' }}>
+          {r.next_milestone_label && <span style={{ color: 'var(--text-2)', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>◷ {r.next_milestone_label}</span>}
+          {flags.slice(0, 1).map(f => (
+            <span key={f.label} style={{ padding: '1px 6px', borderRadius: 6, fontWeight: 500, whiteSpace: 'nowrap',
               background: f.kind === 'risk' ? 'rgba(226,75,74,.14)' : 'rgba(29,158,117,.14)',
               color: f.kind === 'risk' ? '#E24B4A' : '#1D9E75' }}>{f.label}</span>
           ))}
@@ -481,27 +487,34 @@ function JourneyBoard({ rows = [], accById = new Map(), onPickAccount, includeCo
   return (
     <div>
       <div style={{ fontSize: 12, color: 'var(--text-3)', margin: '0 0 10px' }}>
-        Where each operational client sits in the Viva Glint listening loop, and the next best action / cross-sell to keep them moving.
-        Stage is inferred from project status + milestone (can be made an explicit field later).
-        Full rationale: <a href="/glint-customer-journey-playbook-2026-06-07.md" target="_blank" rel="noreferrer" style={{ color: 'var(--accent)' }}>journey playbook</a>.
+        Where each operational client sits in the Viva Glint listening loop, with the next best action / cross-sell per phase.
+        Lane colour = who leads (<span style={{ color: LEAD_COLOR.CS, fontWeight: 600 }}>■ CS technical</span> · <span style={{ color: LEAD_COLOR.PS, fontWeight: 600 }}>■ PS advisory</span>).
+        Drag a card between lanes to set its stage. Full rationale: <a href="/glint-customer-journey-playbook-2026-06-07.md" target="_blank" rel="noreferrer" style={{ color: 'var(--accent)' }}>journey playbook</a>.
       </div>
-      <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 6 }}>
-        {JOURNEY_PHASES.map(p => (
-          <div key={p.key} style={{ flex: '1 0 220px', minWidth: 220, background: 'var(--bg-0)', border: '0.5px solid var(--sep)', borderRadius: 9, padding: 9 }}>
-            <div style={{ borderTop: `3px solid ${PHASE_TINT[p.key]}`, borderRadius: 2, paddingTop: 7 }}>
-              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
-                <span style={{ fontWeight: 600, fontSize: 12 }}>{p.label}</span>
-                <span style={{ fontSize: 11, color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>{byPhase[p.key].length}</span>
+      <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 6, alignItems: 'flex-start' }}>
+        {JOURNEY_PHASES.map(p => {
+          const lc = LEAD_COLOR[p.lead];
+          return (
+            <div key={p.key}
+              onDragOver={(e) => { e.preventDefault(); if (over !== p.key) setOver(p.key); }}
+              onDragLeave={() => setOver(o => (o === p.key ? null : o))}
+              onDrop={(e) => { e.preventDefault(); const id = e.dataTransfer.getData('text/plain'); setOver(null); if (id && onMove) onMove(id, p.key); }}
+              style={{ flex: '1 0 230px', minWidth: 230, background: over === p.key ? 'var(--fill-1)' : 'var(--bg-0)', border: `0.5px solid ${over === p.key ? lc : 'var(--sep)'}`, borderRadius: 9, padding: 9 }}>
+              <div style={{ borderTop: `3px solid ${lc}`, borderRadius: 2, paddingTop: 7 }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 6 }}>
+                  <span style={{ fontWeight: 600, fontSize: 12 }}>{p.label}</span>
+                  <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: lc, fontWeight: 600 }}>{p.lead}</span>
+                </div>
+                <div style={{ fontSize: 10, color: 'var(--text-3)', fontFamily: 'var(--font-mono)', margin: '1px 0 4px' }}>{p.when} · {byPhase[p.key].length}</div>
+                <div style={{ fontSize: 10.5, color: 'var(--text-2)', lineHeight: 1.35, marginBottom: 4, minHeight: 42 }}>{p.action}</div>
+                <div style={{ fontSize: 10, color: lc, fontWeight: 500, marginBottom: 9 }}>＋ {p.sku}</div>
               </div>
-              <div style={{ fontSize: 10, color: 'var(--text-3)', fontFamily: 'var(--font-mono)', margin: '1px 0 4px' }}>{p.when}</div>
-              <div style={{ fontSize: 10.5, color: 'var(--text-2)', lineHeight: 1.35, marginBottom: 4 }}>{p.action}</div>
-              <div style={{ fontSize: 10, color: PHASE_TINT[p.key], fontWeight: 500, marginBottom: 9 }}>＋ {p.sku}</div>
+              {byPhase[p.key].length === 0
+                ? <div style={{ fontSize: 11, color: 'var(--text-4)', fontStyle: 'italic', padding: '6px 2px' }}>{p.key === 'embed' ? 'No one in a between-cycle retainer yet — the gap.' : 'Drop a client here'}</div>
+                : byPhase[p.key].map(card)}
             </div>
-            {byPhase[p.key].length === 0
-              ? <div style={{ fontSize: 11, color: 'var(--text-4)', fontStyle: 'italic', padding: '6px 2px' }}>{p.key === 'sustain' ? 'No one in a sustain retainer yet — the gap.' : 'No clients here'}</div>
-              : byPhase[p.key].map(card)}
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );
@@ -511,6 +524,10 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount }
   const [tab, setTab] = useState('projects');
   const [rows, setRows] = useState([]);
   const [journeyAll, setJourneyAll] = useState(false);
+  const moveJourney = useCallback(async (id, stage) => {
+    setRows(prev => prev.map(r => (r.id === id ? { ...r, journey_stage: stage } : r)));   // optimistic
+    try { await supabase.from('glint_delivery').update({ journey_stage: stage }).eq('id', id); } catch (_) { /* keep UI state */ }
+  }, []);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState(null);
@@ -686,7 +703,7 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount }
         )}
       </div>
 
-      {tab === 'journey' && <JourneyBoard rows={rows} accById={accById} onPickAccount={onPickAccount} includeCompleted={journeyAll} />}
+      {tab === 'journey' && <JourneyBoard rows={rows} accById={accById} onPickAccount={onPickAccount} includeCompleted={journeyAll} onMove={moveJourney} />}
 
       {tab === 'insights' && <InsightsMatrix accounts={accounts} pscByAccount={pscByAccount} teamByAccount={teamByAccount} operationalAccIds={operationalAccIds} signedByAccount={signedByAccount} onPickAccount={onPickAccount} />}
 

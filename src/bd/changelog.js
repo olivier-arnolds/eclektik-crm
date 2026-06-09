@@ -19,9 +19,33 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.31.0';
+export const CURRENT_VERSION = '1.32.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.32.0',
+    date: '2026-06-09T10:30:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feat',
+    title: 'Customer journey board: 7 phases, CS/PS lanes, drag-to-move, equal cards',
+    summary:
+      'Reworked the War room Customer-journey board to the 7-phase Viva Glint loop (Strategy & design → Configure & QA → Launch → Survey live → Close & results rollout → Insights review & action → Enablement & embedding), colour-coded by who leads (CS technical / PS advisory). Cards are now uniform size and can be dragged between lanes; the placement persists in glint_delivery.journey_stage (overrides the inferred stage). Playbook doc refreshed with the exact MS cadence + dormancy argument.',
+    changes: [
+      'lane-warroom.jsx: 7-phase JOURNEY_PHASES with lead split + LEAD_COLOR; phaseOfProject honours journey_stage; equal-height draggable cards; lanes are drop targets; moveJourney persists to glint_delivery.',
+      'glint_delivery: new journey_stage column (backup _dq_backup_glint_delivery_20260609); not written by the sync, so it survives re-syncs.',
+      'docs + public glint-customer-journey-playbook refreshed (MS staged-comms cadence, CS/PS streams, between-cycle/dormancy strategy).',
+    ],
+    files: [
+      'src/bd/lane-warroom.jsx',
+      'public/glint-customer-journey-playbook-2026-06-07.md',
+      'docs/glint-customer-journey-playbook-2026-06-07.md',
+      'sql/schema_glint_delivery_journey_stage_2026-06-09.sql',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.32.0',
+  },
   {
     version: '1.31.0',
     date: '2026-06-09T12:00:00Z',
