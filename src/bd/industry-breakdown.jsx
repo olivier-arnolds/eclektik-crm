@@ -92,6 +92,45 @@ const card = { background: 'var(--bg-1)', border: '0.5px solid var(--sep)', bord
 const muted = { color: 'var(--text-3)' };
 const mono = { fontFamily: 'var(--font-mono)' };
 
+// Classic three-tier market division. Headcount is the primary signal (cleanest
+// data); annual revenue is the fallback. Tiers: SMB 1-100 emp / <$50M, Mid-Market
+// 100-1,000 / $50M-$1B, Enterprise 1,000+ / >$1B.
+const TIERS = ['Enterprise', 'Mid-Market', 'SMB', 'Unknown'];
+const TIER_COLOR = { 'Enterprise': '#2D6A9F', 'Mid-Market': '#3FA796', 'SMB': '#E0A458', 'Unknown': '#9AA0A6' };
+const TIER_SHORT = { 'Enterprise': 'Ent', 'Mid-Market': 'Mid', 'SMB': 'SMB', 'Unknown': '?' };
+
+function tierOf(c) {
+  // 1) headcount
+  const empRaw = String(c.employee_count || '').replace(/[^0-9.]/g, '');
+  const emp = empRaw ? parseFloat(empRaw) : NaN;
+  if (Number.isFinite(emp) && emp > 0) {
+    if (emp < 100) return 'SMB';
+    if (emp < 1000) return 'Mid-Market';
+    return 'Enterprise';
+  }
+  // 2) revenue — handles bands ("50-100M", "1-5B") and raw dollar numbers
+  const rev = String(c.annual_revenue || '').trim();
+  if (rev) {
+    const band = rev.match(/(\d+(?:\.\d+)?)\s*-\s*(\d+(?:\.\d+)?)\s*([MB])/i);
+    if (band) {
+      const lowerM = band[3].toUpperCase() === 'B' ? parseFloat(band[1]) * 1000 : parseFloat(band[1]);
+      if (lowerM < 50) return 'SMB';
+      if (lowerM < 1000) return 'Mid-Market';
+      return 'Enterprise';
+    }
+    const num = parseFloat(rev.replace(/[^0-9.]/g, ''));
+    if (Number.isFinite(num) && num > 0) {
+      const dollars = num >= 1e6 ? num : num * 1e6; // bare numbers assumed $M
+      if (dollars < 50e6) return 'SMB';
+      if (dollars < 1e9) return 'Mid-Market';
+      return 'Enterprise';
+    }
+  }
+  return 'Unknown';
+}
+
+const emptyTiers = () => ({ 'Enterprise': 0, 'Mid-Market': 0, 'SMB': 0, 'Unknown': 0 });
+
 export default function IndustryBreakdown({ companies = [] }) {
   const [open, setOpen] = useState(null);
 
@@ -101,21 +140,37 @@ export default function IndustryBreakdown({ companies = [] }) {
     for (const c of companies) {
       if (c.type !== 'Customer' && c.type !== 'Prospect') continue;
       const s = sectorOf(c.industry);
-      acc[s] = acc[s] || { sector: s, clients: 0, prospects: 0, clientNames: [], prospectNames: [] };
-      if (c.type === 'Customer') { acc[s].clients += 1; acc[s].clientNames.push(c.name || '—'); tc += 1; }
-      else { acc[s].prospects += 1; acc[s].prospectNames.push(c.name || '—'); tp += 1; }
+      const t = tierOf(c);
+      acc[s] = acc[s] || { sector: s, clients: 0, prospects: 0, clientNames: [], prospectNames: [], clientTiers: emptyTiers(), prospectTiers: emptyTiers() };
+      if (c.type === 'Customer') { acc[s].clients += 1; acc[s].clientNames.push({ name: c.name || '—', tier: t }); acc[s].clientTiers[t] += 1; tc += 1; }
+      else { acc[s].prospects += 1; acc[s].prospectNames.push({ name: c.name || '—', tier: t }); acc[s].prospectTiers[t] += 1; tp += 1; }
     }
-    const sortAZ = (a, b) => String(a).localeCompare(String(b));
+    const sortAZ = (a, b) => String(a.name).localeCompare(String(b.name));
     Object.values(acc).forEach((s) => { s.clientNames.sort(sortAZ); s.prospectNames.sort(sortAZ); });
     const list = Object.values(acc).sort((a, b) => (b.clients - a.clients) || (b.prospects - a.prospects));
     const max = list.reduce((m, s) => Math.max(m, s.clients, s.prospects), 1);
     return { sectors: list, totalClients: tc, totalProspects: tp, maxVal: max };
   }, [companies]);
 
-  const Bar = ({ value, color }) => (
-    <div style={{ position: 'relative', height: 15, background: 'var(--fill-1)', borderRadius: 4, overflow: 'hidden' }}>
-      <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${(value / maxVal) * 100}%`, minWidth: value ? 2 : 0, background: color, borderRadius: 4 }} />
-      <span style={{ position: 'absolute', right: 6, top: 0, lineHeight: '15px', fontSize: 10.5, ...mono, color: 'var(--text-2)' }}>{value}</span>
+  // One bar = one type (clients / prospects), segmented by tier. Segment width is
+  // relative to the global max so bars stay comparable across sectors.
+  const TierBar = ({ tiers, total, tag, tagColor }) => (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+      <span style={{ width: 52, flex: '0 0 52px', fontSize: 9.5, ...mono, color: tagColor, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{tag}</span>
+      <div style={{ position: 'relative', flex: 1, height: 15, background: 'var(--fill-1)', borderRadius: 4, overflow: 'hidden', display: 'flex' }}>
+        {total > 0 && TIERS.map((t) => {
+          const cnt = tiers[t] || 0;
+          if (!cnt) return null;
+          const w = (cnt / maxVal) * 100;
+          return (
+            <div key={t} title={`${t} · ${cnt}`}
+              style={{ width: `${w}%`, minWidth: 2, background: TIER_COLOR[t], display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9.5, ...mono, color: '#fff', boxShadow: 'inset -1px 0 0 var(--bg-1)' }}>
+              {w > 7 ? cnt : ''}
+            </div>
+          );
+        })}
+      </div>
+      <span style={{ width: 16, flex: '0 0 16px', textAlign: 'right', fontSize: 10.5, ...mono, color: 'var(--text-2)' }}>{total}</span>
     </div>
   );
 
@@ -125,7 +180,10 @@ export default function IndustryBreakdown({ companies = [] }) {
       {names.length
         ? <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
             {names.map((n) => (
-              <span key={n} style={{ fontSize: 11.5, color: 'var(--text-2)', background: 'var(--fill-1)', borderRadius: 6, padding: '2px 8px' }}>{n}</span>
+              <span key={n.name} style={{ fontSize: 11.5, color: 'var(--text-2)', background: 'var(--fill-1)', borderRadius: 6, padding: '2px 8px', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                {n.name}
+                <span style={{ fontSize: 9, ...mono, color: '#fff', background: TIER_COLOR[n.tier], borderRadius: 4, padding: '1px 4px' }}>{TIER_SHORT[n.tier]}</span>
+              </span>
             ))}
           </div>
         : <div style={{ fontSize: 11.5, ...muted }}>none</div>}
@@ -137,11 +195,20 @@ export default function IndustryBreakdown({ companies = [] }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 12, flexWrap: 'wrap' }}>
         <div>
           <div style={{ fontSize: 14, fontWeight: 500 }}>Industries · clients vs prospects</div>
-          <div style={{ fontSize: 12, ...muted, marginTop: 2 }}>Click a sector to see the accounts. Client = type Customer, prospect = type Prospect.</div>
+          <div style={{ fontSize: 12, ...muted, marginTop: 2 }}>Click a sector to see the accounts. Each bar is split by company size tier (headcount, revenue fallback).</div>
         </div>
-        <div style={{ display: 'flex', gap: 14, fontSize: 11.5, ...muted }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ width: 10, height: 10, borderRadius: 2, background: 'var(--good)' }} />Clients ({totalClients})</span>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ width: 10, height: 10, borderRadius: 2, background: 'var(--accent)' }} />Prospects ({totalProspects})</span>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end' }}>
+          <div style={{ display: 'flex', gap: 14, fontSize: 11.5, ...muted }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ width: 10, height: 10, borderRadius: 2, background: 'var(--good)' }} />Clients ({totalClients})</span>
+            <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ width: 10, height: 10, borderRadius: 2, background: 'var(--accent)' }} />Prospects ({totalProspects})</span>
+          </div>
+          <div style={{ display: 'flex', gap: 10, fontSize: 11, ...muted }}>
+            {TIERS.map((t) => (
+              <span key={t} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <span style={{ width: 9, height: 9, borderRadius: 2, background: TIER_COLOR[t] }} />{t}
+              </span>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -160,8 +227,8 @@ export default function IndustryBreakdown({ companies = [] }) {
                   <span style={{ display: 'inline-block', width: 12, ...muted }}>{isOpen ? '▾' : '▸'}</span>{s.sector}
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                  <Bar value={s.clients} color="var(--good)" />
-                  <Bar value={s.prospects} color="var(--accent)" />
+                  <TierBar tiers={s.clientTiers} total={s.clients} tag="Clients" tagColor="var(--good)" />
+                  <TierBar tiers={s.prospectTiers} total={s.prospects} tag="Prospects" tagColor="var(--accent)" />
                 </div>
               </div>
               {isOpen && (

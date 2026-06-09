@@ -19,9 +19,24 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.34.4';
+export const CURRENT_VERSION = '1.34.5';
 
 export const CHANGELOG = [
+  {
+    version: '1.34.5',
+    date: '2026-06-09T16:40:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feat',
+    title: 'Reporting: Industries breakdown now split by market tier (SMB / Mid-Market / Enterprise)',
+    summary:
+      'Each Industries · clients vs prospects bar is now segmented by the classic three-tier market division: SMB (1-100 employees / <$50M), Mid-Market (100-1,000 / $50M-$1B) and Enterprise (1,000+ / >$1B). Tier is derived from company headcount (primary, cleanest data) with annual revenue as a fallback (handles both band strings like "50-100M" and raw dollar figures). Segment widths show the count per tier; the expanded account list tags each company with its tier. Added a tier legend.',
+    changes: [
+      'industry-breakdown.jsx: tierOf() classifier (headcount, revenue fallback); bars rendered as stacked tier segments; tier legend; tier tag on each account chip.',
+      'lane-reporting.jsx: companies query now also selects employee_count + annual_revenue.',
+    ],
+    files: ['src/bd/industry-breakdown.jsx', 'src/bd/lane-reporting.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.34.5',
+  },
   {
     version: '1.34.4',
     date: '2026-06-09T16:05:00Z',

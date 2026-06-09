@@ -87,7 +87,7 @@ export function useReportingData() {
         supabase.from('opportunities')
           .select('id,company_id,company_name,status,stage,product_line,est_revenue,actual_revenue,probability,close_date,actual_close_date,currency')
           .limit(2000),
-        supabase.from('companies').select('id,name,type,country,industry').limit(2000),
+        supabase.from('companies').select('id,name,type,country,industry,employee_count,annual_revenue').limit(2000),
         supabase.from('account_links').select('account_id,contact_id,role').eq('link_type', 'eclectik_team').limit(2000),
         supabase.from('contacts').select('id,first_name,last_name,full_name,title').limit(2000),
       ]);
