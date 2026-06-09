@@ -19,9 +19,25 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.34.6';
+export const CURRENT_VERSION = '1.35.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.35.0',
+    date: '2026-06-09T20:55:18Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feat',
+    title: 'First automated test suite: vitest over the adapter business logic',
+    summary:
+      'Adds vitest (dev-only, no runtime impact) and an 18-test suite over src/bd/adapters.js — the layer where stage encoding, owner mapping and drag-drop DB writes live, and where past bugs (first-name owner rows hiding tasks, sleeping-stage deals disappearing) originated. Covers ownerIdFromName (full names, first-name legacy rows, initials fallback), adaptDeal\'s 7-column stage derivation (past+Won → sleeping, past+Lost → close, sub_status fallback, leads/opportunities table mapping), stageUpdates for all 7 drop targets on both tables (incl. the "leads have no stage column" contract), and the stage-model invariants (column order, win probabilities). Run with `npm test`. Also corrects a stale CLAUDE.md §3 note: the per-view Topbar/modal duplication was already collapsed into one shell back in v1.2.0.',
+    changes: [
+      'package.json: vitest devDependency + `npm test` script (vitest run).',
+      'src/bd/adapters.test.js: 18 tests over ownerIdFromName, adaptDeal stage derivation, stageUpdates, STAGES/STAGE_PROBABILITY invariants.',
+      'CLAUDE.md: §3 note about per-view Topbar/modal duplication updated to reflect the unified shell (since v1.2.0).',
+    ],
+    files: ['package.json', 'package-lock.json', 'src/bd/adapters.test.js', 'CLAUDE.md', 'src/bd/changelog.js', 'VERSION'],
+    gitTag: 'v1.35.0',
+  },
   {
     version: '1.34.6',
     date: '2026-06-09T17:30:00Z',
