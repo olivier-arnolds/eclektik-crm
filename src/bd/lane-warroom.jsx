@@ -416,9 +416,101 @@ function CoverageTab({ accounts = [], onPickAccount }) {
   );
 }
 
+// ── Customer journey playbook (planning board) ──────────────────────────────
+// Maps each operational Glint project onto the Viva Glint listening loop and
+// shows the next best action + cross-sell SKU per phase. Grounded in
+// docs/glint-customer-journey-playbook-2026-06-07.md (MS Learn + PS data).
+const JOURNEY_PHASES = [
+  { key: 'design',  label: 'Vision & Design',        when: 'T−8 to −3 wks',    action: 'Scope next cycle; run a paid Vision & Strategy / Holistic Listening workshop, design items.', sku: 'Holistic Listening workshop' },
+  { key: 'launch',  label: 'Launch & Fielding',      when: 'T−2 wks → close',  action: 'Comms kit, manager pre-brief, live-response monitoring.', sku: 'CS bucket of hours' },
+  { key: 'review',  label: 'Results & Insight Review', when: 'close +3d to +2 wks', action: 'Exec readout + Insight Review presentation.', sku: 'Board-narrative add-on' },
+  { key: 'enable',  label: 'Manager enablement',     when: 'close +2–4 wks',   action: 'ACT-conversation + HRBP training so managers act on results.', sku: 'Manager enablement SKU' },
+  { key: 'action',  label: 'Action & Focus Areas',   when: 'close +4 & +8 wks', action: 'Focus-area facilitation; week-4 / week-8 action check-ins.', sku: 'Action-coaching retainer' },
+  { key: 'sustain', label: 'Sustain / Pulse',        when: 'mid-cycle, +3–6 mo', action: 'Viva Pulse follow-up + quarterly engagement-health check + platform optimisation.', sku: 'Quarterly retainer' },
+];
+const PHASE_TINT = { design: '#6366F1', launch: '#3B82F6', review: '#1D9E75', enable: '#EAB308', action: '#E2734B', sustain: '#8B5CF6' };
+
+function phaseOfProject(r) {
+  const s = (r.status || '').toLowerCase();
+  if (s === 'completed') return 'sustain';        // finished a cycle → between-cycle, ripe for the retainer
+  if (s === 'not started' || s === '') return 'design';
+  if (r.next_milestone_label || r.next_milestone_date) return 'review'; // in progress + a delivery milestone → at/near readout
+  return 'launch';
+}
+
+// Light keyword flags from the free-text notes — surface risk / expansion signals.
+function projectFlags(r) {
+  const t = `${r.notes || ''} ${r.project_name || ''}`.toLowerCase();
+  const flags = [];
+  if (t.includes('qualtrics') || t.includes('workday')) flags.push({ kind: 'risk', label: 'Churn / platform risk' });
+  if (t.includes('bucket') || t.includes('optimis') || t.includes('optimiz') || t.includes('new feature')) flags.push({ kind: 'grow', label: 'Expansion signal' });
+  if (t.includes('2 surveys') || t.includes('two surveys') || t.includes('october survey') || t.includes('spring survey')) flags.push({ kind: 'grow', label: 'Multi-cycle' });
+  return flags;
+}
+
+function JourneyBoard({ rows = [], accById = new Map(), onPickAccount, includeCompleted }) {
+  const projects = (rows || []).filter(r => r.client_name && (includeCompleted || (r.status || '').toLowerCase() !== 'completed'));
+  const byPhase = Object.fromEntries(JOURNEY_PHASES.map(p => [p.key, []]));
+  projects.forEach(r => { byPhase[phaseOfProject(r)].push(r); });
+
+  const card = (r) => {
+    const acc = r.company_id ? accById.get(r.company_id) : null;
+    const flags = projectFlags(r);
+    return (
+      <div key={r.id} style={{ border: '0.5px solid var(--sep)', borderRadius: 7, padding: '7px 9px', marginBottom: 7, background: 'var(--bg-1)' }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
+          <span onClick={() => acc && onPickAccount && onPickAccount(acc)}
+            style={{ fontWeight: 600, fontSize: 12.5, color: acc && onPickAccount ? 'var(--accent)' : 'var(--text-1)', cursor: acc && onPickAccount ? 'pointer' : 'default' }}>
+            {r.client_name}
+          </span>
+          {acc?.accountNo && <span style={{ fontSize: 9.5, fontFamily: 'var(--font-mono)', color: 'var(--text-3)' }}>{acc.accountNo}</span>}
+        </div>
+        {r.project_name && <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 1 }}>{r.project_name}</div>}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 5, fontSize: 10 }}>
+          {r.next_milestone_label && <span style={{ color: 'var(--text-2)', fontFamily: 'var(--font-mono)' }}>◷ {r.next_milestone_label}</span>}
+          {flags.map(f => (
+            <span key={f.label} style={{ padding: '1px 6px', borderRadius: 6, fontWeight: 500,
+              background: f.kind === 'risk' ? 'rgba(226,75,74,.14)' : 'rgba(29,158,117,.14)',
+              color: f.kind === 'risk' ? '#E24B4A' : '#1D9E75' }}>{f.label}</span>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div>
+      <div style={{ fontSize: 12, color: 'var(--text-3)', margin: '0 0 10px' }}>
+        Where each operational client sits in the Viva Glint listening loop, and the next best action / cross-sell to keep them moving.
+        Stage is inferred from project status + milestone (can be made an explicit field later).
+        Full rationale: <a href="/glint-customer-journey-playbook-2026-06-07.md" target="_blank" rel="noreferrer" style={{ color: 'var(--accent)' }}>journey playbook</a>.
+      </div>
+      <div style={{ display: 'flex', gap: 10, overflowX: 'auto', paddingBottom: 6 }}>
+        {JOURNEY_PHASES.map(p => (
+          <div key={p.key} style={{ flex: '1 0 220px', minWidth: 220, background: 'var(--bg-0)', border: '0.5px solid var(--sep)', borderRadius: 9, padding: 9 }}>
+            <div style={{ borderTop: `3px solid ${PHASE_TINT[p.key]}`, borderRadius: 2, paddingTop: 7 }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+                <span style={{ fontWeight: 600, fontSize: 12 }}>{p.label}</span>
+                <span style={{ fontSize: 11, color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>{byPhase[p.key].length}</span>
+              </div>
+              <div style={{ fontSize: 10, color: 'var(--text-3)', fontFamily: 'var(--font-mono)', margin: '1px 0 4px' }}>{p.when}</div>
+              <div style={{ fontSize: 10.5, color: 'var(--text-2)', lineHeight: 1.35, marginBottom: 4 }}>{p.action}</div>
+              <div style={{ fontSize: 10, color: PHASE_TINT[p.key], fontWeight: 500, marginBottom: 9 }}>＋ {p.sku}</div>
+            </div>
+            {byPhase[p.key].length === 0
+              ? <div style={{ fontSize: 11, color: 'var(--text-4)', fontStyle: 'italic', padding: '6px 2px' }}>{p.key === 'sustain' ? 'No one in a sustain retainer yet — the gap.' : 'No clients here'}</div>
+              : byPhase[p.key].map(card)}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function WarRoomLane({ accounts = [], deals = [], onPickAccount }) {
   const [tab, setTab] = useState('projects');
   const [rows, setRows] = useState([]);
+  const [journeyAll, setJourneyAll] = useState(false);
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState(null);
@@ -560,7 +652,7 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount }
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 12 }}>
         <div style={{ fontSize: 16, fontWeight: 500 }}>War room</div>
         <div style={{ display: 'flex', gap: 6 }}>
-          {[['projects', 'Projects'], ['insights', 'Insights review'], ['coverage', 'Client coverage']].map(([t, label]) => (
+          {[['projects', 'Projects'], ['journey', 'Customer journey'], ['insights', 'Insights review'], ['coverage', 'Client coverage']].map(([t, label]) => (
             <button key={t} className="btn-ghost tiny" onClick={() => setTab(t)}
               style={{ fontWeight: tab === t ? 500 : 400, color: tab === t ? 'var(--text-1)' : 'var(--text-3)', borderBottom: `2px solid ${tab === t ? 'var(--accent)' : 'transparent'}`, borderRadius: 0 }}>
               {label}
@@ -568,6 +660,12 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount }
           ))}
         </div>
         <div style={{ flex: 1 }} />
+        {tab === 'journey' && (
+          <label style={{ fontSize: 11, color: 'var(--text-2)', display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer', alignSelf: 'center' }}>
+            <input type="checkbox" checked={journeyAll} onChange={e => setJourneyAll(e.target.checked)} />
+            include completed (between-cycle)
+          </label>
+        )}
         {tab === 'projects' && (
           <>
             <div style={{ fontSize: 11, color: 'var(--text-3)', textAlign: 'right', lineHeight: 1.5 }}>
@@ -587,6 +685,8 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount }
           </>
         )}
       </div>
+
+      {tab === 'journey' && <JourneyBoard rows={rows} accById={accById} onPickAccount={onPickAccount} includeCompleted={journeyAll} />}
 
       {tab === 'insights' && <InsightsMatrix accounts={accounts} pscByAccount={pscByAccount} teamByAccount={teamByAccount} operationalAccIds={operationalAccIds} signedByAccount={signedByAccount} onPickAccount={onPickAccount} />}
 

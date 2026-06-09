@@ -19,9 +19,30 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.30.1';
+export const CURRENT_VERSION = '1.31.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.31.0',
+    date: '2026-06-09T12:00:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feature',
+    title: 'War room: Customer journey playbook (planning board)',
+    summary:
+      'New War room tab "Customer journey" — a planning board that places each operational Glint ' +
+      'client into the Viva Glint listening loop (Vision & Design → Launch → Insight Review → ' +
+      'Manager enablement → Action → Sustain/Pulse), with the next best action and cross-sell SKU ' +
+      'per phase, plus churn/expansion flags from the project notes. (Re-applied on top of v1.30.1 ' +
+      'after the original v1.23.0 was superseded by concurrent work.)',
+    changes: [
+      'lane-warroom.jsx: JourneyBoard component + "Customer journey" tab; stage inferred from project status/milestone; "include completed (between-cycle)" toggle.',
+      'Cards link to the Account 360, show the account number, milestone, and risk/expansion badges (e.g. Qualtrics/Workday = churn risk, bucket/optimisation = expansion).',
+      'Empty Sustain column intentionally highlights the retainer gap.',
+      'Links to the grounding doc, served at /glint-customer-journey-playbook-2026-06-07.md (also in docs/).',
+    ],
+    files: ['src/bd/lane-warroom.jsx', 'public/glint-customer-journey-playbook-2026-06-07.md', 'docs/glint-customer-journey-playbook-2026-06-07.md', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.31.0',
+  },
   {
     version: '1.30.1',
     date: '2026-06-09T09:10:00Z',
