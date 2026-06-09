@@ -97,9 +97,14 @@ useBDData (src/bd/useBDData.js)
 - **Lanes**: `lane-funnel.jsx` (deal pipeline), `lane-comms.jsx` (email/Teams/
   LinkedIn), `lane-calendar.jsx` (agenda), `lane-accounts.jsx` (Account 360).
 - **Views** in `BDApp.jsx`: workspace (3-lane), Tasks, Marketing, Admin,
-  Playbooks. Each view branch renders its own `<Topbar>` + modals — when adding
-  a global modal/prop you must add it to EVERY branch (this bit us with the
-  Feedback button).
+  Playbooks. Since v1.2.0 all views render inside ONE unified shell (single
+  `<Topbar>` / `<Statusbar>` / global-modal set at the bottom of `BDApp.jsx`);
+  only the left pane switches per view. Add global modals/props in that one
+  place. (Pre-v1.2.0 each branch duplicated the Topbar — that bit us with the
+  Feedback button; don't reintroduce it.)
+- **Tests**: `npm test` runs vitest. `src/bd/adapters.test.js` locks down the
+  stage encoding, owner mapping and `stageUpdates` drag-drop writes — run it
+  before touching `adapters.js` or `lead-promote.js`.
 - **API** in `/api/*.js` (Vercel serverless). All use `SUPABASE_SERVICE_KEY`
   (bypasses RLS). Frontend uses the anon key + auth session (`authenticated`
   role).
