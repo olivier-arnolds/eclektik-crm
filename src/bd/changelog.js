@@ -19,9 +19,38 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.34.3';
+export const CURRENT_VERSION = '1.34.4';
 
 export const CHANGELOG = [
+  {
+    version: '1.34.4',
+    date: '2026-06-09T16:05:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'fix',
+    title: 'UX/QA pass: SEER tagging inline, account scroll, Microsoft auto-load + edge-state fixes',
+    summary:
+      'Static audit of the whole front-end plus fixes for the three reported issues. (1) The inline deal panel now has a Product line picker (Glint/ROI/Seer/Insights/Other) - previously Seer could only be set in the rarely-opened modal. (2) The account core-details block (incl. industry dropdown) moved out of the fixed hero into the scroll area, so company detail scrolls properly. (3) Graph data now auto-loads the moment the Microsoft token arrives (re-runs on hasGraphToken), removing the many-clicks-after-connect friction. Also: Tasks tab no longer hangs on a failed load (added .catch), and failed Teams/LinkedIn threads now show a clear error instead of a silent empty state. Full findings + recommended next steps in docs/ux-audit-2026-06-09.md.',
+    changes: [
+      'inline-details.jsx: Product line dropdown added to InlineDealDetail (preserves non-standard existing values).',
+      'lane-accounts.jsx: moved expandable account core-details from the clipped hero into .acc-scroll.',
+      'BDApp.jsx: fetchGraphData re-runs when hasGraphToken flips true (auto-load after connect).',
+      'tasks-view.jsx: added .catch so a failed tasks fetch always clears the loading state.',
+      'lane-comms.jsx: visible error state for failed Teams/LinkedIn thread fetches (was a silent empty).',
+      'docs/ux-audit-2026-06-09.md: full prioritized audit report.',
+    ],
+    files: [
+      'src/bd/inline-details.jsx',
+      'src/bd/lane-accounts.jsx',
+      'src/bd/BDApp.jsx',
+      'src/bd/tasks-view.jsx',
+      'src/bd/lane-comms.jsx',
+      'docs/ux-audit-2026-06-09.md',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.34.4',
+  },
   {
     version: '1.34.3',
     date: '2026-06-09T15:10:00Z',

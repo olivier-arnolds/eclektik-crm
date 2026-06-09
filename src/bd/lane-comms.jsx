@@ -663,6 +663,7 @@ const PAGE_SIZE = 50;
 function ChatThreadPane({ chat, channel, localMessages, userFirstName, myUnipileAccountId, onSent }) {
   const [fetchedMessages, setFetchedMessages] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [chatErr, setChatErr] = useState(null);
   const [replyText, setReplyText] = useState('');
   const [sending, setSending] = useState(false);
   const [sendError, setSendError] = useState(null);
@@ -683,6 +684,7 @@ function ChatThreadPane({ chat, channel, localMessages, userFirstName, myUnipile
     if (!chat) { setFetchedMessages(null); return; }
     setLoading(true);
     setFetchedMessages(null);
+    setChatErr(null);
 
     if (channel === 'teams') {
       getChatMessages(chat.chatId, 200)
@@ -700,7 +702,7 @@ function ChatThreadPane({ chat, channel, localMessages, userFirstName, myUnipile
           normalized.sort((a, b) => new Date(a.ts || 0) - new Date(b.ts || 0));
           setFetchedMessages(normalized);
         })
-        .catch(err => { console.error('teams chat fetch failed', err); setFetchedMessages([]); })
+        .catch(err => { console.error('teams chat fetch failed', err); setChatErr('Could not load this Teams thread. Microsoft may need reconnecting.'); setFetchedMessages([]); })
         .finally(() => setLoading(false));
       return;
     }
@@ -725,7 +727,7 @@ function ChatThreadPane({ chat, channel, localMessages, userFirstName, myUnipile
           normalized.sort((a, b) => new Date(a.ts || 0) - new Date(b.ts || 0));
           setFetchedMessages(normalized);
         })
-        .catch(err => { console.error('linkedin chat fetch failed', err); setFetchedMessages([]); })
+        .catch(err => { console.error('linkedin chat fetch failed', err); setChatErr('Could not load this LinkedIn thread.'); setFetchedMessages([]); })
         .finally(() => setLoading(false));
       return;
     }
@@ -815,7 +817,10 @@ function ChatThreadPane({ chat, channel, localMessages, userFirstName, myUnipile
       </div>
       <div style={{ flex: 1, overflowY: 'auto', padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
         {loading && <div className="empty">Loading thread…</div>}
-        {!loading && messages.length === 0 && (
+        {!loading && chatErr && (
+          <div className="empty" style={{ color: 'var(--danger)' }}>{chatErr}</div>
+        )}
+        {!loading && !chatErr && messages.length === 0 && (
           <div className="empty">No messages in this thread</div>
         )}
         {hasOlder && (

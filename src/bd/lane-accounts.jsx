@@ -938,14 +938,14 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
           </div>
         </div>
         {account.owner && <div style={{ marginLeft: 'auto' }}><OwnerChip id={account.owner} /></div>}
-        {showCoreDetails && account.id && (
-          <div style={{ flexBasis: '100%', marginTop: 10, padding: '10px 0', borderTop: '0.5px solid var(--sep)' }}>
-            <InlineAccountDetails accountId={account.id} onPickAccount={onPickAccount} />
-          </div>
-        )}
       </div>
 
       <div className="acc-scroll">
+        {showCoreDetails && account.id && (
+          <div style={{ marginBottom: 10, paddingBottom: 10, borderBottom: '0.5px solid var(--sep)' }}>
+            <InlineAccountDetails accountId={account.id} onPickAccount={onPickAccount} />
+          </div>
+        )}
         {highlight && (
           <div className="acc-highlight">
             <div className="acc-highlight-label">{highlight.kind}</div>

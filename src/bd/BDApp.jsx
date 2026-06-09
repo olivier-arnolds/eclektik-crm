@@ -85,7 +85,7 @@ export default function BDApp() {
   const [graphEvents, setGraphEvents] = useState([]);
   const [graphLoading, setGraphLoading] = useState(false);
 
-  const { session } = useAuth();
+  const { session, hasGraphToken } = useAuth();
   const userName = session?.user?.user_metadata?.full_name || session?.user?.email || '';
   const { deals, accounts, contacts, comms, events, tasks, loading, refetch, rawAllItems, rawAccounts, rawContacts, allTags } = useBDData();
 
@@ -140,8 +140,11 @@ export default function BDApp() {
     }
 
     setGraphLoading(false);
-  }, [session?.user?.email, session?.user?.user_metadata?.full_name]);
+  }, [session?.user?.email, session?.user?.user_metadata?.full_name, hasGraphToken]);
 
+  // Runs on mount, when the session/user changes, AND the moment the Microsoft
+  // token actually arrives (hasGraphToken flips true after connecting) — so the
+  // user sees their mail/Teams/calendar without extra clicks or a manual refresh.
   useEffect(() => { fetchGraphData(); }, [fetchGraphData]);
 
   // Auto-refresh Graph data every 10 minutes while the tab is visible.

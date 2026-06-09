@@ -20,9 +20,11 @@ export default function TasksView({ accounts, contacts, onSelectTask, onPickAcco
       .order('due_date', { ascending: true })
       .limit(2000)
       .then(({ data, error }) => {
-        if (!error) setRows(data || []);
+        if (error) console.warn('Tasks load failed:', error.message);
+        else setRows(data || []);
         setLoading(false);
-      });
+      })
+      .catch(e => { console.warn('Tasks load error:', e); setLoading(false); });
   }, []);
 
   const accById = useMemo(() => new Map((accounts || []).map(a => [a.id, a])), [accounts]);
