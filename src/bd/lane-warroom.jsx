@@ -460,32 +460,40 @@ function projectFlags(r) {
   return flags;
 }
 
-function JourneyBoard({ rows = [], accById = new Map(), onPickAccount, onMove }) {
+// Initials of a contractor name ("Heidi Muhle" → "HM"); '' for blank / N/A.
+function initialsOf(name) {
+  const n = String(name || '').trim();
+  if (!n || /^n\/?a$/i.test(n)) return '';
+  const p = n.split(/\s+/);
+  return ((p[0][0] || '') + (p.length > 1 ? (p[p.length - 1][0] || '') : '')).toUpperCase();
+}
+
+function JourneyBoard({ rows = [], accById = new Map(), onPickAccount, onMove, analysedNames = [] }) {
   const [over, setOver] = useState(null);
+  const analysedNorm = (analysedNames || []).map(s => (s || '').toLowerCase().replace(/[^a-z0-9]/g, ''));
+  const hasPS = (name) => { const n = (name || '').toLowerCase().replace(/[^a-z0-9]/g, ''); if (!n) return false; return analysedNorm.some(a => a && (a === n || a.startsWith(n) || n.startsWith(a))); };
   const projects = (rows || []).filter(r => r.client_name);   // all projects, every stage
   const byPhase = Object.fromEntries(JOURNEY_PHASES.map(p => [p.key, []]));
   projects.forEach(r => { byPhase[phaseOfProject(r)].push(r); });
 
   const card = (r) => {
     const acc = r.company_id ? accById.get(r.company_id) : null;
-    const flags = projectFlags(r);
+    const ps = hasPS(r.client_name);
+    const inits = [initialsOf(r.cs_owner), initialsOf(r.ps_owner), initialsOf(r.other_contractors)].filter(Boolean).join(' · ');
     return (
       <div key={r.id} draggable
         onDragStart={(e) => { e.dataTransfer.setData('text/plain', r.id); e.dataTransfer.effectAllowed = 'move'; }}
-        style={{ border: '0.5px solid var(--sep)', borderRadius: 8, padding: '8px 11px', marginBottom: 8, background: 'var(--bg-1)', minHeight: 62, boxSizing: 'border-box', cursor: 'grab' }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap' }}>
+        style={{ border: '0.5px solid var(--sep)', borderRadius: 8, padding: '8px 11px', marginBottom: 8, background: 'var(--bg-1)', minHeight: 58, boxSizing: 'border-box', cursor: 'grab' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+          <span title={ps ? 'People Science analysis on record' : 'No People Science analysis yet'}
+            style={{ flex: '0 0 auto', width: 9, height: 9, borderRadius: '50%', background: ps ? '#1D9E75' : '#E24B4A' }} />
           <span onClick={() => acc && onPickAccount && onPickAccount(acc)}
             style={{ fontWeight: 600, fontSize: 13, color: acc && onPickAccount ? 'var(--accent)' : 'var(--text-1)', cursor: acc && onPickAccount ? 'pointer' : 'default' }}>{r.client_name}</span>
         </div>
-        {/* project identifier = the project name (delivery projects have no numeric ID) */}
-        {r.project_name && <div style={{ fontSize: 11, color: 'var(--text-2)', fontFamily: 'var(--font-mono)', marginTop: 2, lineHeight: 1.3 }}>{r.project_name}</div>}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5, marginTop: 6, fontSize: 10.5 }}>
-          {r.next_milestone_label && <span style={{ color: 'var(--text-2)', fontFamily: 'var(--font-mono)' }}>◷ {r.next_milestone_label}</span>}
-          {flags.map(f => (
-            <span key={f.label} style={{ padding: '1px 7px', borderRadius: 6, fontWeight: 500,
-              background: f.kind === 'risk' ? 'rgba(226,75,74,.14)' : 'rgba(29,158,117,.14)',
-              color: f.kind === 'risk' ? '#E24B4A' : '#1D9E75' }}>{f.label}</span>
-          ))}
+        {r.project_name && <div style={{ fontSize: 11, color: 'var(--text-2)', fontFamily: 'var(--font-mono)', marginTop: 3, lineHeight: 1.3 }}>{r.project_name}</div>}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 6, fontSize: 10.5, color: 'var(--text-3)' }}>
+          {inits && <span title="CS · PS · support" style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-2)', fontWeight: 500 }}>{inits}</span>}
+          {r.next_milestone_label && <span style={{ fontFamily: 'var(--font-mono)' }}>◷ {r.next_milestone_label}</span>}
         </div>
       </div>
     );
@@ -497,6 +505,7 @@ function JourneyBoard({ rows = [], accById = new Map(), onPickAccount, onMove })
         <b style={{ color: 'var(--text-2)' }}>Source: CRM database</b> (single source of truth · the project sheet is just an input view).
         Every Glint <b>project</b> by where it sits in the customer journey — operational, distinct from the commercial funnel.
         Lane colour = who leads: <span style={{ color: LEAD_COLOR.CS, fontWeight: 600 }}>■ CS</span> · <span style={{ color: LEAD_COLOR.PS, fontWeight: 600 }}>■ PS</span> · <span style={{ color: LEAD_COLOR.OFF, fontWeight: 600 }}>■ off rails</span>.
+        Dot = People Science analysis on record: <span style={{ color: '#1D9E75', fontWeight: 600 }}>● yes</span> · <span style={{ color: '#E24B4A', fontWeight: 600 }}>● none</span>. Initials = contractors on the assignment.
         Drag a card to move it between stages. <a href="/glint-customer-journey-playbook-2026-06-07.md" target="_blank" rel="noreferrer" style={{ color: 'var(--accent)' }}>Journey playbook</a>.
       </div>
       <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 8, alignItems: 'flex-start' }}>
@@ -539,6 +548,13 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount }
   const [loading, setLoading] = useState(true);
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState(null);
+  // People Science client names that have an analysis on record (for the journey dots).
+  const [analysedNames, setAnalysedNames] = useState([]);
+  useEffect(() => {
+    let cancelled = false;
+    fetch('/api/journey-analyses').then(r => r.json()).then(j => { if (!cancelled) setAnalysedNames(j.analysed || []); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
 
   const accById = useMemo(() => new Map(accounts.map(a => [a.id, a])), [accounts]);
 
@@ -677,7 +693,7 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount }
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 12 }}>
         <div style={{ fontSize: 16, fontWeight: 500 }}>War room</div>
         <div style={{ display: 'flex', gap: 6 }}>
-          {[['projects', 'Projects'], ['journey', 'Customer journey'], ['insights', 'Insights review'], ['coverage', 'Client coverage']].map(([t, label]) => (
+          {[['projects', 'Projects'], ['journey', 'Customer journey'], ['coverage', 'Client coverage']].map(([t, label]) => (
             <button key={t} className="btn-ghost tiny" onClick={() => setTab(t)}
               style={{ fontWeight: tab === t ? 500 : 400, color: tab === t ? 'var(--text-1)' : 'var(--text-3)', borderBottom: `2px solid ${tab === t ? 'var(--accent)' : 'transparent'}`, borderRadius: 0 }}>
               {label}
@@ -705,9 +721,8 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount }
         )}
       </div>
 
-      {tab === 'journey' && <JourneyBoard rows={rows} accById={accById} onPickAccount={onPickAccount} onMove={moveJourney} />}
+      {tab === 'journey' && <JourneyBoard rows={rows} accById={accById} onPickAccount={onPickAccount} onMove={moveJourney} analysedNames={analysedNames} />}
 
-      {tab === 'insights' && <InsightsMatrix accounts={accounts} pscByAccount={pscByAccount} teamByAccount={teamByAccount} operationalAccIds={operationalAccIds} signedByAccount={signedByAccount} onPickAccount={onPickAccount} />}
 
       {tab === 'coverage' && <CoverageTab accounts={accounts} onPickAccount={onPickAccount} />}
 

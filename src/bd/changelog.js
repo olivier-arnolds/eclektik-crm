@@ -19,9 +19,30 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.33.1';
+export const CURRENT_VERSION = '1.34.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.34.0',
+    date: '2026-06-09T13:10:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feat',
+    title: 'Journey board: PS-analysis dot + contractor initials; remove Insights tab & flag badges',
+    summary:
+      'Each journey card now shows a green dot if the client has a People Science analysis on record, red if not (live from the PS database via /api/journey-analyses), plus the CS·PS·support contractor initials. Removed the noisy flag badges (Multi-cycle / Expansion / Churn) from cards and removed the separate "Insights review" tab.',
+    changes: [
+      'api/journey-analyses.js: new endpoint returning PS client names with ≥1 analysis (reads the People Science Supabase).',
+      'lane-warroom.jsx: per-card green/red PS-analysis dot (name-matched) + contractor initials; removed flag badges; removed the Insights review tab.',
+    ],
+    files: [
+      'api/journey-analyses.js',
+      'src/bd/lane-warroom.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.34.0',
+  },
   {
     version: '1.33.1',
     date: '2026-06-09T12:05:00Z',
