@@ -19,9 +19,26 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.36.0';
+export const CURRENT_VERSION = '1.37.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.37.0',
+    date: '2026-06-09T21:55:53Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'fix',
+    title: 'Live-clickthrough fix round: Open deal button, Esc closes modals, calendar MS notice, column totals, contact row cleanup',
+    summary:
+      'Five fixes from the first interactive clickthrough of the live app (driven via the Chrome connection). (1) The "Open deal" button in the Account 360 deal card was a silent no-op when the deal\'s account was visible — it now always opens the deal modal; explicit click = explicit intent. (2) Esc now closes the topmost open modal, app-wide, via one global listener that clicks the top .modal-backdrop (every modal already closes on backdrop click, so behavior-equivalent and future-proof). (3) The Calendar shows a "Microsoft is not connected" notice + Connect button when the Graph token is missing — previously the week just rendered empty as if you had no meetings (Comms already had this empty-state; Calendar now matches). (4) Funnel column totals under €1k display as "€<1k" instead of e.g. "€168", which read as 168k next to the other columns\' k-format. (5) The per-contact "former?" button read as a data-quality question on every row — renamed to "mark former" and only revealed on row hover (.hover-action); "↻ restore" stays visible on struck-through former contacts.',
+    changes: [
+      'BDApp.jsx: dedicated onOpenDeal handler for Account 360 (always opens modal) + global Esc-closes-topmost-modal listener.',
+      'lane-calendar.jsx: "Microsoft is not connected" notice + Connect button in the lane header when hasGraphToken is false.',
+      'lane-funnel.jsx: swimlane totals under €1k render as "€<1k".',
+      'lane-accounts.jsx + styles.css: "former?" → "mark former", hover-revealed via .contact-card .hover-action.',
+    ],
+    files: ['src/bd/BDApp.jsx', 'src/bd/lane-calendar.jsx', 'src/bd/lane-funnel.jsx', 'src/bd/lane-accounts.jsx', 'src/bd/styles.css', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.37.0',
+  },
   {
     version: '1.36.0',
     date: '2026-06-09T21:28:01Z',
