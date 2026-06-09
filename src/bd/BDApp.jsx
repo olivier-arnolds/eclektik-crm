@@ -87,7 +87,8 @@ export default function BDApp() {
 
   const { session, hasGraphToken } = useAuth();
   const userName = session?.user?.user_metadata?.full_name || session?.user?.email || '';
-  const { deals, accounts, contacts, comms, events, tasks, loading, refetch, rawAllItems, rawAccounts, rawContacts, allTags } = useBDData();
+  const { deals, accounts, contacts, comms, events, tasks, loading, refetch, rawAllItems, rawAccounts, rawContacts, allTags, truncated } = useBDData();
+  const [truncWarnDismissed, setTruncWarnDismissed] = useState(false);
 
   // ---- Graph fetches (once, cached in state) ----
   const fetchGraphData = useCallback(async () => {
@@ -280,6 +281,29 @@ export default function BDApp() {
   return (
     <div className={`app theme-${theme}`} data-layout={layout}>
       {topbar}
+
+      {/* Data-truncation warning: a table hit its fetch cap, so the UI is
+          showing an incomplete dataset (oldest rows missing). Raise the cap
+          in FETCH_LIMITS (usePipelineData.js) or add pagination. */}
+      {truncated.length > 0 && !truncWarnDismissed && (
+        <div role="alert" style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          padding: '4px 12px', fontSize: 12,
+          background: 'color-mix(in srgb, orange 18%, var(--bg-1))',
+          borderBottom: '0.5px solid var(--sep)', color: 'var(--text-1)',
+        }}>
+          <span aria-hidden="true">⚠️</span>
+          <span style={{ flex: 1 }}>
+            Niet alle data is geladen — limiet bereikt voor: {truncated.map(t => `${t.table} (${t.limit})`).join(', ')}.
+            Oudere records zijn niet zichtbaar in de app.
+          </span>
+          <button onClick={() => setTruncWarnDismissed(true)} aria-label="Waarschuwing sluiten"
+                  style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'var(--text-3)', fontSize: 14 }}>
+            ✕
+          </button>
+        </div>
+      )}
+
       <div className="lanes">
         {leftPane}
 

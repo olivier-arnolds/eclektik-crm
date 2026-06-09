@@ -199,6 +199,21 @@ function adaptCalEvent(row) {
   }
 }
 
+// Per-table fetch caps. If a table returns EXACTLY this many rows we assume
+// it was truncated and report it via `truncated` — older rows silently
+// disappearing from the UI was a real risk (see docs/ux-audit-2026-06-09.md).
+// Raise a limit (or add real pagination) when a warning starts appearing.
+export const FETCH_LIMITS = {
+  companies: 1000,
+  contacts: 1000,
+  leads: 500,
+  opportunities: 500,
+  follow_ups: 500,
+  tasks: 500,
+  comms: 1000,
+  calendar_events: 500,
+}
+
 export function usePipelineData() {
   const [accounts, setAccounts] = useState([])
   const [contacts, setContacts] = useState([])
@@ -208,6 +223,7 @@ export function usePipelineData() {
   const [tasks, setTasks] = useState([])
   const [comms, setComms] = useState([])
   const [calEvents, setCalEvents] = useState([])
+  const [truncated, setTruncated] = useState([])
   const [loading, setLoading] = useState(true)
 
   const fetchAll = useCallback(async () => {
@@ -225,14 +241,14 @@ export function usePipelineData() {
       { data: tagsRaw },
       { data: contactTagsRaw },
     ] = await Promise.all([
-      supabase.from('companies').select('*').limit(1000),
-      supabase.from('contacts').select('*').limit(1000),
-      supabase.from('leads').select('*').order('updated_at', { ascending: false }).limit(500),
-      supabase.from('opportunities').select('*').order('updated_at', { ascending: false }).limit(500),
-      supabase.from('follow_ups').select('*').order('due_date', { ascending: false }).limit(500),
-      supabase.from('tasks').select('*').order('due_date', { ascending: false }).limit(500),
-      supabase.from('comms').select('*').order('sent_at', { ascending: false }).limit(1000),
-      supabase.from('calendar_events').select('*').order('start_at', { ascending: false }).limit(500),
+      supabase.from('companies').select('*').limit(FETCH_LIMITS.companies),
+      supabase.from('contacts').select('*').limit(FETCH_LIMITS.contacts),
+      supabase.from('leads').select('*').order('updated_at', { ascending: false }).limit(FETCH_LIMITS.leads),
+      supabase.from('opportunities').select('*').order('updated_at', { ascending: false }).limit(FETCH_LIMITS.opportunities),
+      supabase.from('follow_ups').select('*').order('due_date', { ascending: false }).limit(FETCH_LIMITS.follow_ups),
+      supabase.from('tasks').select('*').order('due_date', { ascending: false }).limit(FETCH_LIMITS.tasks),
+      supabase.from('comms').select('*').order('sent_at', { ascending: false }).limit(FETCH_LIMITS.comms),
+      supabase.from('calendar_events').select('*').order('start_at', { ascending: false }).limit(FETCH_LIMITS.calendar_events),
       supabase.from('tags').select('*'),
       supabase.from('contact_tags').select('contact_id, tag_id'),
     ])
@@ -267,6 +283,24 @@ export function usePipelineData() {
     setComms((commsRaw || []).map(adaptComm))
     setCalEvents((calRaw || []).map(adaptCalEvent))
     setAllTags(tagsRaw || [])
+
+    // Truncation detection: exactly-at-limit means there are (almost
+    // certainly) more rows in the DB than the UI is showing.
+    const counts = {
+      companies: (companiesRaw || []).length,
+      contacts: (contactsRaw || []).length,
+      leads: (leadsRaw || []).length,
+      opportunities: (oppsRaw || []).length,
+      follow_ups: (followUpsRaw || []).length,
+      tasks: (tasksRaw || []).length,
+      comms: (commsRaw || []).length,
+      calendar_events: (calRaw || []).length,
+    }
+    const hit = Object.entries(FETCH_LIMITS)
+      .filter(([table, limit]) => counts[table] >= limit)
+      .map(([table, limit]) => ({ table, limit }))
+    setTruncated(hit)
+    if (hit.length) console.warn('Fetch limit hit — UI is showing a truncated dataset:', hit)
     } catch (e) {
       console.error('Pipeline data load failed:', e)
     } finally {
@@ -285,6 +319,7 @@ export function usePipelineData() {
     tasks,
     comms,
     calEvents,
+    truncated,
     loading,
     refetch: fetchAll,
   }

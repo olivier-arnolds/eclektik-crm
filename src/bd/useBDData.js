@@ -30,6 +30,9 @@ export function useBDData() {
     ...data,
     loading: raw.loading,
     refetch: raw.refetch,
+    // Tables whose fetch hit its hard limit — UI is showing a truncated
+    // dataset. Surfaced as a warning banner in BDApp.
+    truncated: raw.truncated || [],
     // also expose raw for mutations that need the original shape
     rawAllItems: raw.allItems,
     rawAccounts: data.activeRawAccounts,
