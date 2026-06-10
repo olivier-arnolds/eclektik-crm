@@ -17,6 +17,13 @@
 //                            CRON_SECRET is recommended.
 //   requireQueueSecret(req)— optional shared-secret check for automation
 //                            callers (Claude's feature-request queue).
+//   requireWebhookSecret(req, res, envName)
+//                          — for inbound webhooks from external providers.
+//                            Checks either x-webhook-secret header OR
+//                            ?secret=... query-param against the named env
+//                            var. Used for unipile-webhook because the
+//                            Unipile dashboard does not let us configure
+//                            custom headers — the secret goes in the URL.
 //
 // Frontend counterpart: src/lib/apiFetch.js attaches the session token to
 // every /api fetch.
@@ -68,4 +75,23 @@ export function requireCron(req, res) {
 export function requireQueueSecret(req) {
   const secret = process.env.FEATURE_QUEUE_SECRET;
   return !!(secret && req.headers['x-feature-queue-secret'] === secret);
+}
+
+export function requireWebhookSecret(req, res, envName) {
+  const expected = process.env[envName];
+  if (!expected) {
+    res.status(500).json({ error: `${envName} not configured` });
+    return false;
+  }
+  // Accept secret in either x-webhook-secret header OR ?secret=... query
+  // param. URL-based is the fallback when the provider's dashboard does
+  // not allow custom headers (Unipile, e.g.) — bewust afgewogen tradeoff
+  // voor low-traffic internal endpoints (Vercel logs URLs incl. secret).
+  const fromHeader = req.headers['x-webhook-secret'] || '';
+  const fromQuery = req.query?.secret || '';
+  if (fromHeader !== expected && fromQuery !== expected) {
+    res.status(401).json({ error: 'Unauthorized: invalid webhook signature' });
+    return false;
+  }
+  return true;
 }

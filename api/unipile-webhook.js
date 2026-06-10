@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { requireWebhookSecret } from './_lib/guard.js';
 
 const supabase = createClient(
   process.env.VITE_SUPABASE_URL,
@@ -9,6 +10,7 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
+  if (!requireWebhookSecret(req, res, 'UNIPILE_WEBHOOK_SECRET')) return;
 
   const { event, account_id, account_type, message, message_id, chat_id, timestamp, sender, attendees, attachments } = req.body;
 
