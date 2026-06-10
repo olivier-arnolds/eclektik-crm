@@ -19,9 +19,23 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.39.2';
+export const CURRENT_VERSION = '1.39.3';
 
 export const CHANGELOG = [
+  {
+    version: '1.39.3',
+    date: '2026-06-10T13:30:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'tweak',
+    title: 'Customer journey: Client Accountability Review as its own column',
+    summary:
+      'Moved the Client Accountability Review lane out of the Enablement column into its own standalone column, positioned between Enablement & embedding and Off Rails.',
+    changes: [
+      'lane-warroom.jsx: JOURNEY_COLUMNS now [prep] · [configure/launch/live] · [rollout/review] · [embed] · [car] · [offrails/graveyard].',
+    ],
+    files: ['src/bd/lane-warroom.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.39.3',
+  },
   {
     version: '1.39.2',
     date: '2026-06-10T13:00:00Z',

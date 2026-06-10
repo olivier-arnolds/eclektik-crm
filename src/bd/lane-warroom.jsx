@@ -444,7 +444,7 @@ const LEAD_COLOR = { CS: '#185FA5', PS: '#0F6E56', OFF: '#C0392B', GY: '#6B7280'
 // Survey live sits under Launch (under Configure); Insights review under Close
 // & results rollout; Graveyard under Off Rails.
 const JOURNEY_COLUMNS = [
-  ['prep'], ['configure', 'launch', 'live'], ['rollout', 'review'], ['embed', 'car'], ['offrails', 'graveyard'],
+  ['prep'], ['configure', 'launch', 'live'], ['rollout', 'review'], ['embed'], ['car'], ['offrails', 'graveyard'],
 ];
 const JOURNEY_KEYS = new Set(JOURNEY_PHASES.map(p => p.key));
 
