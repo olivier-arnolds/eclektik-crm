@@ -107,6 +107,7 @@ function adaptOpportunity(row) {
     currency: row.currency || '',
     status: row.status || '',
     statusReason: row.status_reason || '',
+    journeyStage: row.journey_stage || '',
     notes: row.notes || '',
     documents: [],
     timeline: [],

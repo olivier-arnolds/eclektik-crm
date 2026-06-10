@@ -19,9 +19,26 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.39.6';
+export const CURRENT_VERSION = '1.39.7';
 
 export const CHANGELOG = [
+  {
+    version: '1.39.7',
+    date: '2026-06-10T16:30:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feat',
+    title: 'Customer journey rebuilt on CRM deals (single source of truth)',
+    summary:
+      'The journey board now reads straight from CRM deals instead of the glint_delivery project sheet. It shows every Glint deal that is onboarding, active or sleeping (Won/past) as a card with client + deal name + deal # (D-####). Project numbers (P-####) are gone, from both the board and the deal panel. Kept the People Science green/red dot and the contractor first names. Dragging a card between lanes now saves on the deal itself (opportunities.journey_stage) and survives reloads; default lane derives from the deal stage (onboarding→Configure, active→Survey live, sleeping→Enablement) until you hand-place it.',
+    changes: [
+      'opportunities: new journey_stage column (manual lane placement per deal).',
+      'usePipelineData + adapters: thread journeyStage onto deals.',
+      'lane-warroom.jsx: JourneyBoard rebuilt deal-based (onboarding/active/sleeping Glint deals); card = client + deal name + D-####, PS dot, contractor first names; drag saved to opportunities.journey_stage.',
+      'inline-details.jsx + journey cards: removed P-#### project numbers.',
+    ],
+    files: ['src/bd/lane-warroom.jsx', 'src/bd/inline-details.jsx', 'src/bd/adapters.js', 'src/hooks/usePipelineData.js', 'sql/schema_opportunities_journey_stage_2026-06-10.sql', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.39.7',
+  },
   {
     version: '1.39.6',
     date: '2026-06-10T15:30:00Z',

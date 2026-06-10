@@ -484,43 +484,44 @@ function initialsOf(name) {
   return ((p[0][0] || '') + (p.length > 1 ? (p[p.length - 1][0] || '') : '')).toUpperCase();
 }
 
-function JourneyBoard({ rows = [], accById = new Map(), onPickAccount, onMove, analysedNames = [], dealByNo = {} }) {
+// Default journey lane for a deal that has not been hand-placed yet.
+function phaseOfDeal(d) {
+  if (d.journeyStage && JOURNEY_KEYS.has(d.journeyStage)) return d.journeyStage;
+  if (d.stage === 'onboarding') return 'configure';
+  if (d.stage === 'active') return 'live';
+  if (d.stage === 'sleeping') return 'embed';
+  return 'prep';
+}
+
+function JourneyBoard({ glintDeals = [], accById = new Map(), onPickAccount, onMove, analysedNames = [], contractorsByCompany = {} }) {
   const [over, setOver] = useState(null);
   const [q, setQ] = useState('');
   const analysedNorm = (analysedNames || []).map(s => (s || '').toLowerCase().replace(/[^a-z0-9]/g, ''));
   const hasPS = (name) => { const n = (name || '').toLowerCase().replace(/[^a-z0-9]/g, ''); if (!n) return false; return analysedNorm.some(a => a && (a === n || a.startsWith(n) || n.startsWith(a))); };
+  const namesFor = (d) => contractorsByCompany[d.accountId] || '';
   const ql = q.trim().toLowerCase();
-  const matchText = (r) => `${r.client_name || ''} ${r.cs_owner || ''} ${r.ps_owner || ''} ${r.other_contractors || ''} ${r.project_name || ''} ${r.project_no || ''} ${r.deal_no || ''}`.toLowerCase();
-  const projects = (rows || []).filter(r => r.client_name).filter(r => !ql || matchText(r).includes(ql));   // all projects, every stage
+  const matchText = (d) => `${d.account || ''} ${d.title || ''} ${d.dealNo || ''} ${namesFor(d)}`.toLowerCase();
+  const deals = (glintDeals || []).filter(d => !ql || matchText(d).includes(ql));
   const byPhase = Object.fromEntries(JOURNEY_PHASES.map(p => [p.key, []]));
-  projects.forEach(r => { byPhase[phaseOfProject(r)].push(r); });
+  deals.forEach(d => { byPhase[phaseOfDeal(d)].push(d); });
 
-  const card = (r) => {
-    const acc = r.company_id ? accById.get(r.company_id) : null;
-    const ps = hasPS(r.client_name);
-    const names = [...new Set(
-      [r.cs_owner, r.ps_owner, ...String(r.other_contractors || '').split(/[,;]/)]
-        .map(firstNameOf).filter(Boolean)
-    )].join(' · ');
-    // Prefer the CRM deal name (what the 360 shows) over the sheet project name.
-    const linkedDeal = r.deal_no ? dealByNo[r.deal_no] : null;
-    const dealName = (linkedDeal && linkedDeal.title) || r.project_name || '';
+  const card = (d) => {
+    const acc = d.accountId ? accById.get(d.accountId) : null;
+    const ps = hasPS(d.account);
+    const names = namesFor(d);
     return (
-      <div key={r.id} draggable
-        onDragStart={(e) => { e.dataTransfer.setData('text/plain', r.id); e.dataTransfer.effectAllowed = 'move'; }}
+      <div key={d.id} draggable
+        onDragStart={(e) => { e.dataTransfer.setData('text/plain', d.id); e.dataTransfer.effectAllowed = 'move'; }}
         style={{ border: '0.5px solid var(--sep)', borderRadius: 8, padding: '8px 11px', marginBottom: 8, background: 'var(--bg-1)', minHeight: 58, boxSizing: 'border-box', cursor: 'grab' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
           <span title={ps ? 'People Science analysis on record' : 'No People Science analysis yet'}
             style={{ flex: '0 0 auto', width: 9, height: 9, borderRadius: '50%', background: ps ? '#1D9E75' : '#E24B4A' }} />
           <span onClick={() => acc && onPickAccount && onPickAccount(acc)}
-            style={{ fontWeight: 600, fontSize: 13, color: acc && onPickAccount ? 'var(--accent)' : 'var(--text-1)', cursor: acc && onPickAccount ? 'pointer' : 'default' }}>{r.client_name}</span>
+            style={{ fontWeight: 600, fontSize: 13, color: acc && onPickAccount ? 'var(--accent)' : 'var(--text-1)', cursor: acc && onPickAccount ? 'pointer' : 'default' }}>{d.account || '—'}</span>
         </div>
-        {dealName && <div style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 3, lineHeight: 1.3 }}>{dealName}</div>}
-        {(r.project_no || r.deal_no) && (
-          <div style={{ fontSize: 10.5, fontFamily: 'var(--font-mono)', marginTop: 4 }}>
-            <span style={{ color: 'var(--text-3)', fontWeight: 600 }}>{r.project_no}</span>
-            {r.deal_no && <span style={{ color: 'var(--text-4)', fontWeight: 500 }} title="Funnel deal"> · {r.deal_no}</span>}
-          </div>
+        {d.title && <div style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 3, lineHeight: 1.3 }}>{d.title}</div>}
+        {d.dealNo && (
+          <div style={{ fontSize: 10.5, fontFamily: 'var(--font-mono)', fontWeight: 600, color: 'var(--text-3)', marginTop: 4 }} title="CRM deal">{d.dealNo}</div>
         )}
         {names && <div style={{ fontSize: 10.5, color: 'var(--text-2)', marginTop: 4, fontWeight: 500 }} title="Contractors on this assignment">{names}</div>}
       </div>
@@ -530,20 +531,18 @@ function JourneyBoard({ rows = [], accById = new Map(), onPickAccount, onMove, a
   return (
     <div>
       <div style={{ fontSize: 12.5, color: 'var(--text-3)', margin: '0 0 12px', lineHeight: 1.5 }}>
-        <b style={{ color: 'var(--text-2)' }}>Source: CRM database</b> (single source of truth · the project sheet is just an input view).
-        Every Glint <b>project</b> by where it sits in the customer journey — operational, distinct from the commercial funnel.
-        Lane colour = who leads: <span style={{ color: LEAD_COLOR.CS, fontWeight: 600 }}>■ CS</span> · <span style={{ color: LEAD_COLOR.PS, fontWeight: 600 }}>■ PS</span> · <span style={{ color: LEAD_COLOR.OFF, fontWeight: 600 }}>■ off rails</span>.
-        Dot = People Science analysis on record: <span style={{ color: '#1D9E75', fontWeight: 600 }}>● yes</span> · <span style={{ color: '#E24B4A', fontWeight: 600 }}>● none</span>. Each project carries its own project id (P-####) plus its linked funnel deal (D-####). First names = contractors on the assignment.
-        Drag a card to move it between stages. <a href="/glint-customer-journey-playbook-2026-06-07.md" target="_blank" rel="noreferrer" style={{ color: 'var(--accent)' }}>Journey playbook</a>.
+        <b style={{ color: 'var(--text-2)' }}>Source: CRM database</b> (single source of truth). Every Glint <b>deal</b> that is onboarding, active or sleeping, shown as client + deal name + deal #.
+        Dot = People Science analysis on record: <span style={{ color: '#1D9E75', fontWeight: 600 }}>● yes</span> · <span style={{ color: '#E24B4A', fontWeight: 600 }}>● none</span>. First names = contractors on the assignment.
+        Drag a card to move it between stages (saved on the deal). <a href="/glint-customer-journey-playbook-2026-06-07.md" target="_blank" rel="noreferrer" style={{ color: 'var(--accent)' }}>Journey playbook</a>.
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '0 0 12px' }}>
         <input value={q} onChange={(e) => setQ(e.target.value)}
           placeholder="Search client or contractor — e.g. paul, war…"
           style={{ flex: '0 1 320px', fontSize: 12.5, padding: '6px 10px', borderRadius: 8, border: '0.5px solid var(--sep)', background: 'var(--bg-1)', color: 'var(--text-1)' }} />
-        {ql && <span style={{ fontSize: 11.5, color: 'var(--text-3)' }}>{projects.length} match{projects.length === 1 ? '' : 'es'}<span onClick={() => setQ('')} style={{ marginLeft: 8, color: 'var(--accent)', cursor: 'pointer' }}>clear</span></span>}
+        {ql && <span style={{ fontSize: 11.5, color: 'var(--text-3)' }}>{deals.length} match{deals.length === 1 ? '' : 'es'}<span onClick={() => setQ('')} style={{ marginLeft: 8, color: 'var(--accent)', cursor: 'pointer' }}>clear</span></span>}
       </div>
-      {ql && projects.length === 0 && (
-        <div style={{ fontSize: 12.5, color: 'var(--text-3)', fontStyle: 'italic', padding: '14px 2px' }}>No projects match “{q}”.</div>
+      {ql && deals.length === 0 && (
+        <div style={{ fontSize: 12.5, color: 'var(--text-3)', fontStyle: 'italic', padding: '14px 2px' }}>No deals match “{q}”.</div>
       )}
       <div style={{ display: 'flex', gap: 12, paddingBottom: 8, alignItems: 'flex-start' }}>
         {JOURNEY_COLUMNS.map(col => (
@@ -568,7 +567,7 @@ function JourneyBoard({ rows = [], accById = new Map(), onPickAccount, onMove, a
                     <div style={{ fontSize: 10.5, color: lc, fontWeight: 500, marginBottom: 10 }}>＋ {p.sku}</div>
                   </div>
                   {byPhase[p.key].length === 0
-                    ? <div style={{ fontSize: 11, color: 'var(--text-4)', fontStyle: 'italic', padding: '6px 2px' }}>{p.key === 'offrails' ? 'Nothing off rails 🎉' : p.key === 'embed' ? 'No one in a between-cycle retainer yet — the gap.' : 'Drop a project here'}</div>
+                    ? <div style={{ fontSize: 11, color: 'var(--text-4)', fontStyle: 'italic', padding: '6px 2px' }}>{p.key === 'offrails' ? 'Nothing off rails 🎉' : p.key === 'embed' ? 'No one in a between-cycle retainer yet — the gap.' : 'Drop a deal here'}</div>
                     : byPhase[p.key].map(card)}
                 </div>
               );
@@ -583,13 +582,15 @@ function JourneyBoard({ rows = [], accById = new Map(), onPickAccount, onMove, a
 export default function WarRoomLane({ accounts = [], deals = [], onPickAccount }) {
   const [tab, setTab] = useState('projects');
   const [rows, setRows] = useState([]);
+  // Manual journey-lane placements for deals (kept locally for instant feedback;
+  // persisted to opportunities.journey_stage).
+  const [journeyOverride, setJourneyOverride] = useState({});
   const moveJourney = useCallback(async (id, stage) => {
-    let prevStage;
-    setRows(prev => prev.map(r => { if (r.id === id) { prevStage = r.journey_stage; return { ...r, journey_stage: stage }; } return r; }));   // optimistic
-    const { error } = await supabase.from('glint_delivery').update({ journey_stage: stage }).eq('id', id);
-    if (error) {   // roll the card back so the board matches the DB
+    setJourneyOverride(prev => ({ ...prev, [id]: stage }));   // optimistic
+    const { error } = await supabase.from('opportunities').update({ journey_stage: stage }).eq('id', id);
+    if (error) {
       console.warn('Journey move failed:', error.message);
-      setRows(prev => prev.map(r => (r.id === id ? { ...r, journey_stage: prevStage } : r)));
+      setJourneyOverride(prev => { const n = { ...prev }; delete n[id]; return n; });
     }
   }, []);
   const [loading, setLoading] = useState(true);
@@ -670,12 +671,27 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount }
     return (deals || []).filter(d => d.accountId === companyId && ['active', 'onboarding'].includes(d.stage));
   }, [deals]);
 
-  // deal_no → deal, so journey cards can show the CRM deal name (as in the 360).
-  const dealByNo = useMemo(() => {
+  // Glint deals on the journey board: onboarding / active / sleeping only.
+  // A manual lane placement (journeyOverride) wins over the saved/derived stage.
+  const glintDeals = useMemo(() => (deals || [])
+    .filter(d => /glint/i.test(d.dealType || '') && ['onboarding', 'active', 'sleeping'].includes(d.stage))
+    .map(d => (journeyOverride[d.id] !== undefined ? { ...d, journeyStage: journeyOverride[d.id] } : d)),
+    [deals, journeyOverride]);
+
+  // company_id → contractor first names (from the delivery sheet owners).
+  const contractorsByCompany = useMemo(() => {
+    const sets = {};
+    (rows || []).forEach(r => {
+      if (!r.company_id) return;
+      const fns = [r.cs_owner, r.ps_owner, ...String(r.other_contractors || '').split(/[,;]/)].map(firstNameOf).filter(Boolean);
+      if (!fns.length) return;
+      (sets[r.company_id] = sets[r.company_id] || new Set());
+      fns.forEach(f => sets[r.company_id].add(f));
+    });
     const m = {};
-    (deals || []).forEach(d => { if (d.dealNo) m[d.dealNo] = d; });
+    Object.entries(sets).forEach(([k, s]) => { m[k] = [...s].join(' · '); });
     return m;
-  }, [deals]);
+  }, [rows]);
   const dealValueFor = useCallback((companyId) => {
     return runningDealsFor(companyId).reduce((s, d) => s + (Number(d.value) || 0), 0);
   }, [runningDealsFor]);
@@ -775,7 +791,7 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount }
         )}
       </div>
 
-      {tab === 'journey' && <JourneyBoard rows={rows} accById={accById} onPickAccount={onPickAccount} onMove={moveJourney} analysedNames={analysedNames} dealByNo={dealByNo} />}
+      {tab === 'journey' && <JourneyBoard glintDeals={glintDeals} accById={accById} onPickAccount={onPickAccount} onMove={moveJourney} analysedNames={analysedNames} contractorsByCompany={contractorsByCompany} />}
 
 
       {tab === 'coverage' && <CoverageTab accounts={accounts} onPickAccount={onPickAccount} />}
