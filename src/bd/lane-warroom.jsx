@@ -484,7 +484,7 @@ function initialsOf(name) {
   return ((p[0][0] || '') + (p.length > 1 ? (p[p.length - 1][0] || '') : '')).toUpperCase();
 }
 
-function JourneyBoard({ rows = [], accById = new Map(), onPickAccount, onMove, analysedNames = [] }) {
+function JourneyBoard({ rows = [], accById = new Map(), onPickAccount, onMove, analysedNames = [], dealByNo = {} }) {
   const [over, setOver] = useState(null);
   const [q, setQ] = useState('');
   const analysedNorm = (analysedNames || []).map(s => (s || '').toLowerCase().replace(/[^a-z0-9]/g, ''));
@@ -502,6 +502,9 @@ function JourneyBoard({ rows = [], accById = new Map(), onPickAccount, onMove, a
       [r.cs_owner, r.ps_owner, ...String(r.other_contractors || '').split(/[,;]/)]
         .map(firstNameOf).filter(Boolean)
     )].join(' · ');
+    // Prefer the CRM deal name (what the 360 shows) over the sheet project name.
+    const linkedDeal = r.deal_no ? dealByNo[r.deal_no] : null;
+    const dealName = (linkedDeal && linkedDeal.title) || r.project_name || '';
     return (
       <div key={r.id} draggable
         onDragStart={(e) => { e.dataTransfer.setData('text/plain', r.id); e.dataTransfer.effectAllowed = 'move'; }}
@@ -512,7 +515,7 @@ function JourneyBoard({ rows = [], accById = new Map(), onPickAccount, onMove, a
           <span onClick={() => acc && onPickAccount && onPickAccount(acc)}
             style={{ fontWeight: 600, fontSize: 13, color: acc && onPickAccount ? 'var(--accent)' : 'var(--text-1)', cursor: acc && onPickAccount ? 'pointer' : 'default' }}>{r.client_name}</span>
         </div>
-        {r.project_name && <div style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 3, lineHeight: 1.3 }}>{r.project_name}</div>}
+        {dealName && <div style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 3, lineHeight: 1.3 }}>{dealName}</div>}
         {(r.project_no || r.deal_no) && (
           <div style={{ fontSize: 10.5, fontFamily: 'var(--font-mono)', marginTop: 4 }}>
             <span style={{ color: 'var(--text-3)', fontWeight: 600 }}>{r.project_no}</span>
@@ -666,6 +669,13 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount }
     if (!companyId) return [];
     return (deals || []).filter(d => d.accountId === companyId && ['active', 'onboarding'].includes(d.stage));
   }, [deals]);
+
+  // deal_no → deal, so journey cards can show the CRM deal name (as in the 360).
+  const dealByNo = useMemo(() => {
+    const m = {};
+    (deals || []).forEach(d => { if (d.dealNo) m[d.dealNo] = d; });
+    return m;
+  }, [deals]);
   const dealValueFor = useCallback((companyId) => {
     return runningDealsFor(companyId).reduce((s, d) => s + (Number(d.value) || 0), 0);
   }, [runningDealsFor]);
@@ -765,7 +775,7 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount }
         )}
       </div>
 
-      {tab === 'journey' && <JourneyBoard rows={rows} accById={accById} onPickAccount={onPickAccount} onMove={moveJourney} analysedNames={analysedNames} />}
+      {tab === 'journey' && <JourneyBoard rows={rows} accById={accById} onPickAccount={onPickAccount} onMove={moveJourney} analysedNames={analysedNames} dealByNo={dealByNo} />}
 
 
       {tab === 'coverage' && <CoverageTab accounts={accounts} onPickAccount={onPickAccount} />}

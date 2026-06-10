@@ -19,9 +19,25 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.39.5';
+export const CURRENT_VERSION = '1.39.6';
 
 export const CHANGELOG = [
+  {
+    version: '1.39.6',
+    date: '2026-06-10T15:30:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feat',
+    title: 'Customer journey ↔ deals: deal names on cards + P-#### shown on the deal',
+    summary:
+      'Tightened the link between journey projects and CRM deals, both directions. Journey cards now show the CRM deal name (the same name as in the 360) instead of the raw sheet project name - resolved via deal_no. And the deal panel in the 360 now shows its linked journey project id(s) (P-####). Ran a full consistency check across all 39 projects vs their deals and companies: every project links to a valid deal and the project company matches the deal company - zero mismatches. Note: most projects deals are stage past/Won (i.e. "sleeping" in the funnel), so they disappear from the pipeline view - the journey board is the place that always shows all projects regardless of deal stage.',
+    changes: [
+      'lane-warroom.jsx: journey card shows the linked deal name (dealByNo map by deal_no); falls back to the sheet name if no deal match.',
+      'inline-details.jsx: deal panel lists its linked journey project id(s) P-#### (fetched from glint_delivery by deal_no).',
+      'Consistency check: 39/39 projects link to a valid deal with matching company - no orphans or mismatches.',
+    ],
+    files: ['src/bd/lane-warroom.jsx', 'src/bd/inline-details.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.39.6',
+  },
   {
     version: '1.39.5',
     date: '2026-06-10T14:45:00Z',

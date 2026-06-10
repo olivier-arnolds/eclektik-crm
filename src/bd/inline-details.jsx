@@ -790,6 +790,7 @@ export function InlineDealDetail({ deal, rawItems, onCompose, onOpenModal, refet
   const [linkOpen, setLinkOpen] = useState(false);
   const [linkQuery, setLinkQuery] = useState('');
   const [accountsList, setAccountsList] = useState([]);
+  const [linkedProjects, setLinkedProjects] = useState([]);
 
   // Lazily load active accounts when the picker opens
   useEffect(() => {
@@ -797,6 +798,16 @@ export function InlineDealDetail({ deal, rawItems, onCompose, onOpenModal, refet
     supabase.from('companies').select('id,name,type').neq('stage', 'Inactive').order('name')
       .then(({ data }) => setAccountsList(data || []));
   }, [linkOpen, accountsList.length]);
+
+  // Delivery projects (War-room) linked to this deal, so the deal shows its P-#### too.
+  useEffect(() => {
+    const dn = deal.dealNo || rawRow?.deal_no;
+    if (!dn) { setLinkedProjects([]); return; }
+    let cancelled = false;
+    supabase.from('glint_delivery').select('project_no, project_name, journey_stage').eq('deal_no', dn).order('project_no')
+      .then(({ data }) => { if (!cancelled) setLinkedProjects(data || []); });
+    return () => { cancelled = true; };
+  }, [deal.dealNo, rawRow?.deal_no]);
 
   const filteredLink = linkQuery.trim()
     ? accountsList.filter(a => (a.name || '').toLowerCase().includes(linkQuery.trim().toLowerCase())).slice(0, 12)
@@ -857,6 +868,17 @@ export function InlineDealDetail({ deal, rawItems, onCompose, onOpenModal, refet
       {(deal.dealNo || rawRow?.deal_no) && (
         <div style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-3)' }}>
           {deal.dealNo || rawRow?.deal_no}
+        </div>
+      )}
+      {linkedProjects.length > 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', fontSize: 11 }}>
+          <span style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>Journey project{linkedProjects.length > 1 ? 's' : ''}</span>
+          {linkedProjects.map(p => (
+            <span key={p.project_no} title={`${p.project_name || ''}${p.journey_stage ? ' · ' + p.journey_stage : ''}`}
+              style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, color: 'var(--accent)', background: 'var(--fill-1)', borderRadius: 4, padding: '1px 6px' }}>
+              {p.project_no}
+            </span>
+          ))}
         </div>
       )}
       <InlineField label="Deal name" value={titleValue}
