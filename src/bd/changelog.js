@@ -19,9 +19,42 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.39.0';
+export const CURRENT_VERSION = '1.39.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.39.1',
+    date: '2026-06-10T10:00:00Z',
+    author: 'Olivier Arnolds (via Claude / Cowork)',
+    type: 'fix',
+    title: 'Security follow-up: webhook-secret guard op unipile-webhook',
+    summary:
+      'v1.39.0 dekte alle /api endpoints af behalve unipile-webhook — die '
+      + 'bleef open omdat Unipile dashboard geen custom headers toestaat. '
+      + 'Toegevoegd: requireWebhookSecret helper in api/_lib/guard.js die '
+      + 'checkt op een UNIPILE_WEBHOOK_SECRET match in EITHER de '
+      + 'x-webhook-secret header OF de ?secret=... query-param. URL-fallback '
+      + 'is bewust afgewogen tradeoff voor low-traffic internal endpoints '
+      + '(Vercel logt URLs incl. secret). Olivier heeft een nieuwe webhook '
+      + 'eclectik-crm-secured in Unipile aangemaakt met de secret in de '
+      + 'request URL; de oude eclectik-crm webhook gaat 401 krijgen en moet '
+      + 'handmatig worden verwijderd.',
+    changes: [
+      'api/_lib/guard.js: nieuwe requireWebhookSecret(req, res, envName) — header OR query-param match tegen genoemde env var.',
+      'api/unipile-webhook.js: vereist nu UNIPILE_WEBHOOK_SECRET via x-webhook-secret header of ?secret=... in URL.',
+      'Vereist in Vercel env: UNIPILE_WEBHOOK_SECRET (random hex). Olivier heeft die gezet.',
+      'Vereist in Unipile dashboard: nieuwe webhook met request_url eindigend op ?secret=<hex>. Olivier heeft eclectik-crm-secured aangemaakt.',
+      'Cleanup: tijdelijke scripts/unipile-webhook-fix.mjs verwijderd (was helper voor het uitzoeken van Unipile-API-toegang, niet meer nodig).',
+    ],
+    files: [
+      'api/_lib/guard.js',
+      'api/unipile-webhook.js',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.39.1',
+  },
   {
     version: '1.39.0',
     date: '2026-06-09T22:13:29Z',
