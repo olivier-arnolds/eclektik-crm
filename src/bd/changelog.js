@@ -19,9 +19,24 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.39.1';
+export const CURRENT_VERSION = '1.39.2';
 
 export const CHANGELOG = [
+  {
+    version: '1.39.2',
+    date: '2026-06-10T13:00:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feat',
+    title: 'Customer journey: reflow lanes + new Client Accountability Review lane',
+    summary:
+      'Reordered the journey board to follow the cadence vertically: Survey live now sits under Launch (under Configure & QA), and Insights review & action sits under Close & results rollout. Added a new PS lane "Client Accountability Review" after Enablement & embedding - the quarterly PS check-in on how things are moving and whether managers acted on their results (and how often they checked in). New lane starts empty; drag projects in and the placement persists.',
+    changes: [
+      'lane-warroom.jsx: new JOURNEY phase "car" (Client Accountability Review, PS lead, every quarter).',
+      'lane-warroom.jsx: JOURNEY_COLUMNS regrouped to [prep] · [configure/launch/live] · [rollout/review] · [embed/car] · [offrails/graveyard].',
+    ],
+    files: ['src/bd/lane-warroom.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.39.2',
+  },
   {
     version: '1.39.1',
     date: '2026-06-10T10:00:00Z',

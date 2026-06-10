@@ -435,14 +435,16 @@ const JOURNEY_PHASES = [
   { key: 'rollout',   lead: 'PS',  label: 'Close & results rollout',  when: 'days after close',   action: 'Release results; staged comms ~1 / 3–4 / 5–7 days after close.', sku: 'Managed results rollout' },
   { key: 'review',    lead: 'PS',  label: 'Insights review & action', when: '1–3 wks after',      action: 'Insight Review + facilitated action-planning workshop; wk-4 / wk-8 check-ins.', sku: 'Action-planning workshop' },
   { key: 'embed',     lead: 'PS',  label: 'Enablement & embedding',   when: 'months after',       action: 'Manager/HRBP training, Team Conversations + Nudges, Pulse, quarterly retainer.', sku: 'Enablement + quarterly retainer' },
+  { key: 'car',       lead: 'PS',  label: 'Client Accountability Review', when: 'every quarter',  action: 'Quarterly PS check-in: how are things moving, did managers act on their results and how often did they check in, what has changed since last cycle.', sku: 'Quarterly accountability review' },
   { key: 'offrails',  lead: 'OFF', label: 'Off Rails',                when: 'needs attention',    action: 'Stalled, blocked, overdue or churn-risk — needs an intervention / save play.', sku: 'Recovery / re-engagement' },
   { key: 'graveyard', lead: 'GY',  label: 'Graveyard',                when: 'dormant / closed',   action: 'Won or delivered but no live project — dormant. Warm renewal candidate for the next cycle.', sku: 'Re-engagement / renewal' },
 ];
 const LEAD_COLOR = { CS: '#185FA5', PS: '#0F6E56', OFF: '#C0392B', GY: '#6B7280' }; // CS · PS · off-rails · graveyard
-// Board columns: most lanes stand alone, but Launch sits under Configure and
-// Graveyard under Off Rails so the 9 lanes fit the screen width as 7 columns.
+// Board columns: lanes are stacked into columns to fit the screen width.
+// Survey live sits under Launch (under Configure); Insights review under Close
+// & results rollout; Graveyard under Off Rails.
 const JOURNEY_COLUMNS = [
-  ['prep'], ['configure', 'launch'], ['live'], ['rollout'], ['review'], ['embed'], ['offrails', 'graveyard'],
+  ['prep'], ['configure', 'launch', 'live'], ['rollout', 'review'], ['embed', 'car'], ['offrails', 'graveyard'],
 ];
 const JOURNEY_KEYS = new Set(JOURNEY_PHASES.map(p => p.key));
 

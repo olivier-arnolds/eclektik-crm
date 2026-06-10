@@ -28,15 +28,18 @@ insert into patterns (slug, name, framework, description, frequency, applies_to)
 ('instrument-provenance-gap','Instrument / provenance gap','BOTH','Reconstructed or lost decks, instrument switches breaking comparability. Methodological pattern, not organisational.','~3/14','["alex-lee","liberty","sage-product"]'::jsonb),
 ('scores-relationship-decoupling','Scores-relationship decoupling','BOTH','Engagement improves yet the client relationship closes. Eclectik-commercial pattern; track for our own funnel.','~2/14','["westfalen","redsox"]'::jsonb);
 
--- Optional but recommended: queryable tagging join table
--- create table analysis_patterns (
---   analysis_id uuid references analyses(id) on delete cascade,
---   pattern_slug text references patterns(slug),
---   note text,
---   primary key (analysis_id, pattern_slug)
--- );
--- (RLS auto-enables via the rls_auto_enable event trigger; add the standard
---  authenticated-full-access policy.)
+-- Tagging join table: which analysis exhibits which pattern
+create table analysis_patterns (
+  analysis_id uuid references analyses(id) on delete cascade,
+  pattern_slug text references patterns(slug),
+  note text,
+  primary key (analysis_id, pattern_slug)
+);
+
+-- RLS auto-enables via the rls_auto_enable event trigger; without a policy
+-- the table would be unreadable, so add the standard one:
+create policy "auth users full access on analysis_patterns"
+  on analysis_patterns for all to authenticated using (true) with check (true);
 
 -- Version + audit log (methodology change → version bump)
 insert into version_log (version, entry_type, occurred_at, title, body_md, product)
