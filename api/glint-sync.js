@@ -225,13 +225,24 @@ export default async function handler(req, res) {
   // Link to CRM accounts by normalised name.
   const { data: companies } = await supabase.from('companies').select('id, name');
   const norm = (s) => String(s || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+  // Explicit aliases for sheet names that don't cleanly match a company record
+  // (e.g. the sheet writes "PIMCO Prima Real Estate"; the company is "...Prime...").
+  const COMPANY_ALIAS = {
+    pimcoprimarealestate: '09ff4099-9ef5-4931-9890-84a14d5103fa', // PIMCO Prime Real Estate (NOT IMC)
+  };
   const matchCompany = (name) => {
     const n = norm(name);
     if (!n) return null;
+    if (COMPANY_ALIAS[n]) return COMPANY_ALIAS[n];
     const exact = (companies || []).find(c => norm(c.name) === n);
     if (exact) return exact.id;
-    const partial = (companies || []).find(c => norm(c.name).includes(n) || n.includes(norm(c.name)));
-    return partial?.id || null;
+    // company name contains the (shorter) client name — safe direction
+    const contains = (companies || []).find(c => n.length >= 4 && norm(c.name).includes(n));
+    if (contains) return contains.id;
+    // client name contains a company name — ONLY for distinctive names (>= 5 chars),
+    // so a short name like "IMC" can't match inside "pIMCo Prima Real Estate".
+    const within = (companies || []).find(c => norm(c.name).length >= 5 && n.includes(norm(c.name)));
+    return within?.id || null;
   };
 
   const nowIso = new Date().toISOString();

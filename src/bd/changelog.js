@@ -19,9 +19,24 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.39.3';
+export const CURRENT_VERSION = '1.39.4';
 
 export const CHANGELOG = [
+  {
+    version: '1.39.4',
+    date: '2026-06-10T14:00:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'fix',
+    title: 'Fix: PIMCO Prime Real Estate projects mislinked to IMC',
+    summary:
+      'The 3 "PIMCO Prima Real Estate" journey projects pointed at IMC\'s account because the sync matched the substring "imc" inside "pIMCo". Fixed the company matcher in glint-sync (no short reverse-substring matches; a name must be >= 5 chars to match inside a longer client name) plus an explicit alias for the sheet\'s "Prima" vs company "Prime" typo, so a re-sync can no longer re-break it. Repointed the 3 rows to PIMCO Prime Real Estate. Checked all 40 journey links - the rest were correct.',
+    changes: [
+      'api/glint-sync.js: matchCompany hardened - alias map + min-length guards to stop "IMC" matching inside "PIMCO".',
+      'glint_delivery: P-0026/27/28 repointed to PIMCO Prime Real Estate (backup _dq_backup_glint_delivery_20260610).',
+    ],
+    files: ['api/glint-sync.js', 'sql/data_glint_delivery_pimco_relink_2026-06-10.sql', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.39.4',
+  },
   {
     version: '1.39.3',
     date: '2026-06-10T13:30:00Z',
