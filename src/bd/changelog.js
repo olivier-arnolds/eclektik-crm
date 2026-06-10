@@ -19,9 +19,24 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.39.4';
+export const CURRENT_VERSION = '1.39.5';
 
 export const CHANGELOG = [
+  {
+    version: '1.39.5',
+    date: '2026-06-10T14:45:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'fix',
+    title: 'Stop edits from resetting the view; fixes journey-tab jump + 360 product-line save',
+    summary:
+      'Editing a field in Account 360 (or anywhere) triggered a data refetch, and BDApp showed a full-screen "Loading…" on every refetch - which unmounted the current view. That reset the War-room tab back to Projects and made changes like picking a product line in the 360 appear not to save (the view re-mounted before the refetch settled). Now the loading screen only shows on the very first load; later refetches keep the current view and tab mounted, so edits stick and you stay where you were. Also removed a redundant PIMCO Prime Real Estate Graveyard card (P-0029) that only existed because of the earlier IMC mislink.',
+    changes: [
+      'BDApp.jsx: loading screen gated to first load only (loadedOnceRef) - background refetches no longer blank/unmount the view.',
+      'glint_delivery: deleted graveyard card P-0029 (PIMCO Prime, false duplicate of the real project P-0028); backup _dq_backup_glint_delivery_p0029_20260610.',
+    ],
+    files: ['src/bd/BDApp.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.39.5',
+  },
   {
     version: '1.39.4',
     date: '2026-06-10T14:00:00Z',

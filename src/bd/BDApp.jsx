@@ -115,6 +115,11 @@ export default function BDApp() {
   const { session, hasGraphToken } = useAuth();
   const userName = session?.user?.user_metadata?.full_name || session?.user?.email || '';
   const { deals, accounts, contacts, comms, events, tasks, loading, refetch, rawAllItems, rawAccounts, rawContacts, allTags, truncated } = useBDData();
+  // Only blank the screen for the FIRST load. Later refetches (e.g. after editing
+  // a field in Account 360) keep the current view mounted so the active tab and
+  // place aren't lost.
+  const loadedOnceRef = useRef(false);
+  if (!loading) loadedOnceRef.current = true;
   const [truncWarnDismissed, setTruncWarnDismissed] = useState(false);
 
   // ---- Graph fetches (once, cached in state) ----
@@ -228,7 +233,7 @@ export default function BDApp() {
             onOpenPlaybooks={() => setView('playbooks')} />
   );
 
-  if (loading) {
+  if (loading && !loadedOnceRef.current) {
     return (
       <div className={`app theme-${theme}`}>
         {topbar}
