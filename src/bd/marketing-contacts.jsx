@@ -41,6 +41,11 @@ function exportContactsToCSV(contacts) {
   setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
+// Afgeleide pseudo-status — geen waarde in companies.type, wordt
+// automatisch berekend uit deals met stage='proposal'. Verschijnt in de
+// Account Status filter naast de echte DB-statussen.
+const PROPOSAL_STATUS = 'Prospect with proposal';
+
 // Marketing → Contacts tab
 // Props: contacts, accounts, deals, allTags, refetch
 // Layout: filter sidebar (left, ~260px) + list (right, fills)
@@ -184,11 +189,13 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
     return m;
   }, [accounts]);
 
-  // Unique account types present in the data, sorted
+  // Unique account types present in the data, sorted. PROPOSAL_STATUS is
+  // een afgeleide pseudo-status: niet in DB, altijd zichtbaar in filter.
   const accountTypes = useMemo(() => {
     const set = new Set();
     for (const a of (accounts || [])) if (a.type) set.add(a.type);
     for (const t of extraStatuses) set.add(t);
+    set.add(PROPOSAL_STATUS);
     return [...set].sort();
   }, [accounts, extraStatuses]);
 
@@ -237,6 +244,16 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
     for (const d of deals) if (d.accountId) set.add(d.accountId);
     return set;
   }, [deals]);
+  // Bedrijven met een open deal in 'proposal'-stage (subStatus='proposal' op
+  // opportunities). Drijft de afgeleide pseudo-status "Prospect with
+  // proposal" in de Account Status filter — geen handmatig taggen nodig.
+  const accountsWithActiveProposal = useMemo(() => {
+    const set = new Set();
+    for (const d of deals) {
+      if (d.stage === 'proposal' && d.accountId) set.add(d.accountId);
+    }
+    return set;
+  }, [deals]);
 
   const filtered = useMemo(() => {
     const q = searchText.trim().toLowerCase();
@@ -254,7 +271,14 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
       }
       if (selectedAccountTypes.size > 0) {
         const t = accountTypeById.get(c.accountId);
-        if (!t || !selectedAccountTypes.has(t)) return false;
+        // OR-match: contact past als zijn account-type één van de
+        // geselecteerde statuses is, OF (voor PROPOSAL_STATUS) als zijn
+        // account een active proposal-deal heeft.
+        const matches = [...selectedAccountTypes].some(sel => {
+          if (sel === PROPOSAL_STATUS) return accountsWithActiveProposal.has(c.accountId);
+          return t === sel;
+        });
+        if (!matches) return false;
       }
       if (q) {
         const hay = [c.name, c.role, c.account, c.email].filter(Boolean).join(' ').toLowerCase();
@@ -272,7 +296,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
       if (cmp !== 0) return cmp;
       return (a.name || '').toLowerCase().localeCompare((b.name || '').toLowerCase());
     });
-  }, [contacts, activeOnly, hasEmail, noEmail, hasLinkedin, noLinkedin, hasGlintDeal, hasAnyDeal, accountsWithGlintDeal, accountsWithAnyDeal, selectedTagIds, selectedAccountTypes, accountTypeById, searchText, hiddenPairs]);
+  }, [contacts, activeOnly, hasEmail, noEmail, hasLinkedin, noLinkedin, hasGlintDeal, hasAnyDeal, accountsWithGlintDeal, accountsWithAnyDeal, accountsWithActiveProposal, selectedTagIds, selectedAccountTypes, accountTypeById, searchText, hiddenPairs]);
 
   // Inline email edit — optimistic-free: save then refetch so the parent
   // cache stays the single source of truth.
