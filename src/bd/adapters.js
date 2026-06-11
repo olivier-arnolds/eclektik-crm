@@ -117,6 +117,7 @@ export function adaptContact(row, adaptedAccounts) {
     isFormer: !!row.isFormer || !!row.isInactive,
     isInactive: !!row.isInactive,
     linkedin_url: row.linkedin_url || '',
+    do_not_email: !!row.do_not_email,
     tags: Array.isArray(row.tags) ? row.tags : [],
   };
 }
