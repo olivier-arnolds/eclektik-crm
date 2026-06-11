@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '../supabase';
+import { readableTextColor } from '../lib/color-utils';
 
 // Modal for adding or removing tags on a batch of selected contacts.
 // Props:
@@ -79,11 +80,12 @@ export default function BulkTagModal({ contactIds, allTags, userEmail, onClose, 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 12 }}>
           {(allTags || []).map(tag => {
             const selected = selectedTagIds.has(tag.id);
+            const textColor = readableTextColor(tag.color);
             return (
               <button key={tag.id} onClick={() => toggleTag(tag.id)} disabled={busy}
                 style={{
                   background: selected ? tag.color + '33' : 'transparent',
-                  color: tag.color,
+                  color: textColor,
                   border: `0.5px solid ${tag.color}${selected ? 'aa' : '44'}`,
                   borderRadius: 10,
                   padding: '4px 10px',

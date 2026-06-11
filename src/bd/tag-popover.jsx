@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from '../supabase';
+import { readableTextColor } from '../lib/color-utils';
 
 // Popover for adding/removing tags on a contact.
 // Props:
@@ -69,13 +70,14 @@ export default function TagPopover({ contactId, currentTags, allTags, userEmail,
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
         {(allTags || []).map(tag => {
           const selected = currentIds.has(tag.id);
+          const textColor = readableTextColor(tag.color);
           return (
             <button key={tag.id}
               onClick={() => toggle(tag)}
               disabled={busy}
               style={{
                 background: selected ? tag.color + '33' : 'transparent',
-                color: tag.color,
+                color: textColor,
                 border: `0.5px solid ${tag.color}${selected ? 'aa' : '44'}`,
                 borderRadius: 10,
                 padding: '3px 9px',

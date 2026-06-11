@@ -1,3 +1,5 @@
+import { readableTextColor } from '../lib/color-utils';
+
 // Small coloured chip representing one tag.
 // `tag` shape: { id, name, color, type }
 // Optional `onRemove` shows an × button (called with the tag object).
@@ -9,6 +11,7 @@ export default function TagChip({ tag, onRemove, onClick, small }) {
   const padding = small ? '1px 6px' : '2px 8px';
   const fontSize = small ? 9 : 10;
   const interactive = !!onClick;
+  const textColor = readableTextColor(tag.color);
   return (
     <span
       title={interactive ? `Click to remove ${tag.name}` : (tag.description || tag.name)}
@@ -22,7 +25,7 @@ export default function TagChip({ tag, onRemove, onClick, small }) {
         fontSize,
         fontWeight: 500,
         background: tag.color + '22', // 13% opacity tint of the tag color
-        color: tag.color,
+        color: textColor,
         border: `0.5px solid ${tag.color}66`, // 40% opacity border
         whiteSpace: 'nowrap',
         lineHeight: 1.2,
@@ -36,7 +39,7 @@ export default function TagChip({ tag, onRemove, onClick, small }) {
           style={{
             background: 'transparent',
             border: 'none',
-            color: tag.color,
+            color: textColor,
             cursor: 'pointer',
             padding: 0,
             fontSize: fontSize + 2,
