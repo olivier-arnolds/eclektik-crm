@@ -73,12 +73,17 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
     setBusy(true);
     setResult(null);
 
+    // Server-side templating: stuur alleen merge-vars per recipient, niet de
+    // volledige geïnlinete HTML. Voor 88+ recipients zou inline-HTML de
+    // Vercel body-limit overschrijden (413 Request Entity Too Large).
+    // Backend rendert html_body + per-recipient vars in marketing-send.js.
     const payloadRecipients = testOnly
-      ? [{ contact_id: null, email: sentBy, html: renderTemplate(htmlBody, previewVars) }]
-      : recipients.filter(r => r.email).map(r => {
-          const v = varsForContact(r);
-          return { contact_id: r.id, email: r.email, html: renderTemplate(htmlBody, v) };
-        });
+      ? [{ contact_id: null, email: sentBy, vars: previewVars }]
+      : recipients.filter(r => r.email).map(r => ({
+          contact_id: r.id,
+          email: r.email,
+          vars: varsForContact(r),
+        }));
 
     if (payloadRecipients.length === 0) {
       setResult({ ok: false, error: 'No recipients with an email address' });

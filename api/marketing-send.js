@@ -13,6 +13,7 @@ import { requireUser } from './_lib/guard.js';
 //   - 2 consecutive server (5xx) errors → abort, mark campaign 'failed'
 //   - 401/403 → abort immediately
 import { createClient } from '@supabase/supabase-js';
+import { renderTemplate } from '../src/lib/template-vars.js';
 
 const RESEND_API = 'https://api.resend.com/emails';
 const PER_SEND_DELAY_MS = 250;
@@ -86,7 +87,13 @@ export default async function handler(req, res) {
   let abortReason = null;
 
   for (const r of recipients) {
-    const recipientHtml = r.html || html_body;
+    // Server-side templating: nieuwe clients sturen alleen 'vars' per
+    // recipient (klein); legacy/test paden kunnen nog volledige 'html'
+    // meesturen. Voor 88+ recipients zou inline html een 413
+    // 'Request Entity Too Large' veroorzaken — vandaar de vars-flow.
+    const recipientHtml = r.html
+      ? r.html
+      : (r.vars ? renderTemplate(html_body, r.vars) : html_body);
     const headers = reply_to ? { 'Reply-To': reply_to } : undefined;
     const result = await resendSend({
       from: fromHeader, to: r.email, subject, html: recipientHtml, headers,
