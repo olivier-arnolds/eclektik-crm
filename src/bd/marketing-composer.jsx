@@ -77,7 +77,7 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
     // volledige geïnlinete HTML. Voor 88+ recipients zou inline-HTML de
     // Vercel body-limit overschrijden (413 Request Entity Too Large).
     // Backend rendert html_body + per-recipient vars in marketing-send.js.
-    const payloadRecipients = testOnly
+    let payloadRecipients = testOnly
       ? [{ contact_id: null, email: sentBy, vars: previewVars }]
       : recipients.filter(r => r.email).map(r => ({
           contact_id: r.id,
@@ -89,6 +89,64 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
       setResult({ ok: false, error: 'No recipients with an email address' });
       setBusy(false);
       return;
+    }
+
+    // Spam-preventie: check welke recipients in de afgelopen 3 dagen al een
+    // campaign-mail van ons hebben gehad (status sent of delivered). Skip die
+    // by-default, met override-optie. Test-sends skippen deze check (eigen mail).
+    if (!testOnly) {
+      const threeDaysAgo = new Date(Date.now() - 3 * 86400000).toISOString();
+      const contactIds = payloadRecipients.map(r => r.contact_id).filter(Boolean);
+      const emails = payloadRecipients.map(r => r.email);
+      const recentIds = new Set();
+      const recentEmails = new Set();
+      try {
+        if (contactIds.length > 0) {
+          const { data } = await supabase
+            .from('campaign_sends')
+            .select('contact_id')
+            .in('contact_id', contactIds)
+            .in('status', ['sent', 'delivered'])
+            .gte('sent_at', threeDaysAgo);
+          for (const r of (data || [])) if (r.contact_id) recentIds.add(r.contact_id);
+        }
+        if (emails.length > 0) {
+          const { data } = await supabase
+            .from('campaign_sends')
+            .select('recipient_email')
+            .in('recipient_email', emails)
+            .in('status', ['sent', 'delivered'])
+            .gte('sent_at', threeDaysAgo);
+          for (const r of (data || [])) if (r.recipient_email) recentEmails.add(r.recipient_email.toLowerCase());
+        }
+      } catch (err) {
+        console.warn('Recent-send check faalde, doorgaan zonder filter:', err);
+      }
+      const skip = payloadRecipients.filter(r =>
+        (r.contact_id && recentIds.has(r.contact_id)) || recentEmails.has((r.email || '').toLowerCase())
+      );
+      if (skip.length > 0) {
+        const remaining = payloadRecipients.length - skip.length;
+        const sample = skip.slice(0, 5).map(r => r.email).join(', ');
+        const moreNote = skip.length > 5 ? ` (en ${skip.length - 5} meer)` : '';
+        const ok = confirm(
+          `Spam-preventie: ${skip.length} van de ${payloadRecipients.length} contacten kregen in de afgelopen 3 dagen al een campaign-mail van ons.\n\n` +
+          `Voorbeeld: ${sample}${moreNote}\n\n` +
+          `Klik OK om alleen naar de overige ${remaining} contact${remaining === 1 ? '' : 'en'} te mailen.\n` +
+          `Annuleer om alle ${payloadRecipients.length} alsnog te mailen (override).`
+        );
+        if (ok) {
+          payloadRecipients = payloadRecipients.filter(r =>
+            !((r.contact_id && recentIds.has(r.contact_id)) || recentEmails.has((r.email || '').toLowerCase()))
+          );
+        }
+        // Bij Annuleer: laat payloadRecipients ongewijzigd (full send).
+      }
+      if (payloadRecipients.length === 0) {
+        setResult({ ok: false, error: 'Alle geselecteerde contacten kregen in de afgelopen 3 dagen al een campaign-mail.' });
+        setBusy(false);
+        return;
+      }
     }
 
     try {
