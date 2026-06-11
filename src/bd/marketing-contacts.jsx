@@ -275,7 +275,11 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
         // geselecteerde statuses is, OF (voor PROPOSAL_STATUS) als zijn
         // account een active proposal-deal heeft.
         const matches = [...selectedAccountTypes].some(sel => {
-          if (sel === PROPOSAL_STATUS) return accountsWithActiveProposal.has(c.accountId);
+          if (sel === PROPOSAL_STATUS) {
+            // Sluit Customer-accounts uit zodat ze niet dubbel worden
+            // gemaild — zij staan al onder hun eigen 'Customer' filter.
+            return accountsWithActiveProposal.has(c.accountId) && t !== 'Customer';
+          }
           return t === sel;
         });
         if (!matches) return false;
