@@ -9,13 +9,39 @@ export default function CampaignDetail({ campaignId, onBack }) {
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      // Twee aparte queries i.p.v. een nested FK-fetch op contacts.
+      // Reden: er bestaat geen formele FK-constraint tussen
+      // campaign_sends.contact_id en contacts.id, dus PostgREST kan
+      // de embedded select niet resolven en faalt met 400.
       const [{ data: c }, { data: s }] = await Promise.all([
         supabase.from('campaigns').select('*').eq('id', campaignId).single(),
-        supabase.from('campaign_sends').select('*, contacts(full_name, name, first_name, last_name, email)').eq('campaign_id', campaignId).order('sent_at', { ascending: false, nullsFirst: false }),
+        supabase.from('campaign_sends')
+          .select('*')
+          .eq('campaign_id', campaignId)
+          .order('sent_at', { ascending: false, nullsFirst: false }),
       ]);
       if (cancelled) return;
+
+      // Verzamel de unieke contact_ids en haal die contacten in één
+      // separate call op. Join client-side via een lookup-map.
+      const contactIds = [...new Set((s || []).map(r => r.contact_id).filter(Boolean))];
+      let contactsById = {};
+      if (contactIds.length > 0) {
+        const { data: contactRows } = await supabase
+          .from('contacts')
+          .select('id, full_name, first_name, last_name, email')
+          .in('id', contactIds);
+        if (cancelled) return;
+        contactsById = Object.fromEntries((contactRows || []).map(r => [r.id, r]));
+      }
+
+      const enriched = (s || []).map(row => ({
+        ...row,
+        contacts: row.contact_id ? contactsById[row.contact_id] || null : null,
+      }));
+
       setCampaign(c || null);
-      setSends(s || []);
+      setSends(enriched);
       setLoading(false);
     })();
     return () => { cancelled = true; };
