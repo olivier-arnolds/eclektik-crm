@@ -221,15 +221,19 @@ export function InlineContactDetail({ contactId, onCompose, refetch, allTags, on
   async function enrollInPlaybook() {
     if (!selectedPlaybookId) { alert('Kies eerst een playbook.'); return; }
     setEnrolling(true);
+    // playbook_enrollments heeft geen company_id kolom — de cron derived
+    // het company-veld via contact.company_id wanneer nodig.
     const { error } = await supabase.from('playbook_enrollments').insert({
       playbook_id: selectedPlaybookId,
       contact_id: contactId,
-      company_id: row.company_id || null,
       status: 'active',
       source: 'manual',
       source_context: { user_intent: intent.trim(), manual_enrollment: true },
       enrolled_at: new Date().toISOString(),
       next_action_at: new Date().toISOString(),
+      // Legacy compat met oude playbook-enroll-modal.jsx schema:
+      start_date: new Date().toISOString().split('T')[0],
+      current_step: 0,
     });
     setEnrolling(false);
     if (error) {
