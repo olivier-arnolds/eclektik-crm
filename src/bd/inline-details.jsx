@@ -195,9 +195,9 @@ export function InlineContactDetail({ contactId, onCompose, refetch, allTags, on
     if (refetch) refetch();
   };
 
-  if (loading || !row) return <div style={{ fontSize: 11, color: 'var(--text-3)' }}>Loading…</div>;
-
-  // Playbook-enrollment vanuit contact-detail. State + handlers.
+  // Playbook-enrollment vanuit contact-detail. State + handlers — MOETEN
+  // boven de early-return staan (Rules of Hooks: zelfde aantal hooks per
+  // render, ongeacht loading-state).
   const [showPlaybookForm, setShowPlaybookForm] = useState(false);
   const [playbookOptions, setPlaybookOptions] = useState([]);
   const [selectedPlaybookId, setSelectedPlaybookId] = useState('');
@@ -212,6 +212,8 @@ export function InlineContactDetail({ contactId, onCompose, refetch, allTags, on
       .order('name')
       .then(({ data }) => setPlaybookOptions(data || []));
   }, [showPlaybookForm]);
+
+  if (loading || !row) return <div style={{ fontSize: 11, color: 'var(--text-3)' }}>Loading…</div>;
 
   async function enrollInPlaybook() {
     if (!selectedPlaybookId) { alert('Kies eerst een playbook.'); return; }
