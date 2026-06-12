@@ -145,7 +145,9 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
       const data = await resp.json();
       setSurfeFinding(false);
       if (!resp.ok) {
-        alert('Surfe klaar (fout): ' + (data.error || `HTTP ${resp.status}`));
+        console.error('Surfe error full response:', data);
+        const detail = data.surfe_response ? `\n\nSurfe says:\n${JSON.stringify(data.surfe_response, null, 2)}` : '';
+        alert('Surfe klaar (fout): ' + (data.error || `HTTP ${resp.status}`) + detail);
       } else {
         alert(`Surfe klaar:\n✓ ${data.found} email gevonden\n⊘ ${data.no_email} geen email in Surfe\n✗ ${data.failed} fout`);
       }

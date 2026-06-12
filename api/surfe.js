@@ -79,7 +79,17 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Surfe start request failed: ' + err.message });
   }
   if (!startResp.ok) {
-    return res.status(400).json({ error: startData?.message || `Surfe ${startResp.status}`, surfe_response: startData });
+    // Geef de volledige Surfe response door zodat frontend de exacte
+    // validation-error kan tonen (welk veld is fout).
+    return res.status(400).json({
+      error: startData?.message || startData?.code || `Surfe ${startResp.status}`,
+      surfe_status: startResp.status,
+      surfe_response: startData,
+      sent_payload_sample: {
+        first_person: eligible[0] ? { linkedinUrl: eligible[0].linkedin_url, first: eligible[0].first_name, last: eligible[0].last_name } : null,
+        include: { emails: true },
+      },
+    });
   }
   const enrichmentID = startData.enrichmentID || startData.enrichment_id || startData.id;
   if (!enrichmentID) {
