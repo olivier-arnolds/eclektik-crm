@@ -175,7 +175,7 @@ export function InlineContactDetail({ contactId, onCompose, refetch, allTags, on
     const slugMatch = (row.companies?.linkedin_url || '').match(/linkedin\.com\/company\/([^\/\?]+)/);
     const slug = slugMatch ? slugMatch[1] : '';
     const keywords = [row.full_name, slug || company].filter(Boolean).join(' ');
-    window.open(`https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(keywords)}`, '_blank', 'noopener,width=1000,height=700');
+    window.open(`https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(keywords)}`, '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -673,7 +673,7 @@ export function InlineAccountDetails({ accountId, onPickAccount }) {
               title="Search this company on Google"
               onClick={() => {
                 const q = encodeURIComponent(`${row.name || ''} official website`);
-                window.open(`https://www.google.com/search?q=${q}`, '_blank', 'noopener,width=1000,height=700');
+                window.open(`https://www.google.com/search?q=${q}`, '_blank', 'noopener,noreferrer');
               }}
               style={{ cursor: 'pointer', textDecoration: 'underline dotted', textUnderlineOffset: 2 }}>
               Website
@@ -687,7 +687,7 @@ export function InlineAccountDetails({ accountId, onPickAccount }) {
               title="Search this company on LinkedIn"
               onClick={() => {
                 const q = encodeURIComponent(row.name || '');
-                window.open(`https://www.linkedin.com/search/results/companies/?keywords=${q}`, '_blank', 'noopener,width=1000,height=700');
+                window.open(`https://www.linkedin.com/search/results/companies/?keywords=${q}`, '_blank', 'noopener,noreferrer');
               }}
               style={{ cursor: 'pointer', textDecoration: 'underline dotted', textUnderlineOffset: 2 }}>
               LinkedIn URL
