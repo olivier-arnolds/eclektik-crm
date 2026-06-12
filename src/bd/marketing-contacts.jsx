@@ -592,15 +592,28 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
           paddingBottom: 4,
           marginBottom: 4,
         }}>
-        <div style={{ marginBottom: 8 }}>
+        <div style={{ marginBottom: 8, position: 'relative' }}>
           <input type="text" value={searchText} onChange={e => setSearchText(e.target.value)}
             placeholder="Search by name, role, account, or email…"
             style={{
-              width: '100%', padding: '8px 12px', borderRadius: 8,
+              width: '100%',
+              padding: searchText ? '8px 32px 8px 12px' : '8px 12px',
+              borderRadius: 8,
               border: '0.5px solid var(--sep)', background: 'var(--bg-1)',
               fontSize: 13, fontFamily: 'inherit', outline: 'none',
               boxSizing: 'border-box',
             }} />
+          {searchText && (
+            <button
+              onClick={() => setSearchText('')}
+              title="Clear search"
+              style={{
+                position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
+                background: 'transparent', border: 'none', cursor: 'pointer',
+                padding: '2px 6px', fontSize: 16, lineHeight: 1,
+                color: 'var(--text-3)', borderRadius: 4,
+              }}>×</button>
+          )}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--text-3)', cursor: 'pointer' }}>

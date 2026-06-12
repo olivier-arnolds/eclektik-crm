@@ -19,9 +19,23 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.39.10';
+export const CURRENT_VERSION = '1.39.11';
 
 export const CHANGELOG = [
+  {
+    version: '1.39.11',
+    date: '2026-06-12T14:35:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feat',
+    title: 'Clear-knop (×) in Marketing-zoekbalk',
+    summary:
+      'Kleine × verschijnt rechts in de Marketing-zoekbalk zodra je iets typt. Klik = zoektekst meteen leeg, lijst toont weer alle contacten (rekening houdend met de actieve sidebar-filters). Geen × als de balk leeg is.',
+    changes: [
+      'marketing-contacts.jsx: search-input in een relative container; conditionele × button rechts wanneer searchText niet leeg is.',
+    ],
+    files: ['src/bd/marketing-contacts.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.39.11',
+  },
   {
     version: '1.39.10',
     date: '2026-06-12T14:25:00Z',
