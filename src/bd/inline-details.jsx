@@ -168,7 +168,74 @@ export function InlineContactDetail({ contactId, onCompose, refetch, allTags, on
     }
   };
 
+  // Maak een nieuw company-record aan met opgegeven naam (en default type
+  // Prospect), koppel het direct aan dit contact, en trigger refetch zodat de
+  // companies-prop in andere views ook de nieuwe naam ziet. Olivier kan het
+  // type later aanpassen in de account-detail view.
+  const createAndPick = async (name) => {
+    const trimmed = (name || '').trim();
+    if (!trimmed) return;
+    setSaving(s => ({ ...s, company_id: true }));
+    const { data, error } = await supabase.from('companies')
+      .insert({ name: trimmed, type: 'Prospect' })
+      .select('id, name, type')
+      .single();
+    if (error) {
+      setSaving(s => ({ ...s, company_id: false }));
+      alert('Nieuw bedrijf aanmaken mislukt: ' + error.message);
+      return;
+    }
+    const newId = data.id;
+    await supabase.from('contacts').update({
+      company_id: newId,
+      company_name: data.name,
+    }).eq('id', contactId);
+    setSaving(s => ({ ...s, company_id: false }));
+    setRow(r => ({ ...r, company_id: newId, company_name: data.name, companies: { name: data.name } }));
+    if (refetch) refetch();
+  };
+
   if (loading || !row) return <div style={{ fontSize: 11, color: 'var(--text-3)' }}>Loading…</div>;
+
+  // Playbook-enrollment vanuit contact-detail. State + handlers.
+  const [showPlaybookForm, setShowPlaybookForm] = useState(false);
+  const [playbookOptions, setPlaybookOptions] = useState([]);
+  const [selectedPlaybookId, setSelectedPlaybookId] = useState('');
+  const [intent, setIntent] = useState('');
+  const [enrolling, setEnrolling] = useState(false);
+
+  useEffect(() => {
+    if (!showPlaybookForm) return;
+    supabase.from('playbooks')
+      .select('id, name')
+      .eq('status', 'active')
+      .order('name')
+      .then(({ data }) => setPlaybookOptions(data || []));
+  }, [showPlaybookForm]);
+
+  async function enrollInPlaybook() {
+    if (!selectedPlaybookId) { alert('Kies eerst een playbook.'); return; }
+    setEnrolling(true);
+    const { error } = await supabase.from('playbook_enrollments').insert({
+      playbook_id: selectedPlaybookId,
+      contact_id: contactId,
+      company_id: row.company_id || null,
+      status: 'active',
+      source: 'manual',
+      source_context: { user_intent: intent.trim(), manual_enrollment: true },
+      enrolled_at: new Date().toISOString(),
+      next_action_at: new Date().toISOString(),
+    });
+    setEnrolling(false);
+    if (error) {
+      alert('Enrollment mislukt: ' + error.message);
+      return;
+    }
+    setShowPlaybookForm(false);
+    setSelectedPlaybookId('');
+    setIntent('');
+    alert('Contact enrolled in playbook. De cron pakt hem op de volgende werkdag op.');
+  }
 
   const linkedinSearch = () => {
     const company = row.companies?.name || row.company_name || '';
@@ -190,6 +257,7 @@ export function InlineContactDetail({ contactId, onCompose, refetch, allTags, on
           accounts={allAccounts}
           saving={saving.company_id}
           onChange={moveToAccount}
+          onCreateAndPick={createAndPick}
         />
       </div>
       <InlineField label="First name" value={row.first_name} onSave={v => saveField('first_name', v)} />
@@ -208,6 +276,38 @@ export function InlineContactDetail({ contactId, onCompose, refetch, allTags, on
           </span>
         </div>
         <InlineField label="" value={row.linkedin_url} type="url" onSave={v => saveField('linkedin_url', v)} />
+      </div>
+      <div style={{ gridColumn: 'span 2', marginTop: 8 }}>
+        <div style={{ fontSize: 10, color: 'var(--text-3)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'var(--font-mono)' }}>
+          Playbook
+        </div>
+        {!showPlaybookForm ? (
+          <button onClick={() => setShowPlaybookForm(true)}
+            style={{ fontSize: 11, padding: '4px 10px', borderRadius: 10, border: '0.5px dashed var(--text-3)', background: 'transparent', color: 'var(--text-3)', cursor: 'pointer', fontFamily: 'inherit' }}>
+            + Enroll in playbook
+          </button>
+        ) : (
+          <div style={{ border: '0.5px solid var(--accent)', borderRadius: 6, padding: 8, background: 'var(--fill-1)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <select value={selectedPlaybookId} onChange={e => setSelectedPlaybookId(e.target.value)}
+              style={{ padding: '4px 6px', borderRadius: 4, border: '0.5px solid var(--sep)', background: 'var(--bg-1)', color: 'var(--text-1)', fontSize: 12, fontFamily: 'inherit' }}>
+              <option value="">— kies playbook —</option>
+              {playbookOptions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+            <textarea value={intent} onChange={e => setIntent(e.target.value)}
+              placeholder="Insteek voor AI-drafts (bv: 'Refereer aan hun recente Q3 reorganisatie en bied onze pulse-tool aan')"
+              rows={3}
+              style={{ padding: '6px 8px', borderRadius: 4, border: '0.5px solid var(--sep)', background: 'var(--bg-1)', color: 'var(--text-1)', fontSize: 12, resize: 'vertical', fontFamily: 'inherit' }} />
+            <div style={{ fontSize: 10, color: 'var(--text-3)' }}>
+              💡 Beschikbaar in playbook AI-prompts via {'{{user_intent}}'}. Leeg laten = geen extra context.
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6 }}>
+              <button className="btn-ghost tiny" onClick={() => { setShowPlaybookForm(false); setSelectedPlaybookId(''); setIntent(''); }}>Cancel</button>
+              <button className="btn-primary tiny" disabled={enrolling || !selectedPlaybookId} onClick={enrollInPlaybook}>
+                {enrolling ? 'Enrolling…' : 'Enroll'}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
       <div style={{ gridColumn: 'span 2' }}>
         <div style={{ position: 'relative', marginTop: 8 }}>
@@ -323,7 +423,7 @@ export function InlineContactDetail({ contactId, onCompose, refetch, allTags, on
 
 // Picker to link/move a contact to a different account (company).
 // Type to search; click to select; clear with the × on the selected chip.
-function CompanyPicker({ value, label, accounts, onChange, saving }) {
+function CompanyPicker({ value, label, accounts, onChange, onCreateAndPick, saving }) {
   const [editing, setEditing] = useState(false);
   const [query, setQuery] = useState('');
 
@@ -333,8 +433,22 @@ function CompanyPicker({ value, label, accounts, onChange, saving }) {
     return a.name.toLowerCase().includes(q) || (a.type || '').toLowerCase().includes(q);
   }).slice(0, 20);
 
+  // Toon een 'Create new' rij wanneer query iets bevat dat geen exacte
+  // match heeft met een bestaande account. Voorkomt accidentele duplicates.
+  const trimmedQuery = query.trim();
+  const exactMatch = trimmedQuery && filtered.some(a => a.name.toLowerCase() === trimmedQuery.toLowerCase());
+  const showCreate = !!onCreateAndPick && trimmedQuery.length >= 2 && !exactMatch;
+
   const pick = (id) => {
     onChange(id);
+    setEditing(false);
+    setQuery('');
+  };
+
+  const createNew = async () => {
+    if (!onCreateAndPick || !trimmedQuery) return;
+    if (!confirm(`Nieuw bedrijf '${trimmedQuery}' aanmaken als Prospect?\n\nType kun je later aanpassen in account-detail.`)) return;
+    await onCreateAndPick(trimmedQuery);
     setEditing(false);
     setQuery('');
   };
@@ -358,7 +472,7 @@ function CompanyPicker({ value, label, accounts, onChange, saving }) {
             onKeyDown={e => { if (e.key === 'Escape') { setEditing(false); setQuery(''); } }}
             style={{ width: '100%', padding: '4px 8px', borderRadius: 4, border: '0.5px solid var(--sep)', background: 'var(--bg-1)', color: 'var(--text-1)', fontSize: 12, outline: 'none', boxSizing: 'border-box', marginBottom: 4 }} />
           <div style={{ maxHeight: 200, overflowY: 'auto' }}>
-            {filtered.length === 0 && <div style={{ fontSize: 11, color: 'var(--text-3)', fontStyle: 'italic', padding: 6 }}>No matches</div>}
+            {filtered.length === 0 && !showCreate && <div style={{ fontSize: 11, color: 'var(--text-3)', fontStyle: 'italic', padding: 6 }}>No matches</div>}
             {filtered.map(a => (
               <div key={a.id} onClick={() => pick(a.id)}
                 style={{ padding: '5px 8px', cursor: 'pointer', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 6 }}
@@ -368,6 +482,15 @@ function CompanyPicker({ value, label, accounts, onChange, saving }) {
                 {a.type && <div style={{ fontSize: 10, color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>{a.type}</div>}
               </div>
             ))}
+            {showCreate && (
+              <div onClick={createNew}
+                style={{ padding: '6px 8px', cursor: 'pointer', borderRadius: 4, display: 'flex', alignItems: 'center', gap: 6, marginTop: filtered.length > 0 ? 4 : 0, borderTop: filtered.length > 0 ? '0.5px solid var(--sep)' : 'none', color: 'var(--accent)', fontSize: 12, fontWeight: 500 }}
+                onMouseEnter={e => e.currentTarget.style.background = 'var(--accent-tint)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                <span>+ Nieuw bedrijf '{trimmedQuery}' aanmaken</span>
+                <span style={{ fontSize: 10, color: 'var(--text-3)', fontFamily: 'var(--font-mono)', marginLeft: 'auto' }}>Prospect</span>
+              </div>
+            )}
           </div>
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 4 }}>
             <button onClick={() => { setEditing(false); setQuery(''); }} className="btn-ghost tiny">Cancel</button>

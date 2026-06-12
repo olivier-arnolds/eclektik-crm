@@ -168,6 +168,9 @@ async function buildContext(enrollment, now) {
     company,
     owner: { first_name: ownerFirstName },
     signal_context: enrollment.source_context?.signal_content || '',
+    // Door gebruiker handmatig opgegeven 'insteek' bij manual enrollment vanuit
+    // de contact-detail UI. Beschikbaar in AI-prompts via {{user_intent}}.
+    user_intent: enrollment.source_context?.user_intent || '',
   };
 }
 
