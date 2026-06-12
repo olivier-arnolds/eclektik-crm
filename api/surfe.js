@@ -71,7 +71,7 @@ export default async function handler(req, res) {
           lastName: c.last_name || undefined,
           companyName: c.company_name || undefined,
         })),
-        include: { emails: true },
+        include: { email: true, mobile: false },
       }),
     });
     startData = await startResp.json().catch(() => ({}));
@@ -87,7 +87,7 @@ export default async function handler(req, res) {
       surfe_response: startData,
       sent_payload_sample: {
         first_person: eligible[0] ? { linkedinUrl: eligible[0].linkedin_url, first: eligible[0].first_name, last: eligible[0].last_name } : null,
-        include: { emails: true },
+        include: { email: true, mobile: false },
       },
     });
   }
