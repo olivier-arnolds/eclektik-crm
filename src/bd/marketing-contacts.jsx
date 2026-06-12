@@ -46,6 +46,43 @@ function exportContactsToCSV(contacts) {
 // Account Status filter naast de echte DB-statussen.
 const PROPOSAL_STATUS = 'Prospect with proposal';
 
+// Helper: tri-state filter pill (Yes / No / niets aan) voor de status-sidebar.
+// Yes = groen = contact heeft de eigenschap (email, linkedin, follow, active)
+// No  = rood  = contact heeft de eigenschap NIET
+// Klik op zelfde knop schakelt 'm uit (filter naar null = alle contacten).
+function YesNoFilter({ label, value, onChange, extraLabel }) {
+  const btnBase = {
+    padding: '2px 12px', borderRadius: 10, fontSize: 11,
+    fontFamily: 'inherit', cursor: 'pointer', border: '0.5px solid',
+    fontWeight: 500,
+  };
+  const yesActive = value === 'yes';
+  const noActive = value === 'no';
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '3px 0' }}>
+      <span style={{ fontSize: 12, minWidth: 80, color: 'var(--text-1)' }}>
+        {label} {extraLabel && <span style={{ fontSize: 10, color: 'var(--text-3)' }}>{extraLabel}</span>}
+      </span>
+      <button onClick={() => onChange(yesActive ? null : 'yes')}
+        style={{
+          ...btnBase,
+          background: yesActive ? '#dcfce7' : 'transparent',
+          color: yesActive ? '#15803d' : 'var(--text-3)',
+          borderColor: yesActive ? '#16a34a' : 'var(--sep)',
+          fontWeight: yesActive ? 600 : 400,
+        }}>Yes</button>
+      <button onClick={() => onChange(noActive ? null : 'no')}
+        style={{
+          ...btnBase,
+          background: noActive ? '#fee2e2' : 'transparent',
+          color: noActive ? '#b91c1c' : 'var(--text-3)',
+          borderColor: noActive ? '#dc2626' : 'var(--sep)',
+          fontWeight: noActive ? 600 : 400,
+        }}>No</button>
+    </div>
+  );
+}
+
 // Marketing → Contacts tab
 // Props: contacts, accounts, deals, allTags, refetch
 // Layout: filter sidebar (left, ~260px) + list (right, fills)
@@ -55,11 +92,11 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
   const [searchText, setSearchText] = useState('');
   const [hasGlintDeal, setHasGlintDeal] = useState(false);
   const [hasAnyDeal, setHasAnyDeal] = useState(false);
-  const [hasEmail, setHasEmail] = useState(false);
-  const [noEmail, setNoEmail] = useState(false);
-  const [hasLinkedin, setHasLinkedin] = useState(false);
-  const [noLinkedin, setNoLinkedin] = useState(false);
-  const [followedOnly, setFollowedOnly] = useState(false);
+  // 4 status-filters elk met 3 states: null (uit), 'yes' (heeft eigenschap),
+  // 'no' (heeft niet). UI = Yes-knop (groen) + No-knop (rood) per filter.
+  const [emailFilter, setEmailFilter] = useState(null);
+  const [linkedinFilter, setLinkedinFilter] = useState(null);
+  const [followFilter, setFollowFilter] = useState(null);
   const [followedContactIds, setFollowedContactIds] = useState(() => new Set());
 
   // Haal alle contact-ids op die op signal-follow staan (bell-toggle in de
@@ -220,7 +257,8 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
     if (refetch) refetch();
   }
   const [savingEmail, setSavingEmail] = useState(false);
-  const [activeOnly, setActiveOnly] = useState(true);
+  // Default 'yes' (alleen actieve contacten) — gelijk aan het oude activeOnly default
+  const [activeFilter, setActiveFilter] = useState('yes');
   const [showBulkTag, setShowBulkTag] = useState(false);
   // Optimistic-removed (contact_id:tag_id) pairs — see removeTagFromContact
   const [hiddenPairs, setHiddenPairs] = useState(new Set());
@@ -304,12 +342,14 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
   const filtered = useMemo(() => {
     const q = searchText.trim().toLowerCase();
     const matches = contacts.filter(c => {
-      if (activeOnly && c.isFormer) return false;
-      if (hasEmail && !c.email) return false;
-      if (noEmail && c.email) return false;
-      if (hasLinkedin && !c.linkedin_url) return false;
-      if (noLinkedin && c.linkedin_url) return false;
-      if (followedOnly && !followedContactIds.has(c.id)) return false;
+      if (activeFilter === 'yes' && c.isFormer) return false;
+      if (activeFilter === 'no' && !c.isFormer) return false;
+      if (emailFilter === 'yes' && !c.email) return false;
+      if (emailFilter === 'no' && c.email) return false;
+      if (linkedinFilter === 'yes' && !c.linkedin_url) return false;
+      if (linkedinFilter === 'no' && c.linkedin_url) return false;
+      if (followFilter === 'yes' && !followedContactIds.has(c.id)) return false;
+      if (followFilter === 'no' && followedContactIds.has(c.id)) return false;
       if (hasGlintDeal && !accountsWithGlintDeal.has(c.accountId)) return false;
       if (hasAnyDeal && !accountsWithAnyDeal.has(c.accountId)) return false;
       if (selectedTagIds.size > 0) {
@@ -347,7 +387,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
       if (cmp !== 0) return cmp;
       return (a.name || '').toLowerCase().localeCompare((b.name || '').toLowerCase());
     });
-  }, [contacts, activeOnly, hasEmail, noEmail, hasLinkedin, noLinkedin, followedOnly, followedContactIds, hasGlintDeal, hasAnyDeal, accountsWithGlintDeal, accountsWithAnyDeal, accountsWithActiveProposal, selectedTagIds, selectedAccountTypes, accountTypeById, searchText, hiddenPairs]);
+  }, [contacts, activeFilter, emailFilter, linkedinFilter, followFilter, followedContactIds, hasGlintDeal, hasAnyDeal, accountsWithGlintDeal, accountsWithAnyDeal, accountsWithActiveProposal, selectedTagIds, selectedAccountTypes, accountTypeById, searchText, hiddenPairs]);
 
   // Inline email edit — optimistic-free: save then refetch so the parent
   // cache stays the single source of truth.
@@ -495,32 +535,15 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
         )}
 
         <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '12px 0 6px' }}>Status</div>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, padding: '3px 0', cursor: 'pointer' }}>
-          <input type="checkbox" checked={hasEmail} onChange={() => { setHasEmail(v => !v); if (!hasEmail) setNoEmail(false); }} />
-          Has email
-        </label>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, padding: '3px 0', cursor: 'pointer' }}>
-          <input type="checkbox" checked={noEmail} onChange={() => { setNoEmail(v => !v); if (!noEmail) setHasEmail(false); }} />
-          Without email
-        </label>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, padding: '3px 0', cursor: 'pointer' }}>
-          <input type="checkbox" checked={hasLinkedin} onChange={() => { setHasLinkedin(v => !v); if (!hasLinkedin) setNoLinkedin(false); }} />
-          Has LinkedIn
-        </label>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, padding: '3px 0', cursor: 'pointer' }}>
-          <input type="checkbox" checked={noLinkedin} onChange={() => { setNoLinkedin(v => !v); if (!noLinkedin) setHasLinkedin(false); }} />
-          Without LinkedIn
-        </label>
-        <label
-          title="Toon alleen contacten waarvoor het 🔔 signal-follow toggle aanstaat in hun detail-modal"
-          style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, padding: '3px 0', cursor: 'pointer' }}>
-          <input type="checkbox" checked={followedOnly} onChange={() => setFollowedOnly(v => !v)} />
-          Followed only 🔔 <span style={{ fontSize: 10, color: 'var(--text-3)' }}>({followedContactIds.size})</span>
-        </label>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, padding: '3px 0', cursor: 'pointer' }}>
-          <input type="checkbox" checked={activeOnly} onChange={() => setActiveOnly(v => !v)} />
-          Active only
-        </label>
+        <YesNoFilter label="Email" value={emailFilter} onChange={setEmailFilter} />
+        <YesNoFilter label="LinkedIn" value={linkedinFilter} onChange={setLinkedinFilter} />
+        <YesNoFilter
+          label="Follow 🔔"
+          value={followFilter}
+          onChange={setFollowFilter}
+          extraLabel={`(${followedContactIds.size})`}
+        />
+        <YesNoFilter label="Active" value={activeFilter} onChange={setActiveFilter} />
       </aside>
 
       {/* Contact list */}
