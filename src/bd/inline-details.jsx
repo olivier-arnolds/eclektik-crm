@@ -206,9 +206,12 @@ export function InlineContactDetail({ contactId, onCompose, refetch, allTags, on
 
   useEffect(() => {
     if (!showPlaybookForm) return;
+    // Accepteer 'active' EN 'draft' — consistent met bestaande
+    // playbook-enroll-modal.jsx zodat alle gebruikbare playbooks zichtbaar
+    // zijn (niet alleen formeel gepubliceerde).
     supabase.from('playbooks')
-      .select('id, name')
-      .eq('status', 'active')
+      .select('id, name, status')
+      .in('status', ['active', 'draft'])
       .order('name')
       .then(({ data }) => setPlaybookOptions(data || []));
   }, [showPlaybookForm]);
