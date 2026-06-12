@@ -222,15 +222,19 @@ export function InlineContactDetail({ contactId, onCompose, refetch, allTags, on
   async function enrollInPlaybook() {
     if (!selectedPlaybookId) { alert('Kies eerst een playbook.'); return; }
     setEnrolling(true);
-    // Alleen velden die zeker in het Plan 4 playbook_enrollments schema
-    // bestaan. Legacy velden (company_id, current_step, start_date) zijn er
-    // niet meer; de cron derived company via contact.company_id.
+    // Minimale INSERT — alleen velden waarvan we weten dat ze op de tabel
+    // bestaan in het huidige schema. 'source' als aparte kolom bleek niet
+    // aanwezig (alleen 'source_context' jsonb). Plan 4 backfill voegde dat
+    // wel toe maar mogelijk niet het 'source'-veld.
     const { error } = await supabase.from('playbook_enrollments').insert({
       playbook_id: selectedPlaybookId,
       contact_id: contactId,
       status: 'active',
-      source: 'manual',
-      source_context: { user_intent: intent.trim(), manual_enrollment: true },
+      source_context: {
+        user_intent: intent.trim(),
+        manual_enrollment: true,
+        source: 'manual',  // bewaard als label in jsonb i.p.v. eigen kolom
+      },
       enrolled_at: new Date().toISOString(),
       next_action_at: new Date().toISOString(),
     });
