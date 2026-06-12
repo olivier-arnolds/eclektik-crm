@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import TagChip from './tag-chip';
 import BulkTagModal from './marketing-bulk-tag-modal';
 import ContactDetailModal from './contact-detail-modal';
@@ -59,6 +59,23 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
   const [noEmail, setNoEmail] = useState(false);
   const [hasLinkedin, setHasLinkedin] = useState(false);
   const [noLinkedin, setNoLinkedin] = useState(false);
+  const [followedOnly, setFollowedOnly] = useState(false);
+  const [followedContactIds, setFollowedContactIds] = useState(() => new Set());
+
+  // Haal alle contact-ids op die op signal-follow staan (bell-toggle in de
+  // contact-detail modal). Lijst stuurt het 'Followed only' filter.
+  useEffect(() => {
+    let cancelled = false;
+    supabase.from('signal_subjects')
+      .select('contact_id')
+      .eq('enabled', true)
+      .not('contact_id', 'is', null)
+      .then(({ data }) => {
+        if (cancelled) return;
+        setFollowedContactIds(new Set((data || []).map(r => r.contact_id)));
+      });
+    return () => { cancelled = true; };
+  }, []);
   const [editingEmailId, setEditingEmailId] = useState(null);
   const [emailDraft, setEmailDraft] = useState('');
   const [showAddTag, setShowAddTag] = useState(false);
@@ -263,6 +280,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
       if (noEmail && c.email) return false;
       if (hasLinkedin && !c.linkedin_url) return false;
       if (noLinkedin && c.linkedin_url) return false;
+      if (followedOnly && !followedContactIds.has(c.id)) return false;
       if (hasGlintDeal && !accountsWithGlintDeal.has(c.accountId)) return false;
       if (hasAnyDeal && !accountsWithAnyDeal.has(c.accountId)) return false;
       if (selectedTagIds.size > 0) {
@@ -300,7 +318,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
       if (cmp !== 0) return cmp;
       return (a.name || '').toLowerCase().localeCompare((b.name || '').toLowerCase());
     });
-  }, [contacts, activeOnly, hasEmail, noEmail, hasLinkedin, noLinkedin, hasGlintDeal, hasAnyDeal, accountsWithGlintDeal, accountsWithAnyDeal, accountsWithActiveProposal, selectedTagIds, selectedAccountTypes, accountTypeById, searchText, hiddenPairs]);
+  }, [contacts, activeOnly, hasEmail, noEmail, hasLinkedin, noLinkedin, followedOnly, followedContactIds, hasGlintDeal, hasAnyDeal, accountsWithGlintDeal, accountsWithAnyDeal, accountsWithActiveProposal, selectedTagIds, selectedAccountTypes, accountTypeById, searchText, hiddenPairs]);
 
   // Inline email edit — optimistic-free: save then refetch so the parent
   // cache stays the single source of truth.
@@ -463,6 +481,12 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
         <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, padding: '3px 0', cursor: 'pointer' }}>
           <input type="checkbox" checked={noLinkedin} onChange={() => { setNoLinkedin(v => !v); if (!noLinkedin) setHasLinkedin(false); }} />
           Without LinkedIn
+        </label>
+        <label
+          title="Toon alleen contacten waarvoor het 🔔 signal-follow toggle aanstaat in hun detail-modal"
+          style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, padding: '3px 0', cursor: 'pointer' }}>
+          <input type="checkbox" checked={followedOnly} onChange={() => setFollowedOnly(v => !v)} />
+          Followed only 🔔 <span style={{ fontSize: 10, color: 'var(--text-3)' }}>({followedContactIds.size})</span>
         </label>
         <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, padding: '3px 0', cursor: 'pointer' }}>
           <input type="checkbox" checked={activeOnly} onChange={() => setActiveOnly(v => !v)} />
