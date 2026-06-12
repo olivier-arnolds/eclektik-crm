@@ -597,7 +597,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
             placeholder="Search by name, role, account, or email…"
             style={{
               width: '100%',
-              padding: searchText ? '8px 32px 8px 12px' : '8px 12px',
+              padding: searchText ? '8px 12px 8px 32px' : '8px 12px',
               borderRadius: 8,
               border: '0.5px solid var(--sep)', background: 'var(--bg-1)',
               fontSize: 13, fontFamily: 'inherit', outline: 'none',
@@ -608,7 +608,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
               onClick={() => setSearchText('')}
               title="Clear search"
               style={{
-                position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)',
+                position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)',
                 background: 'transparent', border: 'none', cursor: 'pointer',
                 padding: '2px 6px', fontSize: 16, lineHeight: 1,
                 color: 'var(--text-3)', borderRadius: 4,

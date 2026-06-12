@@ -19,9 +19,23 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.39.11';
+export const CURRENT_VERSION = '1.39.12';
 
 export const CHANGELOG = [
+  {
+    version: '1.39.12',
+    date: '2026-06-12T14:45:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Clear-knop × in Marketing-zoekbalk naar links verplaatst',
+    summary:
+      'De × in de Marketing-zoekbalk stond rechts; nu links — vóór het zoekwoord. Padding van de input is gespiegeld zodat de tekst niet over de knop loopt.',
+    changes: [
+      'marketing-contacts.jsx: × button van right: 8 naar left: 8; input padding-left ipv padding-right wanneer searchText gevuld is.',
+    ],
+    files: ['src/bd/marketing-contacts.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.39.12',
+  },
   {
     version: '1.39.11',
     date: '2026-06-12T14:35:00Z',
