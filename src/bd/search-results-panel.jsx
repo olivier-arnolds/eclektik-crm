@@ -28,8 +28,12 @@ export default function SearchResultsPanel({
       has(a.name) || has(a.industry) || has(a.region) || has(a.city) || has(a.website)
     );
 
+    // Skip inactive en unlinked contacten — die zijn meestal achterhaald en
+    // verstoren het overzicht. Inactive = isInactive of isFormer; unlinked =
+    // geen accountId (geen bedrijf gekoppeld).
     const matchedContacts = (contacts || []).filter(c =>
-      has(c.name) || has(c.email) || has(c.role) || has(c.account)
+      !c.isInactive && !c.isFormer && c.accountId &&
+      (has(c.name) || has(c.email) || has(c.role) || has(c.account))
     );
 
     const matchedDeals = (deals || []).filter(d =>
