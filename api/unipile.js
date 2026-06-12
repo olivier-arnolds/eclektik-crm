@@ -421,20 +421,31 @@ export default async function handler(req, res) {
           message: 'Contact heeft geen company_name; geen veilige search mogelijk',
         });
       }
+      // Search-strategie: probeer eerst met company als disambiguator. Wanneer
+      // dat niets oplevert, val terug op zoeken op alleen de naam — dan
+      // client-side filteren op company-in-headline om false-positives bij
+      // common names af te vangen.
       const attempts = [
-        `${fullName} ${company}`,
-        `${lastName} ${company}`,
+        { kw: `${fullName} ${company}`, withCompany: true },
+        { kw: `${lastName} ${company}`, withCompany: true },
+        { kw: fullName, withCompany: false },
       ];
 
       let items = [];
       let workingAttempt = null;
+      let usedFallback = false;
       let lastSearchError = null;
-      for (const attempt of attempts) {
-        const searchBody = { api: 'classic', category: 'people', keywords: attempt };
+      for (const { kw, withCompany } of attempts) {
+        const searchBody = { api: 'classic', category: 'people', keywords: kw };
         const searchResult = await unipileRequest('POST', `/linkedin/search?account_id=${liAcc.id}`, searchBody);
         if (searchResult.error) { lastSearchError = searchResult.error; continue; }
         const found = searchResult.data?.items || searchResult.data?.data || [];
-        if (found.length > 0) { items = found; workingAttempt = attempt; break; }
+        if (found.length > 0) {
+          items = found;
+          workingAttempt = kw;
+          usedFallback = !withCompany;
+          break;
+        }
       }
 
       if (items.length === 0) {
@@ -446,27 +457,60 @@ export default async function handler(req, res) {
         });
       }
 
+      // Normalize helper: strip diakrieten, lowercase, alleen alfanumeriek.
+      // Zo matcht 'Gaëlle' met slug 'gaelle' en headline 'Gaelle ...'.
+      const normName = (s) => (s || '')
+        .toString()
+        .normalize('NFD')
+        .replace(/[̀-ͯ]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, '');
+
+      const firstNorm = normName(firstName);
+      const lastNorm = normName(lastName);
+      const companyNorm = normName(company);
+
       // Unipile classic-search candidates hebben GEEN first_name/last_name velden,
-      // alleen profile_url + headline. Extract de slug uit de URL en match daarop.
-      const firstLower = firstName.toLowerCase();
-      const lastLower = lastName.toLowerCase();
-      const companyLower = company.toLowerCase();
+      // alleen profile_url + headline. Extract de slug uit de URL, URL-decode
+      // hem (%C3%AB → ë), dan normalize.
       const slugOf = (c) => {
         const url = c.profile_url || c.public_profile_url || '';
         const m = url.match(/linkedin\.com\/in\/([^\/\?]+)/);
-        return (m ? m[1] : '').toLowerCase();
+        if (!m) return '';
+        let raw;
+        try { raw = decodeURIComponent(m[1]); } catch { raw = m[1]; }
+        return normName(raw);
       };
 
-      // Tier 1: slug bevat BEIDE first + last (sterk match, bv. 'seymourdebbie' voor Debbie Seymour)
+      // Bij fallback-search (zonder company) eerst client-side filteren op
+      // company-in-headline om false-positives op common names af te vangen.
+      if (usedFallback) {
+        const filtered = items.filter(c => {
+          const headlineNorm = normName(c.headline || c.occupation || '');
+          return companyNorm && headlineNorm.includes(companyNorm);
+        });
+        if (filtered.length === 0) {
+          return res.status(200).json({
+            success: false,
+            reason: 'no-headline-company-match',
+            working_attempt: workingAttempt,
+            candidates: items.length,
+            note: 'Fallback search vond kandidaten maar geen enkele headline bevat de company-naam',
+          });
+        }
+        items = filtered;
+      }
+
+      // Tier 1: slug bevat BEIDE first + last (sterk match, ook bij 'gaellehuber' voor Gaëlle Huber)
       const exactMatch = items.find(c => {
         const slug = slugOf(c);
-        return firstLower && lastLower && slug.includes(firstLower) && slug.includes(lastLower);
+        return firstNorm && lastNorm && slug.includes(firstNorm) && slug.includes(lastNorm);
       });
       // Tier 2: slug bevat last + headline mentions company (voor nickname-cases)
       const lastWithCompanyInHeadline = !exactMatch && items.find(c => {
         const slug = slugOf(c);
-        const headline = (c.headline || c.occupation || '').toLowerCase();
-        return slug.includes(lastLower) && headline.includes(companyLower);
+        const headlineNorm = normName(c.headline || c.occupation || '');
+        return lastNorm && slug.includes(lastNorm) && companyNorm && headlineNorm.includes(companyNorm);
       });
       const match = exactMatch || lastWithCompanyInHeadline;
       const matchType = exactMatch ? 'first+last-in-slug'
