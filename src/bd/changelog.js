@@ -19,9 +19,23 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.39.9';
+export const CURRENT_VERSION = '1.39.10';
 
 export const CHANGELOG = [
+  {
+    version: '1.39.10',
+    date: '2026-06-12T14:25:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feat',
+    title: 'Reactivate-knop pakt ook former=true contacten',
+    summary:
+      'De Reactivate-toggle in de contact-detail popup bekeek alleen stage=Inactive — contacten die via Account 360 → mark former (former=true, stage blijft Active) waren afgevoerd toonden nog steeds Inactivate. Nu telt former=true ook als "inactief", dus Sophia Driess et al. tonen Reactivate. Klikken zet stage=Active, wist inactive_reason + inactivated_at, en zet former=false — dus 1 enkele plek om vanuit Marketing iemand weer actief te maken.',
+    changes: [
+      'inline-details.jsx: isInactive folde stage=Inactive OF former=true; Reactivate-handler reset alle drie de inactiviteits-velden.',
+    ],
+    files: ['src/bd/inline-details.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.39.10',
+  },
   {
     version: '1.39.9',
     date: '2026-06-12T14:10:00Z',

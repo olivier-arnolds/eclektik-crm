@@ -471,20 +471,26 @@ export function InlineContactDetail({ contactId, onCompose, refetch, allTags, on
           </button>
         )}
         {(() => {
-          const isInactive = (row.stage || '').toLowerCase() === 'inactive';
+          // "Inactief" = stage='Inactive' (rode Inactivate-knop) OF former=true
+          // (mark-former toggle in Account 360). Beide vlaggen leiden tot het
+          // grijze chipje in de Marketing-lijst, dus de toggle hier handelt
+          // beide af — Reactivate reset stage én former zodat het contact
+          // weer als 'actief' telt in alle views.
+          const isInactive = (row.stage || '').toLowerCase() === 'inactive' || !!row.former;
           if (isInactive) {
             return (
               <button className="btn-ghost tiny" style={{ marginLeft: 'auto', color: 'var(--accent)' }}
-                title={row.inactive_reason ? `Was inactive: ${row.inactive_reason}` : 'Reactivate this contact'}
+                title={row.inactive_reason ? `Was inactive: ${row.inactive_reason}` : (row.former ? 'Was marked as former employee' : 'Reactivate this contact')}
                 onClick={async () => {
                   if (!confirm(`Reactivate ${row.full_name || 'this contact'}?`)) return;
                   const { error } = await supabase.from('contacts').update({
                     stage: 'Active',
                     inactive_reason: null,
                     inactivated_at: null,
+                    former: false,
                   }).eq('id', contactId);
                   if (error) { alert('Failed: ' + error.message); return; }
-                  setRow(r => ({ ...r, stage: 'Active', inactive_reason: null, inactivated_at: null }));
+                  setRow(r => ({ ...r, stage: 'Active', inactive_reason: null, inactivated_at: null, former: false }));
                   if (refetch) refetch();
                 }}>
                 <I.check /> Reactivate
