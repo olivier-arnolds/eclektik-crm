@@ -537,12 +537,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
         <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '12px 0 6px' }}>Status</div>
         <YesNoFilter label="Email" value={emailFilter} onChange={setEmailFilter} />
         <YesNoFilter label="LinkedIn" value={linkedinFilter} onChange={setLinkedinFilter} />
-        <YesNoFilter
-          label="Follow 🔔"
-          value={followFilter}
-          onChange={setFollowFilter}
-          extraLabel={`(${followedContactIds.size})`}
-        />
+        <YesNoFilter label="Follow 🔔" value={followFilter} onChange={setFollowFilter} />
         <YesNoFilter label="Active" value={activeFilter} onChange={setActiveFilter} />
       </aside>
 
