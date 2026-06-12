@@ -204,6 +204,8 @@ export function InlineContactDetail({ contactId, onCompose, refetch, allTags, on
   const [selectedPlaybookId, setSelectedPlaybookId] = useState('');
   const [intent, setIntent] = useState(DEFAULT_INTENT);
   const [enrolling, setEnrolling] = useState(false);
+  const [enrollments, setEnrollments] = useState([]);
+  const [enrollmentsKey, setEnrollmentsKey] = useState(0); // forceer refetch na mutatie
 
   useEffect(() => {
     if (!showPlaybookForm) return;
@@ -216,6 +218,31 @@ export function InlineContactDetail({ contactId, onCompose, refetch, allTags, on
       .order('name')
       .then(({ data }) => setPlaybookOptions(data || []));
   }, [showPlaybookForm]);
+
+  // Lijst van bestaande enrollments voor dit contact — toon als chips boven
+  // de + Enroll knop. Alleen actieve/awaiting_review statussen, niet
+  // completed/ejected (die zijn historisch).
+  useEffect(() => {
+    if (!contactId) return;
+    supabase.from('playbook_enrollments')
+      .select('id, status, enrolled_at, source_context, playbooks(id, name)')
+      .eq('contact_id', contactId)
+      .in('status', ['active', 'awaiting_review', 'pending'])
+      .order('enrolled_at', { ascending: false })
+      .then(({ data }) => setEnrollments(data || []));
+  }, [contactId, enrollmentsKey]);
+
+  async function ejectEnrollment(enrollmentId, playbookName) {
+    if (!confirm(`Stop enrollment in '${playbookName}'?\n\nContact verdwijnt uit de cron-runs voor deze playbook.`)) return;
+    const { error } = await supabase.from('playbook_enrollments')
+      .update({ status: 'ejected', ejected_reason: 'Manually stopped from contact-detail', completed_at: new Date().toISOString() })
+      .eq('id', enrollmentId);
+    if (error) {
+      alert('Stop mislukt: ' + error.message);
+      return;
+    }
+    setEnrollmentsKey(k => k + 1);
+  }
 
   if (loading || !row) return <div style={{ fontSize: 11, color: 'var(--text-3)' }}>Loading…</div>;
 
@@ -246,6 +273,7 @@ export function InlineContactDetail({ contactId, onCompose, refetch, allTags, on
     setShowPlaybookForm(false);
     setSelectedPlaybookId('');
     setIntent(DEFAULT_INTENT);
+    setEnrollmentsKey(k => k + 1); // refresh de chip-lijst
     alert('Contact enrolled in playbook. De cron pakt hem op de volgende werkdag op.');
   }
 
@@ -293,6 +321,35 @@ export function InlineContactDetail({ contactId, onCompose, refetch, allTags, on
         <div style={{ fontSize: 10, color: 'var(--text-3)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'var(--font-mono)' }}>
           Playbook
         </div>
+        {/* Actieve enrollments (chips) */}
+        {enrollments.length > 0 && (
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 6 }}>
+            {enrollments.map(e => {
+              const pbName = e.playbooks?.name || '(unknown playbook)';
+              const statusColor = e.status === 'active' ? '#16a34a' : e.status === 'awaiting_review' ? '#ca8a04' : '#888';
+              const intentText = e.source_context?.user_intent || '';
+              const enrolledDate = e.enrolled_at ? new Date(e.enrolled_at).toLocaleDateString() : '';
+              const title = `Status: ${e.status} · Enrolled ${enrolledDate}${intentText ? `\n\nInsteek: ${intentText}` : ''}\n\nKlik × om te stoppen`;
+              return (
+                <span key={e.id} title={title}
+                  style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 4,
+                    padding: '2px 8px', borderRadius: 10,
+                    background: statusColor + '22', color: statusColor,
+                    border: `0.5px solid ${statusColor}66`,
+                    fontSize: 11, fontWeight: 500,
+                  }}>
+                  {pbName}
+                  <button onClick={() => ejectEnrollment(e.id, pbName)}
+                    title="Stop enrollment"
+                    style={{ background: 'transparent', border: 'none', color: statusColor, cursor: 'pointer', padding: 0, fontSize: 12, lineHeight: 1, opacity: 0.6 }}>
+                    ×
+                  </button>
+                </span>
+              );
+            })}
+          </div>
+        )}
         {!showPlaybookForm ? (
           <button onClick={() => setShowPlaybookForm(true)}
             style={{ fontSize: 11, padding: '4px 10px', borderRadius: 10, border: '0.5px dashed var(--text-3)', background: 'transparent', color: 'var(--text-3)', cursor: 'pointer', fontFamily: 'inherit' }}>
