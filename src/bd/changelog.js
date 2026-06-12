@@ -19,9 +19,26 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.39.12';
+export const CURRENT_VERSION = '1.40.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.40.0',
+    date: '2026-06-12T15:00:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feat',
+    title: 'Contact last-updated zichtbaar + sorteer-toggle in Marketing',
+    summary:
+      'De DB houdt al automatisch contacts.updated_at bij (trg_contacts_updated_at trigger). Nu maken we het ook zichtbaar: (1) klein mono-relatief tijdje "· 2d" achter de contactnaam in de Marketing-lijst met de volle datum als hover-tooltip; (2) "Updated X ago" in de contact-detail popup header, met de created-datum erachter als ze niet gelijk zijn; (3) sorteer-toggle "Sort: Account | Recent" naast Select all — Account is de oude default (company A-Z + naam), Recent sorteert op meest recent geüpdate eerst. Nieuw helper relativeTime() in lib/constants centraliseert de "5m / 3h / 2d / 6w" formatter.',
+    changes: [
+      'lib/constants.js: relativeTime(input) helper voor "5m / 3h / 2d / 6w / 3mo / 2y" formatter.',
+      'adapters.js: updatedAt + createdAt (camelCase) doorgegeven via pass-2 adaptContact.',
+      'marketing-contacts.jsx: relatief tijd-chipje achter contactnaam; sortMode-state (account|updated) + sorteer-toggle naast Select all.',
+      'inline-details.jsx: contact-detail popup header toont "Updated X ago" met optioneel · created datum.',
+    ],
+    files: ['src/lib/constants.js', 'src/bd/adapters.js', 'src/bd/marketing-contacts.jsx', 'src/bd/inline-details.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.40.0',
+  },
   {
     version: '1.39.12',
     date: '2026-06-12T14:45:00Z',

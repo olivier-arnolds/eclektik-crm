@@ -93,3 +93,24 @@ export function getInitials(name) {
   if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
   return parts[0].substring(0, 2).toUpperCase()
 }
+
+// Korte relatieve tijd voor "Last updated" labels in lijsten.
+// "now" / "5m" / "3h" / "2d" / "6w" / "3mo" / "2y". Lege input → "".
+export function relativeTime(input) {
+  if (!input) return ""
+  const t = new Date(input).getTime()
+  if (!t) return ""
+  const diff = Date.now() - t
+  if (diff < 60_000) return "now"
+  const min = Math.floor(diff / 60_000)
+  if (min < 60) return `${min}m`
+  const hr = Math.floor(min / 60)
+  if (hr < 24) return `${hr}h`
+  const day = Math.floor(hr / 24)
+  if (day < 7) return `${day}d`
+  const wk = Math.floor(day / 7)
+  if (wk < 5) return `${wk}w`
+  const mo = Math.floor(day / 30)
+  if (mo < 12) return `${mo}mo`
+  return `${Math.floor(day / 365)}y`
+}

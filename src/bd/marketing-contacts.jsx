@@ -7,6 +7,7 @@ import EmailSuggestModal from './marketing-email-suggest-modal';
 import { useAuth } from '../lib/auth';
 import { supabase } from '../supabase';
 import { apiFetch } from '../lib/apiFetch';
+import { relativeTime } from '../lib/constants';
 
 // CSV escaping: wrap in double-quotes, double-up internal quotes.
 // Excel-compatible — newlines / commas / quotes inside fields preserved.
@@ -297,6 +298,8 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
   const [savingEmail, setSavingEmail] = useState(false);
   // Default 'yes' (alleen actieve contacten) — gelijk aan het oude activeOnly default
   const [activeFilter, setActiveFilter] = useState('yes');
+  // Sorteer-modus: 'account' (default = company A-Z dan naam) of 'updated' (recent geüpdate eerst)
+  const [sortMode, setSortMode] = useState('account');
   const [showBulkTag, setShowBulkTag] = useState(false);
   // Optimistic-removed (contact_id:tag_id) pairs — see removeTagFromContact
   const [hiddenPairs, setHiddenPairs] = useState(new Set());
@@ -417,8 +420,16 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
       }
       return true;
     });
-    // Sort by company A-Z, then by contact name as tiebreaker.
-    // Contacts without an account land at the bottom.
+    // Sort: 'account' = company A-Z + contact name tiebreaker (default);
+    //       'updated' = laatst bewerkt eerst (op updatedAt desc, fallback createdAt).
+    // Contacts zonder account vallen onderaan in 'account'-mode.
+    if (sortMode === 'updated') {
+      return matches.slice().sort((a, b) => {
+        const at = new Date(a.updatedAt || a.createdAt || 0).getTime();
+        const bt = new Date(b.updatedAt || b.createdAt || 0).getTime();
+        return bt - at;
+      });
+    }
     return matches.slice().sort((a, b) => {
       const acoEmpty = !a.account;
       const bcoEmpty = !b.account;
@@ -427,7 +438,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
       if (cmp !== 0) return cmp;
       return (a.name || '').toLowerCase().localeCompare((b.name || '').toLowerCase());
     });
-  }, [contacts, activeFilter, emailFilter, linkedinFilter, titleFilter, followFilter, followedContactIds, hasGlintDeal, hasAnyDeal, accountsWithGlintDeal, accountsWithAnyDeal, accountsWithActiveProposal, selectedTagIds, selectedAccountTypes, accountTypeById, searchText, hiddenPairs]);
+  }, [contacts, activeFilter, emailFilter, linkedinFilter, titleFilter, followFilter, followedContactIds, hasGlintDeal, hasAnyDeal, accountsWithGlintDeal, accountsWithAnyDeal, accountsWithActiveProposal, selectedTagIds, selectedAccountTypes, accountTypeById, searchText, hiddenPairs, sortMode]);
 
   // Inline email edit — optimistic-free: save then refetch so the parent
   // cache stays the single source of truth.
@@ -627,8 +638,32 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
             {filtered.length} of {contacts.length} contacts
             {selected.size > 0 && ` · ${selected.size} selected`}
           </span>
+          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 4 }}>
+            <span style={{ fontSize: 10, color: 'var(--text-3)' }}>Sort:</span>
+            <button
+              onClick={() => setSortMode('account')}
+              title="Sort by company A-Z, then by name"
+              style={{
+                padding: '2px 8px', borderRadius: 4, fontSize: 10,
+                cursor: 'pointer', border: '0.5px solid',
+                background: sortMode === 'account' ? 'var(--accent-tint)' : 'transparent',
+                color: sortMode === 'account' ? 'var(--accent)' : 'var(--text-3)',
+                borderColor: sortMode === 'account' ? 'var(--accent)' : 'var(--sep)',
+                fontWeight: sortMode === 'account' ? 600 : 400,
+              }}>Account</button>
+            <button
+              onClick={() => setSortMode('updated')}
+              title="Sort by most recently updated"
+              style={{
+                padding: '2px 8px', borderRadius: 4, fontSize: 10,
+                cursor: 'pointer', border: '0.5px solid',
+                background: sortMode === 'updated' ? 'var(--accent-tint)' : 'transparent',
+                color: sortMode === 'updated' ? 'var(--accent)' : 'var(--text-3)',
+                borderColor: sortMode === 'updated' ? 'var(--accent)' : 'var(--sep)',
+                fontWeight: sortMode === 'updated' ? 600 : 400,
+              }}>Recent</button>
+          </div>
           <button className="btn-ghost tiny"
-            style={{ marginLeft: 'auto' }}
             disabled={filtered.length === 0}
             title={selected.size > 0
               ? `Export ${selected.size} selected contact${selected.size === 1 ? '' : 's'} as CSV`
@@ -744,6 +779,16 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
                     textTransform: 'lowercase', whiteSpace: 'nowrap',
                   }} title={c.inactive_reason ? `Inactive: ${c.inactive_reason}` : 'Former employee'}>
                     {c.inactive_reason || 'former'}
+                  </span>
+                )}
+                {c.updatedAt && (
+                  <span
+                    title={`Last updated ${new Date(c.updatedAt).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}`}
+                    style={{
+                      fontSize: 9, marginLeft: 6, color: 'var(--text-3)',
+                      fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap',
+                    }}>
+                    · {relativeTime(c.updatedAt)}
                   </span>
                 )}
                 <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{c.role}{c.account ? ` · ${c.account}` : ''}</div>

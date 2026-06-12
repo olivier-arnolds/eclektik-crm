@@ -6,6 +6,7 @@ import { updateRow } from '../hooks/useSupabase';
 import SignalFollowToggle from './signal-follow-toggle';
 import TypePicker from './type-picker';
 import { useAuth } from '../lib/auth';
+import { relativeTime } from '../lib/constants';
 import TagChip from './tag-chip';
 import TagPopover from './tag-popover';
 import DocLinksSection from './doc-links-section';
@@ -287,7 +288,16 @@ export function InlineContactDetail({ contactId, onCompose, refetch, allTags, on
 
   return (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
-      <div style={{ gridColumn: 'span 2', display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: 6 }}>
+      <div style={{ gridColumn: 'span 2', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6 }}>
+        {row.updated_at ? (
+          <span style={{ fontSize: 10, color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}
+            title={`Last updated: ${new Date(row.updated_at).toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}`}>
+            Updated {relativeTime(row.updated_at)} ago
+            {row.created_at && row.created_at !== row.updated_at && (
+              <span style={{ marginLeft: 8 }}>· created {new Date(row.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+            )}
+          </span>
+        ) : <span />}
         <SignalFollowToggle contactId={contactId} />
       </div>
       <div style={{ gridColumn: 'span 2' }}>

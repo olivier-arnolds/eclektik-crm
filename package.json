@@ -1,6 +1,6 @@
 {
   "name": "eclektik-crm",
-  "version": "1.39.12",
+  "version": "1.40.0",
   "description": "Eclectik BD CRM — custom React + Supabase business-development CRM",
   "private": true,
   "type": "module",
