@@ -132,6 +132,43 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
   const [surfeProgress, setSurfeProgress] = useState({ done: 0, total: 0 });
   const [showEmailSuggest, setShowEmailSuggest] = useState(false);
 
+  async function followSelected() {
+    const ids = filtered.filter(c => selected.has(c.id) && !followedContactIds.has(c.id)).map(c => c.id);
+    if (ids.length === 0) {
+      alert('Geselecteerde contacten staan al allemaal op signal-follow (🔔).');
+      return;
+    }
+    if (!confirm(`Follow ${ids.length} contact${ids.length === 1 ? '' : 'en'}? Hun LinkedIn-posts worden dagelijks gescand voor signals (cron 07:00 NL).`)) return;
+    // Twee paden: bestaande signal_subjects rows worden ge-enabled, nieuwe contact-ids krijgen een nieuwe row.
+    const { data: existing } = await supabase.from('signal_subjects')
+      .select('contact_id')
+      .in('contact_id', ids)
+      .eq('source_type', 'linkedin_user_post');
+    const existingIds = new Set((existing || []).map(r => r.contact_id));
+    if (existingIds.size > 0) {
+      const { error } = await supabase.from('signal_subjects')
+        .update({ enabled: true })
+        .in('contact_id', [...existingIds])
+        .eq('source_type', 'linkedin_user_post');
+      if (error) { alert('Follow update mislukt: ' + error.message); return; }
+    }
+    const newIds = ids.filter(id => !existingIds.has(id));
+    if (newIds.length > 0) {
+      const { error } = await supabase.from('signal_subjects')
+        .insert(newIds.map(id => ({
+          contact_id: id, source_type: 'linkedin_user_post',
+          enabled: true, auto_added: false,
+        })));
+      if (error) { alert('Follow insert mislukt: ' + error.message); return; }
+    }
+    setFollowedContactIds(prev => {
+      const next = new Set(prev);
+      for (const id of ids) next.add(id);
+      return next;
+    });
+    alert(`${ids.length} contact${ids.length === 1 ? '' : 'en'} ge-followed (🔔).`);
+  }
+
   async function unfollowSelected() {
     const eligible = filtered.filter(c => selected.has(c.id) && followedContactIds.has(c.id));
     if (eligible.length === 0) {
@@ -618,6 +655,17 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
               }}>
               Email suggesties (patroon)
             </button>
+            {(() => {
+              const notFollowedSelected = [...selected].filter(id => !followedContactIds.has(id)).length;
+              return (
+                <button className="btn-ghost tiny"
+                  onClick={followSelected}
+                  disabled={notFollowedSelected === 0}
+                  title={notFollowedSelected === 0 ? 'Alle geselecteerde contacten staan al op signal-follow' : `${notFollowedSelected} geselecteerde contact${notFollowedSelected === 1 ? '' : 'en'} nog niet op signal-follow`}>
+                  🔔 Follow {notFollowedSelected > 0 ? `(${notFollowedSelected})` : ''}
+                </button>
+              );
+            })()}
             {(() => {
               const followedSelected = [...selected].filter(id => followedContactIds.has(id)).length;
               return (
