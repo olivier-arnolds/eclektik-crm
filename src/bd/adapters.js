@@ -116,6 +116,7 @@ export function adaptContact(row, adaptedAccounts) {
     // styling on contact rows just works without extra wiring.
     isFormer: !!row.isFormer || !!row.isInactive,
     isInactive: !!row.isInactive,
+    inactive_reason: row.inactive_reason || '',
     linkedin_url: row.linkedin_url || '',
     do_not_email: !!row.do_not_email,
     tags: Array.isArray(row.tags) ? row.tags : [],

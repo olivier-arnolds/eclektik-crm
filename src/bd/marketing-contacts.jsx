@@ -723,6 +723,16 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
                   style={{ fontSize: 12, fontWeight: 500, cursor: 'pointer', display: 'inline-block' }}>
                   {c.name}
                 </div>
+                {c.isFormer && (
+                  <span style={{
+                    fontSize: 9, padding: '1px 6px', borderRadius: 4,
+                    background: 'var(--fill-1)', color: 'var(--text-3)',
+                    fontFamily: 'var(--font-mono)', marginLeft: 6,
+                    textTransform: 'lowercase', whiteSpace: 'nowrap',
+                  }} title={c.inactive_reason ? `Inactive: ${c.inactive_reason}` : 'Former employee'}>
+                    {c.inactive_reason || 'former'}
+                  </span>
+                )}
                 <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{c.role}{c.account ? ` · ${c.account}` : ''}</div>
               </div>
               {(() => {

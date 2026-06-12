@@ -19,9 +19,24 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.39.7';
+export const CURRENT_VERSION = '1.39.8';
 
 export const CHANGELOG = [
+  {
+    version: '1.39.8',
+    date: '2026-06-12T13:50:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feat',
+    title: 'Inactivate-reden zichtbaar als chip in Marketing-lijst',
+    summary:
+      'In de Marketing → Contacts lijst staat nu naast de naam van elke inactieve contact een klein grijs chipje met de reden van inactivatie (bv. "duplicate", "left company"). Voor contacten die alleen via "mark former" zijn afgevoerd (former=true zonder stage=Inactive) toont het chipje "former". De inactive_reason wordt nu ook door de adapter-keten geleid (adapters.adaptContact) zodat het veld doorkomt in de Marketing-prop.',
+    changes: [
+      'adapters.js: inactive_reason doorgeven via pass-2 adaptContact.',
+      'marketing-contacts.jsx: grijze chip naast contactnaam zodra c.isFormer, met reden of fallback "former".',
+    ],
+    files: ['src/bd/adapters.js', 'src/bd/marketing-contacts.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.39.8',
+  },
   {
     version: '1.39.7',
     date: '2026-06-10T16:30:00Z',
