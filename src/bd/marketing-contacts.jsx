@@ -95,6 +95,30 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
   const [lushaProgress, setLushaProgress] = useState({ done: 0, total: 0 });
   const [showEmailSuggest, setShowEmailSuggest] = useState(false);
 
+  async function unfollowSelected() {
+    const eligible = filtered.filter(c => selected.has(c.id) && followedContactIds.has(c.id));
+    if (eligible.length === 0) {
+      alert('Geen geselecteerde contacten staan op signal-follow (🔔).');
+      return;
+    }
+    if (!confirm(`Unfollow ${eligible.length} contact${eligible.length === 1 ? '' : 'en'}? Hun LinkedIn-posts worden niet meer dagelijks gescand voor signals.`)) return;
+    const ids = eligible.map(c => c.id);
+    const { error } = await supabase.from('signal_subjects')
+      .update({ enabled: false })
+      .in('contact_id', ids)
+      .eq('source_type', 'linkedin_user_post');
+    if (error) {
+      alert('Unfollow mislukt: ' + error.message);
+      return;
+    }
+    setFollowedContactIds(prev => {
+      const next = new Set(prev);
+      for (const id of ids) next.delete(id);
+      return next;
+    });
+    alert(`${eligible.length} contact${eligible.length === 1 ? '' : 'en'} unfollowed.`);
+  }
+
   async function findEmailsViaLusha() {
     const eligible = filtered.filter(c => selected.has(c.id) && !c.email && c.linkedin_url);
     if (eligible.length === 0) {
@@ -571,6 +595,17 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
               }}>
               Email suggesties (patroon)
             </button>
+            {(() => {
+              const followedSelected = [...selected].filter(id => followedContactIds.has(id)).length;
+              return (
+                <button className="btn-ghost tiny"
+                  onClick={unfollowSelected}
+                  disabled={followedSelected === 0}
+                  title={followedSelected === 0 ? 'Geen geselecteerde contacten op signal-follow' : `${followedSelected} geselecteerde contact${followedSelected === 1 ? '' : 'en'} op signal-follow`}>
+                  🔕 Unfollow {followedSelected > 0 ? `(${followedSelected})` : ''}
+                </button>
+              );
+            })()}
             <button className="btn-primary tiny" disabled={!onComposeCampaign}
               onClick={() => {
                 if (!onComposeCampaign) return;
