@@ -19,9 +19,23 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.39.8';
+export const CURRENT_VERSION = '1.39.9';
 
 export const CHANGELOG = [
+  {
+    version: '1.39.9',
+    date: '2026-06-12T14:10:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feat',
+    title: 'Inactivate-knop is nu een toggle: ook reactiveren mogelijk',
+    summary:
+      'De rode "Inactivate"-knop onderaan een contact-detail werkt nu twee kanten op. Voor een actief contact toont hij Inactivate (rood, archive-icoon) en vraagt om een reden zoals voorheen. Voor een inactief contact (stage=Inactive) toont hij Reactivate (accent-kleur, check-icoon) met als hover-tooltip de oude inactive_reason als die er was. Reactivate zet stage terug naar Active en wist inactive_reason + inactivated_at. De "mark former"-toggle in Account 360 blijft een aparte mechanism (per account-link).',
+    changes: [
+      'inline-details.jsx: rode Inactivate-knop omgebouwd naar conditionele Inactivate/Reactivate toggle op basis van row.stage.',
+    ],
+    files: ['src/bd/inline-details.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.39.9',
+  },
   {
     version: '1.39.8',
     date: '2026-06-12T13:50:00Z',
