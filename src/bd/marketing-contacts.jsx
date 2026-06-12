@@ -91,8 +91,8 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
   const [enrichProgress, setEnrichProgress] = useState({ done: 0, total: 0 });
   const [openContactId, setOpenContactId] = useState(null);
   const [showDoublecheck, setShowDoublecheck] = useState(null); // array of contact-ids als open
-  const [lushaFinding, setLushaFinding] = useState(false);
-  const [lushaProgress, setLushaProgress] = useState({ done: 0, total: 0 });
+  const [surfeFinding, setSurfeFinding] = useState(false);
+  const [surfeProgress, setSurfeProgress] = useState({ done: 0, total: 0 });
   const [showEmailSuggest, setShowEmailSuggest] = useState(false);
 
   async function unfollowSelected() {
@@ -119,38 +119,41 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
     alert(`${eligible.length} contact${eligible.length === 1 ? '' : 'en'} unfollowed.`);
   }
 
-  async function findEmailsViaLusha() {
+  async function findEmailsViaSurfe() {
     const eligible = filtered.filter(c => selected.has(c.id) && !c.email && c.linkedin_url);
     if (eligible.length === 0) {
       alert('Geen geselecteerde contacten zonder email en mét LinkedIn-URL.');
       return;
     }
     const skipped = selected.size - eligible.length;
-    const msg = `Find emails via Lusha:\n- ${eligible.length} contact${eligible.length === 1 ? '' : 'en'} te verrijken${skipped > 0 ? `\n- ${skipped} skipped (al email of geen LinkedIn-URL)` : ''}\n\nLet op: elk succes verbruikt Lusha-credits (~1-2 per email). Doorgaan?`;
+    const MAX_BATCH = 25;
+    if (eligible.length > MAX_BATCH) {
+      alert(`Selecteer maximaal ${MAX_BATCH} contacten per ronde — Surfe poll-timeout is 50s. Je hebt ${eligible.length} eligible contacten geselecteerd.`);
+      return;
+    }
+    const msg = `Find emails via Surfe (waterfall over 8 providers):\n- ${eligible.length} contact${eligible.length === 1 ? '' : 'en'} te verrijken${skipped > 0 ? `\n- ${skipped} skipped (al email of geen LinkedIn-URL)` : ''}\n\nLet op: elk succes verbruikt Surfe-credits. Doorgaan?`;
     if (!confirm(msg)) return;
 
-    setLushaFinding(true);
-    setLushaProgress({ done: 0, total: eligible.length });
-    let found = 0, noEmail = 0, failed = 0;
-    for (let i = 0; i < eligible.length; i++) {
-      const c = eligible[i];
-      try {
-        const resp = await apiFetch('/api/lusha?action=find-email', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contact_id: c.id }),
-        });
-        const data = await resp.json();
-        if (data.success) found++;
-        else if (data.reason) noEmail++;
-        else failed++;
-      } catch { failed++; }
-      setLushaProgress({ done: i + 1, total: eligible.length });
-      if (i < eligible.length - 1) await new Promise(r => setTimeout(r, 800));
+    setSurfeFinding(true);
+    setSurfeProgress({ done: 0, total: eligible.length });
+    try {
+      const resp = await apiFetch('/api/surfe?action=find-emails', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contact_ids: eligible.map(c => c.id) }),
+      });
+      const data = await resp.json();
+      setSurfeFinding(false);
+      if (!resp.ok) {
+        alert('Surfe klaar (fout): ' + (data.error || `HTTP ${resp.status}`));
+      } else {
+        alert(`Surfe klaar:\n✓ ${data.found} email gevonden\n⊘ ${data.no_email} geen email in Surfe\n✗ ${data.failed} fout`);
+      }
+      if (refetch) refetch();
+    } catch (err) {
+      setSurfeFinding(false);
+      alert('Surfe request mislukt: ' + err.message);
     }
-    setLushaFinding(false);
-    alert(`Lusha klaar:\n✓ ${found} email gevonden\n⊘ ${noEmail} geen email in Lusha\n✗ ${failed} fout`);
-    if (refetch) refetch();
   }
 
   async function enrichSelected() {
@@ -583,9 +586,9 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
               Doublecheck LinkedIn
             </button>
             <button className="btn-ghost tiny"
-              onClick={findEmailsViaLusha}
-              disabled={lushaFinding}>
-              {lushaFinding ? `Lusha ${lushaProgress.done}/${lushaProgress.total}…` : 'Find emails (Lusha)'}
+              onClick={findEmailsViaSurfe}
+              disabled={surfeFinding}>
+              {surfeFinding ? `Surfe ${surfeProgress.total} processing…` : 'Find emails (Surfe)'}
             </button>
             <button className="btn-ghost tiny"
               onClick={() => {
