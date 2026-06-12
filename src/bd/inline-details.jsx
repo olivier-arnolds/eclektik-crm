@@ -198,10 +198,11 @@ export function InlineContactDetail({ contactId, onCompose, refetch, allTags, on
   // Playbook-enrollment vanuit contact-detail. State + handlers — MOETEN
   // boven de early-return staan (Rules of Hooks: zelfde aantal hooks per
   // render, ongeacht loading-state).
+  const DEFAULT_INTENT = "We've worked with/for you and colleagues during your time at ";
   const [showPlaybookForm, setShowPlaybookForm] = useState(false);
   const [playbookOptions, setPlaybookOptions] = useState([]);
   const [selectedPlaybookId, setSelectedPlaybookId] = useState('');
-  const [intent, setIntent] = useState('');
+  const [intent, setIntent] = useState(DEFAULT_INTENT);
   const [enrolling, setEnrolling] = useState(false);
 
   useEffect(() => {
@@ -242,7 +243,7 @@ export function InlineContactDetail({ contactId, onCompose, refetch, allTags, on
     }
     setShowPlaybookForm(false);
     setSelectedPlaybookId('');
-    setIntent('');
+    setIntent(DEFAULT_INTENT);
     alert('Contact enrolled in playbook. De cron pakt hem op de volgende werkdag op.');
   }
 
@@ -310,7 +311,7 @@ export function InlineContactDetail({ contactId, onCompose, refetch, allTags, on
               💡 Beschikbaar in playbook AI-prompts via {'{{user_intent}}'}. Leeg laten = geen extra context.
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 6 }}>
-              <button className="btn-ghost tiny" onClick={() => { setShowPlaybookForm(false); setSelectedPlaybookId(''); setIntent(''); }}>Cancel</button>
+              <button className="btn-ghost tiny" onClick={() => { setShowPlaybookForm(false); setSelectedPlaybookId(''); setIntent(DEFAULT_INTENT); }}>Cancel</button>
               <button className="btn-primary tiny" disabled={enrolling || !selectedPlaybookId} onClick={enrollInPlaybook}>
                 {enrolling ? 'Enrolling…' : 'Enroll'}
               </button>
