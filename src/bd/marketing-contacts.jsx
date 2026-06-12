@@ -96,6 +96,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
   // 'no' (heeft niet). UI = Yes-knop (groen) + No-knop (rood) per filter.
   const [emailFilter, setEmailFilter] = useState(null);
   const [linkedinFilter, setLinkedinFilter] = useState(null);
+  const [titleFilter, setTitleFilter] = useState(null);
   const [followFilter, setFollowFilter] = useState(null);
   const [followedContactIds, setFollowedContactIds] = useState(() => new Set());
 
@@ -385,6 +386,8 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
       if (emailFilter === 'no' && c.email) return false;
       if (linkedinFilter === 'yes' && !c.linkedin_url) return false;
       if (linkedinFilter === 'no' && c.linkedin_url) return false;
+      if (titleFilter === 'yes' && !c.role) return false;
+      if (titleFilter === 'no' && c.role) return false;
       if (followFilter === 'yes' && !followedContactIds.has(c.id)) return false;
       if (followFilter === 'no' && followedContactIds.has(c.id)) return false;
       if (hasGlintDeal && !accountsWithGlintDeal.has(c.accountId)) return false;
@@ -424,7 +427,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
       if (cmp !== 0) return cmp;
       return (a.name || '').toLowerCase().localeCompare((b.name || '').toLowerCase());
     });
-  }, [contacts, activeFilter, emailFilter, linkedinFilter, followFilter, followedContactIds, hasGlintDeal, hasAnyDeal, accountsWithGlintDeal, accountsWithAnyDeal, accountsWithActiveProposal, selectedTagIds, selectedAccountTypes, accountTypeById, searchText, hiddenPairs]);
+  }, [contacts, activeFilter, emailFilter, linkedinFilter, titleFilter, followFilter, followedContactIds, hasGlintDeal, hasAnyDeal, accountsWithGlintDeal, accountsWithAnyDeal, accountsWithActiveProposal, selectedTagIds, selectedAccountTypes, accountTypeById, searchText, hiddenPairs]);
 
   // Inline email edit — optimistic-free: save then refetch so the parent
   // cache stays the single source of truth.
@@ -574,6 +577,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
         <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '12px 0 6px' }}>Status</div>
         <YesNoFilter label="Email" value={emailFilter} onChange={setEmailFilter} />
         <YesNoFilter label="LinkedIn" value={linkedinFilter} onChange={setLinkedinFilter} />
+        <YesNoFilter label="Job Title" value={titleFilter} onChange={setTitleFilter} />
         <YesNoFilter label="Follow 🔔" value={followFilter} onChange={setFollowFilter} />
         <YesNoFilter label="Active" value={activeFilter} onChange={setActiveFilter} />
       </aside>
