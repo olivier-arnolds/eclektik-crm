@@ -280,9 +280,7 @@ export function InlineContactDetail({ contactId, onCompose, refetch, allTags, on
 
   const linkedinSearch = () => {
     const company = row.companies?.name || row.company_name || '';
-    const slugMatch = (row.companies?.linkedin_url || '').match(/linkedin\.com\/company\/([^\/\?]+)/);
-    const slug = slugMatch ? slugMatch[1] : '';
-    const keywords = [row.full_name, slug || company].filter(Boolean).join(' ');
+    const keywords = [row.full_name, company].filter(Boolean).join(' ');
     window.open(`https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(keywords)}`, '_blank', 'noopener,noreferrer');
   };
 

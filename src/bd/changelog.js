@@ -19,9 +19,23 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.40.0';
+export const CURRENT_VERSION = '1.40.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.40.1',
+    date: '2026-06-12T15:25:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'LinkedIn-search uit contact-detail: company-naam ipv slug',
+    summary:
+      'De "Search this person on LinkedIn" link in de contact-detail bouwde de zoekstring als full_name + company-slug (uit companies.linkedin_url). Voor Microsoft Switzerland werd dat "Kahina Hanis hubswiss" — niet wat je verwacht. Nu altijd gewoon full_name + company-naam, dus "Kahina Hanis Microsoft Switzerland".',
+    changes: [
+      'inline-details.jsx: linkedinSearch() — slug-extractie weggehaald, gebruikt nu altijd companies.name (met fallback company_name).',
+    ],
+    files: ['src/bd/inline-details.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.40.1',
+  },
   {
     version: '1.40.0',
     date: '2026-06-12T15:00:00Z',
