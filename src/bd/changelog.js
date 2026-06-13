@@ -19,9 +19,23 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.40.4';
+export const CURRENT_VERSION = '1.40.5';
 
 export const CHANGELOG = [
+  {
+    version: '1.40.5',
+    date: '2026-06-12T16:40:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'chore',
+    title: 'Enrich response: duidelijker veld-namen',
+    summary:
+      'Response van find-contact-linkedin had used_account.owner_email naast owner_name wat verwarrend leest wanneer cascade de owner overslaat (Microsoft = Marco, maar Yarmillas account vond Edwin). Hernoemd naar company_owner (top-level, naam van de bedrijfs-owner) en used_linkedin_account.email (de account die uiteindelijk de hit had). Per-account-tried entries hebben nu ook gewoon email ipv owner_email.',
+    changes: [
+      'api/unipile.js: used_account → used_linkedin_account; owner_email → email (op zowel used_linkedin_account als accounts_tried entries); owner_name → company_owner (top-level).',
+    ],
+    files: ['api/unipile.js', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.40.5',
+  },
   {
     version: '1.40.4',
     date: '2026-06-12T16:30:00Z',

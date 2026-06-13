@@ -472,7 +472,7 @@ export default async function handler(req, res) {
       let workingAccount = accountChain[0];
       const accountsTried = [];
       for (const acct of accountChain) {
-        const tried = { account_id: acct.id, owner_email: ownerEmailOf(acct.id), attempts: [] };
+        const tried = { account_id: acct.id, email: ownerEmailOf(acct.id), attempts: [] };
         let hitInThisAccount = false;
         for (const { kw, withCompany } of attempts) {
           const searchBody = { api: 'classic', category: 'people', keywords: kw };
@@ -502,7 +502,7 @@ export default async function handler(req, res) {
           attempts_tried: attempts,
           accounts_tried: accountsTried,
           last_error: lastSearchError,
-          owner_name: ownerName || null,
+          company_owner: ownerName || null,
         });
       }
 
@@ -545,7 +545,8 @@ export default async function handler(req, res) {
             working_attempt: workingAttempt,
             candidates: items.length,
             note: 'Fallback search vond kandidaten maar geen enkele headline bevat de company-naam',
-            used_account: { id: usedAccountId, owner_email: usedOwnerEmail, owner_name: ownerName || null },
+            company_owner: ownerName || null,
+          used_linkedin_account: { id: usedAccountId, email: usedOwnerEmail },
           });
         }
         items = filtered;
@@ -580,7 +581,8 @@ export default async function handler(req, res) {
             profile_url: c.profile_url || c.public_profile_url,
           })),
           raw_first_candidate: items[0], // FULL shape for debug — see all available fields
-          used_account: { id: usedAccountId, owner_email: usedOwnerEmail, owner_name: ownerName || null },
+          company_owner: ownerName || null,
+          used_linkedin_account: { id: usedAccountId, email: usedOwnerEmail },
         });
       }
 
@@ -601,7 +603,8 @@ export default async function handler(req, res) {
         linkedin_url: url,
         matched_headline: match.headline || match.occupation || null,
         match_type: matchType,
-        used_account: { id: usedAccountId, owner_email: usedOwnerEmail, owner_name: ownerName || null },
+        company_owner: ownerName || null,
+          used_linkedin_account: { id: usedAccountId, email: usedOwnerEmail },
       });
     }
 
