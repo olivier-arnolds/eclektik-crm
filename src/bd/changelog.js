@@ -19,9 +19,23 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.40.1';
+export const CURRENT_VERSION = '1.40.2';
 
 export const CHANGELOG = [
+  {
+    version: '1.40.2',
+    date: '2026-06-12T16:00:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Enrich-via-LinkedIn: gebruik LinkedIn-account van account-owner',
+    summary:
+      'De Enrich-via-LinkedIn server-flow pakte tot nu toe altijd de eerste LinkedIn-account die Unipile teruggaf. Dat hoefde niet die van de juiste owner te zijn — voor een Microsoft-contact owned by Marco werd soms Yarmilla\'s of Olivier\'s LinkedIn gebruikt, en die geeft andere search-resultaten (1st-degree connections, geo-bias, rate limits). Resultaat: "no-results" terwijl Marco\'s LinkedIn de match wel had. Nu wordt op basis van companies.owner de juiste Unipile-account gekozen (Marco / Yarmilla / Olivier name → email → account_id). Fallback: eerste LinkedIn-account als owner onbekend. Response bevat voortaan used_account.owner_email zodat je in debug kan zien welke account gebruikt is.',
+    changes: [
+      'api/unipile.js (find-contact-linkedin): companies.owner toegevoegd aan contact-fetch; NAME_TO_EMAIL + UNIPILE_BY_EMAIL inline mapping bepaalt voorkeurs-account; fallback naar eerste LinkedIn-account; used_account in alle response-paden.',
+    ],
+    files: ['api/unipile.js', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.40.2',
+  },
   {
     version: '1.40.1',
     date: '2026-06-12T15:25:00Z',

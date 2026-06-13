@@ -394,7 +394,7 @@ export default async function handler(req, res) {
 
       const { data: contact, error: getErr } = await supabase
         .from('contacts')
-        .select('id, first_name, last_name, full_name, company_name, companies(name)')
+        .select('id, first_name, last_name, full_name, company_name, companies(name, owner)')
         .eq('id', contact_id)
         .single();
       if (getErr || !contact) return res.status(404).json({ error: 'contact not found' });
@@ -405,9 +405,36 @@ export default async function handler(req, res) {
       if (!fullName) return res.status(400).json({ error: 'contact has no name to search' });
       const company = contact.company_name || contact.companies?.name || '';
 
+      // Kies de Unipile-account op basis van de account-owner van het bedrijf.
+      // Marco's klanten gebruiken Marco's LinkedIn, etc. Resultaten verschillen
+      // per LinkedIn-sessie (1st-degree connections, geographic-bias, rate
+      // limits) dus dit verhoogt de match-rate aanzienlijk. Fallback: eerste
+      // gekoppelde LinkedIn-account als owner onbekend of niet gemapt.
+      const UNIPILE_BY_EMAIL = {
+        'marco@eclectik.co':    'KYq2oN8JSPiAQSrcIfT5Ew',
+        'yarmilla@eclectik.co': 'j9-n2jeNTtGUxemfjlBsZA',
+        'olivier@eclectik.co':  'tC2o50tiTBiRCt9xAnio3w',
+      };
+      const NAME_TO_EMAIL = {
+        'Marco van Gelder':  'marco@eclectik.co',
+        'Marco':             'marco@eclectik.co',
+        'MVG':               'marco@eclectik.co',
+        'Olivier Arnolds':   'olivier@eclectik.co',
+        'Olivier':           'olivier@eclectik.co',
+        'OA':                'olivier@eclectik.co',
+        'Yarmilla Koenders': 'yarmilla@eclectik.co',
+        'Yarmilla':          'yarmilla@eclectik.co',
+        'YK':                'yarmilla@eclectik.co',
+      };
+      const ownerName = (contact.companies?.owner || '').trim();
+      const preferredAccountId = UNIPILE_BY_EMAIL[NAME_TO_EMAIL[ownerName] || ''] || null;
+
       const acctsResp = await unipileRequest('GET', '/accounts');
-      const liAcc = (acctsResp.data?.items || []).find(a => (a.type || '').toUpperCase() === 'LINKEDIN');
-      if (!liAcc) return res.status(400).json({ error: 'No LinkedIn account connected in Unipile' });
+      const liAccts = (acctsResp.data?.items || []).filter(a => (a.type || '').toUpperCase() === 'LINKEDIN');
+      if (liAccts.length === 0) return res.status(400).json({ error: 'No LinkedIn account connected in Unipile' });
+      const liAcc = (preferredAccountId && liAccts.find(a => a.id === preferredAccountId)) || liAccts[0];
+      const usedAccountId = liAcc.id;
+      const usedOwnerEmail = Object.entries(UNIPILE_BY_EMAIL).find(([, id]) => id === usedAccountId)?.[0] || null;
 
       // Conservatieve multi-attempt: alleen searches MET company als disambiguator.
       // De "first+last" en "last alleen" attempts uit eerdere iteratie zijn weggehaald
@@ -454,6 +481,7 @@ export default async function handler(req, res) {
           reason: 'no-results',
           attempts_tried: attempts,
           last_error: lastSearchError,
+          used_account: { id: usedAccountId, owner_email: usedOwnerEmail, owner_name: ownerName || null },
         });
       }
 
@@ -550,6 +578,7 @@ export default async function handler(req, res) {
         linkedin_url: url,
         matched_headline: match.headline || match.occupation || null,
         match_type: matchType,
+        used_account: { id: usedAccountId, owner_email: usedOwnerEmail, owner_name: ownerName || null },
       });
     }
 
