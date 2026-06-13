@@ -19,9 +19,23 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.40.3';
+export const CURRENT_VERSION = '1.40.4';
 
 export const CHANGELOG = [
+  {
+    version: '1.40.4',
+    date: '2026-06-12T16:30:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Vercel build fix: unescaped apostrof in v1.40.3 changelog-entry',
+    summary:
+      'De Nederlandse contractie in de v1.40.3 summary sloot de JS-string vroegtijdig waardoor Vercel build faalde met "Expected , or }". Apostrof verwijderd, build draait weer. Geen functionele wijziging — de cascade-fallback uit v1.40.3 zit hier dus ook in en is voor het eerst live.',
+    changes: [
+      'src/bd/changelog.js: summary van v1.40.3 herschreven zonder de string-brekende apostrof.',
+    ],
+    files: ['src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.40.4',
+  },
   {
     version: '1.40.3',
     date: '2026-06-12T16:20:00Z',
@@ -29,7 +43,7 @@ export const CHANGELOG = [
     type: 'feat',
     title: 'Enrich-via-LinkedIn cascadeert naar collega-accounts bij 0 hits',
     summary:
-      'LinkedIn-search is netwerk-afhankelijk: Marco vindt Edwin niet als die geen 1st-degree connection is, terwijl Olivier hem wel ziet. Nu probeert find-contact-linkedin eerst de owner\'s LinkedIn-account met alle 3 attempts, en pas bij 0 hits over de hele linie valt 'ie terug op de andere gekoppelde LinkedIn-accounts in volgorde. Eerste account die hits geeft wint. Geen extra API-calls in het normale geval (eerste account werkt), wel hogere recall in randgevallen. Response bevat nu accounts_tried met per-account-per-attempt count voor debug, plus used_account met de account die uiteindelijk de hit had.',
+      'LinkedIn-search is netwerk-afhankelijk: Marco vindt Edwin niet als die geen 1st-degree connection is, terwijl Olivier hem wel ziet. Nu probeert find-contact-linkedin eerst de owner-LinkedIn-account met alle 3 attempts, en pas bij 0 hits over de hele linie valt de search terug op de andere gekoppelde LinkedIn-accounts in volgorde. Eerste account die hits geeft wint. Geen extra API-calls in het normale geval (eerste account werkt), wel hogere recall in randgevallen. Response bevat nu accounts_tried met per-account-per-attempt count voor debug, plus used_account met de account die uiteindelijk de hit had.',
     changes: [
       'api/unipile.js (find-contact-linkedin): accountChain = [owner, ...others] cascade; per account doorlopen we alle 3 attempts vóór we naar volgende account gaan; workingAccount tracked; accounts_tried in no-results response; used_account in alle response-paden.',
     ],
