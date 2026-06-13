@@ -432,9 +432,16 @@ export default async function handler(req, res) {
       const acctsResp = await unipileRequest('GET', '/accounts');
       const liAccts = (acctsResp.data?.items || []).filter(a => (a.type || '').toUpperCase() === 'LINKEDIN');
       if (liAccts.length === 0) return res.status(400).json({ error: 'No LinkedIn account connected in Unipile' });
-      const liAcc = (preferredAccountId && liAccts.find(a => a.id === preferredAccountId)) || liAccts[0];
-      const usedAccountId = liAcc.id;
-      const usedOwnerEmail = Object.entries(UNIPILE_BY_EMAIL).find(([, id]) => id === usedAccountId)?.[0] || null;
+
+      // Cascade-volgorde: owner's LinkedIn eerst, daarna de andere accounts.
+      // LinkedIn-search is netwerk-afhankelijk (1st-degree bias), dus als de
+      // owner zelf Edwin niet kent, kan een collega 'm wel vinden. Per
+      // account doen we ALLE 3 attempts; pas bij 0 hits over de hele linie
+      // proberen we de volgende account. Eerste account die hits geeft wint.
+      const preferred = preferredAccountId && liAccts.find(a => a.id === preferredAccountId);
+      const others = liAccts.filter(a => a.id !== preferredAccountId);
+      const accountChain = preferred ? [preferred, ...others] : liAccts.slice();
+      const ownerEmailOf = (acctId) => Object.entries(UNIPILE_BY_EMAIL).find(([, id]) => id === acctId)?.[0] || null;
 
       // Conservatieve multi-attempt: alleen searches MET company als disambiguator.
       // De "first+last" en "last alleen" attempts uit eerdere iteratie zijn weggehaald
@@ -462,26 +469,40 @@ export default async function handler(req, res) {
       let workingAttempt = null;
       let usedFallback = false;
       let lastSearchError = null;
-      for (const { kw, withCompany } of attempts) {
-        const searchBody = { api: 'classic', category: 'people', keywords: kw };
-        const searchResult = await unipileRequest('POST', `/linkedin/search?account_id=${liAcc.id}`, searchBody);
-        if (searchResult.error) { lastSearchError = searchResult.error; continue; }
-        const found = searchResult.data?.items || searchResult.data?.data || [];
-        if (found.length > 0) {
-          items = found;
-          workingAttempt = kw;
-          usedFallback = !withCompany;
-          break;
+      let workingAccount = accountChain[0];
+      const accountsTried = [];
+      for (const acct of accountChain) {
+        const tried = { account_id: acct.id, owner_email: ownerEmailOf(acct.id), attempts: [] };
+        let hitInThisAccount = false;
+        for (const { kw, withCompany } of attempts) {
+          const searchBody = { api: 'classic', category: 'people', keywords: kw };
+          const searchResult = await unipileRequest('POST', `/linkedin/search?account_id=${acct.id}`, searchBody);
+          const found = (!searchResult.error && (searchResult.data?.items || searchResult.data?.data)) || [];
+          tried.attempts.push({ kw, count: found.length, error: searchResult.error || null });
+          if (searchResult.error) { lastSearchError = searchResult.error; continue; }
+          if (found.length > 0) {
+            items = found;
+            workingAttempt = kw;
+            usedFallback = !withCompany;
+            workingAccount = acct;
+            hitInThisAccount = true;
+            break;
+          }
         }
+        accountsTried.push(tried);
+        if (hitInThisAccount) break;
       }
+      const usedAccountId = workingAccount.id;
+      const usedOwnerEmail = ownerEmailOf(usedAccountId);
 
       if (items.length === 0) {
         return res.status(200).json({
           success: false,
           reason: 'no-results',
           attempts_tried: attempts,
+          accounts_tried: accountsTried,
           last_error: lastSearchError,
-          used_account: { id: usedAccountId, owner_email: usedOwnerEmail, owner_name: ownerName || null },
+          owner_name: ownerName || null,
         });
       }
 
@@ -524,6 +545,7 @@ export default async function handler(req, res) {
             working_attempt: workingAttempt,
             candidates: items.length,
             note: 'Fallback search vond kandidaten maar geen enkele headline bevat de company-naam',
+            used_account: { id: usedAccountId, owner_email: usedOwnerEmail, owner_name: ownerName || null },
           });
         }
         items = filtered;
@@ -558,6 +580,7 @@ export default async function handler(req, res) {
             profile_url: c.profile_url || c.public_profile_url,
           })),
           raw_first_candidate: items[0], // FULL shape for debug — see all available fields
+          used_account: { id: usedAccountId, owner_email: usedOwnerEmail, owner_name: ownerName || null },
         });
       }
 

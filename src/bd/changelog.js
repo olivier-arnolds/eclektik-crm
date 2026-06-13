@@ -19,9 +19,23 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.40.2';
+export const CURRENT_VERSION = '1.40.3';
 
 export const CHANGELOG = [
+  {
+    version: '1.40.3',
+    date: '2026-06-12T16:20:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feat',
+    title: 'Enrich-via-LinkedIn cascadeert naar collega-accounts bij 0 hits',
+    summary:
+      'LinkedIn-search is netwerk-afhankelijk: Marco vindt Edwin niet als die geen 1st-degree connection is, terwijl Olivier hem wel ziet. Nu probeert find-contact-linkedin eerst de owner\'s LinkedIn-account met alle 3 attempts, en pas bij 0 hits over de hele linie valt 'ie terug op de andere gekoppelde LinkedIn-accounts in volgorde. Eerste account die hits geeft wint. Geen extra API-calls in het normale geval (eerste account werkt), wel hogere recall in randgevallen. Response bevat nu accounts_tried met per-account-per-attempt count voor debug, plus used_account met de account die uiteindelijk de hit had.',
+    changes: [
+      'api/unipile.js (find-contact-linkedin): accountChain = [owner, ...others] cascade; per account doorlopen we alle 3 attempts vóór we naar volgende account gaan; workingAccount tracked; accounts_tried in no-results response; used_account in alle response-paden.',
+    ],
+    files: ['api/unipile.js', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.40.3',
+  },
   {
     version: '1.40.2',
     date: '2026-06-12T16:00:00Z',
