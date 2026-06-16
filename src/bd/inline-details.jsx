@@ -1096,7 +1096,8 @@ export function InlineDealDetail({ deal, rawItems, onCompose, onOpenModal, refet
           onSave={v => updateField('est_revenue', Number(v) || 0)} />
         <InlineField label="Probability %" value={rawRow?.probability} type="number"
           onSave={v => updateField('probability', Number(v) || 0)} />
-        <InlineField label="Close date" value={rawRow?.close_date || rawRow?.est_close_date} type="date"
+        <InlineField label={deal.table === 'opportunities' ? 'Expected close' : 'Close date'}
+          value={deal.table === 'opportunities' ? (rawRow?.est_close_date || rawRow?.close_date) : (rawRow?.close_date || rawRow?.est_close_date)} type="date"
           onSave={v => updateField(deal.table === 'opportunities' ? 'est_close_date' : 'close_date', v)} />
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
