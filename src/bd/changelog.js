@@ -19,9 +19,23 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.40.5';
+export const CURRENT_VERSION = '1.40.6';
 
 export const CHANGELOG = [
+  {
+    version: '1.40.6',
+    date: '2026-06-12T18:00:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'fix',
+    title: 'Deal panel: show the expected close date you entered',
+    summary:
+      'On an open opportunity, the "Close date" field saved your input to est_close_date but displayed close_date first, so a stale close_date hid the date you typed. Relabelled it "Expected close" for opportunities and it now shows/saves est_close_date (leads still use close_date). No effect on funnel or reporting placement.',
+    changes: [
+      'inline-details.jsx: opportunity close-date field reads + writes est_close_date, labelled "Expected close".',
+    ],
+    files: ['src/bd/inline-details.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.40.6',
+  },
   {
     version: '1.40.5',
     date: '2026-06-12T16:40:00Z',
