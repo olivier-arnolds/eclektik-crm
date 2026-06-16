@@ -19,9 +19,24 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.40.6';
+export const CURRENT_VERSION = '1.40.7';
 
 export const CHANGELOG = [
+  {
+    version: '1.40.7',
+    date: '2026-06-12T19:00:00Z',
+    author: 'Marco van Gelder (via Claude / Cowork)',
+    type: 'feat',
+    title: 'Deal panel weighted value + funnel close-period filter',
+    summary:
+      'Deal panel now shows a Weighted line under value/probability (value × probability, e.g. €142k · 60% of €236k). Funnel gets a "Close" period filter: All / This month / This quarter / Next quarter / Overdue, filtering deals by their close date. Overdue = open deals whose expected close has already passed - the chase list.',
+    changes: [
+      'inline-details.jsx: InlineDealDetail shows probability-weighted value.',
+      'lane-funnel.jsx: period filter (close date) with This month / This quarter / Next quarter / Overdue.',
+    ],
+    files: ['src/bd/inline-details.jsx', 'src/bd/lane-funnel.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.40.7',
+  },
   {
     version: '1.40.6',
     date: '2026-06-12T18:00:00Z',

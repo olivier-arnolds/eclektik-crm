@@ -1100,6 +1100,19 @@ export function InlineDealDetail({ deal, rawItems, onCompose, onOpenModal, refet
           value={deal.table === 'opportunities' ? (rawRow?.est_close_date || rawRow?.close_date) : (rawRow?.close_date || rawRow?.est_close_date)} type="date"
           onSave={v => updateField(deal.table === 'opportunities' ? 'est_close_date' : 'close_date', v)} />
       </div>
+      {(() => {
+        const v = Number(rawRow?.est_revenue) || 0;
+        const p = Number(rawRow?.probability) || 0;
+        if (!v) return null;
+        const fmt = (n) => n >= 1000 ? '€' + Math.round(n / 1000) + 'k' : '€' + Math.round(n);
+        return (
+          <div style={{ fontSize: 11, color: 'var(--text-2)' }}>
+            <span style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>Weighted </span>
+            <span style={{ fontWeight: 600 }}>{fmt(v * p / 100)}</span>
+            <span style={{ color: 'var(--text-3)' }}> · {p}% of {fmt(v)}</span>
+          </div>
+        );
+      })()}
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>Currency</div>

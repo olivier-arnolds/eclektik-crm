@@ -17,6 +17,7 @@ export default function FunnelLane({ deals, accounts, contacts, filters, setFilt
   const [showNewDeal, setShowNewDeal] = useState(false);
   const [showBulkLink, setShowBulkLink] = useState(false);
   const [pendingByDealId, setPendingByDealId] = useState({});
+  const [period, setPeriod] = useState('all');
 
   useEffect(() => {
     function loadSuggestions() {
@@ -47,12 +48,31 @@ export default function FunnelLane({ deals, accounts, contacts, filters, setFilt
     d.account.toLowerCase().includes(q) ||
     d.contact.toLowerCase().includes(q);
 
+  // Period filter on the deal's close date. For a sales rep: focus the board on
+  // what should land this month/quarter, or chase overdue open deals (expected
+  // close already passed, still open).
+  const inPeriod = (d) => {
+    if (period === 'all') return true;
+    const isOpen = ['qualify', 'develop', 'proposal'].includes(d.stage);
+    const dt = d.closeDate ? new Date(d.closeDate) : null;
+    const valid = dt && !isNaN(dt);
+    if (period === 'overdue') { const t = new Date(); t.setHours(0, 0, 0, 0); return isOpen && valid && dt < t; }
+    if (!valid) return false;
+    const now = new Date(); const y = now.getFullYear(); const qi = Math.floor(now.getMonth() / 3);
+    const qStart = (yy, q) => new Date(yy, q * 3, 1);
+    if (period === 'month') return dt.getFullYear() === y && dt.getMonth() === now.getMonth();
+    if (period === 'quarter') return dt >= qStart(y, qi) && dt < qStart(y, qi + 1);
+    if (period === 'nextq') return dt >= qStart(y, qi + 1) && dt < qStart(y, qi + 2);
+    return true;
+  };
+
   const filteredDeals = deals.filter(d => {
     if (filters?.owners?.length && !filters.owners.includes(d.owner)) return false;
     if (filters?.types?.length) {
       const dealTypes = (d.dealType || '').split(',').map(s => s.trim()).filter(Boolean);
       if (!filters.types.some(t => dealTypes.includes(t))) return false;
     }
+    if (!inPeriod(d)) return false;
     if (!matchesSearch(d)) return false;
     return true;
   });
@@ -156,6 +176,16 @@ export default function FunnelLane({ deals, accounts, contacts, filters, setFilt
               className={`chip ${filters?.types?.includes(t) ? 'chip-on' : ''}`}
               onClick={() => setFilters({ ...filters, types: toggle(filters?.types || [], t) })}>
               {t}
+            </button>
+          ))}
+        </div>
+        <div className="filter-group">
+          <span className="filter-label">Close</span>
+          {[['all', 'All'], ['month', 'This month'], ['quarter', 'This quarter'], ['nextq', 'Next quarter'], ['overdue', 'Overdue']].map(([k, lbl]) => (
+            <button key={k}
+              className={`chip ${period === k ? 'chip-on' : ''}`}
+              onClick={() => setPeriod(k)}>
+              {lbl}
             </button>
           ))}
         </div>
