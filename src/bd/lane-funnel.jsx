@@ -58,11 +58,11 @@ export default function FunnelLane({ deals, accounts, contacts, filters, setFilt
     const valid = dt && !isNaN(dt);
     if (period === 'overdue') { const t = new Date(); t.setHours(0, 0, 0, 0); return isOpen && valid && dt < t; }
     if (!valid) return false;
-    const now = new Date(); const y = now.getFullYear(); const qi = Math.floor(now.getMonth() / 3);
-    const qStart = (yy, q) => new Date(yy, q * 3, 1);
-    if (period === 'month') return dt.getFullYear() === y && dt.getMonth() === now.getMonth();
-    if (period === 'quarter') return dt >= qStart(y, qi) && dt < qStart(y, qi + 1);
-    if (period === 'nextq') return dt >= qStart(y, qi + 1) && dt < qStart(y, qi + 2);
+    const y = new Date().getFullYear();                       // quarters of the current calendar year
+    const qIdx = { q1: 0, q2: 1, q3: 2, q4: 3 }[period];
+    if (qIdx !== undefined) {
+      return dt >= new Date(y, qIdx * 3, 1) && dt < new Date(y, qIdx * 3 + 3, 1);
+    }
     return true;
   };
 
@@ -180,8 +180,8 @@ export default function FunnelLane({ deals, accounts, contacts, filters, setFilt
           ))}
         </div>
         <div className="filter-group">
-          <span className="filter-label">Close</span>
-          {[['all', 'All'], ['month', 'This month'], ['quarter', 'This quarter'], ['nextq', 'Next quarter'], ['overdue', 'Overdue']].map(([k, lbl]) => (
+          <span className="filter-label">Close {new Date().getFullYear()}</span>
+          {[['all', 'All'], ['q1', 'Q1'], ['q2', 'Q2'], ['q3', 'Q3'], ['q4', 'Q4'], ['overdue', 'Overdue']].map(([k, lbl]) => (
             <button key={k}
               className={`chip ${period === k ? 'chip-on' : ''}`}
               onClick={() => setPeriod(k)}>
