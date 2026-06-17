@@ -25,6 +25,7 @@ import MarketingView from './marketing-view';
 import AdminView from './admin-view';
 import LogView from './log-view';
 import FeedbackModal from './feedback-modal';
+import OnepagerModal from './onepager-modal';
 
 // The single set of left-pane views. The Account 360 always sits to the right.
 const NAV_VIEWS = ['reporting', 'funnel', 'warroom', 'tasks', 'meetings', 'comms', 'marketing', 'playbooks', 'admin', 'log'];
@@ -79,6 +80,7 @@ export default function BDApp() {
   const [composeCtx, setComposeCtx] = useState(null);
   const [showEnrich, setShowEnrich] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
+  const [showOnepager, setShowOnepager] = useState(false);
   const [openContactId, setOpenContactId] = useState(null);
   const [searchPanelDismissed, setSearchPanelDismissed] = useState(false);
   // When 'left', the left pane expands full-width and the Account 360 hides.
@@ -230,6 +232,7 @@ export default function BDApp() {
             onEnrich={() => setShowEnrich(true)}
             onRefreshGraph={fetchGraphData} graphLoading={graphLoading}
             onOpenFeedback={() => setShowFeedback(true)}
+            onOpenOnepager={() => setShowOnepager(true)}
             onOpenPlaybooks={() => setView('playbooks')} />
   );
 
@@ -471,6 +474,7 @@ export default function BDApp() {
       )}
 
       <FeedbackModal open={showFeedback} onClose={() => setShowFeedback(false)} />
+      <OnepagerModal open={showOnepager} onClose={() => setShowOnepager(false)} />
     </div>
   );
 }

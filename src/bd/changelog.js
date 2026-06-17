@@ -19,9 +19,25 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.40.7';
+export const CURRENT_VERSION = '1.41.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.41.0',
+    date: '2026-06-17T08:30:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feat',
+    title: 'One-pager: live overzicht 2026 (knop in topbar)',
+    summary:
+      'Nieuwe "📊 One-pager"-knop rechts in de topbar opent een full-screen overzicht, bedoeld voor een informele meeting (bv. met contractors). Leest live uit Supabase via de ingelogde sessie en toont: kerncijfers 2026 (afgerond / nu lopend / in onboarding / in offerte / gevallen + totale gewonnen omzet), de delivery-funnel met de projectnamen (klanten) per fase, en new business vs recurring business 2025 → 2026 als omzetvergelijking met groei-%. Alleen totaalbedragen, geen per-deal omzet. Definities zijn 1-op-1 met de Reporting-tab (won = status Won, omzet = COALESCE(actual_revenue, est_revenue), jaar uit actual_close_date || close_date, new = eerste gewonnen deal per klant).',
+    changes: [
+      'src/bd/onepager-modal.jsx: nieuw component — eigen focus-fetch (opportunities + companies + leads-count), funnel-snapshot + new/recurring over alle product-lijnen, presentatie-styling, Print/PDF-knop.',
+      'topbar.jsx: nieuwe One-pager-knop in topbar-right (prop onOpenOnepager).',
+      'BDApp.jsx: showOnepager-state + OnepagerModal in de globale-modal-set.',
+    ],
+    files: ['src/bd/onepager-modal.jsx', 'src/bd/topbar.jsx', 'src/bd/BDApp.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.41.0',
+  },
   {
     version: '1.40.7',
     date: '2026-06-12T19:00:00Z',
