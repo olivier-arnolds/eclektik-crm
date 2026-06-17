@@ -36,6 +36,7 @@ export const CHANGELOG = [
       'lane-accounts.jsx: deal-row headers (Open/Active/Sleeping) show probability + expected close.',
       'lane-funnel.jsx: deal cards now show expected close next to probability.',
       'usePipelineData.js: open deals now use est_close_date (expected close) as their close date, so editing it updates cards/rows/filter (a stale close_date no longer masks the change).',
+      'lane-reporting.jsx: hover tips on Won-by-quarter and New-vs-recurring bars list the client names + deal size in EUR for that quarter/segment.',
     ],
     files: ['src/bd/inline-details.jsx', 'src/bd/lane-funnel.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
     gitTag: 'v1.40.7',

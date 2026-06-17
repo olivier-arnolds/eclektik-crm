@@ -223,6 +223,16 @@ export function computeMetrics(opps, companies, links, teamContacts, cfg) {
     if (!isNew) { recTotal += r; recDeals++; if (l === 'Glint') recGlint += r; else recRoi += r; }
   }
 
+  // Per quarter × line deal list for chart hover tips (client name + EUR + new/rec).
+  const dealsByQLine = {};
+  for (const o of won) {
+    const q = quarterOf(o); if (!q || !(q in totals)) continue;
+    const l = lineOf(o); if (l !== 'Glint' && l !== 'ROI') continue;
+    const node = (dealsByQLine[q] = dealsByQLine[q] || { Glint: [], ROI: [] });
+    node[l].push({ name: o.company_name || '—', eur: revenueOf(o), isNew: seqOf.get(o.id) === 'new' });
+  }
+  Object.values(dealsByQLine).forEach(n => { n.Glint.sort((a, b) => b.eur - a.eur); n.ROI.sort((a, b) => b.eur - a.eur); });
+
   // Win / loss by line
   const lines = ['Glint', 'ROI', 'Seer', 'Insights', 'Other'];
   const wl = lines.map((L) => {
@@ -313,7 +323,7 @@ export function computeMetrics(opps, companies, links, teamContacts, cfg) {
     kpi: { wonRev, wonN, lostN, winRate, openGross, openN: openP.length, openWeighted, customers: customers.length, activeClients, dormantClients },
     quarters, extQuarters, glint, roi, other, totals, wonCount, lostCount,
     trend: { slope, intercept, r2, trendVals, crossingLabel },
-    nr, recGlint, recRoi, recTotal, recDeals, proposal,
+    nr, recGlint, recRoi, recTotal, recDeals, proposal, dealsByQLine,
     wl, rows, regionRows, subtotal, grand, colTotals, dormant, warnings, team,
   };
 }
@@ -422,6 +432,12 @@ function Pill({ status }) {
 const CHART = { W: 760, H: 300, padL: 46, padR: 12, padT: 22, padB: 26 };
 function yTicks(max) { const t = []; for (let v = 0; v <= max; v += 50000) t.push(v); return t; }
 
+// Hover-tip text for a bar: a heading line + one "Client: €Xk" line per deal.
+function dealTip(heading, list) {
+  if (!list || !list.length) return heading;
+  return heading + '\n' + list.map(d => `${d.name}: ${eur(d.eur)}`).join('\n');
+}
+
 function WonByQuarterChart({ m }) {
   const { quarters, extQuarters, glint, roi, totals, trend, proposal } = m;
   const { W, padL, padR, padT } = CHART;
@@ -456,8 +472,8 @@ function WonByQuarterChart({ m }) {
       <line x1={padL} x2={W - padR} y1={y(TARGET_Q)} y2={y(TARGET_Q)} stroke="var(--text-3)" strokeWidth="1.5" strokeDasharray="6 4" />
       {quarters.map((q, i) => (
         <g key={q}>
-          <rect x={x[i] - bw - 1} y={y(glint[q])} width={bw} height={padT + plotH - y(glint[q])} rx="2" fill="var(--good)" />
-          {roi[q] > 0 && <rect x={x[i] + 1} y={y(roi[q])} width={bw} height={padT + plotH - y(roi[q])} rx="2" fill="var(--accent)" />}
+          <rect x={x[i] - bw - 1} y={y(glint[q])} width={bw} height={padT + plotH - y(glint[q])} rx="2" fill="var(--good)"><title>{dealTip(`${qShort(q)} · Glint won · ${eur(glint[q])}`, m.dealsByQLine?.[q]?.Glint)}</title></rect>
+          {roi[q] > 0 && <rect x={x[i] + 1} y={y(roi[q])} width={bw} height={padT + plotH - y(roi[q])} rx="2" fill="var(--accent)"><title>{dealTip(`${qShort(q)} · ROI won · ${eur(roi[q])}`, m.dealsByQLine?.[q]?.ROI)}</title></rect>}
           {glint[q] > 0 && <text x={x[i] - bw / 2 - 1} y={y(glint[q]) - 4} textAnchor="middle" fontSize="9.5" fill="var(--good)">{eur(glint[q])}</text>}
           {roi[q] > 0 && <text x={x[i] + bw / 2 + 1} y={y(roi[q]) - 4} textAnchor="middle" fontSize="9.5" fill="var(--accent)">{eur(roi[q])}</text>}
         </g>
@@ -534,7 +550,14 @@ function NewRecurringChart({ m }) {
             {segs.map(([k, fill, op]) => {
               const v = nr[k][q]; if (!v) return null;
               const yTop = y(acc + v), h = y(acc) - y(acc + v); acc += v;
-              return <rect key={k} x={x[i] - bw / 2} y={yTop} width={bw} height={h} fill={fill} fillOpacity={op} />;
+              const ln = k.startsWith('glint') ? 'Glint' : 'ROI';
+              const wantNew = k.endsWith('New');
+              const list = (m.dealsByQLine?.[q]?.[ln] || []).filter(d => d.isNew === wantNew);
+              return (
+                <rect key={k} x={x[i] - bw / 2} y={yTop} width={bw} height={h} fill={fill} fillOpacity={op}>
+                  <title>{dealTip(`${qShort(q)} · ${ln} ${wantNew ? 'new' : 'recurring'} · ${eur(v)}`, list)}</title>
+                </rect>
+              );
             })}
             {stackTot(q) > 0 && <text x={x[i]} y={y(stackTot(q)) - 5} textAnchor="middle" fontSize="9.5" fill="var(--text-2)">{eur(stackTot(q))}</text>}
             {(() => { const [yy, nn] = q.split('-Q'); const prev = stackTot(`${+yy - 1}-Q${nn}`); const cur = stackTot(q); if (!prev || prev <= 0 || !cur) return null; const up = cur >= prev; const pct = Math.abs(Math.round((cur - prev) / prev * 100)); return <text x={x[i]} y={y(cur) - 16} textAnchor="middle" fontSize="8.5" fontWeight="500" fill={up ? 'var(--good)' : '#E24B4A'}>{up ? '▲' : '▼'}{pct}%</text>; })()}
