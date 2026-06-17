@@ -19,9 +19,23 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.41.8';
+export const CURRENT_VERSION = '1.41.9';
 
 export const CHANGELOG = [
+  {
+    version: '1.41.9',
+    date: '2026-06-17T12:05:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'One-pager: employee_count met decimaal/komma correct geparsed',
+    summary:
+      'De Company size-band parste employee_count door alle niet-cijfers weg te strepen, waardoor "1600.0" (IMC) als 16000 in de band 5.000+ belandde. Nu parseFloat na verwijderen van duizendtal-/spatie-scheiders, zodat "1600.0" → 1.600 (band 1.000–4.999) en "10,000" → 10.000. Lege/tekst-waarden blijven unknown.',
+    changes: [
+      'onepager-modal.jsx: size-band parse via Math.round(parseFloat(cleaned)) i.p.v. niet-cijfers strippen.',
+    ],
+    files: ['src/bd/onepager-modal.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.41.9',
+  },
   {
     version: '1.41.8',
     date: '2026-06-17T11:45:00Z',

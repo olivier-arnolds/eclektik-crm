@@ -199,8 +199,11 @@ export default function OnepagerModal({ open, onClose }) {
     const sizeCount = Object.fromEntries(SIZE_BANDS.map((b) => [b.label, 0]));
     let sizeUnknown = 0;
     for (const c of clients) {
-      const raw = String(c.employee_count ?? '').replace(/[^0-9]/g, '');
-      const n = raw ? parseInt(raw, 10) : NaN;
+      // Parse als getal: verwijder duizendtal-/spatie-scheiders, neem dan de
+      // numerieke waarde. parseFloat handelt decimalen af ("1600.0" → 1600),
+      // anders zou "1600.0" naar 16000 verminkt worden.
+      const cleaned = String(c.employee_count ?? '').trim().replace(/[,\s]/g, '');
+      const n = cleaned ? Math.round(parseFloat(cleaned)) : NaN;
       const band = Number.isFinite(n) ? SIZE_BANDS.find((b) => b.test(n)) : null;
       if (band) sizeCount[band.label]++; else sizeUnknown++;
     }
