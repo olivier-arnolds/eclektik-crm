@@ -15,7 +15,7 @@ import { supabase } from '../supabase';
 const num = (v) => (v == null || v === '' || isNaN(+v)) ? null : +v;
 const revenueOf = (o) => { const a = num(o.actual_revenue); if (a !== null) return a; const e = num(o.est_revenue); return e !== null ? e : 0; };
 const yearOf = (o) => { const d = o.actual_close_date || o.close_date; return d ? String(d).slice(0, 4) : null; };
-const eurK = (v) => '€' + Math.round((v || 0) / 1000).toLocaleString('nl-NL') + 'k';
+const eurK = (v) => '€' + Math.round((v || 0) / 1000).toLocaleString('en-US') + 'k';
 
 const CUR_YEAR = '2026';
 const PREV_YEAR = '2025';
@@ -134,47 +134,47 @@ export default function OnepagerModal({ open, onClose }) {
 
   if (!open) return null;
 
-  const today = new Date().toLocaleDateString('nl-NL', { day: 'numeric', month: 'long', year: 'numeric' });
+  const today = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" style={{ width: 'min(1080px, 96vw)', maxHeight: '92vh', display: 'flex', flexDirection: 'column' }} onClick={(e) => e.stopPropagation()}>
+    <div className="modal-backdrop" onClick={onClose} style={{ padding: 0 }}>
+      <div className="modal" style={{ width: '100vw', height: '100vh', maxWidth: '100vw', maxHeight: '100vh', borderRadius: 0, display: 'flex', flexDirection: 'column' }} onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontSize: 18 }}>Eclectik — Overzicht 2026</span>
-          <span style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 400 }}>stand van zaken · {today}</span>
+          <span style={{ fontSize: 20 }}>Eclectik — 2026 Overview</span>
+          <span style={{ fontSize: 12, color: 'var(--text-3)', fontWeight: 400 }}>state of play · {today}</span>
           <button className="icon-btn tiny" style={{ marginLeft: 'auto', color: 'var(--text-2)' }} onClick={onClose}><I.close /></button>
         </div>
 
-        <div className="modal-body" style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 18 }}>
-          {loading && <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-3)' }}>Cijfers laden…</div>}
-          {error && <div style={{ padding: 20, color: 'var(--danger)', fontSize: 12 }}>Kon data niet laden: {error}</div>}
+        <div className="modal-body" style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 22, padding: '20px 28px', maxWidth: 1400, width: '100%', margin: '0 auto', boxSizing: 'border-box' }}>
+          {loading && <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-3)' }}>Loading figures…</div>}
+          {error && <div style={{ padding: 20, color: 'var(--danger)', fontSize: 12 }}>Could not load data: {error}</div>}
 
           {!loading && !error && (
             <>
-              {/* KPI-rij */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 10 }}>
-                <Kpi label="Afgerond in 2026" value={m.doneThisYear.length} tint="var(--good)" />
-                <Kpi label="Nu lopend" value={m.active.length} tint="var(--accent)" />
+              {/* KPI row */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 12 }}>
+                <Kpi label="Completed in 2026" value={m.doneThisYear.length} tint="var(--good)" />
+                <Kpi label="Running now" value={m.active.length} tint="var(--accent)" />
                 <Kpi label="In onboarding" value={m.onboarding.length} tint="var(--accent)" />
-                <Kpi label="In offerte" value={m.proposal.length} tint="var(--warn)" />
-                <Kpi label="Gevallen in 2026" value={m.lostThisYear.length} tint="var(--danger)" />
-                <Kpi label="Gewonnen omzet 2026" value={eurK(m.wonRevCur)} tint="var(--good)" small />
+                <Kpi label="In proposal" value={m.proposal.length} tint="var(--warn)" />
+                <Kpi label="Lost in 2026" value={m.lostThisYear.length} tint="var(--danger)" />
+                <Kpi label="Won revenue 2026" value={eurK(m.wonRevCur)} tint="var(--good)" small />
               </div>
 
-              {/* Delivery-funnel met projectnamen */}
-              <Section title="De projecten — van offerte tot afgerond">
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
-                  <FunnelCol title="In offerte" sub="lopende voorstellen" color="var(--warn)" names={m.proposal} />
-                  <FunnelCol title="In onboarding" sub="net gewonnen, opstart" color="var(--accent)" names={m.onboarding} />
-                  <FunnelCol title="Nu lopend" sub="actieve projecten" color="var(--accent)" names={m.active} />
-                  <FunnelCol title="Afgerond in 2026" sub="opgeleverd dit jaar" color="var(--good)" names={m.doneThisYear} />
+              {/* Delivery funnel with project names */}
+              <Section title="The projects — from proposal to completed">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+                  <FunnelCol title="In proposal" sub="open proposals" color="var(--warn)" names={m.proposal} />
+                  <FunnelCol title="In onboarding" sub="just won, starting up" color="var(--accent)" names={m.onboarding} />
+                  <FunnelCol title="Running now" sub="active projects" color="var(--accent)" names={m.active} />
+                  <FunnelCol title="Completed in 2026" sub="delivered this year" color="var(--good)" names={m.doneThisYear} />
                 </div>
               </Section>
 
-              {/* Gevallen */}
+              {/* Lost */}
               {m.lostThisYear.length > 0 && (
-                <Section title={`Gevallen in 2026 (${m.lostThisYear.length})`}>
+                <Section title={`Lost in 2026 (${m.lostThisYear.length})`}>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                     {m.lostThisYear.map((d) => (
                       <span key={d.id} title={d.client} style={{ fontSize: 11, padding: '3px 9px', borderRadius: 12, background: 'var(--fill-1)', color: 'var(--text-2)', textDecoration: 'line-through', textDecorationColor: 'var(--danger)' }}>{d.project}</span>
@@ -189,8 +189,8 @@ export default function OnepagerModal({ open, onClose }) {
               </Section>
 
               <div style={{ fontSize: 10, color: 'var(--text-3)', borderTop: '0.5px solid var(--sep)', paddingTop: 8 }}>
-                Live cijfers uit het CRM. Definities gelijk aan de Reporting-tab (won = status 'Won', new = eerste gewonnen deal per klant).
-                Vroege pijplijn (qualify/develop): {leadCount + m.develop.length} kansen in gesprek.
+                Live figures from the CRM. Definitions match the Reporting tab (won = status 'Won', new = first won deal per client).
+                Early pipeline (qualify/develop): {leadCount + m.develop.length} opportunities in conversation.
               </div>
             </>
           )}
@@ -198,7 +198,7 @@ export default function OnepagerModal({ open, onClose }) {
 
         <div className="modal-actions">
           <button className="btn-ghost" onClick={() => window.print()}>Print / PDF</button>
-          <button className="btn-primary" onClick={onClose}>Sluiten</button>
+          <button className="btn-primary" onClick={onClose}>Close</button>
         </div>
       </div>
     </div>
@@ -234,7 +234,7 @@ function FunnelCol({ title, sub, color, names }) {
         <div style={{ fontSize: 9, color: 'var(--text-3)' }}>{sub}</div>
       </div>
       <div style={{ padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 240, overflowY: 'auto' }}>
-        {names.length === 0 && <span style={{ fontSize: 10, color: 'var(--text-3)', fontStyle: 'italic' }}>geen</span>}
+        {names.length === 0 && <span style={{ fontSize: 10, color: 'var(--text-3)', fontStyle: 'italic' }}>none</span>}
         {names.map((d) => (
           <div key={d.id} style={{ padding: '2px 0', borderBottom: '0.5px solid var(--sep)' }}>
             <div style={{ fontSize: 11, color: 'var(--text-1)' }}>{d.project}</div>
@@ -281,14 +281,14 @@ function NewRecurring({ prev, cur, prevYr, curYr }) {
         <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ width: 10, height: 10, borderRadius: 2, background: 'var(--good)' }} /> Recurring business</span>
         {growth !== null && (
           <span style={{ marginLeft: 'auto', fontWeight: 600, color: growth >= 0 ? 'var(--good)' : 'var(--danger)' }}>
-            {growth >= 0 ? '▲' : '▼'} {Math.abs(growth)}% omzet vs {prevYr}
+            {growth >= 0 ? '▲' : '▼'} {Math.abs(growth)}% revenue vs {prevYr}
           </span>
         )}
       </div>
       <Row yr={prevYr} nr={prev} />
       <Row yr={curYr} nr={cur} />
       <div style={{ fontSize: 10, color: 'var(--text-3)' }}>
-        Aandeel recurring: {recShare(prev)}% in {prevYr} → {recShare(cur)}% in {curYr}.
+        Recurring share: {recShare(prev)}% in {prevYr} → {recShare(cur)}% in {curYr}.
       </div>
     </div>
   );

@@ -19,9 +19,23 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.41.0';
+export const CURRENT_VERSION = '1.41.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.41.1',
+    date: '2026-06-17T09:15:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'One-pager: volledig Engels + schermvullend',
+    summary:
+      'De one-pager is nu schermvullend (full-viewport modal i.p.v. een gecentreerde kaart) en alle user-facing tekst is naar het Engels vertaald, want de contractors spreken alleen Engels. Bedragen gebruiken nu en-US duizendtal-notatie en de datum een en-GB-formaat. Inhoud en cijfers ongewijzigd.',
+    changes: [
+      'onepager-modal.jsx: modal full-screen (100vw/100vh, borderRadius 0), body gecentreerd met max-breedte 1400px; alle labels/secties/knoppen vertaald naar Engels; eurK → en-US, datum → en-GB.',
+    ],
+    files: ['src/bd/onepager-modal.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.41.1',
+  },
   {
     version: '1.41.0',
     date: '2026-06-17T08:30:00Z',
