@@ -100,7 +100,10 @@ function adaptOpportunity(row) {
     owner: row.owner || '',
     team: row.team || '',
     probability: row.probability || 0,
-    closeDate: row.close_date || row.est_close_date || '',
+    // Open deals: expected close (est_close_date) is the meaningful date and the
+    // one users edit. Closed/won deals: the actual close_date. This keeps cards,
+    // rows and the period filter in sync with what you edit in the deal panel.
+    closeDate: (isProject ? (row.close_date || row.est_close_date) : (row.est_close_date || row.close_date)) || '',
     startDate: row.start_date || '',
     endDate: row.end_date || '',
     productLine: normalizeProductLine(row.product_line),

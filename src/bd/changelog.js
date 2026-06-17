@@ -35,6 +35,7 @@ export const CHANGELOG = [
       'lane-funnel.jsx: close-period filter — All / Q1 / Q2 / Q3 / Q4 (current calendar year) / Overdue.',
       'lane-accounts.jsx: deal-row headers (Open/Active/Sleeping) show probability + expected close.',
       'lane-funnel.jsx: deal cards now show expected close next to probability.',
+      'usePipelineData.js: open deals now use est_close_date (expected close) as their close date, so editing it updates cards/rows/filter (a stale close_date no longer masks the change).',
     ],
     files: ['src/bd/inline-details.jsx', 'src/bd/lane-funnel.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
     gitTag: 'v1.40.7',
