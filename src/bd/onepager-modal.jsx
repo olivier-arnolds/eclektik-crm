@@ -37,13 +37,13 @@ export default function OnepagerModal({ open, onClose }) {
           supabase.from('opportunities')
             .select('id,topic,company_id,company_name,status,stage,sub_status,product_line,est_revenue,actual_revenue,close_date,actual_close_date')
             .limit(2000),
-          supabase.from('companies').select('id,name').limit(2000),
+          supabase.from('companies').select('id,name,country,industry,employee_count').limit(2000),
           supabase.from('leads').select('id', { count: 'exact', head: true }),
         ]);
         if (cancelled) return;
         if (o.error) throw o.error;
         setOpps(o.data || []);
-        setCompanyById(new Map((c.data || []).map((r) => [r.id, r.name])));
+        setCompanyById(new Map((c.data || []).map((r) => [r.id, r])));
         setLeadCount(l.count || 0);
       } catch (e) {
         if (!cancelled) setError(e.message || String(e));
@@ -55,7 +55,7 @@ export default function OnepagerModal({ open, onClose }) {
   }, [open]);
 
   const m = useMemo(() => {
-    const nameOf = (o) => o.company_name || companyById.get(o.company_id) || '— onbekend —';
+    const nameOf = (o) => o.company_name || companyById.get(o.company_id)?.name || '— onbekend —';
 
     // ── Funnel-categorie per opportunity ──
     const catOf = (o) => {
@@ -134,11 +134,64 @@ export default function OnepagerModal({ open, onClose }) {
       return acc;
     };
 
+    // ── Client base: bedrijven met een gewonnen / lopend / onboarding deal ──
+    // Dit is "waar we daadwerkelijk leveren". Geografie, sector en omvang
+    // hieronder zijn over deze set berekend.
+    const clientIds = new Set();
+    for (const o of opps) {
+      if ((isWon(o) || o.stage === 'active' || o.stage === 'onboarding') && o.company_id) clientIds.add(o.company_id);
+    }
+    const clients = [...clientIds].map((id) => companyById.get(id)).filter(Boolean);
+
+    // Geografie: US vs EMEA (zelfde regel als de Reporting-tab).
+    const US_C = new Set(['US', 'United States', 'USA']);
+    const region = { US: 0, EMEA: 0 };
+    for (const c of clients) region[US_C.has((c.country || '').trim()) ? 'US' : 'EMEA']++;
+
+    // Industrie → sector-cluster (de ruwe industry-tekst is te versnipperd).
+    const sectorOf = (industry) => {
+      const t = (industry || '').toLowerCase();
+      if (/bio|pharma|clinical|diabetes|health|life scien|diagnostic|medical/.test(t)) return 'Life Sciences & Healthcare';
+      if (/manufactur|industrial|engineering|maritime|machinery|chemical/.test(t)) return 'Manufacturing & Industrial';
+      if (/retail|consumer|food|beverage|brand|luxury|fashion|confection/.test(t)) return 'Consumer & Retail';
+      if (/software|technolog|\bit\b|saas|web hosting|isp|semiconductor|cloud|information tech/.test(t)) return 'Technology & Software';
+      if (/insur|bank|financ|lending|trading|account|payment|asset/.test(t)) return 'Financial Services';
+      if (/government|non.?profit|public|education/.test(t)) return 'Public & Non-profit';
+      return 'Other';
+    };
+    const sectorCount = new Map();
+    for (const c of clients) { const s = sectorOf(c.industry); sectorCount.set(s, (sectorCount.get(s) || 0) + 1); }
+    const sectors = [...sectorCount.entries()]
+      .map(([label, n]) => ({ label, n }))
+      .sort((a, b) => (a.label === 'Other' ? 1 : b.label === 'Other' ? -1 : b.n - a.n));
+
+    // Omvang naar werknemersaantal (employee_count is tekst in de DB).
+    const SIZE_BANDS = [
+      { label: '1–49', test: (n) => n < 50 },
+      { label: '50–249', test: (n) => n >= 50 && n < 250 },
+      { label: '250–999', test: (n) => n >= 250 && n < 1000 },
+      { label: '1,000–4,999', test: (n) => n >= 1000 && n < 5000 },
+      { label: '5,000+', test: (n) => n >= 5000 },
+    ];
+    const sizeCount = Object.fromEntries(SIZE_BANDS.map((b) => [b.label, 0]));
+    let sizeUnknown = 0;
+    for (const c of clients) {
+      const raw = String(c.employee_count ?? '').replace(/[^0-9]/g, '');
+      const n = raw ? parseInt(raw, 10) : NaN;
+      const band = Number.isFinite(n) ? SIZE_BANDS.find((b) => b.test(n)) : null;
+      if (band) sizeCount[band.label]++; else sizeUnknown++;
+    }
+    const sizes = [
+      ...SIZE_BANDS.map((b) => ({ label: b.label, n: sizeCount[b.label] })),
+      { label: 'unknown', n: sizeUnknown },
+    ];
+
     return {
       proposal, onboarding, active, develop, doneThisYear, lostThisYear,
       wonRevCur: wonRevFull(CUR_YEAR), wonRevPrevFull: wonRevFull(PREV_YEAR),
       nrCur: nrYtdFor(CUR_YEAR), nrPrev: nrYtdFor(PREV_YEAR),
       ytdLabel: now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
+      clientCount: clients.length, region, sectors, sizes,
     };
   }, [opps, companyById]);
 
@@ -182,16 +235,14 @@ export default function OnepagerModal({ open, onClose }) {
                 </div>
               </Section>
 
-              {/* Lost */}
-              {m.lostThisYear.length > 0 && (
-                <Section title={`Lost in 2026 (${m.lostThisYear.length})`}>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                    {m.lostThisYear.map((d) => (
-                      <span key={d.id} title={d.client} style={{ fontSize: 14, padding: '4px 11px', borderRadius: 12, background: 'var(--fill-1)', color: 'var(--text-2)', textDecoration: 'line-through', textDecorationColor: 'var(--danger)' }}>{d.project}</span>
-                    ))}
-                  </div>
-                </Section>
-              )}
+              {/* Where we're strong — client base profile */}
+              <Section title={`Where we're strong — clients we deliver to (${m.clientCount})`}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+                  <ProfilePanel title="Geography" rows={[{ label: 'EMEA', n: m.region.EMEA }, { label: 'US', n: m.region.US }]} total={m.clientCount} color="var(--accent)" />
+                  <ProfilePanel title="Sector strength" rows={m.sectors} total={m.clientCount} color="var(--good)" />
+                  <ProfilePanel title="Company size (employees)" rows={m.sizes} total={m.clientCount} color="var(--warn)" />
+                </div>
+              </Section>
 
               {/* New vs recurring — like-for-like YTD */}
               <Section title={`New business vs. recurring business — like-for-like (1 Jan – ${m.ytdLabel})`}>
@@ -249,6 +300,28 @@ function FunnelCol({ title, sub, color, names }) {
           <div key={d.id} style={{ padding: '3px 0', borderBottom: '0.5px solid var(--sep)' }}>
             <div style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-1)' }}>{d.project}</div>
             {d.client && <div style={{ fontSize: 12, color: 'var(--text-3)' }}>{d.client}</div>}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ProfilePanel({ title, rows, total, color }) {
+  const max = Math.max(1, ...rows.map((r) => r.n));
+  return (
+    <div style={{ border: '0.5px solid var(--sep)', borderRadius: 10, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ padding: '10px 12px', borderTop: `4px solid ${color}`, background: 'var(--bg-1)' }}>
+        <span style={{ fontSize: 16, fontWeight: 600 }}>{title}</span>
+      </div>
+      <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {rows.filter((r) => r.n > 0).map((r) => (
+          <div key={r.label} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 14, color: 'var(--text-1)', width: 130, flexShrink: 0 }}>{r.label}</span>
+            <div style={{ flex: 1, height: 14, borderRadius: 4, background: 'var(--fill-1)', overflow: 'hidden' }}>
+              <div style={{ width: `${(r.n / max) * 100}%`, height: '100%', background: color, opacity: 0.55 }} />
+            </div>
+            <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-2)', width: 28, textAlign: 'right' }}>{r.n}</span>
           </div>
         ))}
       </div>

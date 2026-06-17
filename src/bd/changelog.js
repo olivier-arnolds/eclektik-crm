@@ -19,9 +19,23 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.41.3';
+export const CURRENT_VERSION = '1.41.4';
 
 export const CHANGELOG = [
+  {
+    version: '1.41.4',
+    date: '2026-06-17T10:25:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feat',
+    title: 'One-pager: client-profiel (geo / sector / omvang) i.p.v. lost-lijst',
+    summary:
+      'De "Lost in 2026"-sectie is vervangen door een client-profiel over de bedrijven waar we daadwerkelijk leveren (gewonnen / lopend / onboarding deals): geografie (US vs EMEA), sector-sterkte (industrieën geclusterd naar sectoren, want de ruwe industry-tekst is te versnipperd) en bedrijfsomvang naar werknemersaantal (employee_count, in banden). De "Lost in 2026"-KPI bovenin blijft staan voor funnel-compleetheid. Live berekend over dezelfde set, en geverifieerd tegen de database (35 clients: EMEA 22 / US 13; sectoren Life Sciences 6 · Manufacturing 6 · Consumer & Retail 5 · Technology 5 · Financial 4; omvang overwegend 1.000+ medewerkers).',
+    changes: [
+      'onepager-modal.jsx: companies-fetch uitgebreid met country/industry/employee_count; client-base = won/active/onboarding; region/sector/size berekend; nieuwe ProfilePanel-component; lost-sectie verwijderd (KPI-tegel blijft).',
+    ],
+    files: ['src/bd/onepager-modal.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.41.4',
+  },
   {
     version: '1.41.3',
     date: '2026-06-17T10:00:00Z',
