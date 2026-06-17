@@ -19,9 +19,23 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.41.10';
+export const CURRENT_VERSION = '1.41.11';
 
 export const CHANGELOG = [
+  {
+    version: '1.41.11',
+    date: '2026-06-17T12:40:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'One-pager: geen omzetcijfers meer tonen',
+    summary:
+      'Op verzoek (contractors mogen geen omzet zien): de KPI-tegel "Won revenue 2026" (€408k) is weg, en de New-vs-recurring-sectie toont nu het AANTAL gewonnen deals i.p.v. €-bedragen — bars per jaar (new vs recurring), groei in aantal deals YoY en recurring-share %. De "€717k full year"-referentie is verwijderd. eurK-helper en won-revenue-berekening zijn geschrapt; nergens in de one-pager staat nog een omzetbedrag.',
+    changes: [
+      'onepager-modal.jsx: KPI-rij 6→5 (Won revenue weg); NewRecurring op deal-count basis (newN/recN) i.p.v. €; eurK + wonRevFull/wonRevCur/wonRevPrevFull verwijderd.',
+    ],
+    files: ['src/bd/onepager-modal.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.41.11',
+  },
   {
     version: '1.41.10',
     date: '2026-06-17T12:20:00Z',
