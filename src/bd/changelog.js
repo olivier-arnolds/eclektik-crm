@@ -19,9 +19,23 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.41.9';
+export const CURRENT_VERSION = '1.41.10';
 
 export const CHANGELOG = [
+  {
+    version: '1.41.10',
+    date: '2026-06-17T12:20:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'One-pager: ROI ook uit de Leads-kolom',
+    summary:
+      'ROI-leads worden nu ook uit de Leads-kolom geweerd (eerder bleven die staan). Filter geldt zowel op de leads-tabel (product_line=ROI) als op de qualify/develop-opps. Effect op de leads-tabel: 52 → 33 (19 ROI-leads weg). De hele lifecycle is daarmee ROI-vrij.',
+    changes: [
+      'onepager-modal.jsx: product_line toegevoegd aan leads-fetch; leadItems en earlyOpps gefilterd op !isROI.',
+    ],
+    files: ['src/bd/onepager-modal.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.41.10',
+  },
   {
     version: '1.41.9',
     date: '2026-06-17T12:05:00Z',

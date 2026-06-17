@@ -38,7 +38,7 @@ export default function OnepagerModal({ open, onClose }) {
             .select('id,topic,company_id,company_name,status,stage,sub_status,pipeline_phase,product_line,est_revenue,actual_revenue,close_date,actual_close_date')
             .limit(2000),
           supabase.from('companies').select('id,name,country,industry,employee_count').limit(2000),
-          supabase.from('leads').select('id,full_name,topic,company_id').limit(2000),
+          supabase.from('leads').select('id,full_name,topic,company_id,product_line').limit(2000),
         ]);
         if (cancelled) return;
         if (o.error) throw o.error;
@@ -105,9 +105,9 @@ export default function OnepagerModal({ open, onClose }) {
     const sleeping = dealsIn((o) => o.stage === 'past' && isWon(o) && !isROI(o));   // afgerond, dormant
 
     // Leads = pre-proposal pijplijn: de leads-tabel (qualify) + qualify/develop-opps.
-    // Bewust ZONDER ROI-filter — alle leads van alle types blijven staan.
-    const earlyOpps = dealsIn((o) => ['qualify', 'develop'].includes(catOf(o)));
-    const leadItems = (leads || []).map((l) => {
+    // ROI wordt ook hier geweerd (net als in de overige kolommen).
+    const earlyOpps = dealsIn((o) => ['qualify', 'develop'].includes(catOf(o)) && !isROI(o));
+    const leadItems = (leads || []).filter((l) => !isROI(l)).map((l) => {
       const client = companyById.get(l.company_id)?.name || '';
       const project = (l.topic || '').trim() || (l.full_name || '').trim() || 'Untitled lead';
       return { id: 'lead-' + l.id, project, client: project === client ? '' : client };
