@@ -151,8 +151,8 @@ export default function OnepagerModal({ open, onClose }) {
       <div className="modal" style={{ width: '100vw', height: '100vh', maxWidth: '100vw', maxHeight: '100vh', borderRadius: 0, display: 'flex', flexDirection: 'column' }} onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontSize: 20 }}>Eclectik — 2026 Overview</span>
-          <span style={{ fontSize: 12, color: 'var(--text-3)', fontWeight: 400 }}>state of play · {today}</span>
+          <span style={{ fontSize: 24 }}>Eclectik — 2026 Overview</span>
+          <span style={{ fontSize: 14, color: 'var(--text-3)', fontWeight: 400 }}>state of play · {today}</span>
           <button className="icon-btn tiny" style={{ marginLeft: 'auto', color: 'var(--text-2)' }} onClick={onClose}><I.close /></button>
         </div>
 
@@ -187,7 +187,7 @@ export default function OnepagerModal({ open, onClose }) {
                 <Section title={`Lost in 2026 (${m.lostThisYear.length})`}>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                     {m.lostThisYear.map((d) => (
-                      <span key={d.id} title={d.client} style={{ fontSize: 11, padding: '3px 9px', borderRadius: 12, background: 'var(--fill-1)', color: 'var(--text-2)', textDecoration: 'line-through', textDecorationColor: 'var(--danger)' }}>{d.project}</span>
+                      <span key={d.id} title={d.client} style={{ fontSize: 14, padding: '4px 11px', borderRadius: 12, background: 'var(--fill-1)', color: 'var(--text-2)', textDecoration: 'line-through', textDecorationColor: 'var(--danger)' }}>{d.project}</span>
                     ))}
                   </div>
                 </Section>
@@ -198,7 +198,7 @@ export default function OnepagerModal({ open, onClose }) {
                 <NewRecurring prev={m.nrPrev} cur={m.nrCur} prevYr={PREV_YEAR} curYr={CUR_YEAR} ytdLabel={m.ytdLabel} prevFull={m.wonRevPrevFull} />
               </Section>
 
-              <div style={{ fontSize: 10, color: 'var(--text-3)', borderTop: '0.5px solid var(--sep)', paddingTop: 8 }}>
+              <div style={{ fontSize: 12, color: 'var(--text-3)', borderTop: '0.5px solid var(--sep)', paddingTop: 10 }}>
                 Live figures from the CRM. Definitions match the Reporting tab (won = status 'Won', new = first won deal per client).
                 Early pipeline (qualify/develop): {leadCount + m.develop.length} opportunities in conversation.
               </div>
@@ -217,17 +217,17 @@ export default function OnepagerModal({ open, onClose }) {
 
 function Kpi({ label, value, tint, small }) {
   return (
-    <div style={{ border: '0.5px solid var(--sep)', borderRadius: 10, padding: '12px 10px', background: 'var(--bg-1)', display: 'flex', flexDirection: 'column', gap: 4 }}>
-      <div style={{ fontSize: small ? 20 : 28, fontWeight: 700, color: tint, lineHeight: 1 }}>{value}</div>
-      <div style={{ fontSize: 10, color: 'var(--text-3)', lineHeight: 1.2 }}>{label}</div>
+    <div style={{ border: '0.5px solid var(--sep)', borderRadius: 10, padding: '16px 14px', background: 'var(--bg-1)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <div style={{ fontSize: small ? 26 : 36, fontWeight: 700, color: tint, lineHeight: 1 }}>{value}</div>
+      <div style={{ fontSize: 13, color: 'var(--text-3)', lineHeight: 1.25 }}>{label}</div>
     </div>
   );
 }
 
 function Section({ title, children }) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <div style={{ fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>{title}</div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ fontSize: 14, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>{title}</div>
       {children}
     </div>
   );
@@ -236,19 +236,19 @@ function Section({ title, children }) {
 function FunnelCol({ title, sub, color, names }) {
   return (
     <div style={{ border: '0.5px solid var(--sep)', borderRadius: 10, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ padding: '8px 10px', borderTop: `3px solid ${color}`, background: 'var(--bg-1)' }}>
+      <div style={{ padding: '10px 12px', borderTop: `4px solid ${color}`, background: 'var(--bg-1)' }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-          <span style={{ fontSize: 13, fontWeight: 600 }}>{title}</span>
-          <span style={{ fontSize: 16, fontWeight: 700, color, marginLeft: 'auto' }}>{names.length}</span>
+          <span style={{ fontSize: 16, fontWeight: 600 }}>{title}</span>
+          <span style={{ fontSize: 24, fontWeight: 700, color, marginLeft: 'auto' }}>{names.length}</span>
         </div>
-        <div style={{ fontSize: 9, color: 'var(--text-3)' }}>{sub}</div>
+        <div style={{ fontSize: 12, color: 'var(--text-3)' }}>{sub}</div>
       </div>
-      <div style={{ padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 240, overflowY: 'auto' }}>
-        {names.length === 0 && <span style={{ fontSize: 10, color: 'var(--text-3)', fontStyle: 'italic' }}>none</span>}
+      <div style={{ padding: '8px 10px', display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 320, overflowY: 'auto' }}>
+        {names.length === 0 && <span style={{ fontSize: 13, color: 'var(--text-3)', fontStyle: 'italic' }}>none</span>}
         {names.map((d) => (
-          <div key={d.id} style={{ padding: '2px 0', borderBottom: '0.5px solid var(--sep)' }}>
-            <div style={{ fontSize: 11, color: 'var(--text-1)' }}>{d.project}</div>
-            {d.client && <div style={{ fontSize: 9, color: 'var(--text-3)' }}>{d.client}</div>}
+          <div key={d.id} style={{ padding: '3px 0', borderBottom: '0.5px solid var(--sep)' }}>
+            <div style={{ fontSize: 15, fontWeight: 500, color: 'var(--text-1)' }}>{d.project}</div>
+            {d.client && <div style={{ fontSize: 12, color: 'var(--text-3)' }}>{d.client}</div>}
           </div>
         ))}
       </div>
@@ -267,37 +267,37 @@ function NewRecurring({ prev, cur, prevYr, curYr, ytdLabel, prevFull }) {
     const total = nr.new + nr.rec;
     const w = (v) => `${(v / max) * 100}%`;
     return (
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <span style={{ fontSize: 12, fontWeight: 600, width: 64 }}>{yr} YTD</span>
-        <div style={{ flex: 1, display: 'flex', height: 26, borderRadius: 6, overflow: 'hidden', background: 'var(--fill-1)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <span style={{ fontSize: 15, fontWeight: 600, width: 80 }}>{yr} YTD</span>
+        <div style={{ flex: 1, display: 'flex', height: 34, borderRadius: 6, overflow: 'hidden', background: 'var(--fill-1)' }}>
           <div title={`New business: ${eurK(nr.new)} (${nr.newN} deals)`}
             style={{ width: w(nr.new), background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: nr.new > 0 ? 2 : 0 }}>
-            {nr.new / max > 0.12 && <span style={{ fontSize: 10, color: '#fff', fontWeight: 600 }}>{eurK(nr.new)}</span>}
+            {nr.new / max > 0.12 && <span style={{ fontSize: 13, color: '#fff', fontWeight: 600 }}>{eurK(nr.new)}</span>}
           </div>
           <div title={`Recurring: ${eurK(nr.rec)} (${nr.recN} deals)`}
             style={{ width: w(nr.rec), background: 'var(--good)', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: nr.rec > 0 ? 2 : 0 }}>
-            {nr.rec / max > 0.12 && <span style={{ fontSize: 10, color: '#fff', fontWeight: 600 }}>{eurK(nr.rec)}</span>}
+            {nr.rec / max > 0.12 && <span style={{ fontSize: 13, color: '#fff', fontWeight: 600 }}>{eurK(nr.rec)}</span>}
           </div>
         </div>
-        <span style={{ fontSize: 11, color: 'var(--text-3)', width: 70, textAlign: 'right' }}>{eurK(total)}</span>
+        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-2)', width: 84, textAlign: 'right' }}>{eurK(total)}</span>
       </div>
     );
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <div style={{ display: 'flex', gap: 16, alignItems: 'center', fontSize: 11 }}>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ width: 10, height: 10, borderRadius: 2, background: 'var(--accent)' }} /> New business</span>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ width: 10, height: 10, borderRadius: 2, background: 'var(--good)' }} /> Recurring business</span>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div style={{ display: 'flex', gap: 18, alignItems: 'center', fontSize: 13 }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ width: 12, height: 12, borderRadius: 2, background: 'var(--accent)' }} /> New business</span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ width: 12, height: 12, borderRadius: 2, background: 'var(--good)' }} /> Recurring business</span>
         {growth !== null && (
-          <span style={{ marginLeft: 'auto', fontWeight: 600, color: growth >= 0 ? 'var(--good)' : 'var(--danger)' }}>
+          <span style={{ marginLeft: 'auto', fontSize: 15, fontWeight: 700, color: growth >= 0 ? 'var(--good)' : 'var(--danger)' }}>
             {growth >= 0 ? '▲' : '▼'} {Math.abs(growth)}% revenue vs {prevYr} (same period)
           </span>
         )}
       </div>
       <Row yr={prevYr} nr={prev} />
       <Row yr={curYr} nr={cur} />
-      <div style={{ fontSize: 10, color: 'var(--text-3)' }}>
+      <div style={{ fontSize: 12, color: 'var(--text-3)' }}>
         Both years counted 1 Jan – {ytdLabel} for a fair comparison. Recurring share: {recShare(prev)}% → {recShare(cur)}%.
         {prevFull > 0 && <> For reference, {prevYr} full year landed at {eurK(prevFull)}.</>}
       </div>

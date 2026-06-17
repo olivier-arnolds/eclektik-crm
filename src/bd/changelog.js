@@ -19,9 +19,23 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.41.2';
+export const CURRENT_VERSION = '1.41.3';
 
 export const CHANGELOG = [
+  {
+    version: '1.41.3',
+    date: '2026-06-17T10:00:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'One-pager: grotere lettertypes voor presentatie',
+    summary:
+      'Tekst overal vergroot zodat de schermvullende one-pager goed leesbaar is op afstand tijdens een meeting. Project- en bedrijfsnamen het meest (11→15 / 9→12), plus KPI-cijfers (28→36), kolomkoppen en -tellingen, sectietitels, de new/recurring-balken en de groei-indicator.',
+    changes: [
+      'onepager-modal.jsx: font-sizes opgehoogd in Kpi, Section, FunnelCol (project/klant), lost-chips, header, footer en NewRecurring; balkhoogte + paddings iets ruimer.',
+    ],
+    files: ['src/bd/onepager-modal.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.41.3',
+  },
   {
     version: '1.41.2',
     date: '2026-06-17T09:40:00Z',
