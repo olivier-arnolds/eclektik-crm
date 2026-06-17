@@ -35,7 +35,7 @@ export default function OnepagerModal({ open, onClose }) {
       try {
         const [o, c, l] = await Promise.all([
           supabase.from('opportunities')
-            .select('id,topic,company_id,company_name,status,stage,sub_status,product_line,est_revenue,actual_revenue,close_date,actual_close_date')
+            .select('id,topic,company_id,company_name,status,stage,sub_status,pipeline_phase,product_line,est_revenue,actual_revenue,close_date,actual_close_date')
             .limit(2000),
           supabase.from('companies').select('id,name,country,industry,employee_count').limit(2000),
           supabase.from('leads').select('id', { count: 'exact', head: true }),
@@ -84,6 +84,15 @@ export default function OnepagerModal({ open, onClose }) {
 
     const isWon = (o) => (o.status || '').toLowerCase() === 'won';
     const isLost = (o) => (o.status || '').toLowerCase() === 'lost';
+
+    // Win rate — alleen verloren deals die tot een proposal kwamen tellen als
+    // loss. pipeline_phase codeert de bereikte fase (1-Qualify .. 4-Close);
+    // 3-Propose of 4-Close = er is een proposal geweest. Deals die in
+    // qualify/develop strandden tellen NIET mee als loss.
+    const reachedProposal = (o) => /propose|close/i.test(o.pipeline_phase || '');
+    const wonN = opps.filter(isWon).length;
+    const lostQualified = opps.filter((o) => isLost(o) && reachedProposal(o)).length;
+    const winRate = (wonN + lostQualified) > 0 ? Math.round((wonN / (wonN + lostQualified)) * 100) : null;
 
     // Huidige snapshot-buckets (status nu)
     const proposal = dealsIn((o) => catOf(o) === 'proposal');
@@ -192,6 +201,7 @@ export default function OnepagerModal({ open, onClose }) {
       nrCur: nrYtdFor(CUR_YEAR), nrPrev: nrYtdFor(PREV_YEAR),
       ytdLabel: now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
       clientCount: clients.length, region, sectors, sizes,
+      wonN, lostQualified, winRate,
     };
   }, [opps, companyById]);
 
@@ -224,6 +234,13 @@ export default function OnepagerModal({ open, onClose }) {
                 <Kpi label="Lost in 2026" value={m.lostThisYear.length} tint="var(--danger)" />
                 <Kpi label="Won revenue 2026" value={eurK(m.wonRevCur)} tint="var(--good)" small />
               </div>
+
+              {/* Win rate — proposal-stage deals only */}
+              {m.winRate !== null && (
+                <Section title="Win rate — deals that reached a proposal">
+                  <WinRate won={m.wonN} lost={m.lostQualified} rate={m.winRate} />
+                </Section>
+              )}
 
               {/* Delivery funnel with project names */}
               <Section title="The projects — from proposal to completed">
@@ -302,6 +319,30 @@ function FunnelCol({ title, sub, color, names }) {
             {d.client && <div style={{ fontSize: 12, color: 'var(--text-3)' }}>{d.client}</div>}
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+function WinRate({ won, lost, rate }) {
+  const total = won + lost;
+  const wonPct = total > 0 ? (won / total) * 100 : 0;
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
+        <span style={{ fontSize: 44, fontWeight: 700, color: 'var(--good)', lineHeight: 1 }}>{rate}%</span>
+        <span style={{ fontSize: 15, color: 'var(--text-2)' }}>{won} won vs {lost} lost</span>
+      </div>
+      <div style={{ display: 'flex', height: 30, borderRadius: 6, overflow: 'hidden', background: 'var(--fill-1)' }}>
+        <div title={`${won} won`} style={{ width: `${wonPct}%`, background: 'var(--good)', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: won > 0 ? 2 : 0 }}>
+          {wonPct > 14 && <span style={{ fontSize: 13, color: '#fff', fontWeight: 600 }}>{won} won</span>}
+        </div>
+        <div title={`${lost} lost`} style={{ width: `${100 - wonPct}%`, background: 'var(--danger)', opacity: 0.8, display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: lost > 0 ? 2 : 0 }}>
+          {(100 - wonPct) > 14 && <span style={{ fontSize: 13, color: '#fff', fontWeight: 600 }}>{lost} lost</span>}
+        </div>
+      </div>
+      <div style={{ fontSize: 12, color: 'var(--text-3)' }}>
+        Only opportunities that reached a proposal count as a loss — deals that dropped out earlier (qualify/develop) are excluded. Across all tracked deals.
       </div>
     </div>
   );

@@ -19,9 +19,23 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.41.4';
+export const CURRENT_VERSION = '1.41.5';
 
 export const CHANGELOG = [
+  {
+    version: '1.41.5',
+    date: '2026-06-17T10:45:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feat',
+    title: 'One-pager: win rate (alleen proposal-stage verliezen tellen)',
+    summary:
+      'Win-rate-blok toegevoegd, vergelijkbaar met de Reporting-tab maar met een striktere loss-definitie: alleen verloren deals die tot een proposal kwamen tellen als loss. pipeline_phase (Dynamics-veld) codeert de bereikte fase; 3-Propose of 4-Close = er is een proposal geweest, qualify/develop strandingen tellen niet mee. Geverifieerd tegen de DB: 49 won vs 46 proposal-stage lost = 52% (versus 43% als je alle 64 verliezen meetelt).',
+    changes: [
+      'onepager-modal.jsx: pipeline_phase aan fetch; reachedProposal = /propose|close/; winRate = won / (won + proposal-stage lost); nieuw WinRate-component (groot %, won/lost-balk, uitleg) tussen KPI-rij en projecten.',
+    ],
+    files: ['src/bd/onepager-modal.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.41.5',
+  },
   {
     version: '1.41.4',
     date: '2026-06-17T10:25:00Z',
