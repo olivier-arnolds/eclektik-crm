@@ -232,7 +232,6 @@ export default function BDApp() {
             onEnrich={() => setShowEnrich(true)}
             onRefreshGraph={fetchGraphData} graphLoading={graphLoading}
             onOpenFeedback={() => setShowFeedback(true)}
-            onOpenOnepager={() => setShowOnepager(true)}
             onOpenPlaybooks={() => setView('playbooks')} />
   );
 
@@ -297,7 +296,7 @@ export default function BDApp() {
   } else if (activeView === 'reporting') {
     leftPane = <ReportingLane onPickAccount={pickAccount} accounts={accounts} />;
   } else if (activeView === 'warroom') {
-    leftPane = <WarRoomLane accounts={accounts} deals={deals} onPickAccount={pickAccount} />;
+    leftPane = <WarRoomLane accounts={accounts} deals={deals} onPickAccount={pickAccount} onOpenOnepager={() => setShowOnepager(true)} />;
   } else if (activeView === 'playbooks') {
     leftPane = <div className="lane" style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}><PlaybooksHub /></div>;
   } else if (activeView === 'marketing') {

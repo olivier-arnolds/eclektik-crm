@@ -19,9 +19,25 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.41.5';
+export const CURRENT_VERSION = '1.41.6';
 
 export const CHANGELOG = [
+  {
+    version: '1.41.6',
+    date: '2026-06-17T11:05:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'One-pager-knop verplaatst naar War room (weg uit topbar)',
+    summary:
+      'De "📊 One-pager"-knop staat niet langer in de hoofd-topbar maar in het War room-tabblad, naast de sub-tabs Projects / Customer journey / Client coverage. De modal zelf blijft globaal in BDApp (full-screen overlay), alleen de trigger is verhuisd.',
+    changes: [
+      'lane-warroom.jsx: One-pager-knop naast de sub-tabs (prop onOpenOnepager).',
+      'BDApp.jsx: onOpenOnepager doorgegeven aan WarRoomLane; verwijderd van Topbar.',
+      'topbar.jsx: One-pager-knop + prop verwijderd.',
+    ],
+    files: ['src/bd/lane-warroom.jsx', 'src/bd/BDApp.jsx', 'src/bd/topbar.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.41.6',
+  },
   {
     version: '1.41.5',
     date: '2026-06-17T10:45:00Z',

@@ -579,7 +579,7 @@ function JourneyBoard({ glintDeals = [], accById = new Map(), onPickAccount, onM
   );
 }
 
-export default function WarRoomLane({ accounts = [], deals = [], onPickAccount }) {
+export default function WarRoomLane({ accounts = [], deals = [], onPickAccount, onOpenOnepager }) {
   const [tab, setTab] = useState('projects');
   const [rows, setRows] = useState([]);
   // Manual journey-lane placements for deals (kept locally for instant feedback;
@@ -769,6 +769,13 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount }
               {label}
             </button>
           ))}
+          {onOpenOnepager && (
+            <button className="btn-ghost tiny" onClick={onOpenOnepager}
+              title="One-pager — 2026 overview for the contractor meeting"
+              style={{ color: 'var(--text-3)' }}>
+              📊 One-pager
+            </button>
+          )}
         </div>
         <div style={{ flex: 1 }} />
         {tab === 'projects' && (
