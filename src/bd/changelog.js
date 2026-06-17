@@ -19,9 +19,23 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.41.6';
+export const CURRENT_VERSION = '1.41.7';
 
 export const CHANGELOG = [
+  {
+    version: '1.41.7',
+    date: '2026-06-17T11:30:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feat',
+    title: 'One-pager: lifecycle leads → sleeping (5 kolommen)',
+    summary:
+      'De projecten-sectie is omgebouwd van proposal→completed (4 kolommen) naar de volledige lifecycle (5 kolommen): Leads → Proposal → Onboarding → Running/Completed → Sleeping. Leads = de leads-tabel (qualify) + qualify/develop-opps (pre-proposal pijplijn). Running/Completed = stage active. Sleeping = stage past + Won (afgerond, revivable). In dit datamodel is een afgerond project gelijk aan sleeping, dus "completed" valt onder Sleeping; de active-kolom toont de lopende/af te ronden projecten.',
+    changes: [
+      'onepager-modal.jsx: leads-fetch nu rijen (id/full_name/topic/company_id) i.p.v. count; leadsBucket = leads-tabel + qualify/develop-opps; nieuwe sleeping-bucket (past/Won); funnel-grid naar 5 kolommen; footer-regel over early pipeline verwijderd.',
+    ],
+    files: ['src/bd/onepager-modal.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.41.7',
+  },
   {
     version: '1.41.6',
     date: '2026-06-17T11:05:00Z',

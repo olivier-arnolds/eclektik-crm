@@ -23,7 +23,7 @@ const PREV_YEAR = '2025';
 export default function OnepagerModal({ open, onClose }) {
   const [opps, setOpps] = useState([]);
   const [companyById, setCompanyById] = useState(new Map());
-  const [leadCount, setLeadCount] = useState(0);
+  const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -38,13 +38,13 @@ export default function OnepagerModal({ open, onClose }) {
             .select('id,topic,company_id,company_name,status,stage,sub_status,pipeline_phase,product_line,est_revenue,actual_revenue,close_date,actual_close_date')
             .limit(2000),
           supabase.from('companies').select('id,name,country,industry,employee_count').limit(2000),
-          supabase.from('leads').select('id', { count: 'exact', head: true }),
+          supabase.from('leads').select('id,full_name,topic,company_id').limit(2000),
         ]);
         if (cancelled) return;
         if (o.error) throw o.error;
         setOpps(o.data || []);
         setCompanyById(new Map((c.data || []).map((r) => [r.id, r])));
-        setLeadCount(l.count || 0);
+        setLeads(l.data || []);
       } catch (e) {
         if (!cancelled) setError(e.message || String(e));
       } finally {
@@ -94,13 +94,22 @@ export default function OnepagerModal({ open, onClose }) {
     const lostQualified = opps.filter((o) => isLost(o) && reachedProposal(o)).length;
     const winRate = (wonN + lostQualified) > 0 ? Math.round((wonN / (wonN + lostQualified)) * 100) : null;
 
-    // Huidige snapshot-buckets (status nu)
+    // Lifecycle-buckets (huidige stage)
     const proposal = dealsIn((o) => catOf(o) === 'proposal');
     const onboarding = dealsIn((o) => catOf(o) === 'onboarding');
-    const active = dealsIn((o) => catOf(o) === 'active');
-    const develop = dealsIn((o) => catOf(o) === 'develop');
+    const active = dealsIn((o) => o.stage === 'active');                 // Running / Completed
+    const sleeping = dealsIn((o) => o.stage === 'past' && isWon(o));     // afgerond, dormant
 
-    // Afgerond / gevallen IN het lopende jaar
+    // Leads = pre-proposal pijplijn: de leads-tabel (qualify) + qualify/develop-opps.
+    const earlyOpps = dealsIn((o) => ['qualify', 'develop'].includes(catOf(o)));
+    const leadItems = (leads || []).map((l) => {
+      const client = companyById.get(l.company_id)?.name || '';
+      const project = (l.topic || '').trim() || (l.full_name || '').trim() || 'Untitled lead';
+      return { id: 'lead-' + l.id, project, client: project === client ? '' : client };
+    });
+    const leadsBucket = [...leadItems, ...earlyOpps].sort((a, b) => a.project.localeCompare(b.project));
+
+    // Afgerond / gevallen IN het lopende jaar (voor de KPI-tegels)
     const doneThisYear = dealsIn((o) => isWon(o) && yearOf(o) === CUR_YEAR);
     const lostThisYear = dealsIn((o) => isLost(o) && yearOf(o) === CUR_YEAR);
 
@@ -196,14 +205,14 @@ export default function OnepagerModal({ open, onClose }) {
     ];
 
     return {
-      proposal, onboarding, active, develop, doneThisYear, lostThisYear,
+      leadsBucket, proposal, onboarding, active, sleeping, doneThisYear, lostThisYear,
       wonRevCur: wonRevFull(CUR_YEAR), wonRevPrevFull: wonRevFull(PREV_YEAR),
       nrCur: nrYtdFor(CUR_YEAR), nrPrev: nrYtdFor(PREV_YEAR),
       ytdLabel: now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
       clientCount: clients.length, region, sectors, sizes,
       wonN, lostQualified, winRate,
     };
-  }, [opps, companyById]);
+  }, [opps, companyById, leads]);
 
   if (!open) return null;
 
@@ -242,13 +251,14 @@ export default function OnepagerModal({ open, onClose }) {
                 </Section>
               )}
 
-              {/* Delivery funnel with project names */}
-              <Section title="The projects — from proposal to completed">
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
-                  <FunnelCol title="In proposal" sub="open proposals" color="var(--warn)" names={m.proposal} />
-                  <FunnelCol title="In onboarding" sub="just won, starting up" color="var(--accent)" names={m.onboarding} />
-                  <FunnelCol title="Running now" sub="active projects" color="var(--accent)" names={m.active} />
-                  <FunnelCol title="Completed in 2026" sub="delivered this year" color="var(--good)" names={m.doneThisYear} />
+              {/* Project lifecycle: leads → proposal → onboarding → running/completed → sleeping */}
+              <Section title="The project lifecycle — leads to sleeping">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12 }}>
+                  <FunnelCol title="Leads" sub="pre-proposal pipeline" color="var(--text-3)" names={m.leadsBucket} />
+                  <FunnelCol title="Proposal" sub="open proposals" color="var(--warn)" names={m.proposal} />
+                  <FunnelCol title="Onboarding" sub="just won, starting up" color="var(--accent)" names={m.onboarding} />
+                  <FunnelCol title="Running / Completed" sub="active delivery" color="var(--good)" names={m.active} />
+                  <FunnelCol title="Sleeping" sub="finished, revivable" color="var(--text-2)" names={m.sleeping} />
                 </div>
               </Section>
 
@@ -268,7 +278,6 @@ export default function OnepagerModal({ open, onClose }) {
 
               <div style={{ fontSize: 12, color: 'var(--text-3)', borderTop: '0.5px solid var(--sep)', paddingTop: 10 }}>
                 Live figures from the CRM. Definitions match the Reporting tab (won = status 'Won', new = first won deal per client).
-                Early pipeline (qualify/develop): {leadCount + m.develop.length} opportunities in conversation.
               </div>
             </>
           )}
