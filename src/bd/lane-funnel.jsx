@@ -337,6 +337,7 @@ function DealCard({ deal, accounts, dragging, onDragStart, onDragEnd, onClick, o
         <div className="deal-card-flags">
           <StaleDot days={deal.staleDays} />
           {deal.probability > 0 && <span>{deal.probability}%</span>}
+          {(() => { const dt = deal.closeDate ? new Date(deal.closeDate) : null; return dt && !isNaN(dt) ? <span title="Expected close">→ {dt.toLocaleDateString('en-GB', { month: 'short', year: '2-digit' })}</span> : null; })()}
         </div>
       </div>
       {pendingSuggestions.length > 0 && (

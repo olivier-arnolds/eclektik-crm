@@ -33,6 +33,8 @@ export const CHANGELOG = [
     changes: [
       'inline-details.jsx: InlineDealDetail shows probability-weighted value.',
       'lane-funnel.jsx: close-period filter — All / Q1 / Q2 / Q3 / Q4 (current calendar year) / Overdue.',
+      'lane-accounts.jsx: deal-row headers (Open/Active/Sleeping) show probability + expected close.',
+      'lane-funnel.jsx: deal cards now show expected close next to probability.',
     ],
     files: ['src/bd/inline-details.jsx', 'src/bd/lane-funnel.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
     gitTag: 'v1.40.7',

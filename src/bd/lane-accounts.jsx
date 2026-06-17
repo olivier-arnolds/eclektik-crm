@@ -82,6 +82,20 @@ function EditableDealTitle({ deal, refetch }) {
 }
 
 // Click-to-pick deal type (product line) chip used in the collapsed deal row.
+// Compact probability + expected-close shown on a deal row header (collapsed),
+// so you see them without opening the deal.
+function DealRowMeta({ deal }) {
+  const dt = deal.closeDate ? new Date(deal.closeDate) : null;
+  const dateStr = dt && !isNaN(dt) ? dt.toLocaleDateString('en-GB', { month: 'short', year: '2-digit' }) : null;
+  if (!deal.probability && !dateStr) return null;
+  return (
+    <span style={{ fontSize: 10.5, color: 'var(--text-3)', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}
+      title={`Probability${dateStr ? ' · expected close' : ''}`}>
+      {deal.probability ? `${deal.probability}%` : ''}{deal.probability && dateStr ? ' · ' : ''}{dateStr ? `→ ${dateStr}` : ''}
+    </span>
+  );
+}
+
 function DealTypePill({ deal, refetch }) {
   const [open, setOpen] = useState(false);
   const opts = ['Glint', 'ROI', 'Seer', 'Insights', 'Other'];
@@ -1095,6 +1109,7 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
                       <EditableDealTitle deal={d} refetch={refetch} />
                     </div>
                     <div className="deal-row-right">
+                      <DealRowMeta deal={d} />
                       <TeamDots deal={d} />
                       <span className="deal-row-value">{fmtMoney(d.value)}</span>
                     </div>
@@ -1125,7 +1140,8 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
                         <EditableDealTitle deal={d} refetch={refetch} />
                       </div>
                       <div className="deal-row-right">
-                        <TeamDots deal={d} />
+                        <DealRowMeta deal={d} />
+                      <TeamDots deal={d} />
                         <span className="deal-row-value">{fmtMoney(d.value)}</span>
                       </div>
                     </div>
@@ -1156,7 +1172,8 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
                         <EditableDealTitle deal={d} refetch={refetch} />
                       </div>
                       <div className="deal-row-right">
-                        <TeamDots deal={d} />
+                        <DealRowMeta deal={d} />
+                      <TeamDots deal={d} />
                         <span className="deal-row-value">{fmtMoney(d.value)}</span>
                       </div>
                     </div>
