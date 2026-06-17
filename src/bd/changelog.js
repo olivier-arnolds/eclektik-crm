@@ -19,9 +19,23 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.41.7';
+export const CURRENT_VERSION = '1.41.8';
 
 export const CHANGELOG = [
+  {
+    version: '1.41.8',
+    date: '2026-06-17T11:45:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'One-pager: ROI-opportunities uit kolommen proposal..sleeping',
+    summary:
+      'In de lifecycle-kolommen Proposal / Onboarding / Running / Sleeping worden ROI-opportunities (product_line = ROI) nu weggelaten — die sectie toont alleen de niet-ROI (Glint c.s.) projecten. De Leads-kolom houdt bewust álle types, inclusief ROI. Effect: proposal 9→8, running 17→15, sleeping 28→26 (5 ROI-deals weg uit de funnel; onboarding had er geen).',
+    changes: [
+      'onepager-modal.jsx: isROI-helper (product_line=ROI); proposal/onboarding/active/sleeping-buckets gefilterd op !isROI; leadsBucket ongewijzigd (alle types).',
+    ],
+    files: ['src/bd/onepager-modal.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.41.8',
+  },
   {
     version: '1.41.7',
     date: '2026-06-17T11:30:00Z',

@@ -94,13 +94,18 @@ export default function OnepagerModal({ open, onClose }) {
     const lostQualified = opps.filter((o) => isLost(o) && reachedProposal(o)).length;
     const winRate = (wonN + lostQualified) > 0 ? Math.round((wonN / (wonN + lostQualified)) * 100) : null;
 
-    // Lifecycle-buckets (huidige stage)
-    const proposal = dealsIn((o) => catOf(o) === 'proposal');
-    const onboarding = dealsIn((o) => catOf(o) === 'onboarding');
-    const active = dealsIn((o) => o.stage === 'active');                 // Running / Completed
-    const sleeping = dealsIn((o) => o.stage === 'past' && isWon(o));     // afgerond, dormant
+    // ROI-opportunities worden uit de kolommen proposal..sleeping geweerd
+    // (alleen de Leads-kolom houdt alle types). product_line = 'ROI'.
+    const isROI = (o) => (o.product_line || '').trim().toUpperCase() === 'ROI';
+
+    // Lifecycle-buckets (huidige stage), ROI uitgesloten
+    const proposal = dealsIn((o) => catOf(o) === 'proposal' && !isROI(o));
+    const onboarding = dealsIn((o) => catOf(o) === 'onboarding' && !isROI(o));
+    const active = dealsIn((o) => o.stage === 'active' && !isROI(o));               // Running / Completed
+    const sleeping = dealsIn((o) => o.stage === 'past' && isWon(o) && !isROI(o));   // afgerond, dormant
 
     // Leads = pre-proposal pijplijn: de leads-tabel (qualify) + qualify/develop-opps.
+    // Bewust ZONDER ROI-filter — alle leads van alle types blijven staan.
     const earlyOpps = dealsIn((o) => ['qualify', 'develop'].includes(catOf(o)));
     const leadItems = (leads || []).map((l) => {
       const client = companyById.get(l.company_id)?.name || '';
