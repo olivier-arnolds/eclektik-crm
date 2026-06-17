@@ -19,9 +19,23 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.41.1';
+export const CURRENT_VERSION = '1.41.2';
 
 export const CHANGELOG = [
+  {
+    version: '1.41.2',
+    date: '2026-06-17T09:40:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'One-pager: eerlijke YTD-vs-YTD omzetvergelijking',
+    summary:
+      'De new-vs-recurring vergelijking zette een half jaar 2026 (t/m vandaag) tegen een vol jaar 2025, wat structureel een daling toonde (-43%) ongeacht de werkelijke prestatie. Nu worden beide jaren op dezelfde periode geteld: 1 jan t/m dezelfde kalenderdag (MM-DD). De groei-% is daarmee een echte like-for-like vergelijking. Het volledige jaar 2025 staat als losse referentieregel eronder. De "new = eerste gewonnen deal per klant"-bepaling kijkt nog steeds naar de volledige historie; alleen de jaar-aggregatie krijgt de YTD-grens.',
+    changes: [
+      'onepager-modal.jsx: nrYtdFor(yr) telt won-deals t/m current_date MM-DD per jaar; groei-% = YTD vs YTD; rij-labels "2025 YTD"/"2026 YTD"; sectietitel + voetnoot tonen de YTD-periode; volledig jaar 2025 als referentie.',
+    ],
+    files: ['src/bd/onepager-modal.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.41.2',
+  },
   {
     version: '1.41.1',
     date: '2026-06-17T09:15:00Z',

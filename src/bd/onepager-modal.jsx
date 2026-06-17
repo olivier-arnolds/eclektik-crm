@@ -95,10 +95,13 @@ export default function OnepagerModal({ open, onClose }) {
     const doneThisYear = dealsIn((o) => isWon(o) && yearOf(o) === CUR_YEAR);
     const lostThisYear = dealsIn((o) => isLost(o) && yearOf(o) === CUR_YEAR);
 
-    // Gewonnen omzet (alleen totaal) per jaar
-    const wonRev = (yr) => opps.filter((o) => isWon(o) && yearOf(o) === yr).reduce((s, o) => s + revenueOf(o), 0);
+    // Gewonnen omzet (alleen totaal), volledig jaar
+    const dateOf = (o) => o.actual_close_date || o.close_date;
+    const wonRevFull = (yr) => opps.filter((o) => isWon(o) && yearOf(o) === yr).reduce((s, o) => s + revenueOf(o), 0);
 
     // ── New vs recurring (alle lijnen) — eerste gewonnen deal per klant = new ──
+    // De "new"-bepaling kijkt naar ALLE gewonnen deals (volledige historie),
+    // de jaar-aggregatie hieronder past pas de YTD-grens toe.
     const won = opps.filter(isWon);
     const byCompany = new Map();
     for (const o of won) {
@@ -115,20 +118,27 @@ export default function OnepagerModal({ open, onClose }) {
       });
       arr.forEach((o, i) => seq.set(o.id, i === 0 ? 'new' : 'rec'));
     }
-    const nr = {}; // nr[year] = { new, rec, newN, recN }
-    for (const o of won) {
-      const y = yearOf(o); if (!y) continue;
-      const t = seq.get(o.id);
-      nr[y] = nr[y] || { new: 0, rec: 0, newN: 0, recN: 0 };
-      nr[y][t] += revenueOf(o);
-      nr[y][t + 'N']++;
-    }
-    const nrFor = (yr) => nr[yr] || { new: 0, rec: 0, newN: 0, recN: 0 };
+
+    // Eerlijke vergelijking: year-to-date t/m dezelfde kalenderdag (MM-DD) in
+    // beide jaren. Anders zou een half jaar 2026 tegen een vol jaar 2025 staan.
+    const now = new Date();
+    const cutoffMd = `${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const inYtd = (o, yr) => { const d = dateOf(o); if (!d) return false; const s = String(d); return s.slice(0, 4) === yr && s.slice(5, 10) <= cutoffMd; };
+    const nrYtdFor = (yr) => {
+      const acc = { new: 0, rec: 0, newN: 0, recN: 0 };
+      for (const o of won) {
+        if (!inYtd(o, yr)) continue;
+        const t = seq.get(o.id);
+        acc[t] += revenueOf(o); acc[t + 'N']++;
+      }
+      return acc;
+    };
 
     return {
       proposal, onboarding, active, develop, doneThisYear, lostThisYear,
-      wonRevCur: wonRev(CUR_YEAR), wonRevPrev: wonRev(PREV_YEAR),
-      nrCur: nrFor(CUR_YEAR), nrPrev: nrFor(PREV_YEAR),
+      wonRevCur: wonRevFull(CUR_YEAR), wonRevPrevFull: wonRevFull(PREV_YEAR),
+      nrCur: nrYtdFor(CUR_YEAR), nrPrev: nrYtdFor(PREV_YEAR),
+      ytdLabel: now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
     };
   }, [opps, companyById]);
 
@@ -183,9 +193,9 @@ export default function OnepagerModal({ open, onClose }) {
                 </Section>
               )}
 
-              {/* New vs recurring 2025 → 2026 */}
-              <Section title="New business vs. recurring business — 2025 → 2026">
-                <NewRecurring prev={m.nrPrev} cur={m.nrCur} prevYr={PREV_YEAR} curYr={CUR_YEAR} />
+              {/* New vs recurring — like-for-like YTD */}
+              <Section title={`New business vs. recurring business — like-for-like (1 Jan – ${m.ytdLabel})`}>
+                <NewRecurring prev={m.nrPrev} cur={m.nrCur} prevYr={PREV_YEAR} curYr={CUR_YEAR} ytdLabel={m.ytdLabel} prevFull={m.wonRevPrevFull} />
               </Section>
 
               <div style={{ fontSize: 10, color: 'var(--text-3)', borderTop: '0.5px solid var(--sep)', paddingTop: 8 }}>
@@ -246,7 +256,7 @@ function FunnelCol({ title, sub, color, names }) {
   );
 }
 
-function NewRecurring({ prev, cur, prevYr, curYr }) {
+function NewRecurring({ prev, cur, prevYr, curYr, ytdLabel, prevFull }) {
   const totalPrev = prev.new + prev.rec;
   const totalCur = cur.new + cur.rec;
   const max = Math.max(totalPrev, totalCur, 1);
@@ -258,7 +268,7 @@ function NewRecurring({ prev, cur, prevYr, curYr }) {
     const w = (v) => `${(v / max) * 100}%`;
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <span style={{ fontSize: 12, fontWeight: 600, width: 38 }}>{yr}</span>
+        <span style={{ fontSize: 12, fontWeight: 600, width: 64 }}>{yr} YTD</span>
         <div style={{ flex: 1, display: 'flex', height: 26, borderRadius: 6, overflow: 'hidden', background: 'var(--fill-1)' }}>
           <div title={`New business: ${eurK(nr.new)} (${nr.newN} deals)`}
             style={{ width: w(nr.new), background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: nr.new > 0 ? 2 : 0 }}>
@@ -281,14 +291,15 @@ function NewRecurring({ prev, cur, prevYr, curYr }) {
         <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}><span style={{ width: 10, height: 10, borderRadius: 2, background: 'var(--good)' }} /> Recurring business</span>
         {growth !== null && (
           <span style={{ marginLeft: 'auto', fontWeight: 600, color: growth >= 0 ? 'var(--good)' : 'var(--danger)' }}>
-            {growth >= 0 ? '▲' : '▼'} {Math.abs(growth)}% revenue vs {prevYr}
+            {growth >= 0 ? '▲' : '▼'} {Math.abs(growth)}% revenue vs {prevYr} (same period)
           </span>
         )}
       </div>
       <Row yr={prevYr} nr={prev} />
       <Row yr={curYr} nr={cur} />
       <div style={{ fontSize: 10, color: 'var(--text-3)' }}>
-        Recurring share: {recShare(prev)}% in {prevYr} → {recShare(cur)}% in {curYr}.
+        Both years counted 1 Jan – {ytdLabel} for a fair comparison. Recurring share: {recShare(prev)}% → {recShare(cur)}%.
+        {prevFull > 0 && <> For reference, {prevYr} full year landed at {eurK(prevFull)}.</>}
       </div>
     </div>
   );
