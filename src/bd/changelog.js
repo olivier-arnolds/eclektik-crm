@@ -19,9 +19,32 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.41.13';
+export const CURRENT_VERSION = '1.41.14';
 
 export const CHANGELOG = [
+  {
+    version: '1.41.14',
+    date: '2026-06-18T14:08:35Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Account 360 - bedrijfsnaam inline aanpasbaar',
+    summary:
+      'De bedrijfsnaam in de account-hero (rechter accountview) heeft nu een ' +
+      'potlood-knop. Klik erop om de naam ter plekke aan te passen; Enter slaat ' +
+      'op, Esc annuleert. Schrijft direct naar companies.name.',
+    changes: [
+      'Nieuw EditableAccountName-component in lane-accounts.jsx (zelfde patroon als EditableDealTitle).',
+      'Hero-naam toont nu een potlood-knop wanneer een account geselecteerd is.',
+      'Opslaan via supabase.from("companies").update({ name }) + refetch.',
+    ],
+    files: [
+      'src/bd/lane-accounts.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.41.14',
+  },
   {
     version: '1.41.13',
     date: '2026-06-17T13:25:00Z',

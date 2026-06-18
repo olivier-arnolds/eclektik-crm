@@ -81,6 +81,54 @@ function EditableDealTitle({ deal, refetch }) {
   );
 }
 
+// Inline rename for the account/company name in the Account-360 hero.
+// Click the pencil → input replaces the name; Enter saves, Esc cancels.
+function EditableAccountName({ account, refetch }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(account.name || '');
+  useEffect(() => { setDraft(account.name || ''); }, [account.name]);
+
+  const save = async () => {
+    const next = draft.trim();
+    setEditing(false);
+    if (!next || next === account.name) return;
+    await supabase.from('companies').update({ name: next }).eq('id', account.id);
+    if (refetch) refetch();
+  };
+
+  if (editing) {
+    return (
+      <input autoFocus value={draft} onClick={e => e.stopPropagation()}
+        onChange={e => setDraft(e.target.value)}
+        onBlur={save}
+        onKeyDown={e => {
+          if (e.key === 'Enter') save();
+          if (e.key === 'Escape') { setDraft(account.name || ''); setEditing(false); }
+        }}
+        style={{
+          flex: 1, minWidth: 0, font: 'inherit', fontWeight: 'inherit',
+          background: 'var(--fill-1)', color: 'var(--text-1)',
+          border: '0.5px solid var(--accent)', borderRadius: 4,
+          padding: '1px 6px', outline: 'none',
+        }} />
+    );
+  }
+  return (
+    <>
+      {account.name}
+      <button onClick={(e) => { e.stopPropagation(); setEditing(true); }}
+        title="Bedrijfsnaam aanpassen"
+        style={{
+          background: 'transparent', border: 'none', cursor: 'pointer',
+          color: 'var(--text-3)', fontSize: 11, padding: '0 2px',
+          fontFamily: 'var(--font-mono)',
+        }}>
+        ✎
+      </button>
+    </>
+  );
+}
+
 // Click-to-pick deal type (product line) chip used in the collapsed deal row.
 // Compact probability + expected-close shown on a deal row header (collapsed),
 // so you see them without opening the deal.
@@ -937,7 +985,7 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
           onClick={() => account.id && setShowCoreDetails(v => !v)}
           title={account.id ? (showCoreDetails ? 'Hide core details' : 'Show core details') : ''}>
           <div className="acc-hero-name" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            {account.name}
+            {account.id ? <EditableAccountName account={account} refetch={refetch} /> : account.name}
             {account.id && (
               <span style={{ fontSize: 10, color: 'var(--text-3)', fontFamily: 'var(--font-mono)', transform: showCoreDetails ? 'rotate(90deg)' : 'none', transition: 'transform 0.12s' }}>
                 ›
