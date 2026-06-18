@@ -104,13 +104,17 @@ export default function OnepagerModal({ open, onClose }) {
     const sleeping = dealsIn((o) => o.stage === 'past' && isWon(o) && !isROI(o));   // afgerond, dormant
 
     // Leads = pre-proposal pijplijn: de leads-tabel (qualify) + qualify/develop-opps.
-    // ROI wordt ook hier geweerd (net als in de overige kolommen).
-    const earlyOpps = dealsIn((o) => ['qualify', 'develop'].includes(catOf(o)) && !isROI(o));
-    const leadItems = (leads || []).filter((l) => !isROI(l)).map((l) => {
-      const client = companyById.get(l.company_id)?.name || '';
-      const project = (l.topic || '').trim() || (l.full_name || '').trim() || 'Untitled lead';
-      return { id: 'lead-' + l.id, project, client: project === client ? '' : client };
-    });
+    // ROI wordt ook hier geweerd, en alleen leads MET een bekende account
+    // blijven staan (geen losse leads zonder gekoppeld bedrijf).
+    const accountNameOf = (o) => o.company_name || companyById.get(o.company_id)?.name || '';
+    const earlyOpps = dealsIn((o) => ['qualify', 'develop'].includes(catOf(o)) && !isROI(o) && !!accountNameOf(o));
+    const leadItems = (leads || [])
+      .filter((l) => !isROI(l) && !!(companyById.get(l.company_id)?.name))
+      .map((l) => {
+        const account = companyById.get(l.company_id)?.name || '';
+        const project = (l.topic || '').trim() || (l.full_name || '').trim() || 'Untitled lead';
+        return { id: 'lead-' + l.id, project, client: project === account ? '' : account };
+      });
     const leadsBucket = [...leadItems, ...earlyOpps].sort((a, b) => a.project.localeCompare(b.project));
 
     // Afgerond / gevallen IN het lopende jaar (voor de KPI-tegels)

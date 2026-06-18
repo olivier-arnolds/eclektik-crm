@@ -19,9 +19,23 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.41.11';
+export const CURRENT_VERSION = '1.41.12';
 
 export const CHANGELOG = [
+  {
+    version: '1.41.12',
+    date: '2026-06-17T13:05:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'One-pager: alleen leads met bekende account in de Leads-kolom',
+    summary:
+      'De Leads-kolom toont nu alleen leads waar een account (bedrijf) aan gekoppeld is. Losse leads zonder bedrijf vallen weg. Filter geldt op de leads-tabel én op de qualify/develop-opps. Effect op de leads-tabel: van 33 non-ROI leads blijven er 11 met account over.',
+    changes: [
+      'onepager-modal.jsx: leadItems gefilterd op een resolvebare company-naam; earlyOpps krijgen dezelfde accountNameOf-check.',
+    ],
+    files: ['src/bd/onepager-modal.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.41.12',
+  },
   {
     version: '1.41.11',
     date: '2026-06-17T12:40:00Z',
