@@ -19,9 +19,23 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.41.12';
+export const CURRENT_VERSION = '1.41.13';
 
 export const CHANGELOG = [
+  {
+    version: '1.41.13',
+    date: '2026-06-17T13:25:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'One-pager: ROI-lead met ROI in topic ook weren',
+    summary:
+      'Een legacy-lead (Moreno Scarfo bij Microsoft) had de ROI-aanduiding in het topic-veld i.p.v. product_line, waardoor de product_line-filter \'m niet ving. Lead-ROI-check verbreed: een lead met topic = "ROI" telt nu ook als ROI en valt uit de Leads-kolom. "ROE"-topics blijven (terecht) staan.',
+    changes: [
+      'onepager-modal.jsx: isROILead = isROI(product_line) OF topic === "ROI".',
+    ],
+    files: ['src/bd/onepager-modal.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.41.13',
+  },
   {
     version: '1.41.12',
     date: '2026-06-17T13:05:00Z',

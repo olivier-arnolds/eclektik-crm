@@ -107,9 +107,11 @@ export default function OnepagerModal({ open, onClose }) {
     // ROI wordt ook hier geweerd, en alleen leads MET een bekende account
     // blijven staan (geen losse leads zonder gekoppeld bedrijf).
     const accountNameOf = (o) => o.company_name || companyById.get(o.company_id)?.name || '';
+    // Sommige legacy-leads hebben de ROI-aanduiding in topic i.p.v. product_line.
+    const isROILead = (l) => isROI(l) || (l.topic || '').trim().toUpperCase() === 'ROI';
     const earlyOpps = dealsIn((o) => ['qualify', 'develop'].includes(catOf(o)) && !isROI(o) && !!accountNameOf(o));
     const leadItems = (leads || [])
-      .filter((l) => !isROI(l) && !!(companyById.get(l.company_id)?.name))
+      .filter((l) => !isROILead(l) && !!(companyById.get(l.company_id)?.name))
       .map((l) => {
         const account = companyById.get(l.company_id)?.name || '';
         const project = (l.topic || '').trim() || (l.full_name || '').trim() || 'Untitled lead';
