@@ -298,6 +298,8 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
   const [savingEmail, setSavingEmail] = useState(false);
   // Default 'yes' (alleen actieve contacten) — gelijk aan het oude activeOnly default
   const [activeFilter, setActiveFilter] = useState('yes');
+  // Tag yes/no: 'yes' = heeft minstens 1 tag, 'no' = heeft geen tags, null = uit
+  const [tagFilter, setTagFilter] = useState(null);
   // Sorteer-modus: 'account' (default = company A-Z dan naam) of 'updated' (recent geüpdate eerst)
   const [sortMode, setSortMode] = useState('account');
   const [showBulkTag, setShowBulkTag] = useState(false);
@@ -385,6 +387,9 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
     const matches = contacts.filter(c => {
       if (activeFilter === 'yes' && c.isFormer) return false;
       if (activeFilter === 'no' && !c.isFormer) return false;
+      const hasTags = Array.isArray(c.tags) && c.tags.length > 0;
+      if (tagFilter === 'yes' && !hasTags) return false;
+      if (tagFilter === 'no' && hasTags) return false;
       if (emailFilter === 'yes' && !c.email) return false;
       if (emailFilter === 'no' && c.email) return false;
       if (linkedinFilter === 'yes' && !c.linkedin_url) return false;
@@ -438,7 +443,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
       if (cmp !== 0) return cmp;
       return (a.name || '').toLowerCase().localeCompare((b.name || '').toLowerCase());
     });
-  }, [contacts, activeFilter, emailFilter, linkedinFilter, titleFilter, followFilter, followedContactIds, hasGlintDeal, hasAnyDeal, accountsWithGlintDeal, accountsWithAnyDeal, accountsWithActiveProposal, selectedTagIds, selectedAccountTypes, accountTypeById, searchText, hiddenPairs, sortMode]);
+  }, [contacts, activeFilter, tagFilter, emailFilter, linkedinFilter, titleFilter, followFilter, followedContactIds, hasGlintDeal, hasAnyDeal, accountsWithGlintDeal, accountsWithAnyDeal, accountsWithActiveProposal, selectedTagIds, selectedAccountTypes, accountTypeById, searchText, hiddenPairs, sortMode]);
 
   // Inline email edit — optimistic-free: save then refetch so the parent
   // cache stays the single source of truth.
@@ -591,6 +596,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
         <YesNoFilter label="Job Title" value={titleFilter} onChange={setTitleFilter} />
         <YesNoFilter label="Follow 🔔" value={followFilter} onChange={setFollowFilter} />
         <YesNoFilter label="Active" value={activeFilter} onChange={setActiveFilter} />
+        <YesNoFilter label="Tag" value={tagFilter} onChange={setTagFilter} />
       </aside>
 
       {/* Contact list */}

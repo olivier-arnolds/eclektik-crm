@@ -19,9 +19,30 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.41.14';
+export const CURRENT_VERSION = '1.41.15';
 
 export const CHANGELOG = [
+  {
+    version: '1.41.15',
+    date: '2026-06-18T14:08:35Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Marketing - Tag yes/no filter in linker menu',
+    summary:
+      'Onder de Active yes/no filter staat nu een Tag yes/no filter. Yes toont ' +
+      'alleen contacten met minstens 1 tag, No alleen contacten zonder tags.',
+    changes: [
+      'Nieuwe tagFilter-state + YesNoFilter "Tag" onder "Active" in marketing-contacts.jsx.',
+      'Filtert op of het contact tags heeft (c.tags array niet leeg).',
+    ],
+    files: [
+      'src/bd/marketing-contacts.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.41.15',
+  },
   {
     version: '1.41.14',
     date: '2026-06-18T14:08:35Z',
