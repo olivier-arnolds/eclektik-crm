@@ -19,9 +19,35 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.41.15';
+export const CURRENT_VERSION = '1.41.16';
 
 export const CHANGELOG = [
+  {
+    version: '1.41.16',
+    date: '2026-06-18T14:08:35Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Account 360 - leesbaarheid hero-iconen en linkermarge',
+    summary:
+      'Het potlood- en chevron-icoon naast de bedrijfsnaam zijn groter voor ' +
+      'leesbaarheid. De kerngegevens en secties krijgen meer ruimte aan de ' +
+      'linkerkant zodat tekst niet meer onder de inklap-knop of tegen de ' +
+      'framerand plakt.',
+    changes: [
+      'Chevron naast naam 10px -> 13px, potlood-icoon 11px -> 14px.',
+      'Inklap-knop versmald (22px -> 16px) zodat content erlangs past.',
+      'Horizontale padding account-paneel 14px -> 18px (hero, highlight, sectiekop, sectiebody).',
+      'Kerngegevens-grid kreeg eigen horizontale padding van 18px (was 0).',
+    ],
+    files: [
+      'src/bd/lane-accounts.jsx',
+      'src/bd/styles.css',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.41.16',
+  },
   {
     version: '1.41.15',
     date: '2026-06-18T14:08:35Z',

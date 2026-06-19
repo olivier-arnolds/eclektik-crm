@@ -120,7 +120,7 @@ function EditableAccountName({ account, refetch }) {
         title="Bedrijfsnaam aanpassen"
         style={{
           background: 'transparent', border: 'none', cursor: 'pointer',
-          color: 'var(--text-3)', fontSize: 11, padding: '0 2px',
+          color: 'var(--text-3)', fontSize: 14, padding: '0 4px',
           fontFamily: 'var(--font-mono)',
         }}>
         ✎
@@ -220,7 +220,7 @@ function LaneCollapseButton({ onToggle }) {
       className="lane-accounts-resizer"
       style={{
         position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)',
-        width: 22, height: 44, padding: 0,
+        width: 16, height: 44, padding: 0,
         background: 'var(--bg-1)',
         border: '0.5px solid var(--sep)',
         borderRadius: '4px 0 0 4px',
@@ -987,7 +987,7 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
           <div className="acc-hero-name" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             {account.id ? <EditableAccountName account={account} refetch={refetch} /> : account.name}
             {account.id && (
-              <span style={{ fontSize: 10, color: 'var(--text-3)', fontFamily: 'var(--font-mono)', transform: showCoreDetails ? 'rotate(90deg)' : 'none', transition: 'transform 0.12s' }}>
+              <span style={{ fontSize: 13, color: 'var(--text-3)', fontFamily: 'var(--font-mono)', transform: showCoreDetails ? 'rotate(90deg)' : 'none', transition: 'transform 0.12s' }}>
                 ›
               </span>
             )}
@@ -1006,7 +1006,9 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
       <div className="acc-scroll">
         {showCoreDetails && account.id && (
           <div style={{ marginBottom: 10, paddingBottom: 10, borderBottom: '0.5px solid var(--sep)' }}>
-            <InlineAccountDetails accountId={account.id} onPickAccount={onPickAccount} />
+            <div style={{ padding: '0 18px' }}>
+              <InlineAccountDetails accountId={account.id} onPickAccount={onPickAccount} />
+            </div>
           </div>
         )}
         {highlight && (
