@@ -84,12 +84,77 @@ function YesNoFilter({ label, value, onChange, extraLabel }) {
   );
 }
 
+// Werknemers-buckets voor het Account → Werknemers filter. emp-getal moet
+// binnen [min, max] vallen. Accounts zonder bekend employeeCount matchen niet
+// zodra er ≥1 bucket actief is.
+const EMP_BUCKETS = [
+  { key: '1-50', label: '1-50', min: 1, max: 50 },
+  { key: '51-200', label: '51-200', min: 51, max: 200 },
+  { key: '201-1000', label: '201-1000', min: 201, max: 1000 },
+  { key: '1001-5000', label: '1001-5000', min: 1001, max: 5000 },
+  { key: '5000+', label: '5000+', min: 5001, max: Infinity },
+];
+
+// Zoekbare multi-select dropdown voor Bedrijf / Land / Stad / Industrie.
+// options: [{ value, count }] (count = aantal contacten met die waarde).
+// selected = Set van gekozen waarden; onToggle(value) flipt één waarde.
+function MultiSelectFilter({ label, options, selected, onToggle }) {
+  const [open, setOpen] = useState(false);
+  const [q, setQ] = useState('');
+  const shown = q.trim()
+    ? options.filter(o => o.value.toLowerCase().includes(q.trim().toLowerCase()))
+    : options;
+  return (
+    <div style={{ marginBottom: 2 }}>
+      <button onClick={() => setOpen(v => !v)}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', gap: 6,
+          background: 'transparent', border: 'none', cursor: 'pointer',
+          padding: '3px 0', fontSize: 12, fontFamily: 'inherit',
+          color: 'var(--text-1)', textAlign: 'left',
+        }}>
+        <span style={{ color: 'var(--text-3)', fontSize: 9 }}>{open ? '▾' : '▸'}</span>
+        {label}
+        {selected.size > 0 && (
+          <span style={{ color: 'var(--accent)', fontWeight: 600 }}>({selected.size})</span>
+        )}
+        <span style={{ marginLeft: 'auto', color: 'var(--text-3)', fontSize: 10 }}>{options.length}</span>
+      </button>
+      {open && (
+        <div style={{ marginBottom: 4 }}>
+          <input type="text" value={q} onChange={e => setQ(e.target.value)}
+            placeholder="Zoek…"
+            style={{ width: '100%', padding: '3px 6px', fontSize: 11, border: '0.5px solid var(--sep)', borderRadius: 3, background: 'var(--bg-0)', fontFamily: 'inherit', boxSizing: 'border-box', marginBottom: 4 }} />
+          <div style={{ maxHeight: 160, overflowY: 'auto', paddingLeft: 4 }}>
+            {shown.length === 0 && (
+              <div style={{ fontSize: 10, color: 'var(--text-3)', padding: '4px 0' }}>Geen resultaten</div>
+            )}
+            {shown.map(o => (
+              <label key={o.value} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, padding: '2px 0', cursor: 'pointer' }}>
+                <input type="checkbox" checked={selected.has(o.value)} onChange={() => onToggle(o.value)} />
+                <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={o.value}>{o.value}</span>
+                <span style={{ color: 'var(--text-3)', fontSize: 10 }}>({o.count})</span>
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // Marketing → Contacts tab
 // Props: contacts, accounts, deals, allTags, refetch
 // Layout: filter sidebar (left, ~260px) + list (right, fills)
 export default function MarketingContacts({ contacts, accounts, deals, allTags, refetch, onComposeCampaign }) {
   const [selectedTagIds, setSelectedTagIds] = useState(new Set());
   const [selectedAccountTypes, setSelectedAccountTypes] = useState(new Set());
+  // Account-gegevens filters (multi-select waarden uit het gekoppelde account)
+  const [selectedCompanies, setSelectedCompanies] = useState(new Set());
+  const [selectedCountries, setSelectedCountries] = useState(new Set());
+  const [selectedCities, setSelectedCities] = useState(new Set());
+  const [selectedIndustries, setSelectedIndustries] = useState(new Set());
+  const [selectedEmpBuckets, setSelectedEmpBuckets] = useState(new Set());
   const [searchText, setSearchText] = useState('');
   const [hasGlintDeal, setHasGlintDeal] = useState(false);
   const [hasAnyDeal, setHasAnyDeal] = useState(false);
@@ -316,6 +381,54 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
     return m;
   }, [accounts]);
 
+  // Lookup account.id → relevante account-gegevens voor de Account-filters.
+  // region = land (adapters.js mapt companies.country → region).
+  const accountMetaById = useMemo(() => {
+    const m = new Map();
+    for (const a of (accounts || [])) {
+      m.set(a.id, {
+        name: a.name || '',
+        country: a.region || '',
+        city: a.city || '',
+        industry: a.industry || '',
+        emp: a.employeeCount ?? null,
+      });
+    }
+    return m;
+  }, [accounts]);
+
+  // Distinct waardenlijsten voor de multi-selects, met telling = aantal
+  // contacten waarvan het account die waarde heeft. Lege waarden weggelaten,
+  // alfabetisch gesorteerd.
+  const accountFilterOptions = useMemo(() => {
+    const company = new Map(), country = new Map(), city = new Map(), industry = new Map();
+    const bump = (map, key) => { if (key) map.set(key, (map.get(key) || 0) + 1); };
+    for (const c of contacts) {
+      const a = accountMetaById.get(c.accountId);
+      if (!a) continue;
+      bump(company, a.name);
+      bump(country, a.country);
+      bump(city, a.city);
+      bump(industry, a.industry);
+    }
+    const toSorted = (map) => [...map.entries()]
+      .map(([value, count]) => ({ value, count }))
+      .sort((x, y) => x.value.toLowerCase().localeCompare(y.value.toLowerCase()));
+    return {
+      companies: toSorted(company),
+      countries: toSorted(country),
+      cities: toSorted(city),
+      industries: toSorted(industry),
+    };
+  }, [contacts, accountMetaById]);
+
+  // Generieke Set-toggle voor de multi-select filters.
+  const toggleInSet = (setter) => (val) => setter(prev => {
+    const next = new Set(prev);
+    if (next.has(val)) next.delete(val); else next.add(val);
+    return next;
+  });
+
   // Unique account types present in the data, sorted. PROPOSAL_STATUS is
   // een afgeleide pseudo-status: niet in DB, altijd zichtbaar in filter.
   const accountTypes = useMemo(() => {
@@ -419,6 +532,24 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
         });
         if (!matches) return false;
       }
+      // Account-gegevens filters: AND tussen categorieën, OR binnen (Set.has).
+      if (selectedCompanies.size || selectedCountries.size || selectedCities.size ||
+          selectedIndustries.size || selectedEmpBuckets.size) {
+        const a = accountMetaById.get(c.accountId);
+        if (selectedCompanies.size && !(a && selectedCompanies.has(a.name))) return false;
+        if (selectedCountries.size && !(a && selectedCountries.has(a.country))) return false;
+        if (selectedCities.size && !(a && selectedCities.has(a.city))) return false;
+        if (selectedIndustries.size && !(a && selectedIndustries.has(a.industry))) return false;
+        if (selectedEmpBuckets.size) {
+          const emp = a?.emp;
+          if (emp == null) return false;
+          const inBucket = [...selectedEmpBuckets].some(k => {
+            const b = EMP_BUCKETS.find(x => x.key === k);
+            return b && emp >= b.min && emp <= b.max;
+          });
+          if (!inBucket) return false;
+        }
+      }
       if (q) {
         const hay = [c.name, c.role, c.account, c.email].filter(Boolean).join(' ').toLowerCase();
         if (!hay.includes(q)) return false;
@@ -443,7 +574,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
       if (cmp !== 0) return cmp;
       return (a.name || '').toLowerCase().localeCompare((b.name || '').toLowerCase());
     });
-  }, [contacts, activeFilter, tagFilter, emailFilter, linkedinFilter, titleFilter, followFilter, followedContactIds, hasGlintDeal, hasAnyDeal, accountsWithGlintDeal, accountsWithAnyDeal, accountsWithActiveProposal, selectedTagIds, selectedAccountTypes, accountTypeById, searchText, hiddenPairs, sortMode]);
+  }, [contacts, activeFilter, tagFilter, emailFilter, linkedinFilter, titleFilter, followFilter, followedContactIds, hasGlintDeal, hasAnyDeal, accountsWithGlintDeal, accountsWithAnyDeal, accountsWithActiveProposal, selectedTagIds, selectedAccountTypes, accountTypeById, selectedCompanies, selectedCountries, selectedCities, selectedIndustries, selectedEmpBuckets, accountMetaById, searchText, hiddenPairs, sortMode]);
 
   // Inline email edit — optimistic-free: save then refetch so the parent
   // cache stays the single source of truth.
@@ -589,6 +720,38 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
             ))}
           </>
         )}
+
+        <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '12px 0 6px' }}>Account</div>
+        <MultiSelectFilter label="Bedrijf" options={accountFilterOptions.companies}
+          selected={selectedCompanies} onToggle={toggleInSet(setSelectedCompanies)} />
+        <MultiSelectFilter label="Land" options={accountFilterOptions.countries}
+          selected={selectedCountries} onToggle={toggleInSet(setSelectedCountries)} />
+        <MultiSelectFilter label="Stad" options={accountFilterOptions.cities}
+          selected={selectedCities} onToggle={toggleInSet(setSelectedCities)} />
+        <MultiSelectFilter label="Industrie" options={accountFilterOptions.industries}
+          selected={selectedIndustries} onToggle={toggleInSet(setSelectedIndustries)} />
+        <div style={{ fontSize: 12, color: 'var(--text-1)', padding: '6px 0 3px' }}>
+          Werknemers
+          {selectedEmpBuckets.size > 0 && (
+            <span style={{ color: 'var(--accent)', fontWeight: 600 }}> ({selectedEmpBuckets.size})</span>
+          )}
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+          {EMP_BUCKETS.map(b => {
+            const active = selectedEmpBuckets.has(b.key);
+            return (
+              <button key={b.key} onClick={() => toggleInSet(setSelectedEmpBuckets)(b.key)}
+                style={{
+                  padding: '2px 8px', borderRadius: 10, fontSize: 11, cursor: 'pointer',
+                  border: '0.5px solid', fontFamily: 'inherit',
+                  background: active ? 'var(--accent-tint)' : 'transparent',
+                  color: active ? 'var(--accent)' : 'var(--text-3)',
+                  borderColor: active ? 'var(--accent)' : 'var(--sep)',
+                  fontWeight: active ? 600 : 400,
+                }}>{b.label}</button>
+            );
+          })}
+        </div>
 
         <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '12px 0 6px' }}>Status</div>
         <YesNoFilter label="Email" value={emailFilter} onChange={setEmailFilter} />

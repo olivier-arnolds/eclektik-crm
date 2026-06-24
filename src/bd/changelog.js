@@ -19,9 +19,37 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.41.16';
+export const CURRENT_VERSION = '1.42.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.42.0',
+    date: '2026-06-24T05:39:26Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Marketing - filter contacten op account-gegevens',
+    summary:
+      'In de Marketing-tab kun je contacten nu filteren op kenmerken van het ' +
+      'gekoppelde account: bedrijf, land, stad, industrie en aantal ' +
+      'werknemers. Bijvoorbeeld: kies land = United Kingdom en je ziet alle ' +
+      'contacten waarvan het bedrijf in UK zit.',
+    changes: [
+      'Nieuw "Account"-blok in de linker filtersidebar van de Contacts-tab.',
+      'Bedrijf / Land / Stad / Industrie als zoekbare multi-select dropdowns ' +
+        '(meerdere waarden tegelijk, met telling per waarde).',
+      'Werknemers-filter met vaste buckets: 1-50, 51-200, 201-1000, ' +
+        '1001-5000, 5000+ (meerdere tegelijk aanklikbaar).',
+      'AND tussen categorieën, OR binnen een categorie; combineert met alle ' +
+        'bestaande filters (tags, status, deals, email/linkedin).',
+      'employeeCount toegevoegd aan de account-adapter (uit companies.employee_count).',
+    ],
+    files: [
+      'src/bd/marketing-contacts.jsx',
+      'src/bd/adapters.js',
+      'src/bd/changelog.js',
+    ],
+    gitTag: 'v1.42.0',
+  },
   {
     version: '1.41.16',
     date: '2026-06-18T14:08:35Z',

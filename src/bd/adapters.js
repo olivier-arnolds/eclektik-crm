@@ -87,6 +87,12 @@ export function adaptAccount(row) {
     owner: ownerIdFromName(row.owner),
     logoHue: hueFromString(row.name),
     industry: row.industry || '',
+    // employee_count is ruwe tekst ("40000", "140", "4500.0") — parse naar
+    // een geheel getal voor de werknemers-bucketfilter in marketing. NaN → null.
+    employeeCount: (() => {
+      const n = parseInt(String(row.employee_count ?? '').replace(/[^\d.]/g, ''), 10);
+      return Number.isFinite(n) ? n : null;
+    })(),
     website: row.website || '',
     flag: row.flag || '',
     phone: row.phone || '',
