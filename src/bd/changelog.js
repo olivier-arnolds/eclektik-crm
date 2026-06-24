@@ -19,9 +19,31 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.43.0';
+export const CURRENT_VERSION = '1.43.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.43.1',
+    date: '2026-06-24T05:39:26Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Account 360 - velden wijzigen ververst nu de rest van de app',
+    summary:
+      'Een account-veld aanpassen in Account 360 (bv. aantal werknemers ' +
+      'invullen) werkte de DB wel bij, maar niet de gedeelde data. Daardoor ' +
+      'bleef een bedrijf bv. onder het Werknemers-filter "Onbekend" staan tot ' +
+      'een harde refresh. Nu wordt na het opslaan direct ververst.',
+    changes: [
+      'InlineAccountDetails roept refetch() aan na het opslaan van een veld ' +
+        '(en bij parent wijzigen) - consistent met InlineContactDetail.',
+    ],
+    files: [
+      'src/bd/inline-details.jsx',
+      'src/bd/lane-accounts.jsx',
+      'src/bd/changelog.js',
+    ],
+    gitTag: 'v1.43.1',
+  },
   {
     version: '1.43.0',
     date: '2026-06-24T05:39:26Z',

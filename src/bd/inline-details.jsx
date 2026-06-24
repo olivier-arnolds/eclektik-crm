@@ -840,7 +840,7 @@ export function InlineMeetingDetail({ event, companyId, dedupKey, onRefresh }) {
 
 // Inline expand contents for an account (shows core company fields,
 // click to edit any value). Used in Account 360 hero.
-export function InlineAccountDetails({ accountId, onPickAccount }) {
+export function InlineAccountDetails({ accountId, onPickAccount, refetch }) {
   const [row, setRow] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState({});
@@ -867,7 +867,12 @@ export function InlineAccountDetails({ accountId, onPickAccount }) {
     setSaving(s => ({ ...s, [field]: true }));
     const { error } = await supabase.from('companies').update({ [field]: value }).eq('id', accountId);
     setSaving(s => ({ ...s, [field]: false }));
-    if (!error) setRow(r => ({ ...r, [field]: value }));
+    if (!error) {
+      setRow(r => ({ ...r, [field]: value }));
+      // Push de wijziging omhoog zodat de globale accounts-data (en dus o.a.
+      // de Marketing-filters zoals Werknemers "Onbekend") meteen meekleurt.
+      if (refetch) refetch();
+    }
   };
 
   const setParent = async (parentId) => {
@@ -880,6 +885,7 @@ export function InlineAccountDetails({ accountId, onPickAccount }) {
     setSaving(s => ({ ...s, parent_id: false }));
     if (!error) {
       setRow(r => ({ ...r, parent_id: parentId || null, parent_account: parent?.name || null }));
+      if (refetch) refetch();
     }
   };
 

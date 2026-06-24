@@ -1024,7 +1024,7 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
         {showCoreDetails && account.id && (
           <div style={{ marginBottom: 10, paddingBottom: 10, borderBottom: '0.5px solid var(--sep)' }}>
             <div style={{ padding: '0 18px' }}>
-              <InlineAccountDetails accountId={account.id} onPickAccount={onPickAccount} />
+              <InlineAccountDetails accountId={account.id} onPickAccount={onPickAccount} refetch={refetch} />
             </div>
           </div>
         )}
