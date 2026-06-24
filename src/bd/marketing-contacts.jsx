@@ -155,7 +155,7 @@ function MultiSelectFilter({ label, options, selected, onToggle }) {
 // Marketing → Contacts tab
 // Props: contacts, accounts, deals, allTags, refetch
 // Layout: filter sidebar (left, ~260px) + list (right, fills)
-export default function MarketingContacts({ contacts, accounts, deals, allTags, refetch, onComposeCampaign }) {
+export default function MarketingContacts({ contacts, accounts, deals, allTags, refetch, onComposeCampaign, onFilteredAccountsChange }) {
   const [selectedTagIds, setSelectedTagIds] = useState(new Set());
   const [selectedAccountTypes, setSelectedAccountTypes] = useState(new Set());
   // Account-gegevens filters (multi-select waarden uit het gekoppelde account)
@@ -614,6 +614,32 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
       return (a.name || '').toLowerCase().localeCompare((b.name || '').toLowerCase());
     });
   }, [contacts, activeFilter, tagFilter, emailFilter, linkedinFilter, titleFilter, followFilter, followedContactIds, hasGlintDeal, hasAnyDeal, accountsWithGlintDeal, accountsWithAnyDeal, accountsWithActiveProposal, selectedTagIds, selectedAccountTypes, accountTypeById, selectedCompanies, selectedCountries, selectedCities, selectedIndustries, selectedEmpBuckets, accountMetaById, searchText, hiddenPairs, sortMode]);
+
+  // Is er daadwerkelijk gefilterd? (alles behalve de standaard-staat). Drijft
+  // de live accountlijst-koppeling: alleen dan versmalt het rechterpaneel mee.
+  const filtersActive = useMemo(() => (
+    selectedTagIds.size > 0 || selectedAccountTypes.size > 0 ||
+    selectedCompanies.size > 0 || selectedCountries.size > 0 ||
+    selectedCities.size > 0 || selectedIndustries.size > 0 ||
+    selectedEmpBuckets.size > 0 || hasGlintDeal || hasAnyDeal ||
+    !!emailFilter || !!linkedinFilter || !!titleFilter || !!followFilter ||
+    !!tagFilter || searchText.trim() !== '' || activeFilter !== 'yes'
+  ), [selectedTagIds, selectedAccountTypes, selectedCompanies, selectedCountries,
+      selectedCities, selectedIndustries, selectedEmpBuckets, hasGlintDeal,
+      hasAnyDeal, emailFilter, linkedinFilter, titleFilter, followFilter,
+      tagFilter, searchText, activeFilter]);
+
+  // Meld de gefilterde account-ids omhoog zodat de accountlijst (rechterpaneel)
+  // live meebeweegt. null = niet filteren (toon alle accounts).
+  useEffect(() => {
+    if (!onFilteredAccountsChange) return;
+    if (!filtersActive) { onFilteredAccountsChange(null); return; }
+    const ids = [...new Set(filtered.map(c => c.accountId).filter(Boolean))];
+    onFilteredAccountsChange(ids);
+  }, [filtered, filtersActive, onFilteredAccountsChange]);
+
+  // Bij verlaten van de marketing-tab de koppeling weer vrijgeven.
+  useEffect(() => () => { if (onFilteredAccountsChange) onFilteredAccountsChange(null); }, [onFilteredAccountsChange]);
 
   // Inline email edit — optimistic-free: save then refetch so the parent
   // cache stays the single source of truth.

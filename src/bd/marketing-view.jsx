@@ -5,7 +5,7 @@ import MarketingCampaigns from './marketing-campaigns';
 import TagManager from './marketing-tag-manager';
 import MarketingComposer from './marketing-composer';
 
-export default function MarketingView({ contacts, accounts, deals, allTags, refetch }) {
+export default function MarketingView({ contacts, accounts, deals, allTags, refetch, onFilteredAccountsChange }) {
   const [tab, setTab] = useState('contacts');
   const [showTagManager, setShowTagManager] = useState(false);
   const [composer, setComposer] = useState(null); // null | { recipients: [...] }
@@ -53,6 +53,7 @@ export default function MarketingView({ contacts, accounts, deals, allTags, refe
               allTags={allTags}
               refetch={refetch}
               onComposeCampaign={(recipients) => setComposer({ recipients })}
+              onFilteredAccountsChange={onFilteredAccountsChange}
             />
           )}
           {tab === 'campaigns' && <MarketingCampaigns />}

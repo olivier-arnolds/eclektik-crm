@@ -83,6 +83,9 @@ export default function BDApp() {
   const [showOnepager, setShowOnepager] = useState(false);
   const [openContactId, setOpenContactId] = useState(null);
   const [searchPanelDismissed, setSearchPanelDismissed] = useState(false);
+  // Account-ids van de gefilterde contacten in de Marketing-tab. Laat de
+  // accountlijst (rechterpaneel) live meebewegen. null = niet filteren.
+  const [marketingAccountIds, setMarketingAccountIds] = useState(null);
   // When 'left', the left pane expands full-width and the Account 360 hides.
   const [expandedLane, setExpandedLane] = useState(null); // 'left' | null
 
@@ -302,7 +305,7 @@ export default function BDApp() {
   } else if (activeView === 'marketing') {
     leftPane = (
       <div style={{ flex: 1, minWidth: 0, overflow: 'auto' }}>
-        <MarketingView contacts={contacts} accounts={accounts} deals={deals} allTags={allTags} refetch={refetch} />
+        <MarketingView contacts={contacts} accounts={accounts} deals={deals} allTags={allTags} refetch={refetch} onFilteredAccountsChange={setMarketingAccountIds} />
       </div>
     );
   } else if (activeView === 'admin') {
@@ -362,6 +365,7 @@ export default function BDApp() {
               refetch={refetch}
               refetchGraph={fetchGraphData}
               onPickAccount={pickAccount}
+              accountFilterIds={activeView === 'marketing' ? marketingAccountIds : null}
               onCompose={openCompose}
               onOpenDeal={(d) => {
                 // Explicit "open" intent (Open deal button / deal row in the

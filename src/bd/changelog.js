@@ -19,9 +19,37 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.42.2';
+export const CURRENT_VERSION = '1.43.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.43.0',
+    date: '2026-06-24T05:39:26Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Marketing - accountlijst beweegt live mee met je filters',
+    summary:
+      'Terwijl je in de Marketing-tab contacten filtert, toont het ' +
+      'Account-paneel rechts alleen de bedrijven van de overgebleven ' +
+      'contacten. Zo open en bewerk je die accounts direct in Account 360.',
+    changes: [
+      'Accountlijst (rechterpaneel) versmalt live tot de bedrijven van de ' +
+        'gefilterde contacten - alleen in de Marketing-view, en alleen als er ' +
+        'daadwerkelijk gefilterd wordt.',
+      'Banner in de accountlijst: "Gefilterd op je marketing-selectie (N)".',
+      'Eigen zoek/type-filter van de accountlijst blijft werken (AND erbinnen).',
+      'Geen koppeling buiten de Marketing-view; filters loslaten = lijst weer ' +
+        'volledig.',
+    ],
+    files: [
+      'src/bd/BDApp.jsx',
+      'src/bd/marketing-view.jsx',
+      'src/bd/marketing-contacts.jsx',
+      'src/bd/lane-accounts.jsx',
+      'src/bd/changelog.js',
+    ],
+    gitTag: 'v1.43.0',
+  },
   {
     version: '1.42.2',
     date: '2026-06-24T05:39:26Z',

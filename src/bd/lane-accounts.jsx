@@ -266,7 +266,7 @@ function teamsChannelForAccount(account) {
   return ACCOUNT_TEAMS_CHANNELS.find((c) => name.includes(c.match)) || null;
 }
 
-export default function AccountsLane({ context, accounts, contacts, deals, rawItems, comms, graphEmails, events, graphEvents, tasks, onPickAccount, onCompose, onOpenDeal, onSelectComm, search, refetch, refetchGraph, allTags, onToggleCollapse }) {
+export default function AccountsLane({ context, accounts, contacts, deals, rawItems, comms, graphEmails, events, graphEvents, tasks, onPickAccount, onCompose, onOpenDeal, onSelectComm, search, refetch, refetchGraph, allTags, onToggleCollapse, accountFilterIds }) {
   // Merge DB events + graph events for context resolution
   const allEvents = useMemo(() => {
     const mappedGraph = (graphEvents || []).map(e => ({
@@ -296,7 +296,7 @@ export default function AccountsLane({ context, accounts, contacts, deals, rawIt
     return (
       <>
         <AccountsList accounts={accounts} contacts={contacts} deals={deals} onPickAccount={onPickAccount} search={search}
-          onAddAccount={() => setShowAddAccount(true)} onToggleCollapse={onToggleCollapse} />
+          onAddAccount={() => setShowAddAccount(true)} onToggleCollapse={onToggleCollapse} accountFilterIds={accountFilterIds} />
         {showAddAccount && (
           <AddAccountModal
             onClose={() => setShowAddAccount(false)}
@@ -453,8 +453,13 @@ const sectionLabel = {
   padding: '8px 12px 4px',
 };
 
-function AccountsList({ accounts, contacts, deals, onPickAccount, search, onAddAccount, onToggleCollapse }) {
+function AccountsList({ accounts, contacts, deals, onPickAccount, search, onAddAccount, onToggleCollapse, accountFilterIds }) {
   const q = (search || '').toLowerCase();
+  // Live koppeling met de Marketing-tab: als er een id-set is, toon alleen die
+  // accounts (de bedrijven van de gefilterde contacten).
+  const marketingIdSet = useMemo(
+    () => (accountFilterIds ? new Set(accountFilterIds) : null),
+    [accountFilterIds]);
   const [typeFilters, setTypeFilters] = useState([]);
   const [nameFilter, setNameFilter] = useState('');
   const [showDupes, setShowDupes] = useState(false);
@@ -495,6 +500,8 @@ function AccountsList({ accounts, contacts, deals, onPickAccount, search, onAddA
 
   const filtered = useMemo(() => {
     let list = accounts || [];
+    // Marketing-koppeling eerst: versmal tot de gefilterde-contact-accounts.
+    if (marketingIdSet) list = list.filter(a => marketingIdSet.has(a.id));
     // Global topbar search — matches account OR any of its contacts/deals
     if (q) {
       const relAccts = matchRelatedAccounts(q);
@@ -516,7 +523,7 @@ function AccountsList({ accounts, contacts, deals, onPickAccount, search, onAddA
     }
     if (typeFilters.length) list = list.filter(a => typeFilters.includes(a.type));
     return [...list].sort((a, b) => a.name.localeCompare(b.name));
-  }, [accounts, contacts, deals, q, typeFilters, nameFilter]);
+  }, [accounts, contacts, deals, q, typeFilters, nameFilter, marketingIdSet]);
 
   // Direct contact / deal matches for the active query (whichever is set).
   // Used to render dedicated rows above the accounts grid so users can pick
@@ -563,6 +570,16 @@ function AccountsList({ accounts, contacts, deals, onPickAccount, search, onAddA
           onClose={() => setShowDupes(false)}
           onDone={() => { setShowDupes(false); window.location.reload(); }}
         />
+      )}
+      {marketingIdSet && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 6,
+          padding: '6px 12px', fontSize: 11, color: 'var(--accent)',
+          background: 'var(--accent-tint)', borderBottom: '0.5px solid var(--sep)',
+        }}>
+          <span>ⓘ</span>
+          <span>Gefilterd op je marketing-selectie ({filtered.length})</span>
+        </div>
       )}
 
       <div style={{
