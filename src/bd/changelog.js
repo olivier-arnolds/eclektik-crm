@@ -19,9 +19,35 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.43.1';
+export const CURRENT_VERSION = '1.44.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.44.0',
+    date: '2026-06-24T05:39:26Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Account 360 - vrije industrie invoeren (met suggesties)',
+    summary:
+      'Het Industry-veld in Account 360 was een dropdown met 15 vaste ' +
+      'sectoren. Nu kun je elke industrie typen (bv. "Utilities"), met de 15 ' +
+      'sectoren plus alle al-gebruikte industrieën als suggestie. Een nieuwe ' +
+      'waarde verschijnt voortaan vanzelf als suggestie.',
+    changes: [
+      'Industry-dropdown vervangen door een vrij-tekstveld met datalist-suggesties.',
+      'Suggesties = 15 sectoren + alle distinct industrieën uit de DB.',
+      'InlineField kreeg een optionele "suggestions"-prop (autocomplete).',
+      'Reporting rolt vrije industrieën op via SECTOR_OF; "Utilities" toegevoegd ' +
+        'aan de map (→ Energy, Resources & Agriculture). Onbekende waarden ' +
+        'vallen onder "Other" tot ze gemapt worden.',
+    ],
+    files: [
+      'src/bd/inline-details.jsx',
+      'src/bd/industry-breakdown.jsx',
+      'src/bd/changelog.js',
+    ],
+    gitTag: 'v1.44.0',
+  },
   {
     version: '1.43.1',
     date: '2026-06-24T05:39:26Z',

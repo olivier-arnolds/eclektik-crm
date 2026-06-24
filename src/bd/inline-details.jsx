@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { I, fmtFull, fmtMoney, OwnerDot, STAGE_TINT } from './atoms';
 import { supabase } from '../supabase';
 import DOMPurify from 'dompurify';
@@ -13,10 +13,12 @@ import DocLinksSection from './doc-links-section';
 import { SECTOR_OPTIONS } from './industry-breakdown';
 
 // Inline editable field — click to edit, blur/Enter to save.
-export function InlineField({ label, value, onSave, type = 'text', colspan }) {
+export function InlineField({ label, value, onSave, type = 'text', colspan, suggestions }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value || '');
   const [saving, setSaving] = useState(false);
+  // Optionele autocomplete: vrij typen óf een suggestie kiezen (bv. Industry).
+  const listId = suggestions ? `datalist-${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}` : undefined;
 
   useEffect(() => { setDraft(value || ''); }, [value]);
 
@@ -41,10 +43,17 @@ export function InlineField({ label, value, onSave, type = 'text', colspan }) {
         onKeyDown={e => { if (e.key === 'Escape') { setDraft(value || ''); setEditing(false); } }}
         style={fieldInputStyle} />
     ) : (
-      <input autoFocus type={type} value={draft} onChange={e => setDraft(e.target.value)}
-        onBlur={commit}
-        onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') { setDraft(value || ''); setEditing(false); } }}
-        style={fieldInputStyle} />
+      <>
+        <input autoFocus type={type} value={draft} onChange={e => setDraft(e.target.value)}
+          onBlur={commit} list={listId}
+          onKeyDown={e => { if (e.key === 'Enter') commit(); if (e.key === 'Escape') { setDraft(value || ''); setEditing(false); } }}
+          style={fieldInputStyle} />
+        {listId && (
+          <datalist id={listId}>
+            {suggestions.map(s => <option key={s} value={s} />)}
+          </datalist>
+        )}
+      </>
     )
   ) : type === 'url' && value ? (
     <div style={{
@@ -852,7 +861,7 @@ export function InlineAccountDetails({ accountId, onPickAccount, refetch }) {
     setLoading(true);
     supabase.from('companies').select('*').eq('id', accountId).single()
       .then(({ data }) => { setRow(data); setLoading(false); });
-    supabase.from('companies').select('id,name,type').neq('stage', 'Inactive').order('name')
+    supabase.from('companies').select('id,name,type,industry').neq('stage', 'Inactive').order('name')
       .then(({ data }) => setAllAccounts(data || []));
   }, [accountId]);
 
@@ -862,6 +871,15 @@ export function InlineAccountDetails({ accountId, onPickAccount, refetch }) {
     supabase.from('companies').select('id,name,type,stage').eq('id', row.parent_id).single()
       .then(({ data }) => setParentInfo(data));
   }, [row?.parent_id]);
+
+  // Suggesties voor het Industry-veld: de 15 vaste sectoren + alle al-gebruikte
+  // industrieën in de DB. Vrij typen mag (bv. "Utilities"); een nieuwe waarde
+  // verschijnt voortaan vanzelf als suggestie. Reporting rolt 'm op via SECTOR_OF.
+  const industrySuggestions = useMemo(() => {
+    const set = new Set(SECTOR_OPTIONS);
+    for (const a of allAccounts) if (a.industry) set.add(a.industry);
+    return [...set].sort((x, y) => x.localeCompare(y));
+  }, [allAccounts]);
 
   const saveField = async (field, value) => {
     setSaving(s => ({ ...s, [field]: true }));
@@ -933,16 +951,7 @@ export function InlineAccountDetails({ accountId, onPickAccount, refetch }) {
         </div>
         <InlineField label="Phone" value={row.phone} onSave={v => saveField('phone', v)} />
         <InlineField label="Email" value={row.email} type="email" onSave={v => saveField('email', v)} />
-        <div style={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'column', gap: 2 }}>
-          <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>Industry</div>
-          <select value={SECTOR_OPTIONS.includes(row.industry) ? row.industry : (row.industry ? '__current__' : '')}
-            onChange={e => { if (e.target.value !== '__current__') saveField('industry', e.target.value || null); }}
-            style={{ padding: '4px 6px', borderRadius: 4, border: '0.5px solid var(--sep)', background: 'var(--fill-1)', fontSize: 12, fontFamily: 'inherit' }}>
-            {!row.industry && <option value="">— select —</option>}
-            {row.industry && !SECTOR_OPTIONS.includes(row.industry) && <option value="__current__">{row.industry} (current)</option>}
-            {SECTOR_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
-        </div>
+        <InlineField label="Industry" value={row.industry} onSave={v => saveField('industry', v)} colspan={2} suggestions={industrySuggestions} />
         <InlineField label="Address" value={row.address} onSave={v => saveField('address', v)} colspan={2} />
         <InlineField label="City" value={row.city} onSave={v => saveField('city', v)} />
         <InlineField label="State" value={row.state} onSave={v => saveField('state', v)} />

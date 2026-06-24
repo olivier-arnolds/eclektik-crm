@@ -39,6 +39,7 @@ const SECTOR_OF = {
   'Oil and Gas': 'Energy, Resources & Agriculture', 'Mining': 'Energy, Resources & Agriculture',
   'Mineral': 'Energy, Resources & Agriculture', 'Sustainability': 'Energy, Resources & Agriculture',
   'Farming': 'Energy, Resources & Agriculture', 'Energy': 'Energy, Resources & Agriculture',
+  'Utilities': 'Energy, Resources & Agriculture',
   'Retail': 'Consumer & Retail', 'Retail Luxury Goods and Jewelry': 'Consumer & Retail',
   'Consumer Goods': 'Consumer & Retail', 'E-Commerce': 'Consumer & Retail', 'Fashion': 'Consumer & Retail',
   'Food and Beverage': 'Consumer & Retail', 'Confectionery': 'Consumer & Retail', 'Home Improvement': 'Consumer & Retail',
