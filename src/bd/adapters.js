@@ -82,7 +82,9 @@ export function adaptAccount(row) {
     type: row.type || 'Customer',
     tier: row.tier || '',
     region: row.country || '',
-    city: row.city || '',
+    // cityName = echte stad (usePipelineData); row.city kan het straatadres
+    // bevatten. Fallback op row.city voor robuustheid.
+    city: row.cityName || row.city || '',
     arr: row.annual_revenue || row.size || '',
     owner: ownerIdFromName(row.owner),
     logoHue: hueFromString(row.name),

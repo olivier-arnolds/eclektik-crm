@@ -19,9 +19,31 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.42.0';
+export const CURRENT_VERSION = '1.42.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.42.1',
+    date: '2026-06-24T05:39:26Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Marketing - stadfilter toont echte stad i.p.v. straatadres',
+    summary:
+      'Het Stad-filter in de Marketing-tab toonde het straatadres in plaats ' +
+      'van de stadsnaam (bv. London). De adapter-keten overschreef de stad ' +
+      'met het adres; nu wordt de echte companies.city gebruikt.',
+    changes: [
+      'usePipelineData: echte stadsnaam bewaard als cityName (los van het ' +
+        'city-veld dat bewust het straatadres toont).',
+      'adaptAccount gebruikt cityName voor account.city → marketing-stadfilter.',
+    ],
+    files: [
+      'src/hooks/usePipelineData.js',
+      'src/bd/adapters.js',
+      'src/bd/changelog.js',
+    ],
+    gitTag: 'v1.42.1',
+  },
   {
     version: '1.42.0',
     date: '2026-06-24T05:39:26Z',

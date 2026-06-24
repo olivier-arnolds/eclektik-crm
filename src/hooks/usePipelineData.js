@@ -12,6 +12,9 @@ function adaptCompany(row) {
     type: row.type || 'Klant',
     flag: getFlag(row.country),
     city: row.address || row.city || '',
+    // Echte stadsnaam (companies.city), los van het `city`-veld hierboven dat
+    // bewust het straatadres toont. Gebruikt door de marketing-stadfilter.
+    cityName: row.city || '',
     country: row.country || '',
     industry: row.industry || '',
     website: row.website || '',
