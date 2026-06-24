@@ -95,14 +95,20 @@ const EMP_BUCKETS = [
   { key: '5000+', label: '5000+', min: 5001, max: Infinity },
 ];
 
+// Sentinel-waarde voor de "(leeg)"-optie in de account-filters: matcht
+// contacten waarvan het gekoppelde account de waarde mist (of geen account).
+const EMPTY_VALUE = '__empty__';
+
 // Zoekbare multi-select dropdown voor Bedrijf / Land / Stad / Industrie.
-// options: [{ value, count }] (count = aantal contacten met die waarde).
-// selected = Set van gekozen waarden; onToggle(value) flipt één waarde.
+// options: [{ value, count, label? }] (count = aantal contacten met die
+// waarde; label override voor bv. de "(leeg)"-optie). selected = Set van
+// gekozen waarden; onToggle(value) flipt één waarde.
 function MultiSelectFilter({ label, options, selected, onToggle }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState('');
+  const optLabel = (o) => o.label || o.value;
   const shown = q.trim()
-    ? options.filter(o => o.value.toLowerCase().includes(q.trim().toLowerCase()))
+    ? options.filter(o => optLabel(o).toLowerCase().includes(q.trim().toLowerCase()))
     : options;
   return (
     <div style={{ marginBottom: 2 }}>
@@ -129,13 +135,16 @@ function MultiSelectFilter({ label, options, selected, onToggle }) {
             {shown.length === 0 && (
               <div style={{ fontSize: 10, color: 'var(--text-3)', padding: '4px 0' }}>Geen resultaten</div>
             )}
-            {shown.map(o => (
-              <label key={o.value} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, padding: '2px 0', cursor: 'pointer' }}>
-                <input type="checkbox" checked={selected.has(o.value)} onChange={() => onToggle(o.value)} />
-                <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={o.value}>{o.value}</span>
-                <span style={{ color: 'var(--text-3)', fontSize: 10 }}>({o.count})</span>
-              </label>
-            ))}
+            {shown.map(o => {
+              const isEmpty = o.value === EMPTY_VALUE;
+              return (
+                <label key={o.value} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, padding: '2px 0', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={selected.has(o.value)} onChange={() => onToggle(o.value)} />
+                  <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontStyle: isEmpty ? 'italic' : 'normal', color: isEmpty ? 'var(--text-3)' : 'inherit' }} title={optLabel(o)}>{optLabel(o)}</span>
+                  <span style={{ color: 'var(--text-3)', fontSize: 10 }}>({o.count})</span>
+                </label>
+              );
+            })}
           </div>
         </div>
       )}
@@ -399,27 +408,43 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
 
   // Distinct waardenlijsten voor de multi-selects, met telling = aantal
   // contacten waarvan het account die waarde heeft. Lege waarden weggelaten,
-  // alfabetisch gesorteerd.
+  // alfabetisch gesorteerd. Per veld tellen we ook hoeveel contacten de waarde
+  // missen (leeg of geen account) → "(leeg)"-optie bovenaan voor Land/Stad/
+  // Industrie. Werknemers krijgt een eigen "Onbekend"-knop (geen dropdown).
   const accountFilterOptions = useMemo(() => {
     const company = new Map(), country = new Map(), city = new Map(), industry = new Map();
+    let emptyCountry = 0, emptyCity = 0, emptyIndustry = 0;
     const bump = (map, key) => { if (key) map.set(key, (map.get(key) || 0) + 1); };
     for (const c of contacts) {
       const a = accountMetaById.get(c.accountId);
-      if (!a) continue;
-      bump(company, a.name);
-      bump(country, a.country);
-      bump(city, a.city);
-      bump(industry, a.industry);
+      bump(company, a?.name);
+      if (a?.country) bump(country, a.country); else emptyCountry++;
+      if (a?.city) bump(city, a.city); else emptyCity++;
+      if (a?.industry) bump(industry, a.industry); else emptyIndustry++;
     }
     const toSorted = (map) => [...map.entries()]
       .map(([value, count]) => ({ value, count }))
       .sort((x, y) => x.value.toLowerCase().localeCompare(y.value.toLowerCase()));
+    // Prepend de "(leeg)"-optie als er contacten zonder waarde zijn.
+    const withEmpty = (list, emptyCount) => emptyCount > 0
+      ? [{ value: EMPTY_VALUE, label: '(leeg)', count: emptyCount }, ...list]
+      : list;
     return {
       companies: toSorted(company),
-      countries: toSorted(country),
-      cities: toSorted(city),
-      industries: toSorted(industry),
+      countries: withEmpty(toSorted(country), emptyCountry),
+      cities: withEmpty(toSorted(city), emptyCity),
+      industries: withEmpty(toSorted(industry), emptyIndustry),
     };
+  }, [contacts, accountMetaById]);
+
+  // Aantal contacten zonder bekend werknemersaantal (voor de "Onbekend"-knop).
+  const emptyEmpCount = useMemo(() => {
+    let n = 0;
+    for (const c of contacts) {
+      const a = accountMetaById.get(c.accountId);
+      if (a?.emp == null) n++;
+    }
+    return n;
   }, [contacts, accountMetaById]);
 
   // Generieke Set-toggle voor de multi-select filters.
@@ -533,21 +558,35 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
         if (!matches) return false;
       }
       // Account-gegevens filters: AND tussen categorieën, OR binnen (Set.has).
+      // Een lege/ontbrekende waarde (ook contacten zonder account) matcht de
+      // "(leeg)"-optie (EMPTY_VALUE).
       if (selectedCompanies.size || selectedCountries.size || selectedCities.size ||
           selectedIndustries.size || selectedEmpBuckets.size) {
         const a = accountMetaById.get(c.accountId);
+        // Tekstveld-match met "(leeg)"-ondersteuning. val = '' / undefined als leeg.
+        const fieldMatch = (sel, val) => {
+          if (!sel.size) return true;
+          if (val) return sel.has(val);
+          return sel.has(EMPTY_VALUE);
+        };
+        // Bedrijf heeft (bewust) geen "(leeg)"-optie — directe naam-match.
         if (selectedCompanies.size && !(a && selectedCompanies.has(a.name))) return false;
-        if (selectedCountries.size && !(a && selectedCountries.has(a.country))) return false;
-        if (selectedCities.size && !(a && selectedCities.has(a.city))) return false;
-        if (selectedIndustries.size && !(a && selectedIndustries.has(a.industry))) return false;
+        if (!fieldMatch(selectedCountries, a?.country)) return false;
+        if (!fieldMatch(selectedCities, a?.city)) return false;
+        if (!fieldMatch(selectedIndustries, a?.industry)) return false;
         if (selectedEmpBuckets.size) {
           const emp = a?.emp;
-          if (emp == null) return false;
-          const inBucket = [...selectedEmpBuckets].some(k => {
-            const b = EMP_BUCKETS.find(x => x.key === k);
-            return b && emp >= b.min && emp <= b.max;
-          });
-          if (!inBucket) return false;
+          if (emp == null) {
+            // Onbekend werknemersaantal: matcht alleen de "Onbekend"-keuze.
+            if (!selectedEmpBuckets.has(EMPTY_VALUE)) return false;
+          } else {
+            const inBucket = [...selectedEmpBuckets].some(k => {
+              if (k === EMPTY_VALUE) return false;
+              const b = EMP_BUCKETS.find(x => x.key === k);
+              return b && emp >= b.min && emp <= b.max;
+            });
+            if (!inBucket) return false;
+          }
         }
       }
       if (q) {
@@ -751,6 +790,21 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
                 }}>{b.label}</button>
             );
           })}
+          {emptyEmpCount > 0 && (() => {
+            const active = selectedEmpBuckets.has(EMPTY_VALUE);
+            return (
+              <button onClick={() => toggleInSet(setSelectedEmpBuckets)(EMPTY_VALUE)}
+                title="Accounts zonder bekend werknemersaantal"
+                style={{
+                  padding: '2px 8px', borderRadius: 10, fontSize: 11, cursor: 'pointer',
+                  border: '0.5px solid', fontFamily: 'inherit', fontStyle: 'italic',
+                  background: active ? 'var(--accent-tint)' : 'transparent',
+                  color: active ? 'var(--accent)' : 'var(--text-3)',
+                  borderColor: active ? 'var(--accent)' : 'var(--sep)',
+                  fontWeight: active ? 600 : 400,
+                }}>Onbekend ({emptyEmpCount})</button>
+            );
+          })()}
         </div>
 
         <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '12px 0 6px' }}>Status</div>

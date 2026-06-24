@@ -19,9 +19,30 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.42.1';
+export const CURRENT_VERSION = '1.42.2';
 
 export const CHANGELOG = [
+  {
+    version: '1.42.2',
+    date: '2026-06-24T05:39:26Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Marketing - "(leeg)"-optie bij Land/Stad/Industrie/Werknemers',
+    summary:
+      'De account-filters Land, Stad en Industrie hebben nu een "(leeg)"-optie ' +
+      'en Werknemers een "Onbekend"-knop. Daarmee vind je contacten waarvan ' +
+      'het gekoppelde account die waarde mist (of helemaal geen account heeft).',
+    changes: [
+      '"(leeg)"-optie bovenaan de Land/Stad/Industrie-dropdowns, met telling.',
+      '"Onbekend"-knop bij Werknemers voor accounts zonder employee_count.',
+      'Bedrijf houdt bewust geen leeg-optie (contact zonder account = geen naam).',
+    ],
+    files: [
+      'src/bd/marketing-contacts.jsx',
+      'src/bd/changelog.js',
+    ],
+    gitTag: 'v1.42.2',
+  },
   {
     version: '1.42.1',
     date: '2026-06-24T05:39:26Z',
