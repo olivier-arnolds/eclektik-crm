@@ -112,9 +112,21 @@ function OrganogramCanvas({ accountId, accounts, contacts, deals, onPickAccount,
   // Context-callbacks voor ContactNode.
   const onRequestAttachDeal = useCallback((nodeId) => setDealPickerNodeId(nodeId), []);
   const onRemoveNode = useCallback((nodeId) => {
+    const node = nodes.find(n => n.id === nodeId);
+    const hasEdges = edges.some(e => e.source === nodeId || e.target === nodeId);
+    // Een verbonden contact wegklikken behoudt de structuur: het wordt een
+    // 'onbekend contact' (placeholder) op dezelfde plek met dezelfde lijnen,
+    // en de contactpersoon komt weer terug in de linkerbalk. Een los blokje
+    // (of placeholder) verdwijnt gewoon.
+    if (node?.data.contactId && hasEdges) {
+      setNodes(nds => nds.map(n => n.id === nodeId
+        ? { ...n, data: { ...n.data, contactId: null, label: null, dealRefs: [] } }
+        : n));
+      return;
+    }
     setNodes(nds => nds.filter(n => n.id !== nodeId));
     setEdges(eds => eds.filter(e => e.source !== nodeId && e.target !== nodeId));
-  }, [setNodes, setEdges]);
+  }, [nodes, edges, setNodes, setEdges]);
   const onRemoveDeal = useCallback((nodeId, ref) => {
     setNodes(nds => nds.map(n => n.id === nodeId
       ? { ...n, data: { ...n.data, dealRefs: n.data.dealRefs.filter(r => r.id !== ref.id) } }

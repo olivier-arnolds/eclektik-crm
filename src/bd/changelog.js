@@ -19,9 +19,34 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.48.0';
+export const CURRENT_VERSION = '1.49.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.49.0',
+    date: '2026-06-29T15:40:55Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Organogram - verbonden contact wegklikken wordt placeholder',
+    summary:
+      'Klik je een contact weg (×) dat verbonden is met andere contacten, dan ' +
+      'verdwijnt de structuur niet langer: het blokje wordt automatisch een ' +
+      '"onbekend contact" op dezelfde plek met dezelfde lijnen, en de ' +
+      'contactpersoon komt weer terug in de linkerbalk (zodat je hem elders kunt ' +
+      'plaatsen of de placeholder later opnieuw kunt invullen). Een blokje zonder ' +
+      'verbindingen verdwijnt gewoon, zoals voorheen.',
+    changes: [
+      'onRemoveNode: verbonden contact -> placeholder (contactId null, label/dealRefs gewist); lijnen + positie blijven.',
+      'Los blokje of placeholder zonder verbindingen wordt nog steeds verwijderd.',
+    ],
+    files: [
+      'src/components/organogram/OrganogramView.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.49.0',
+  },
   {
     version: '1.48.0',
     date: '2026-06-29T15:12:59Z',
