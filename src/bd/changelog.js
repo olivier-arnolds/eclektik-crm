@@ -19,9 +19,29 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.50.0';
+export const CURRENT_VERSION = '1.50.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.50.1',
+    date: '2026-06-29T16:30:40Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Organogram - gekoppelde deals onder elkaar',
+    summary:
+      'De deal-chips op een contactblokje stonden naast elkaar (wrappend). Ze ' +
+      'staan nu onder elkaar, wat de leesbaarheid verbetert bij meerdere deals.',
+    changes: [
+      'ContactNode: deal-chips van horizontale wrap naar verticale kolom.',
+    ],
+    files: [
+      'src/components/organogram/ContactNode.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.50.1',
+  },
   {
     version: '1.50.0',
     date: '2026-06-29T16:25:48Z',

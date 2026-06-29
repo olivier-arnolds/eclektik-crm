@@ -140,7 +140,7 @@ export default function ContactNode({ id, data, selected }) {
       </div>
 
       {dealRefs.length > 0 && (
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 6 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 4, marginTop: 6 }}>
           {dealRefs.map((ref) => {
             const deal = dealsById[ref.id];
             const hue = deal ? (STAGE_TINT[deal.stage]?.hue ?? 220) : 220;
