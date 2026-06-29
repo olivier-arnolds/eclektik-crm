@@ -19,9 +19,33 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.50.1';
+export const CURRENT_VERSION = '1.50.2';
 
 export const CHANGELOG = [
+  {
+    version: '1.50.2',
+    date: '2026-06-29T16:33:43Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Organogram - functietitels netjes + functies in linkermenu',
+    summary:
+      'Contactblokjes worden niet meer breed bij een lange functiebenaming: de ' +
+      'titel breekt af naar de volgende regel (max 2 regels, daarna afgekapt) en ' +
+      'het blokje heeft een maximumbreedte. Daarnaast staan in het linkermenu nu ' +
+      'ook de functies onder de naam van elke contactpersoon.',
+    changes: [
+      'ContactNode: maxWidth op het blokje; functietitel breekt af tot 2 regels (line-clamp).',
+      'OrgPalette: functie/rol onder de naam in de contactenlijst.',
+    ],
+    files: [
+      'src/components/organogram/ContactNode.jsx',
+      'src/components/organogram/OrgPalette.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.50.2',
+  },
   {
     version: '1.50.1',
     date: '2026-06-29T16:30:40Z',

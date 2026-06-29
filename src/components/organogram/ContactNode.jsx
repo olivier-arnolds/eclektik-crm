@@ -113,7 +113,7 @@ export default function ContactNode({ id, data, selected }) {
         position: 'relative',
         background: 'var(--bg-1)',
         border: `1px solid ${selected ? 'var(--accent)' : 'var(--sep)'}`,
-        borderRadius: 8, padding: '8px 10px', minWidth: 180,
+        borderRadius: 8, padding: '8px 10px', minWidth: 180, maxWidth: 220,
         boxShadow: selected ? '0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent)' : '0 1px 2px rgba(0,0,0,0.05)',
         opacity: c.isFormer ? 0.6 : 1,
       }}>
@@ -135,7 +135,7 @@ export default function ContactNode({ id, data, selected }) {
             {c.isPrimary && <span title="Primary contact" style={{ color: 'var(--good)', marginLeft: 5, fontSize: 10, fontFamily: 'var(--font-mono)' }}>★</span>}
             {c.isFinancial && <span title="Financial contact" style={{ color: 'var(--accent)', marginLeft: 3, fontSize: 10, fontFamily: 'var(--font-mono)' }}>$</span>}
           </div>
-          {c.role && <div style={{ fontSize: 10, color: 'var(--text-3)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.role}</div>}
+          {c.role && <div style={{ fontSize: 10, color: 'var(--text-3)', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', overflowWrap: 'anywhere' }}>{c.role}</div>}
         </div>
       </div>
 

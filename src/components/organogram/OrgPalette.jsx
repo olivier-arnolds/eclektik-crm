@@ -41,7 +41,10 @@ export default function OrgPalette({ contacts, placedContactIds, dealCount }) {
               background: c.avatarBg || '#F1EFE8', color: c.avatarColor || '#888',
               display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, fontWeight: 600,
             }}>{c.initials || (c.name || '?').split(' ').map(w => w[0]).slice(0, 2).join('')}</span>
-            <span style={{ flex: 1, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</span>
+            <span style={{ flex: 1, minWidth: 0 }}>
+              <span style={{ display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</span>
+              {c.role && <span style={{ display: 'block', fontSize: 9, color: 'var(--text-3)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.role}</span>}
+            </span>
             {placed && <span style={{ fontSize: 9, color: 'var(--good)' }}>✓</span>}
           </div>
         );
