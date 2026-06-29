@@ -46,8 +46,14 @@ processtappen.
 - Linker-pane render in de unified shell: `activeView === 'organogram'` →
   `<OrganogramView accounts contacts deals refetch ... />`. Neemt het
   hoofdgebied in beslag (zoals Playbooks).
-- Bovenin de view een **account-kiezer** (zoekbare dropdown). Als er elders al
-  een account geselecteerd is, opent het organogram daar meteen op.
+- **Account-selectie** kan op twee manieren, gesynchroniseerd:
+  - via een zoekbare **dropdown** bovenin de organogram-view, en
+  - via het **geselecteerde account in de rechter accountview-tab** (Account 360).
+  Beide gebruiken dezelfde globale account-selectie uit `BDApp` (`pickAccount` /
+  de geselecteerde account-state), zodat het organogram automatisch het account
+  toont dat in de accountview openstaat, en andersom een keuze in de dropdown de
+  accountview meebeweegt. Als er al een account geselecteerd is, opent het
+  organogram daar meteen op.
 
 ## Layout van de view
 
