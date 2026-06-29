@@ -28,16 +28,16 @@ export default function OrgPalette({ contacts, placedContactIds, dealCount }) {
   return (
     <div style={{ width: 210, borderRight: '0.5px solid var(--sep)', background: 'var(--bg-2)', padding: 10, overflowY: 'auto' }}>
       <div style={{ fontSize: 9, textTransform: 'uppercase', color: 'var(--text-3)', fontWeight: 700, letterSpacing: '0.06em', marginBottom: 6 }}>
-        Contactpersonen
+        Contacts
       </div>
-      {contacts.length === 0 && <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 12 }}>Geen contacten voor dit account.</div>}
+      {contacts.length === 0 && <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 12 }}>No contacts for this account.</div>}
       {contacts.map(c => {
         const placed = placedContactIds.has(c.id);
         return (
           <div key={c.id}
             draggable={!placed}
             onDragStart={(e) => onDragContact(e, c.id)}
-            title={placed ? 'Staat al op het canvas' : 'Sleep naar canvas'}
+            title={placed ? 'Already on the canvas' : 'Drag to canvas'}
             style={{
               display: 'flex', alignItems: 'center', gap: 6,
               background: 'var(--bg-1)', border: '0.5px solid var(--sep)', borderRadius: 4,
@@ -60,7 +60,7 @@ export default function OrgPalette({ contacts, placedContactIds, dealCount }) {
       })}
 
       <div draggable onDragStart={onDragUnknown}
-        title="Sleep naar canvas voor een placeholder; vervang later door een contact"
+        title="Drag to canvas for a placeholder; replace with a contact later"
         style={{
           display: 'flex', alignItems: 'center', gap: 6, marginTop: 4,
           background: 'var(--bg-1)', border: '0.5px dashed var(--text-3)', borderRadius: 4,
@@ -71,20 +71,20 @@ export default function OrgPalette({ contacts, placedContactIds, dealCount }) {
           background: 'var(--fill-2)', color: 'var(--text-3)', border: '1px dashed var(--text-3)',
           display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 600,
         }}>?</span>
-        <span>＋ Onbekend contact</span>
+        <span>＋ Unknown contact</span>
       </div>
 
       <div style={{ fontSize: 9, textTransform: 'uppercase', color: 'var(--text-3)', fontWeight: 700, letterSpacing: '0.06em', margin: '14px 0 6px' }}>
         Deals
       </div>
       <div draggable onDragStart={onDragDeal}
-        title="Sleep op een contactpersoon om een deal te koppelen"
+        title="Drag onto a contact to link a deal"
         style={{
           background: 'var(--bg-1)', border: '0.5px dashed var(--accent)', borderRadius: 4,
           padding: '7px 8px', fontSize: 11, cursor: 'grab', color: 'var(--accent)',
         }}>
-        ＋ Koppel deal aan contact
-        <div style={{ fontSize: 9, color: 'var(--text-3)', marginTop: 2 }}>{dealCount} deal(s) op dit account</div>
+        ＋ Link deal to contact
+        <div style={{ fontSize: 9, color: 'var(--text-3)', marginTop: 2 }}>{dealCount} deal(s) on this account</div>
       </div>
     </div>
   );

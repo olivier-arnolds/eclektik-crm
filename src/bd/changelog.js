@@ -19,9 +19,34 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.50.4';
+export const CURRENT_VERSION = '1.50.5';
 
 export const CHANGELOG = [
+  {
+    version: '1.50.5',
+    date: '2026-06-29T19:37:34Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Org chart - tab in het Engels + menu-naam "Org.chart"',
+    summary:
+      'Alle teksten in de organogram-tab staan nu in het Engels. De naam in de ' +
+      'menubalk bovenaan is "Org.chart" geworden.',
+    changes: [
+      'Topbar-knop hernoemd naar "Org.chart".',
+      'Alle UI-teksten in OrganogramView, OrgPalette, ContactNode en DealPicker vertaald naar het Engels.',
+    ],
+    files: [
+      'src/bd/topbar.jsx',
+      'src/components/organogram/OrganogramView.jsx',
+      'src/components/organogram/OrgPalette.jsx',
+      'src/components/organogram/ContactNode.jsx',
+      'src/components/organogram/DealPicker.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.50.5',
+  },
   {
     version: '1.50.4',
     date: '2026-06-29T19:32:56Z',

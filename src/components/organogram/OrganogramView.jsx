@@ -56,7 +56,7 @@ function OrganogramCanvas({ accountId, accounts, contacts, deals, onPickAccount,
     loadedAccountRef.current = null; // markeer "nog niet geladen" zodat autosave wacht
     loadOrganogram(accountId)
       .then(({ nodes, edges }) => { setNodes(nodes); setEdges(edges); loadedAccountRef.current = accountId; })
-      .catch(err => { alert('Laden mislukt: ' + err.message); })
+      .catch(err => { alert('Loading failed: ' + err.message); })
       .finally(() => setLoading(false));
   }, [accountId, setNodes, setEdges]);
 
@@ -67,7 +67,7 @@ function OrganogramCanvas({ accountId, accounts, contacts, deals, onPickAccount,
     saveTimerRef.current = setTimeout(() => {
       saveOrganogram(accountId, { nodes, edges })
         .then(() => setSaveError(false))
-        .catch(err => { console.error('Organogram autosave faalde:', err); setSaveError(true); });
+        .catch(err => { console.error('Org chart autosave failed:', err); setSaveError(true); });
     }, 600);
     return () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current); };
   }, [nodes, edges, accountId]);
@@ -158,7 +158,7 @@ function OrganogramCanvas({ accountId, accounts, contacts, deals, onPickAccount,
       setJustSaved(true);
       setTimeout(() => setJustSaved(false), 2000);
     } catch (err) {
-      console.error('Organogram opslaan faalde:', err);
+      console.error('Org chart save failed:', err);
       setSaveError(true);
     } finally {
       setSaving(false);
@@ -185,50 +185,50 @@ function OrganogramCanvas({ accountId, accounts, contacts, deals, onPickAccount,
     <div className="lane" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
       {/* Kop met account-kiezer */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderBottom: '0.5px solid var(--sep)' }}>
-        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-1)' }}>Organogram</span>
+        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-1)' }}>Org.chart</span>
         <select value={accountId || ''}
           onChange={(e) => { const a = accounts.find(x => x.id === e.target.value); onPickAccount(a || null); }}
           style={{ flex: 1, maxWidth: 320, padding: '5px 8px', borderRadius: 4, border: '0.5px solid var(--sep)', background: 'var(--bg-1)', color: 'var(--text-1)', fontSize: 12, fontFamily: 'inherit' }}>
-          <option value="">— Kies een account —</option>
+          <option value="">— Choose an account —</option>
           {[...accounts].sort((a, b) => (a.name || '').localeCompare(b.name || '')).map(a => (
             <option key={a.id} value={a.id}>{a.name}</option>
           ))}
         </select>
         {saveError && (
-          <span title="Wijzigingen konden niet worden opgeslagen. Controleer je verbinding."
+          <span title="Changes could not be saved. Check your connection."
             style={{ fontSize: 11, color: 'var(--danger)', fontWeight: 600, whiteSpace: 'nowrap' }}>
-            ⚠ niet opgeslagen
+            ⚠ not saved
           </span>
         )}
         {justSaved && !saveError && (
           <span style={{ fontSize: 11, color: 'var(--good)', fontWeight: 600, whiteSpace: 'nowrap' }}>
-            ✓ opgeslagen
+            ✓ saved
           </span>
         )}
         {accountId && (
           <button className="btn-primary tiny" onClick={handleSave} disabled={saving}
-            title="Organogram opslaan"
+            title="Save org chart"
             style={{ whiteSpace: 'nowrap' }}>
-            {saving ? 'Opslaan…' : 'Opslaan'}
+            {saving ? 'Saving…' : 'Save'}
           </button>
         )}
         {onToggleExpand && (
-          <button className="btn-ghost tiny" onClick={onToggleExpand} title={expanded ? 'Toon accountpaneel' : 'Volledig scherm'}>
-            {expanded ? '⇥ Paneel' : '⇤ Breed'}
+          <button className="btn-ghost tiny" onClick={onToggleExpand} title={expanded ? 'Show account panel' : 'Full width'}>
+            {expanded ? '⇥ Panel' : '⇤ Wide'}
           </button>
         )}
       </div>
 
       {!accountId ? (
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-3)', fontSize: 13 }}>
-          Kies een account om het organogram te bouwen.
+          Choose an account to build the org chart.
         </div>
       ) : (
         <OrganogramContext.Provider value={ctxValue}>
           <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
             <OrgPalette contacts={accContacts} placedContactIds={placedContactIds} dealCount={accDeals.length} />
             <div style={{ flex: 1, position: 'relative' }}>
-              {loading && <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-3)', zIndex: 5 }}>Laden…</div>}
+              {loading && <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-3)', zIndex: 5 }}>Loading…</div>}
               <ReactFlow
                 nodes={nodes} edges={edges}
                 onNodesChange={onNodesChange} onEdgesChange={onEdgesChange}

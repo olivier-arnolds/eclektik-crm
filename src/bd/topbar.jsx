@@ -49,13 +49,13 @@ export default function Topbar({ theme, setTheme, view, setView, layout, setLayo
           <I.calendar /> Meetings
         </button>
         <button className={view === 'organogram' ? 'on' : ''}
-          onClick={() => setView('organogram')} title="Organogram — org-charts per account">
+          onClick={() => setView('organogram')} title="Org chart — per account">
           <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.4">
             <rect x="6" y="1.5" width="4" height="3" rx="0.5" />
             <rect x="1.5" y="11.5" width="4" height="3" rx="0.5" />
             <rect x="10.5" y="11.5" width="4" height="3" rx="0.5" />
             <path d="M8 4.5v3M8 7.5H3.5v4M8 7.5h4.5v4" strokeLinecap="round" />
-          </svg> Organogram
+          </svg> Org.chart
         </button>
         <button className={view === 'comms' ? 'on' : ''}
           onClick={() => setView('comms')} title="Comms — email, Teams & LinkedIn">

@@ -39,7 +39,7 @@ export default function ContactNode({ id, data, selected }) {
   // contact verschijnt daardoor weer sleepbaar in de linkerbalk.
   const removeBtn = (
     <button className="nodrag" onClick={(e) => { e.stopPropagation(); onRemoveNode(id); }}
-      title="Verwijder van canvas (terug naar linkerbalk)"
+      title="Remove from canvas (back to the left menu)"
       style={{
         position: 'absolute', top: -8, right: -8, width: 16, height: 16, borderRadius: 8,
         border: '0.5px solid var(--sep)', background: 'var(--bg-1)', color: 'var(--text-3)',
@@ -64,10 +64,10 @@ export default function ContactNode({ id, data, selected }) {
       <div onDragOver={onDragOver} onDrop={onDrop}
         onDoubleClick={(e) => {
           e.stopPropagation();
-          const next = prompt('Rolhint voor dit onbekende contact (bv. "Teamlead"):', data.label || '');
+          const next = prompt('Role hint for this unknown contact (e.g. "Team lead"):', data.label || '');
           if (next !== null) onSetNodeLabel(id, next.trim() || null);
         }}
-        title="Onbekend contact — sleep een contact uit de linkerbalk hierop om te vervangen. Dubbelklik voor een rolhint."
+        title="Unknown contact — drag a contact from the left menu onto it to replace. Double-click for a role hint."
         style={{
           position: 'relative',
           background: 'var(--bg-1)',
@@ -87,9 +87,9 @@ export default function ContactNode({ id, data, selected }) {
           }}>?</div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {data.label || 'Onbekend'}
+              {data.label || 'Unknown'}
             </div>
-            <div style={{ fontSize: 9, color: 'var(--text-3)' }}>sleep een contact hierop</div>
+            <div style={{ fontSize: 9, color: 'var(--text-3)' }}>drag a contact here</div>
           </div>
         </div>
       </div>
@@ -101,7 +101,7 @@ export default function ContactNode({ id, data, selected }) {
     return (
       <div style={{ position: 'relative', background: 'var(--warn-tint)', padding: 8, borderRadius: 6, fontSize: 11, color: 'var(--warn)' }}>
         {removeBtn}
-        Onbekend contact
+        Unknown contact
         {handles}
       </div>
     );
@@ -146,7 +146,7 @@ export default function ContactNode({ id, data, selected }) {
             const hue = deal ? (STAGE_TINT[deal.stage]?.hue ?? 220) : 220;
             return (
               <span key={ref.id}
-                title={deal ? `${deal.title} (${deal.stage})` : 'Onbekende deal'}
+                title={deal ? `${deal.title} (${deal.stage})` : 'Unknown deal'}
                 onClick={(e) => { e.stopPropagation(); if (deal) onOpenDeal(deal); }}
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: 4,
@@ -156,7 +156,7 @@ export default function ContactNode({ id, data, selected }) {
                 }}>
                 {deal ? `${deal.dealNo || 'deal'} · ${deal.title}`.slice(0, 28) : 'deal?'}
                 <button onClick={(e) => { e.stopPropagation(); onRemoveDeal(id, ref); }}
-                  title="Koppeling verwijderen"
+                  title="Remove link"
                   style={{ border: 'none', background: 'none', cursor: 'pointer', color: 'inherit', padding: 0, fontSize: 10, lineHeight: 1 }}>×</button>
               </span>
             );
