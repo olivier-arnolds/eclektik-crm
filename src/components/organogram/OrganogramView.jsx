@@ -34,7 +34,10 @@ function OrganogramCanvas({ accountId, accounts, contacts, deals, onPickAccount,
   const saveTimerRef = useRef(null);
 
   const accContacts = useMemo(
-    () => (accountId ? contacts.filter(c => c.accountId === accountId && !c.isInactive) : []),
+    () => (accountId
+      ? contacts.filter(c => c.accountId === accountId && !c.isInactive)
+          .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+      : []),
     [contacts, accountId]
   );
   const accDeals = useMemo(

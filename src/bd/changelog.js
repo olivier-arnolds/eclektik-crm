@@ -19,9 +19,29 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.50.3';
+export const CURRENT_VERSION = '1.50.4';
 
 export const CHANGELOG = [
+  {
+    version: '1.50.4',
+    date: '2026-06-29T19:32:56Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Organogram - contactenlijst A-Z gesorteerd',
+    summary:
+      'De contactpersonen in het linkermenu staan nu alfabetisch op naam (A-Z), ' +
+      'net als in de accountweergave.',
+    changes: [
+      'OrganogramView: accContacts gesorteerd op naam (localeCompare).',
+    ],
+    files: [
+      'src/components/organogram/OrganogramView.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.50.4',
+  },
   {
     version: '1.50.3',
     date: '2026-06-29T16:35:35Z',
