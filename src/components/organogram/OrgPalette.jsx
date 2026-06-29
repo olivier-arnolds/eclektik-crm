@@ -7,7 +7,10 @@ export default function OrgPalette({ contacts, placedContactIds, dealCount }) {
   }
   function onDragDeal(e) {
     e.dataTransfer.setData('application/organogram-deal', '1');
-    e.dataTransfer.effectAllowed = 'link';
+    // 'move' i.p.v. 'link': het canvas zet bij dragover dropEffect='move', en als
+    // effectAllowed daar niet bij past weigert de browser de drop (dan vuurt het
+    // drop-event nooit). 'move' overal houdt de drop geldig.
+    e.dataTransfer.effectAllowed = 'move';
   }
   function onDragUnknown(e) {
     e.dataTransfer.setData('application/organogram-unknown', '1');

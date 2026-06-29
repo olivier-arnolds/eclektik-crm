@@ -19,9 +19,34 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.49.0';
+export const CURRENT_VERSION = '1.49.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.49.1',
+    date: '2026-06-29T15:48:53Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Organogram - deal koppelen werkt weer',
+    summary:
+      '"Koppel deal aan contact" deed niets bij het droppen op een blokje. ' +
+      'Oorzaak: de deal-sleep gebruikte effectAllowed "link", terwijl het canvas ' +
+      'bij dragover dropEffect "move" zet; die combinatie weigert de browser, ' +
+      'waardoor het drop-event nooit afging. Nu overal "move", zodat de dropdown ' +
+      'met deals weer verschijnt.',
+    changes: [
+      'OrgPalette: deal-sleep effectAllowed van "link" naar "move".',
+      'ContactNode: dropEffect voor deal-drop van "link" naar "move".',
+    ],
+    files: [
+      'src/components/organogram/OrgPalette.jsx',
+      'src/components/organogram/ContactNode.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.49.1',
+  },
   {
     version: '1.49.0',
     date: '2026-06-29T15:40:55Z',

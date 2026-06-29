@@ -20,7 +20,7 @@ export default function ContactNode({ id, data, selected }) {
     const t = e.dataTransfer.types;
     // Deal koppelen kan alleen op een echt contact; een contact slepen kan alleen
     // op een placeholder (om die te vervangen).
-    if (t.includes('application/organogram-deal') && !isUnknown) { e.preventDefault(); e.dataTransfer.dropEffect = 'link'; }
+    if (t.includes('application/organogram-deal') && !isUnknown) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }
     else if (t.includes('application/organogram-contact') && isUnknown) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }
   };
   const onDrop = (e) => {
