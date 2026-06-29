@@ -120,6 +120,7 @@ export function adaptContact(row, adaptedAccounts) {
     avatarColor: row.avatarColor,
     initials: row.initials,
     isPrimary: !!row.isPrimary,
+    isFinancial: !!row.isFinancial,
     // Inactivated contacts coalesce into isFormer so existing strike-through
     // styling on contact rows just works without extra wiring.
     isFormer: !!row.isFormer || !!row.isInactive,

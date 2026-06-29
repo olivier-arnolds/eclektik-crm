@@ -1070,7 +1070,13 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
                       background: c.avatarBg || '#F1EFE8', color: c.avatarColor || '#888',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontSize: 10, fontWeight: 600,
-                      ...(c.isPrimary ? { boxShadow: '0 0 0 2px var(--good)' } : {}),
+                      ...((c.isPrimary || c.isFinancial) ? {
+                        boxShadow: c.isPrimary && c.isFinancial
+                          ? '0 0 0 2px var(--good), 0 0 0 4px var(--accent)' // primary (groen) binnen + financieel (blauw) buiten
+                          : c.isPrimary
+                            ? '0 0 0 2px var(--good)'   // primary contact = groene ring
+                            : '0 0 0 2px var(--accent)' // financieel contact = blauwe ring
+                      } : {}),
                       ...(c.isFormer ? { opacity: 0.6 } : {}),
                     }}>
                       {c.initials || (c.name || '?').split(' ').map(w => w[0]).slice(0, 2).join('')}
@@ -1079,6 +1085,7 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
                       <div className="contact-name">
                         <span style={c.isFormer ? { textDecoration: 'line-through', color: 'var(--text-3)' } : {}}>{c.name}</span>
                         {c.isPrimary && <span title="Primary contact" style={{ color: 'var(--good)', marginLeft: 6, fontSize: 10, fontFamily: 'var(--font-mono)' }}>★</span>}
+                        {c.isFinancial && <span title="Financial contact" style={{ color: 'var(--accent)', marginLeft: 4, fontSize: 10, fontFamily: 'var(--font-mono)' }}>$</span>}
                         {c.isFormer && (
                           <span title="No longer at this account"
                             style={{
@@ -1096,29 +1103,24 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
                         </div>
                       )}
                     </div>
-                    {/* "mark former" is an action, not a status — revealed on
-                        row hover only (.contact-card:hover) so every contact
-                        doesn't permanently carry a "former?" question mark.
-                        "↻ restore" stays visible: the row is struck through,
-                        so the way back should be obvious. */}
-                    <button className={`btn-ghost tiny ${c.isFormer ? '' : 'hover-action'}`}
+                    {/* $ = financieel contact (blauw), ★ = primary contact (groen).
+                        Beide zijn losse vlaggen die bij meerdere personen per account
+                        tegelijk mogen staan. "Mark former" zit nu als vaste knop in de
+                        uitgeklapte contactdetails, naast "Inactivate". */}
+                    <button className="icon-btn tiny"
                       onClick={async (e) => {
                         e.stopPropagation();
-                        const action = c.isFormer ? 'restore as current employee' : 'mark as FORMER (no longer at this account)';
-                        if (!confirm(`${action.replace(/^./, ch => ch.toUpperCase())} for ${c.name}?\n\nContact stays linked to this account; just visually marked.`)) return;
-                        await supabase.from('contacts').update({ former: !c.isFormer }).eq('id', c.id);
+                        await supabase.from('contacts').update({ is_financial: !c.isFinancial }).eq('id', c.id);
                         if (refetch) refetch();
                       }}
-                      title={c.isFormer ? 'Restore as current employee' : 'Mark as former employee (no longer at this account)'}
-                      style={{ fontSize: 10, color: c.isFormer ? 'var(--accent)' : 'var(--text-3)', whiteSpace: 'nowrap' }}>
-                      {c.isFormer ? '↻ restore' : 'mark former'}
+                      title={c.isFinancial ? 'Unset as financial contact' : 'Set as financial contact'}
+                      style={{ color: c.isFinancial ? 'var(--accent)' : 'var(--text-3)' }}>
+                      <I.dollar />
                     </button>
                     <button className="icon-btn tiny"
                       onClick={async (e) => {
                         e.stopPropagation();
-                        const newVal = !c.isPrimary;
-                        if (newVal) await supabase.from('contacts').update({ is_primary: false }).eq('company_id', account.id);
-                        await supabase.from('contacts').update({ is_primary: newVal }).eq('id', c.id);
+                        await supabase.from('contacts').update({ is_primary: !c.isPrimary }).eq('id', c.id);
                         if (refetch) refetch();
                       }}
                       title={c.isPrimary ? 'Unset as primary' : 'Set as primary contact'}

@@ -45,6 +45,7 @@ function adaptContact(row, companies) {
     email: row.email || '',
     source: row.event_source || '',
     isPrimary: !!row.is_primary,
+    isFinancial: !!row.is_financial,
     isFormer: !!row.former,
     isInactive: (row.stage || '').toLowerCase() === 'inactive',
   }

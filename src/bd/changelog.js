@@ -19,9 +19,43 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.44.0';
+export const CURRENT_VERSION = '1.45.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.45.0',
+    date: '2026-06-29T10:19:42Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Account 360 - financieel contact ($) + meerdere primary contacten',
+    summary:
+      'Contactrijen in Account 360 hebben nu naast het sterretje (primary) een ' +
+      'dollarteken ($) waarmee je iemand als financieel contact markeert. Beide ' +
+      'vlaggen mogen bij meerdere personen per account tegelijk staan. Het sterretje ' +
+      'kleurt het avatar-rondje groen, het dollarteken blauw (beide samen = groene ' +
+      'binnenring + blauwe buitenring). "Mark former" is verhuisd van de hover-knop ' +
+      'in de rij naar een vaste knop naast "Inactivate" in de uitgeklapte contactdetails.',
+    changes: [
+      'Nieuwe kolom contacts.is_financial (boolean, default false) - additieve migratie.',
+      'is_financial doorgevoerd in usePipelineData.adaptContact + adapters.adaptContact.',
+      'Nieuw $-icoon in atoms.jsx; $-knop links van het sterretje in de contactrij.',
+      'Sterretje staat nu meerdere primary-contacten per account toe (clear-others verwijderd).',
+      'Avatar-ring: groen = primary, blauw = financieel, gelaagd bij beide.',
+      '"Mark former" als vaste knop naast Inactivate in inline-details.jsx; weg uit de rij-hover.',
+    ],
+    files: [
+      'src/bd/lane-accounts.jsx',
+      'src/bd/inline-details.jsx',
+      'src/bd/atoms.jsx',
+      'src/bd/adapters.js',
+      'src/hooks/usePipelineData.js',
+      'sql/schema_contact_is_financial_2026-06-29.sql',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.45.0',
+  },
   {
     version: '1.44.0',
     date: '2026-06-24T05:39:26Z',

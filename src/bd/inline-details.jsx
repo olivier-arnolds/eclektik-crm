@@ -515,21 +515,37 @@ export function InlineContactDetail({ contactId, onCompose, refetch, allTags, on
             );
           }
           return (
-            <button className="btn-ghost tiny" style={{ marginLeft: 'auto', color: 'var(--danger)' }}
-              onClick={async () => {
-                const reason = prompt(`Inactivate ${row.full_name || 'this contact'}?\n\nOptional reason (e.g. duplicate, left company, unsubscribed):`, '');
-                if (reason === null) return; // cancelled
-                const { error } = await supabase.from('contacts').update({
-                  stage: 'Inactive',
-                  inactive_reason: reason.trim() || 'Manually inactivated',
-                  inactivated_at: new Date().toISOString(),
-                }).eq('id', contactId);
-                if (error) { alert('Failed: ' + error.message); return; }
-                setRow(r => ({ ...r, stage: 'Inactive' }));
-                if (refetch) refetch();
-              }}>
-              <I.archive /> Inactivate
-            </button>
+            <>
+              {/* Vaste knop naast Inactivate: markeer als 'former' (niet meer bij dit
+                  account werkzaam). Contact blijft gekoppeld, alleen visueel gemarkeerd.
+                  Terugzetten gebeurt via de Reactivate-knop hierboven. */}
+              <button className="btn-ghost tiny" style={{ marginLeft: 'auto', color: 'var(--text-3)' }}
+                title="Mark as former employee (no longer at this account)"
+                onClick={async () => {
+                  if (!confirm(`Mark ${row.full_name || 'this contact'} as FORMER (no longer at this account)?\n\nContact stays linked to this account; just visually marked.`)) return;
+                  const { error } = await supabase.from('contacts').update({ former: true }).eq('id', contactId);
+                  if (error) { alert('Failed: ' + error.message); return; }
+                  setRow(r => ({ ...r, former: true }));
+                  if (refetch) refetch();
+                }}>
+                <I.archive /> Mark former
+              </button>
+              <button className="btn-ghost tiny" style={{ color: 'var(--danger)' }}
+                onClick={async () => {
+                  const reason = prompt(`Inactivate ${row.full_name || 'this contact'}?\n\nOptional reason (e.g. duplicate, left company, unsubscribed):`, '');
+                  if (reason === null) return; // cancelled
+                  const { error } = await supabase.from('contacts').update({
+                    stage: 'Inactive',
+                    inactive_reason: reason.trim() || 'Manually inactivated',
+                    inactivated_at: new Date().toISOString(),
+                  }).eq('id', contactId);
+                  if (error) { alert('Failed: ' + error.message); return; }
+                  setRow(r => ({ ...r, stage: 'Inactive' }));
+                  if (refetch) refetch();
+                }}>
+                <I.archive /> Inactivate
+              </button>
+            </>
           );
         })()}
       </div>

@@ -156,6 +156,7 @@ export const I = {
   pin: (p={}) => <svg viewBox="0 0 16 16" width="10" height="10" fill="currentColor" {...p}><circle cx="8" cy="8" r="3"/></svg>,
   dots: (p={}) => <svg viewBox="0 0 16 16" width="12" height="12" fill="currentColor" {...p}><circle cx="4" cy="8" r="1"/><circle cx="8" cy="8" r="1"/><circle cx="12" cy="8" r="1"/></svg>,
   star: (p={}) => <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.3" {...p}><path d="M8 2l1.8 3.8L14 6.5l-3 3 .8 4.2L8 11.7 4.2 13.7 5 9.5l-3-3 4.2-.7L8 2z"/></svg>,
+  dollar: (p={}) => <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.3" {...p}><path d="M8 2v12M10.5 4.5C10 3.6 9.1 3 8 3 6.6 3 5.5 3.8 5.5 5c0 1.2 1 1.7 2.5 2s2.5.8 2.5 2c0 1.2-1.1 2-2.5 2-1.1 0-2-.6-2.5-1.5"/></svg>,
   back: (p={}) => <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.3" {...p}><path d="M13 8H3M7 4L3 8l4 4"/></svg>,
   archive: (p={}) => <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.3" {...p}><rect x="2" y="3" width="12" height="3"/><path d="M3 6v7h10V6M6.5 9h3"/></svg>,
   reply: (p={}) => <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.3" {...p}><path d="M6 4L2 8l4 4M2 8h7a4 4 0 014 4v1"/></svg>,
