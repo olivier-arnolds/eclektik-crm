@@ -19,9 +19,34 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.49.1';
+export const CURRENT_VERSION = '1.49.2';
 
 export const CHANGELOG = [
+  {
+    version: '1.49.2',
+    date: '2026-06-29T16:17:10Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Organogram - opslaan werkt nu echt (RLS-policy)',
+    summary:
+      'Een organogram verdween bij het wisselen tussen accounts. Oorzaak zat in ' +
+      'de database, niet in de code: de tabellen organogram_nodes/edges hadden ' +
+      'RLS aan staan maar geen toegangs-policy (deny-all), zodat de frontend niet ' +
+      'kon lezen of schrijven - opslaan faalde stil en laden gaf niets terug. De ' +
+      'uniforme project-policy (authenticated full access) is toegevoegd; de fix is ' +
+      'direct actief (server-side, geen deploy nodig).',
+    changes: [
+      'Policy "Authenticated full access" toegevoegd op organogram_nodes en organogram_edges.',
+      'SQL bewaard in sql/schema_organogram_rls_2026-06-29.sql.',
+    ],
+    files: [
+      'sql/schema_organogram_rls_2026-06-29.sql',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.49.2',
+  },
   {
     version: '1.49.1',
     date: '2026-06-29T15:48:53Z',
