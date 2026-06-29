@@ -19,9 +19,29 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.50.2';
+export const CURRENT_VERSION = '1.50.3';
 
 export const CHANGELOG = [
+  {
+    version: '1.50.3',
+    date: '2026-06-29T16:35:35Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Organogram - primary/financieel-ringen ook in linkermenu',
+    summary:
+      'De groene (primary) en blauwe (financieel) rondjes om de initialen staan nu ' +
+      'ook in het linkermenu bij de contactpersonen, gelijk aan de blokjes op het canvas.',
+    changes: [
+      'OrgPalette: avatar-ring (groen primary / blauw financieel, gelaagd bij beide).',
+    ],
+    files: [
+      'src/components/organogram/OrgPalette.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.50.3',
+  },
   {
     version: '1.50.2',
     date: '2026-06-29T16:33:43Z',

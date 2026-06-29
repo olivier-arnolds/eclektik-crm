@@ -1,5 +1,13 @@
 import React from 'react';
 
+// Zelfde ring als op het canvas: groen = primary, blauw = financieel, gelaagd bij beide.
+function ringShadow(c) {
+  if (c?.isPrimary && c?.isFinancial) return '0 0 0 1.5px var(--good), 0 0 0 3px var(--accent)';
+  if (c?.isPrimary) return '0 0 0 1.5px var(--good)';
+  if (c?.isFinancial) return '0 0 0 1.5px var(--accent)';
+  return 'none';
+}
+
 export default function OrgPalette({ contacts, placedContactIds, dealCount }) {
   function onDragContact(e, contactId) {
     e.dataTransfer.setData('application/organogram-contact', contactId);
@@ -40,6 +48,7 @@ export default function OrgPalette({ contacts, placedContactIds, dealCount }) {
               width: 18, height: 18, borderRadius: 9, flexShrink: 0,
               background: c.avatarBg || '#F1EFE8', color: c.avatarColor || '#888',
               display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 8, fontWeight: 600,
+              boxShadow: ringShadow(c),
             }}>{c.initials || (c.name || '?').split(' ').map(w => w[0]).slice(0, 2).join('')}</span>
             <span style={{ flex: 1, minWidth: 0 }}>
               <span style={{ display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.name}</span>
