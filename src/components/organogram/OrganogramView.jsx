@@ -25,6 +25,7 @@ function OrganogramCanvas({ accountId, accounts, contacts, deals, onPickAccount,
   const [rfInstance, setRfInstance] = useState(null);
   const [loading, setLoading] = useState(false);
   const [dealPickerNodeId, setDealPickerNodeId] = useState(null);
+  const [saveError, setSaveError] = useState(false);
 
   // Voorkomt autosave tijdens/direct na het laden van een account.
   const loadedAccountRef = useRef(null);
@@ -59,7 +60,9 @@ function OrganogramCanvas({ accountId, accounts, contacts, deals, onPickAccount,
     if (!accountId || loadedAccountRef.current !== accountId) return;
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
-      saveOrganogram(accountId, { nodes, edges }).catch(err => console.error('Organogram autosave faalde:', err));
+      saveOrganogram(accountId, { nodes, edges })
+        .then(() => setSaveError(false))
+        .catch(err => { console.error('Organogram autosave faalde:', err); setSaveError(true); });
     }, 600);
     return () => { if (saveTimerRef.current) clearTimeout(saveTimerRef.current); };
   }, [nodes, edges, accountId]);
@@ -123,10 +126,16 @@ function OrganogramCanvas({ accountId, accounts, contacts, deals, onPickAccount,
           onChange={(e) => { const a = accounts.find(x => x.id === e.target.value); onPickAccount(a || null); }}
           style={{ flex: 1, maxWidth: 320, padding: '5px 8px', borderRadius: 4, border: '0.5px solid var(--sep)', background: 'var(--bg-1)', color: 'var(--text-1)', fontSize: 12, fontFamily: 'inherit' }}>
           <option value="">— Kies een account —</option>
-          {[...accounts].sort((a, b) => a.name.localeCompare(b.name)).map(a => (
+          {[...accounts].sort((a, b) => (a.name || '').localeCompare(b.name || '')).map(a => (
             <option key={a.id} value={a.id}>{a.name}</option>
           ))}
         </select>
+        {saveError && (
+          <span title="Wijzigingen konden niet automatisch worden opgeslagen. Controleer je verbinding."
+            style={{ fontSize: 11, color: 'var(--danger)', fontWeight: 600, whiteSpace: 'nowrap' }}>
+            ⚠ niet opgeslagen
+          </span>
+        )}
         {onToggleExpand && (
           <button className="btn-ghost tiny" onClick={onToggleExpand} title={expanded ? 'Toon accountpaneel' : 'Volledig scherm'}>
             {expanded ? '⇥ Paneel' : '⇤ Breed'}
