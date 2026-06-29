@@ -20,6 +20,7 @@ import ContactDetailModal from './contact-detail-modal';
 import SearchResultsPanel from './search-results-panel';
 import EnrichModal from '../components/forms/EnrichModal';
 import PlaybooksHub from '../components/playbooks/PlaybooksHub';
+import OrganogramView from '../components/organogram/OrganogramView';
 import TasksView from './tasks-view';
 import MarketingView from './marketing-view';
 import AdminView from './admin-view';
@@ -28,7 +29,7 @@ import FeedbackModal from './feedback-modal';
 import OnepagerModal from './onepager-modal';
 
 // The single set of left-pane views. The Account 360 always sits to the right.
-const NAV_VIEWS = ['reporting', 'funnel', 'warroom', 'tasks', 'meetings', 'comms', 'marketing', 'playbooks', 'admin', 'log'];
+const NAV_VIEWS = ['reporting', 'funnel', 'warroom', 'tasks', 'meetings', 'organogram', 'comms', 'marketing', 'playbooks', 'admin', 'log'];
 // Views whose left pane scrolls as one block (vs. lanes that manage their own scroll).
 const SCROLL_VIEWS = ['warroom', 'reporting', 'marketing', 'admin', 'log'];
 
@@ -209,6 +210,9 @@ export default function BDApp() {
     // and explicitly linked Teams chats only.
     setAccountScope(acc.id);
   };
+  // Huidig account voor o.a. het Organogram: type 'account' is direct, andere
+  // contexten (deal/task/comm) zetten accountScope op het bijbehorende account.
+  const currentAccountId = rightContext?.type === 'account' ? rightContext.id : (accountScope || null);
   const selectDeal = (d) => {
     setSelectedDeal(d);
     setRightContext({ type: 'deal', id: d.id });
@@ -273,6 +277,23 @@ export default function BDApp() {
         graphEvents={graphEvents} refetch={refetch} refetchGraph={fetchGraphData}
         onSelectEvent={(e) => setRightContext({ type: 'event', id: e.id })}
         onSelectTask={(t) => setRightContext({ type: 'task', id: t.id, focusTaskId: t.id })}
+        {...expandToggleProps}
+      />
+    );
+  } else if (activeView === 'organogram') {
+    leftPane = (
+      <OrganogramView
+        accountId={currentAccountId}
+        accounts={accounts}
+        contacts={contacts}
+        deals={deals}
+        onPickAccount={pickAccount}
+        onOpenDeal={(d) => {
+          setSelectedDeal(d);
+          setRightContext({ type: 'deal', id: d.id });
+          setAccountScope(d.accountId || null);
+          setOpenDeal(d);
+        }}
         {...expandToggleProps}
       />
     );
