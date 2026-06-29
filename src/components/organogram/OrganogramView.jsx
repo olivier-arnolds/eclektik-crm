@@ -26,6 +26,8 @@ function OrganogramCanvas({ accountId, accounts, contacts, deals, onPickAccount,
   const [loading, setLoading] = useState(false);
   const [dealPickerNodeId, setDealPickerNodeId] = useState(null);
   const [saveError, setSaveError] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [justSaved, setJustSaved] = useState(false);
 
   // Voorkomt autosave tijdens/direct na het laden van een account.
   const loadedAccountRef = useRef(null);
@@ -143,6 +145,23 @@ function OrganogramCanvas({ accountId, accounts, contacts, deals, onPickAccount,
     setNodes(nds => nds.map(n => n.id === nodeId ? { ...n, data: { ...n.data, label } } : n));
   }, [setNodes]);
 
+  // Handmatig opslaan via de knop (naast de autosave), met zichtbare bevestiging.
+  const handleSave = useCallback(async () => {
+    if (!accountId) return;
+    setSaving(true);
+    try {
+      await saveOrganogram(accountId, { nodes, edges });
+      setSaveError(false);
+      setJustSaved(true);
+      setTimeout(() => setJustSaved(false), 2000);
+    } catch (err) {
+      console.error('Organogram opslaan faalde:', err);
+      setSaveError(true);
+    } finally {
+      setSaving(false);
+    }
+  }, [accountId, nodes, edges]);
+
   const handlePickDeal = useCallback((dealId) => {
     const deal = dealsById[dealId];
     if (!deal) { setDealPickerNodeId(null); return; }
@@ -173,10 +192,22 @@ function OrganogramCanvas({ accountId, accounts, contacts, deals, onPickAccount,
           ))}
         </select>
         {saveError && (
-          <span title="Wijzigingen konden niet automatisch worden opgeslagen. Controleer je verbinding."
+          <span title="Wijzigingen konden niet worden opgeslagen. Controleer je verbinding."
             style={{ fontSize: 11, color: 'var(--danger)', fontWeight: 600, whiteSpace: 'nowrap' }}>
             ⚠ niet opgeslagen
           </span>
+        )}
+        {justSaved && !saveError && (
+          <span style={{ fontSize: 11, color: 'var(--good)', fontWeight: 600, whiteSpace: 'nowrap' }}>
+            ✓ opgeslagen
+          </span>
+        )}
+        {accountId && (
+          <button className="btn-primary tiny" onClick={handleSave} disabled={saving}
+            title="Organogram opslaan"
+            style={{ whiteSpace: 'nowrap' }}>
+            {saving ? 'Opslaan…' : 'Opslaan'}
+          </button>
         )}
         {onToggleExpand && (
           <button className="btn-ghost tiny" onClick={onToggleExpand} title={expanded ? 'Toon accountpaneel' : 'Volledig scherm'}>

@@ -19,9 +19,33 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.49.2';
+export const CURRENT_VERSION = '1.50.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.50.0',
+    date: '2026-06-29T16:25:48Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Organogram - zichtbare Opslaan-knop',
+    summary:
+      'Naast de automatische opslag is er nu een expliciete "Opslaan"-knop bovenin ' +
+      'het organogram. Klik erop om direct op te slaan; je ziet "Opslaan…" tijdens ' +
+      'het opslaan en daarna kort "✓ opgeslagen". Mislukt het, dan verschijnt ' +
+      '"⚠ niet opgeslagen".',
+    changes: [
+      'Opslaan-knop in de kop (alleen zichtbaar als er een account gekozen is).',
+      'Statusfeedback: Opslaan… / ✓ opgeslagen / ⚠ niet opgeslagen.',
+      'Autosave blijft actief op de achtergrond.',
+    ],
+    files: [
+      'src/components/organogram/OrganogramView.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.50.0',
+  },
   {
     version: '1.49.2',
     date: '2026-06-29T16:17:10Z',
