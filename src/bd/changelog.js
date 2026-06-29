@@ -19,9 +19,49 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.45.0';
+export const CURRENT_VERSION = '1.46.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.46.0',
+    date: '2026-06-29T14:06:26Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Organogram - org-charts per account',
+    summary:
+      'Nieuwe view "Organogram" tussen Meetings en Comms. Per account bouw je ' +
+      'een organogram door contactpersonen vanuit de linkerbalk op een canvas te ' +
+      'slepen (React Flow, zoals Playbooks). Je legt hiërarchie (rapporteert aan) ' +
+      'en peer-relaties (gelijk niveau, bv. 2 partners) met onderscheiden lijnen; ' +
+      'losstaande groepjes blijven gewoon onverbonden. Deals koppel je visueel aan ' +
+      'een contact door "Koppel deal" op een blokje te slepen en in de dropdown een ' +
+      'deal te kiezen (chip op het blokje). De accountkeuze synct met de rechter ' +
+      'Account 360-tab. Alles wordt automatisch opgeslagen.',
+    changes: [
+      'Twee nieuwe tabellen: organogram_nodes + organogram_edges (per account).',
+      'React Flow-canvas met custom ContactNode (avatar, ★/$ badges, deal-chips).',
+      'Sleep-palette met contactpersonen (al-geplaatste gedimd) en deal-koppeling.',
+      'Twee lijnsoorten: reports_to (doorgetrokken) en peer (gestippeld); dubbelklik wisselt.',
+      'Deal-koppeling puur visueel via deal_refs (jsonb); chip klikt door naar de deal.',
+      'Autosave (gedebounced); accountkeuze gesynct met BDApp/Account 360.',
+    ],
+    files: [
+      'sql/schema_organogram_2026-06-29.sql',
+      'src/components/organogram/OrganogramView.jsx',
+      'src/components/organogram/ContactNode.jsx',
+      'src/components/organogram/OrgPalette.jsx',
+      'src/components/organogram/DealPicker.jsx',
+      'src/components/organogram/OrganogramContext.js',
+      'src/components/organogram/lib/organogramIO.js',
+      'src/components/organogram/lib/organogramIO.test.js',
+      'src/bd/topbar.jsx',
+      'src/bd/BDApp.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.46.0',
+  },
   {
     version: '1.45.0',
     date: '2026-06-29T10:19:42Z',
