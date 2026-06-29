@@ -32,7 +32,13 @@ function rowToFlowNode(row) {
     id: row.id,
     type: 'contactNode',
     position: { x: row.pos_x ?? 0, y: row.pos_y ?? 0 },
-    data: { contactId: row.contact_id, dealRefs: Array.isArray(row.deal_refs) ? row.deal_refs : [] },
+    // contactId is null voor placeholder-nodes ("onbekend contact"); label is
+    // een optionele rolhint voor zo'n placeholder.
+    data: {
+      contactId: row.contact_id ?? null,
+      dealRefs: Array.isArray(row.deal_refs) ? row.deal_refs : [],
+      label: row.label ?? null,
+    },
   };
 }
 
@@ -59,10 +65,11 @@ export function flowToRows(companyId, { nodes, edges }) {
   const nodeRows = (nodes || []).map(n => ({
     id: n.id,
     company_id: companyId,
-    contact_id: n.data.contactId,
+    contact_id: n.data.contactId ?? null,
     pos_x: n.position.x,
     pos_y: n.position.y,
     deal_refs: Array.isArray(n.data.dealRefs) ? n.data.dealRefs : [],
+    label: n.data.label ?? null,
   }));
   const edgeRows = (edges || []).map(e => ({
     id: e.id,

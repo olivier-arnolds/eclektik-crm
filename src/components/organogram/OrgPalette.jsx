@@ -9,6 +9,10 @@ export default function OrgPalette({ contacts, placedContactIds, dealCount }) {
     e.dataTransfer.setData('application/organogram-deal', '1');
     e.dataTransfer.effectAllowed = 'link';
   }
+  function onDragUnknown(e) {
+    e.dataTransfer.setData('application/organogram-unknown', '1');
+    e.dataTransfer.effectAllowed = 'move';
+  }
 
   return (
     <div style={{ width: 210, borderRight: '0.5px solid var(--sep)', background: 'var(--bg-2)', padding: 10, overflowY: 'auto' }}>
@@ -39,6 +43,21 @@ export default function OrgPalette({ contacts, placedContactIds, dealCount }) {
           </div>
         );
       })}
+
+      <div draggable onDragStart={onDragUnknown}
+        title="Sleep naar canvas voor een placeholder; vervang later door een contact"
+        style={{
+          display: 'flex', alignItems: 'center', gap: 6, marginTop: 4,
+          background: 'var(--bg-1)', border: '0.5px dashed var(--text-3)', borderRadius: 4,
+          padding: '5px 7px', fontSize: 11, cursor: 'grab', color: 'var(--text-2)',
+        }}>
+        <span style={{
+          width: 18, height: 18, borderRadius: 9, flexShrink: 0,
+          background: 'var(--fill-2)', color: 'var(--text-3)', border: '1px dashed var(--text-3)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 600,
+        }}>?</span>
+        <span>＋ Onbekend contact</span>
+      </div>
 
       <div style={{ fontSize: 9, textTransform: 'uppercase', color: 'var(--text-3)', fontWeight: 700, letterSpacing: '0.06em', margin: '14px 0 6px' }}>
         Deals

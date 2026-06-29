@@ -8,6 +8,8 @@ export const OrganogramContext = createContext({
   onRequestAttachDeal: () => {},  // (nodeId) => void  — opent DealPicker
   onRemoveDeal: () => {},         // (nodeId, dealRef) => void
   onRemoveNode: () => {},         // (nodeId) => void  — haalt blokje van canvas
+  onReplaceNodeContact: () => {}, // (nodeId, contactId) => void — vervangt placeholder door contact
+  onSetNodeLabel: () => {},       // (nodeId, label) => void — rolhint op placeholder
   onOpenDeal: () => {},           // (deal) => void
 });
 

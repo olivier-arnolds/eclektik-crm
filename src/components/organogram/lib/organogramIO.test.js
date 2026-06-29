@@ -35,8 +35,17 @@ describe('rowsToFlow', () => {
     });
     expect(nodes).toEqual([{
       id: 'n1', type: 'contactNode', position: { x: 10, y: 20 },
-      data: { contactId: 'c1', dealRefs: [{ table: 'leads', id: 'd1' }] },
+      data: { contactId: 'c1', dealRefs: [{ table: 'leads', id: 'd1' }], label: null },
     }]);
+  });
+
+  it('mapt een placeholder-node (geen contact) met label', () => {
+    const { nodes } = rowsToFlow({
+      nodeRows: [{ id: 'n9', contact_id: null, pos_x: 1, pos_y: 2, label: 'Teamlead' }],
+      edgeRows: [],
+    });
+    expect(nodes[0].data.contactId).toBeNull();
+    expect(nodes[0].data.label).toBe('Teamlead');
   });
 
   it('mapt edge-rijen met relType en stijl', () => {
@@ -68,11 +77,20 @@ describe('flowToRows', () => {
     });
     expect(nodeRows).toEqual([{
       id: 'n1', company_id: 'comp1', contact_id: 'c1',
-      pos_x: 5, pos_y: 6, deal_refs: [{ table: 'opportunities', id: 'd9' }],
+      pos_x: 5, pos_y: 6, deal_refs: [{ table: 'opportunities', id: 'd9' }], label: null,
     }]);
     expect(edgeRows).toEqual([{
       id: 'e1', company_id: 'comp1', source_node_id: 'n1', target_node_id: 'n2', rel_type: 'peer',
     }]);
+  });
+
+  it('placeholder-node: contact_id null + label bewaard', () => {
+    const { nodeRows } = flowToRows('comp1', {
+      nodes: [{ id: 'n9', position: { x: 0, y: 0 }, data: { contactId: null, dealRefs: [], label: 'Teamlead' } }],
+      edges: [],
+    });
+    expect(nodeRows[0].contact_id).toBeNull();
+    expect(nodeRows[0].label).toBe('Teamlead');
   });
 
   it('default rel_type is reports_to wanneer data.relType ontbreekt', () => {

@@ -19,9 +19,42 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.47.0';
+export const CURRENT_VERSION = '1.48.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.48.0',
+    date: '2026-06-29T15:12:59Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Organogram - onbekend contact (placeholder)',
+    summary:
+      'Je kunt nu een "onbekend contact" op het canvas zetten: een placeholder ' +
+      'voor iemand wiens naam je nog niet weet (bv. de teamlead boven een team). ' +
+      'Zo zet je alvast de structuur. Sleep later een contactpersoon uit de ' +
+      'linkerbalk bovenop de placeholder om die te vervangen - positie en lijnen ' +
+      'blijven behouden. Dubbelklik op een placeholder voor een rolhint (bv. "Teamlead").',
+    changes: [
+      'Sleepbaar "＋ Onbekend contact" in de linkerbalk → placeholder-blokje (?) op canvas.',
+      'Placeholder vervangen door echt contact: contact uit linkerbalk erop slepen.',
+      'Rolhint op placeholder via dubbelklik (optioneel label).',
+      'DB: organogram_nodes.contact_id mag nu leeg zijn + nieuw label-veld.',
+      'IO + tests bijgewerkt voor nullable contactId en label.',
+    ],
+    files: [
+      'sql/schema_organogram_unknown_2026-06-29.sql',
+      'src/components/organogram/ContactNode.jsx',
+      'src/components/organogram/OrgPalette.jsx',
+      'src/components/organogram/OrganogramView.jsx',
+      'src/components/organogram/OrganogramContext.js',
+      'src/components/organogram/lib/organogramIO.js',
+      'src/components/organogram/lib/organogramIO.test.js',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.48.0',
+  },
   {
     version: '1.47.0',
     date: '2026-06-29T15:01:45Z',

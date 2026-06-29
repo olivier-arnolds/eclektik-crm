@@ -11,25 +11,32 @@ function ringShadow(c) {
 }
 
 export default function ContactNode({ id, data, selected }) {
-  const { contactsById, dealsById, onRequestAttachDeal, onRemoveDeal, onRemoveNode, onOpenDeal } = useOrganogram();
+  const { contactsById, dealsById, onRequestAttachDeal, onRemoveDeal, onRemoveNode, onReplaceNodeContact, onSetNodeLabel, onOpenDeal } = useOrganogram();
+  const isUnknown = !data.contactId;                 // placeholder zonder gekoppeld contact
   const c = contactsById[data.contactId];
   const dealRefs = Array.isArray(data.dealRefs) ? data.dealRefs : [];
 
   const onDragOver = (e) => {
-    if (e.dataTransfer.types.includes('application/organogram-deal')) {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'link';
-    }
+    const t = e.dataTransfer.types;
+    // Deal koppelen kan alleen op een echt contact; een contact slepen kan alleen
+    // op een placeholder (om die te vervangen).
+    if (t.includes('application/organogram-deal') && !isUnknown) { e.preventDefault(); e.dataTransfer.dropEffect = 'link'; }
+    else if (t.includes('application/organogram-contact') && isUnknown) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }
   };
   const onDrop = (e) => {
-    if (!e.dataTransfer.types.includes('application/organogram-deal')) return;
-    e.preventDefault();
-    e.stopPropagation();
-    onRequestAttachDeal(id);
+    const t = e.dataTransfer.types;
+    if (t.includes('application/organogram-deal') && !isUnknown) {
+      e.preventDefault(); e.stopPropagation(); onRequestAttachDeal(id); return;
+    }
+    if (t.includes('application/organogram-contact') && isUnknown) {
+      e.preventDefault(); e.stopPropagation();
+      const contactId = e.dataTransfer.getData('application/organogram-contact');
+      if (contactId) onReplaceNodeContact(id, contactId);
+    }
   };
 
-  // ×-knop: haalt het blokje (en zijn lijnen) van het canvas; de contactpersoon
-  // verschijnt daardoor weer sleepbaar in de linkerbalk.
+  // ×-knop: haalt het blokje (en zijn lijnen) van het canvas; een gekoppeld
+  // contact verschijnt daardoor weer sleepbaar in de linkerbalk.
   const removeBtn = (
     <button className="nodrag" onClick={(e) => { e.stopPropagation(); onRemoveNode(id); }}
       title="Verwijder van canvas (terug naar linkerbalk)"
@@ -40,13 +47,62 @@ export default function ContactNode({ id, data, selected }) {
       }}>×</button>
   );
 
+  // Boven/onder = hiërarchie (grijs). Links/rechts = peer/gelijk niveau (blauw).
+  const handles = (
+    <>
+      <Handle id="top" type="target" position={Position.Top} style={{ background: 'var(--text-3)' }} />
+      <Handle id="left" type="target" position={Position.Left} style={{ background: 'var(--accent)' }} />
+      <Handle id="right" type="source" position={Position.Right} style={{ background: 'var(--accent)' }} />
+      <Handle id="bottom" type="source" position={Position.Bottom} style={{ background: 'var(--text-3)' }} />
+    </>
+  );
+
+  // Placeholder ("onbekend contact"): structuur alvast zetten, later vervangen
+  // door een contact uit de linkerbalk (erop slepen). Dubbelklik = rolhint typen.
+  if (isUnknown) {
+    return (
+      <div onDragOver={onDragOver} onDrop={onDrop}
+        onDoubleClick={(e) => {
+          e.stopPropagation();
+          const next = prompt('Rolhint voor dit onbekende contact (bv. "Teamlead"):', data.label || '');
+          if (next !== null) onSetNodeLabel(id, next.trim() || null);
+        }}
+        title="Onbekend contact — sleep een contact uit de linkerbalk hierop om te vervangen. Dubbelklik voor een rolhint."
+        style={{
+          position: 'relative',
+          background: 'var(--bg-1)',
+          border: `1px dashed ${selected ? 'var(--accent)' : 'var(--sep)'}`,
+          borderRadius: 8, padding: '8px 10px', minWidth: 180,
+          boxShadow: selected ? '0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent)' : '0 1px 2px rgba(0,0,0,0.05)',
+        }}>
+        {removeBtn}
+        {handles}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{
+            width: 26, height: 26, borderRadius: 13,
+            background: 'var(--fill-2)', color: 'var(--text-3)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 14, fontWeight: 600, flexShrink: 0,
+            border: '1px dashed var(--text-3)',
+          }}>?</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {data.label || 'Onbekend'}
+            </div>
+            <div style={{ fontSize: 9, color: 'var(--text-3)' }}>sleep een contact hierop</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // contactId gezet maar contact niet gevonden (bv. verwijderd/gepromoveerd).
   if (!c) {
     return (
       <div style={{ position: 'relative', background: 'var(--warn-tint)', padding: 8, borderRadius: 6, fontSize: 11, color: 'var(--warn)' }}>
         {removeBtn}
         Onbekend contact
-        <Handle id="top" type="target" position={Position.Top} />
-        <Handle id="bottom" type="source" position={Position.Bottom} />
+        {handles}
       </div>
     );
   }
@@ -62,10 +118,7 @@ export default function ContactNode({ id, data, selected }) {
         opacity: c.isFormer ? 0.6 : 1,
       }}>
       {removeBtn}
-      {/* Boven/onder = hiërarchie (grijs). Links/rechts = peer/gelijk niveau (blauw). */}
-      <Handle id="top" type="target" position={Position.Top} style={{ background: 'var(--text-3)' }} />
-      <Handle id="left" type="target" position={Position.Left} style={{ background: 'var(--accent)' }} />
-      <Handle id="right" type="source" position={Position.Right} style={{ background: 'var(--accent)' }} />
+      {handles}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <div style={{
           width: 26, height: 26, borderRadius: 13,
@@ -110,7 +163,6 @@ export default function ContactNode({ id, data, selected }) {
           })}
         </div>
       )}
-      <Handle id="bottom" type="source" position={Position.Bottom} style={{ background: 'var(--text-3)' }} />
     </div>
   );
 }

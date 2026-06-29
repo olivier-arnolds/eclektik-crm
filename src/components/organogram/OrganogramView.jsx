@@ -71,12 +71,20 @@ function OrganogramCanvas({ accountId, accounts, contacts, deals, onPickAccount,
 
   const onDrop = useCallback((e) => {
     e.preventDefault();
-    const contactId = e.dataTransfer.getData('application/organogram-contact');
-    if (!contactId || !rfInstance) return;
-    if (placedContactIds.has(contactId)) return; // geen dubbele
+    if (!rfInstance) return;
     const position = rfInstance.screenToFlowPosition({ x: e.clientX, y: e.clientY });
+    // Placeholder ("onbekend contact"): node zonder contactId.
+    if (e.dataTransfer.types.includes('application/organogram-unknown')) {
+      setNodes(nds => nds.concat({
+        id: crypto.randomUUID(), type: 'contactNode', position, data: { contactId: null, dealRefs: [], label: null },
+      }));
+      return;
+    }
+    const contactId = e.dataTransfer.getData('application/organogram-contact');
+    if (!contactId) return;
+    if (placedContactIds.has(contactId)) return; // geen dubbele
     setNodes(nds => nds.concat({
-      id: crypto.randomUUID(), type: 'contactNode', position, data: { contactId, dealRefs: [] },
+      id: crypto.randomUUID(), type: 'contactNode', position, data: { contactId, dealRefs: [], label: null },
     }));
   }, [rfInstance, setNodes, placedContactIds]);
 
@@ -112,6 +120,16 @@ function OrganogramCanvas({ accountId, accounts, contacts, deals, onPickAccount,
       ? { ...n, data: { ...n.data, dealRefs: n.data.dealRefs.filter(r => r.id !== ref.id) } }
       : n));
   }, [setNodes]);
+  // Vervang een placeholder door een echt contact (positie + lijnen blijven).
+  const onReplaceNodeContact = useCallback((nodeId, contactId) => {
+    setNodes(nds => {
+      if (nds.some(n => n.data.contactId === contactId)) return nds; // al geplaatst
+      return nds.map(n => n.id === nodeId ? { ...n, data: { ...n.data, contactId, label: null } } : n);
+    });
+  }, [setNodes]);
+  const onSetNodeLabel = useCallback((nodeId, label) => {
+    setNodes(nds => nds.map(n => n.id === nodeId ? { ...n, data: { ...n.data, label } } : n));
+  }, [setNodes]);
 
   const handlePickDeal = useCallback((dealId) => {
     const deal = dealsById[dealId];
@@ -126,8 +144,8 @@ function OrganogramCanvas({ accountId, accounts, contacts, deals, onPickAccount,
   }, [dealsById, dealPickerNodeId, setNodes]);
 
   const ctxValue = useMemo(() => ({
-    contactsById, dealsById, onRequestAttachDeal, onRemoveDeal, onRemoveNode, onOpenDeal: onOpenDeal || (() => {}),
-  }), [contactsById, dealsById, onRequestAttachDeal, onRemoveDeal, onRemoveNode, onOpenDeal]);
+    contactsById, dealsById, onRequestAttachDeal, onRemoveDeal, onRemoveNode, onReplaceNodeContact, onSetNodeLabel, onOpenDeal: onOpenDeal || (() => {}),
+  }), [contactsById, dealsById, onRequestAttachDeal, onRemoveDeal, onRemoveNode, onReplaceNodeContact, onSetNodeLabel, onOpenDeal]);
 
   return (
     <div className="lane" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
