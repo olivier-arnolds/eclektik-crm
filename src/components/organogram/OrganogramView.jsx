@@ -7,7 +7,7 @@ import ContactNode from './ContactNode';
 import OrgPalette from './OrgPalette';
 import DealPicker from './DealPicker';
 import { OrganogramContext } from './OrganogramContext';
-import { loadOrganogram, saveOrganogram, edgeStyleFor } from './lib/organogramIO';
+import { loadOrganogram, saveOrganogram, edgeStyleFor, handlesFor } from './lib/organogramIO';
 
 const nodeTypes = { contactNode: ContactNode };
 
@@ -81,20 +81,32 @@ function OrganogramCanvas({ accountId, accounts, contacts, deals, onPickAccount,
   }, [rfInstance, setNodes, placedContactIds]);
 
   const onConnect = useCallback((params) => {
+    // Relatie-type volgt uit welke kant je gebruikt: links/rechts = peer
+    // (gelijk niveau), boven/onder = reports_to (hiërarchie). De handles
+    // worden genormaliseerd zodat ze consistent zijn met laden uit de DB.
+    const isPeer = ['left', 'right'].includes(params.sourceHandle) || ['left', 'right'].includes(params.targetHandle);
+    const relType = isPeer ? 'peer' : 'reports_to';
     setEdges(eds => eds.concat({
       id: crypto.randomUUID(), source: params.source, target: params.target,
-      data: { relType: 'reports_to' }, ...edgeStyleFor('reports_to'),
+      ...handlesFor(relType), data: { relType }, ...edgeStyleFor(relType),
     }));
   }, [setEdges]);
 
-  // Dubbelklik op een edge wisselt tussen reports_to en peer.
+  // Dubbelklik op een edge wisselt tussen reports_to en peer (incl. de kant
+  // waar de lijn aanhecht, zodat de stijl en positie blijven kloppen).
   const onEdgeDoubleClick = useCallback((e, edge) => {
     const next = (edge.data?.relType === 'peer') ? 'reports_to' : 'peer';
-    setEdges(eds => eds.map(x => x.id === edge.id ? { ...x, data: { relType: next }, ...edgeStyleFor(next) } : x));
+    setEdges(eds => eds.map(x => x.id === edge.id
+      ? { ...x, ...handlesFor(next), data: { relType: next }, ...edgeStyleFor(next) }
+      : x));
   }, [setEdges]);
 
   // Context-callbacks voor ContactNode.
   const onRequestAttachDeal = useCallback((nodeId) => setDealPickerNodeId(nodeId), []);
+  const onRemoveNode = useCallback((nodeId) => {
+    setNodes(nds => nds.filter(n => n.id !== nodeId));
+    setEdges(eds => eds.filter(e => e.source !== nodeId && e.target !== nodeId));
+  }, [setNodes, setEdges]);
   const onRemoveDeal = useCallback((nodeId, ref) => {
     setNodes(nds => nds.map(n => n.id === nodeId
       ? { ...n, data: { ...n.data, dealRefs: n.data.dealRefs.filter(r => r.id !== ref.id) } }
@@ -114,8 +126,8 @@ function OrganogramCanvas({ accountId, accounts, contacts, deals, onPickAccount,
   }, [dealsById, dealPickerNodeId, setNodes]);
 
   const ctxValue = useMemo(() => ({
-    contactsById, dealsById, onRequestAttachDeal, onRemoveDeal, onOpenDeal: onOpenDeal || (() => {}),
-  }), [contactsById, dealsById, onRequestAttachDeal, onRemoveDeal, onOpenDeal]);
+    contactsById, dealsById, onRequestAttachDeal, onRemoveDeal, onRemoveNode, onOpenDeal: onOpenDeal || (() => {}),
+  }), [contactsById, dealsById, onRequestAttachDeal, onRemoveDeal, onRemoveNode, onOpenDeal]);
 
   return (
     <div className="lane" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>

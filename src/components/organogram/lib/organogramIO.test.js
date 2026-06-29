@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { rowsToFlow, flowToRows, edgeStyleFor } from './organogramIO';
+import { rowsToFlow, flowToRows, edgeStyleFor, handlesFor } from './organogramIO';
 
 describe('edgeStyleFor', () => {
   it('reports_to is een doorgetrokken lijn (geen dash)', () => {
@@ -12,6 +12,18 @@ describe('edgeStyleFor', () => {
   });
   it('onbekend/leeg valt terug op reports_to-stijl', () => {
     expect(edgeStyleFor(undefined).style.strokeDasharray).toBeUndefined();
+  });
+});
+
+describe('handlesFor', () => {
+  it('peer koppelt rechts -> links (horizontaal)', () => {
+    expect(handlesFor('peer')).toEqual({ sourceHandle: 'right', targetHandle: 'left' });
+  });
+  it('reports_to koppelt onder -> boven (verticaal)', () => {
+    expect(handlesFor('reports_to')).toEqual({ sourceHandle: 'bottom', targetHandle: 'top' });
+  });
+  it('onbekend/leeg valt terug op verticaal', () => {
+    expect(handlesFor(undefined)).toEqual({ sourceHandle: 'bottom', targetHandle: 'top' });
   });
 });
 
@@ -37,6 +49,8 @@ describe('rowsToFlow', () => {
     expect(edges[0].target).toBe('n2');
     expect(edges[0].data.relType).toBe('peer');
     expect(edges[0].style.strokeDasharray).toBe('6 4');
+    expect(edges[0].sourceHandle).toBe('right');
+    expect(edges[0].targetHandle).toBe('left');
   });
 
   it('vult ontbrekende deal_refs aan tot lege array en pos tot 0', () => {

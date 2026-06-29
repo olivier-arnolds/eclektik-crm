@@ -11,7 +11,7 @@ function ringShadow(c) {
 }
 
 export default function ContactNode({ id, data, selected }) {
-  const { contactsById, dealsById, onRequestAttachDeal, onRemoveDeal, onOpenDeal } = useOrganogram();
+  const { contactsById, dealsById, onRequestAttachDeal, onRemoveDeal, onRemoveNode, onOpenDeal } = useOrganogram();
   const c = contactsById[data.contactId];
   const dealRefs = Array.isArray(data.dealRefs) ? data.dealRefs : [];
 
@@ -28,12 +28,25 @@ export default function ContactNode({ id, data, selected }) {
     onRequestAttachDeal(id);
   };
 
+  // ×-knop: haalt het blokje (en zijn lijnen) van het canvas; de contactpersoon
+  // verschijnt daardoor weer sleepbaar in de linkerbalk.
+  const removeBtn = (
+    <button className="nodrag" onClick={(e) => { e.stopPropagation(); onRemoveNode(id); }}
+      title="Verwijder van canvas (terug naar linkerbalk)"
+      style={{
+        position: 'absolute', top: -8, right: -8, width: 16, height: 16, borderRadius: 8,
+        border: '0.5px solid var(--sep)', background: 'var(--bg-1)', color: 'var(--text-3)',
+        cursor: 'pointer', fontSize: 11, lineHeight: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0,
+      }}>×</button>
+  );
+
   if (!c) {
     return (
-      <div style={{ background: 'var(--warn-tint)', padding: 8, borderRadius: 6, fontSize: 11, color: 'var(--warn)' }}>
+      <div style={{ position: 'relative', background: 'var(--warn-tint)', padding: 8, borderRadius: 6, fontSize: 11, color: 'var(--warn)' }}>
+        {removeBtn}
         Onbekend contact
-        <Handle type="target" position={Position.Top} />
-        <Handle type="source" position={Position.Bottom} />
+        <Handle id="top" type="target" position={Position.Top} />
+        <Handle id="bottom" type="source" position={Position.Bottom} />
       </div>
     );
   }
@@ -41,13 +54,18 @@ export default function ContactNode({ id, data, selected }) {
   return (
     <div onDragOver={onDragOver} onDrop={onDrop}
       style={{
+        position: 'relative',
         background: 'var(--bg-1)',
         border: `1px solid ${selected ? 'var(--accent)' : 'var(--sep)'}`,
         borderRadius: 8, padding: '8px 10px', minWidth: 180,
         boxShadow: selected ? '0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent)' : '0 1px 2px rgba(0,0,0,0.05)',
         opacity: c.isFormer ? 0.6 : 1,
       }}>
-      <Handle type="target" position={Position.Top} style={{ background: 'var(--text-3)' }} />
+      {removeBtn}
+      {/* Boven/onder = hiërarchie (grijs). Links/rechts = peer/gelijk niveau (blauw). */}
+      <Handle id="top" type="target" position={Position.Top} style={{ background: 'var(--text-3)' }} />
+      <Handle id="left" type="target" position={Position.Left} style={{ background: 'var(--accent)' }} />
+      <Handle id="right" type="source" position={Position.Right} style={{ background: 'var(--accent)' }} />
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <div style={{
           width: 26, height: 26, borderRadius: 13,
@@ -92,7 +110,7 @@ export default function ContactNode({ id, data, selected }) {
           })}
         </div>
       )}
-      <Handle type="source" position={Position.Bottom} style={{ background: 'var(--text-3)' }} />
+      <Handle id="bottom" type="source" position={Position.Bottom} style={{ background: 'var(--text-3)' }} />
     </div>
   );
 }

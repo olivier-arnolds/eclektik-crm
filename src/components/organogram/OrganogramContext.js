@@ -7,6 +7,7 @@ export const OrganogramContext = createContext({
   dealsById: {},           // { [dealId]: adaptedDeal }
   onRequestAttachDeal: () => {},  // (nodeId) => void  — opent DealPicker
   onRemoveDeal: () => {},         // (nodeId, dealRef) => void
+  onRemoveNode: () => {},         // (nodeId) => void  — haalt blokje van canvas
   onOpenDeal: () => {},           // (deal) => void
 });
 

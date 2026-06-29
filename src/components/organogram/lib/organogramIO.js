@@ -18,6 +18,15 @@ export function edgeStyleFor(relType) {
   return { style: { stroke: 'var(--text-3)', strokeWidth: 1.5 }, animated: false };
 }
 
+// Welke handles (verbindingspunten) een relatie gebruikt. Hiërarchie loopt
+// verticaal (onder -> boven), peers horizontaal (rechts -> links). Hierdoor
+// hoeven we de handles niet apart op te slaan: ze volgen uit rel_type.
+export function handlesFor(relType) {
+  return relType === 'peer'
+    ? { sourceHandle: 'right', targetHandle: 'left' }
+    : { sourceHandle: 'bottom', targetHandle: 'top' };
+}
+
 function rowToFlowNode(row) {
   return {
     id: row.id,
@@ -33,6 +42,7 @@ function rowToFlowEdge(row) {
     id: row.id,
     source: row.source_node_id,
     target: row.target_node_id,
+    ...handlesFor(relType),
     data: { relType },
     ...edgeStyleFor(relType),
   };

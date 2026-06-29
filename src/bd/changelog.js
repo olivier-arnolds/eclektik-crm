@@ -19,9 +19,43 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.46.0';
+export const CURRENT_VERSION = '1.47.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.47.0',
+    date: '2026-06-29T15:01:45Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Organogram - contact terugzetten + peers via zijkanten',
+    summary:
+      'Twee verbeteringen aan het organogram. Elk blokje heeft nu een ×-knop: ' +
+      'klik die en het blokje (met zijn lijnen) verdwijnt van het canvas en de ' +
+      'contactpersoon komt weer sleepbaar terug in de linkerbalk. En je kunt ' +
+      'contactpersonen op gelijk niveau koppelen via de linker- en rechterzijde ' +
+      'van hun blokje: dat wordt automatisch een peer-relatie met een duidelijk ' +
+      'andere lijn (gestippeld blauw, horizontaal), naast de hiërarchie boven/onder ' +
+      '(doorgetrokken grijs). Het relatietype volgt uit de gebruikte kant en blijft ' +
+      'na herladen behouden.',
+    changes: [
+      'ContactNode: ×-knop verwijdert het blokje van het canvas (terug naar linkerbalk).',
+      'ContactNode: handles op links/rechts (peer, blauw) naast boven/onder (hiërarchie, grijs).',
+      'onConnect leidt rel_type af uit de gebruikte kant; handlesFor() koppelt rel_type aan handles.',
+      'Edges bewaren geen handle-kolom; de kant wordt afgeleid uit rel_type bij laden.',
+      'Dubbelklik op een lijn wisselt type én verplaatst de aanhechting mee.',
+    ],
+    files: [
+      'src/components/organogram/ContactNode.jsx',
+      'src/components/organogram/OrganogramView.jsx',
+      'src/components/organogram/OrganogramContext.js',
+      'src/components/organogram/lib/organogramIO.js',
+      'src/components/organogram/lib/organogramIO.test.js',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.47.0',
+  },
   {
     version: '1.46.0',
     date: '2026-06-29T14:06:26Z',
