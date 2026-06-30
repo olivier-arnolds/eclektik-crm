@@ -1057,6 +1057,25 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
                 </div>
                 {highlight.item.role && <div style={{ fontSize: 10, color: 'var(--text-3)' }}>{highlight.item.role}</div>}
               </div>
+              {/* $ = financieel (blauw), ★ = primary (groen) — gelijk aan het normale contactblok. */}
+              <button className="icon-btn tiny"
+                onClick={async () => {
+                  await supabase.from('contacts').update({ is_financial: !highlight.item.isFinancial }).eq('id', highlight.item.id);
+                  if (refetch) refetch();
+                }}
+                title={highlight.item.isFinancial ? 'Unset as financial contact' : 'Set as financial contact'}
+                style={{ color: highlight.item.isFinancial ? 'var(--accent)' : 'var(--text-3)' }}>
+                <I.dollar />
+              </button>
+              <button className="icon-btn tiny"
+                onClick={async () => {
+                  await supabase.from('contacts').update({ is_primary: !highlight.item.isPrimary }).eq('id', highlight.item.id);
+                  if (refetch) refetch();
+                }}
+                title={highlight.item.isPrimary ? 'Unset as primary' : 'Set as primary contact'}
+                style={{ color: highlight.item.isPrimary ? 'var(--good)' : 'var(--text-3)' }}>
+                <I.star />
+              </button>
               {account.id && (
                 <button className="icon-btn" onClick={() => onPickAccount(account)} title="Close contact details">
                   <I.close />

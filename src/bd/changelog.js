@@ -19,9 +19,33 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.51.3';
+export const CURRENT_VERSION = '1.51.4';
 
 export const CHANGELOG = [
+  {
+    version: '1.51.4',
+    date: '2026-06-30T12:08:31Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Org chart - $/⭐-knoppen in contactdetail-naambalk',
+    summary:
+      'In het contactblok dat je vanuit de org chart opent, staan nu ook de ' +
+      '$- (financieel contact) en ⭐- (primary contact) knoppen rechtsboven in de ' +
+      'naambalk, net als in het normale contactblok. Zo kun je een contact direct ' +
+      'als financieel of primary markeren zonder eerst naar de contactenlijst te gaan.',
+    changes: [
+      '$-knop (blauw) zet financieel contact aan/uit; ⭐-knop (groen) zet primary contact aan/uit.',
+      'Gedrag en kleuren gelijk aan de knoppen in de normale contactenlijst.',
+      'Sluitknop blijft uiterst rechts in de balk.',
+    ],
+    files: [
+      'src/bd/lane-accounts.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.51.4',
+  },
   {
     version: '1.51.3',
     date: '2026-06-30T10:58:50Z',
