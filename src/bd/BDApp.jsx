@@ -288,7 +288,7 @@ export default function BDApp() {
         contacts={contacts}
         deals={deals}
         onPickAccount={pickAccount}
-        onOpenContact={(id) => setOpenContactId(id)}
+        onOpenContact={(id) => setRightContext({ type: 'contact', id })}
         onOpenDeal={(d) => {
           setSelectedDeal(d);
           setRightContext({ type: 'deal', id: d.id });

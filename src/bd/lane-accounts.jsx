@@ -444,6 +444,12 @@ function resolveContext(context, data) {
       highlight: { kind: 'task', item: t, title: t.title, body: t.dueLabel },
     };
   }
+  if (context.type === 'contact') {
+    const c = contacts.find(x => x.id === context.id);
+    if (!c) return null;
+    const acc = accounts.find(a => a.id === c.accountId);
+    return acc ? { account: acc, highlight: { kind: 'contact', item: c, title: c.name, body: c.role } } : null;
+  }
   return null;
 }
 
@@ -714,6 +720,14 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
   const [showInactivate, setShowInactivate] = useState(false);
   const [showAddTask, setShowAddTask] = useState(false);
   const [detailContactId, setDetailContactId] = useState(null);
+  // Scroll naar het aangeklikte contact (highlight kind 'contact') zodat de
+  // inline details in beeld komen in plaats van een popup.
+  const hlContactRef = useRef(null);
+  useEffect(() => {
+    if (highlight?.kind === 'contact' && hlContactRef.current) {
+      hlContactRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [highlight]);
   const [meetingNoteEvent, setMeetingNoteEvent] = useState(null);
   const [showCoreDetails, setShowCoreDetails] = useState(false);
   // Shared calendar events for this account (synced from all users' Outlook)
@@ -1061,8 +1075,15 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
           )}>
           <div className="contacts-grid">
             {accContacts.length === 0 && <div className="empty" style={{ padding: '8px 0', textAlign: 'left' }}>No contacts</div>}
-            {accContacts.map(c => (
-              <ExpandableRow key={c.id} accent="var(--accent)"
+            {accContacts.map(c => {
+              // Klik op een contact (bv. vanuit de org chart) opent de details hier
+              // inline i.p.v. een popup. De key-wissel forceert heropenen ook als
+              // het paneel al gemonteerd is.
+              const isHL = highlight?.kind === 'contact' && highlight?.item?.id === c.id;
+              return (
+              <div key={c.id} ref={isHL ? hlContactRef : null}>
+              <ExpandableRow key={isHL ? 'hl' : 'base'} accent="var(--accent)"
+                defaultOpen={isHL}
                 collapsed={(open) => (
                   <div className="contact-card" style={c.isFormer ? { background: 'var(--fill-1)' } : {}}>
                     <div style={{
@@ -1138,7 +1159,9 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
                   <InlineContactDetail contactId={c.id} onCompose={onCompose} refetch={refetch} allTags={allTags} onTagsChange={refetch} />
                 )}
               />
-            ))}
+              </div>
+              );
+            })}
           </div>
         </Section>
 

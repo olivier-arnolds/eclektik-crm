@@ -19,9 +19,33 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.51.0';
+export const CURRENT_VERSION = '1.51.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.51.1',
+    date: '2026-06-30T08:44:33Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Org chart - contact opent in accountview i.p.v. popup',
+    summary:
+      'Klik op een contact in de org chart opende een popup; dat gebeurt nu in het ' +
+      'rechter accountview-paneel. Het juiste contact klapt daar inline open en ' +
+      'scrollt in beeld, zonder modal eroverheen.',
+    changes: [
+      'Nieuw context-type "contact" in resolveContext (lane-accounts): toont het account met het contact als highlight.',
+      'Contactrij klapt inline open bij highlight (key-wissel forceert heropenen) en scrollt in beeld.',
+      'BDApp: org-chart onOpenContact zet rightContext {type:contact} i.p.v. de ContactDetailModal.',
+    ],
+    files: [
+      'src/bd/lane-accounts.jsx',
+      'src/bd/BDApp.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.51.1',
+  },
   {
     version: '1.51.0',
     date: '2026-06-30T08:38:00Z',
