@@ -19,9 +19,33 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.51.1';
+export const CURRENT_VERSION = '1.51.2';
 
 export const CHANGELOG = [
+  {
+    version: '1.51.2',
+    date: '2026-06-30T08:50:34Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Org chart - contactdetails openen bovenaan (geen scrollen)',
+    summary:
+      'De contactdetails die je vanuit de org chart opent, verschijnen nu direct ' +
+      'onder de bedrijfsnaam bovenin het accountview-paneel, zodat alles in één ' +
+      'keer zichtbaar is zonder te scrollen. Met een sluitknop ga je terug naar de ' +
+      'gewone accountweergave.',
+    changes: [
+      'Contact-highlight toont InlineContactDetail bovenaan (onder de hero) i.p.v. inline in de lijst.',
+      'Sluitknop zet de view terug naar het account.',
+      'In-lijst auto-uitklap + scroll teruggedraaid.',
+    ],
+    files: [
+      'src/bd/lane-accounts.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.51.2',
+  },
   {
     version: '1.51.1',
     date: '2026-06-30T08:44:33Z',

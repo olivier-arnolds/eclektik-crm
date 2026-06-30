@@ -720,14 +720,6 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
   const [showInactivate, setShowInactivate] = useState(false);
   const [showAddTask, setShowAddTask] = useState(false);
   const [detailContactId, setDetailContactId] = useState(null);
-  // Scroll naar het aangeklikte contact (highlight kind 'contact') zodat de
-  // inline details in beeld komen in plaats van een popup.
-  const hlContactRef = useRef(null);
-  useEffect(() => {
-    if (highlight?.kind === 'contact' && hlContactRef.current) {
-      hlContactRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-    }
-  }, [highlight]);
   const [meetingNoteEvent, setMeetingNoteEvent] = useState(null);
   const [showCoreDetails, setShowCoreDetails] = useState(false);
   // Shared calendar events for this account (synced from all users' Outlook)
@@ -1042,7 +1034,23 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
             </div>
           </div>
         )}
-        {highlight && (
+        {/* Aangeklikt contact (bv. vanuit de org chart): toon de volledige details
+            meteen onder de bedrijfsnaam, zodat alles in één keer zichtbaar is. */}
+        {highlight && highlight.kind === 'contact' ? (
+          <div style={{ marginBottom: 10, paddingBottom: 10, borderBottom: '0.5px solid var(--sep)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 18px 4px' }}>
+              <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>Contact</div>
+              {account.id && (
+                <button className="btn-ghost tiny" onClick={() => onPickAccount(account)} title="Close contact details">
+                  <I.close />
+                </button>
+              )}
+            </div>
+            <div style={{ padding: '0 18px' }}>
+              <InlineContactDetail contactId={highlight.item.id} onCompose={onCompose} refetch={refetch} allTags={allTags} onTagsChange={refetch} />
+            </div>
+          </div>
+        ) : highlight && (
           <div className="acc-highlight">
             <div className="acc-highlight-label">{highlight.kind}</div>
             <div className="acc-highlight-body">
@@ -1075,15 +1083,8 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
           )}>
           <div className="contacts-grid">
             {accContacts.length === 0 && <div className="empty" style={{ padding: '8px 0', textAlign: 'left' }}>No contacts</div>}
-            {accContacts.map(c => {
-              // Klik op een contact (bv. vanuit de org chart) opent de details hier
-              // inline i.p.v. een popup. De key-wissel forceert heropenen ook als
-              // het paneel al gemonteerd is.
-              const isHL = highlight?.kind === 'contact' && highlight?.item?.id === c.id;
-              return (
-              <div key={c.id} ref={isHL ? hlContactRef : null}>
-              <ExpandableRow key={isHL ? 'hl' : 'base'} accent="var(--accent)"
-                defaultOpen={isHL}
+            {accContacts.map(c => (
+              <ExpandableRow key={c.id} accent="var(--accent)"
                 collapsed={(open) => (
                   <div className="contact-card" style={c.isFormer ? { background: 'var(--fill-1)' } : {}}>
                     <div style={{
@@ -1159,9 +1160,7 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
                   <InlineContactDetail contactId={c.id} onCompose={onCompose} refetch={refetch} allTags={allTags} onTagsChange={refetch} />
                 )}
               />
-              </div>
-              );
-            })}
+            ))}
           </div>
         </Section>
 
