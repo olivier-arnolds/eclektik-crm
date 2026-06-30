@@ -19,9 +19,34 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.51.2';
+export const CURRENT_VERSION = '1.51.3';
 
 export const CHANGELOG = [
+  {
+    version: '1.51.3',
+    date: '2026-06-30T10:58:50Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Org chart - contactdetail in dezelfde grijze kaart als normale weergave',
+    summary:
+      'Het contactblok dat je vanuit de org chart opent, ziet er nu hetzelfde uit ' +
+      'als het normale contactdetailblok in de accountweergave: een lichtgrijze ' +
+      'kaart met bovenin een balk met avatar, naam en functie van de contactpersoon. ' +
+      'Voorheen was de achtergrond wit en stond er alleen een klein "Contact"-labeltje ' +
+      'zonder naam.',
+    changes: [
+      'Contact-highlight krijgt een lichtgrijze kaart (var(--fill-1)) met rand, gelijk aan het normale blok.',
+      'Naambalk bovenin: avatar (met primary/financieel-ring), naam en functie van de contactpersoon.',
+      'Sluitknop blijft rechtsboven in de balk om terug te gaan naar het account.',
+    ],
+    files: [
+      'src/bd/lane-accounts.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.51.3',
+  },
   {
     version: '1.51.2',
     date: '2026-06-30T08:50:34Z',

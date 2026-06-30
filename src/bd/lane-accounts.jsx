@@ -1035,18 +1035,35 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
           </div>
         )}
         {/* Aangeklikt contact (bv. vanuit de org chart): toon de volledige details
-            meteen onder de bedrijfsnaam, zodat alles in één keer zichtbaar is. */}
+            meteen onder de bedrijfsnaam, in dezelfde look als de normale
+            contactdetails (lichtgrijze kaart, naam + avatar bovenaan). */}
         {highlight && highlight.kind === 'contact' ? (
-          <div style={{ marginBottom: 10, paddingBottom: 10, borderBottom: '0.5px solid var(--sep)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 18px 4px' }}>
-              <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>Contact</div>
+          <div style={{ margin: '0 18px 10px', background: 'var(--fill-1)', border: '0.5px solid var(--sep)', borderRadius: 8, overflow: 'hidden' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderBottom: '0.5px solid var(--sep)' }}>
+              <div style={{
+                width: 32, height: 32, borderRadius: 16, flexShrink: 0,
+                background: highlight.item.avatarBg || 'var(--fill-2)', color: highlight.item.avatarColor || 'var(--text-2)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 600,
+                boxShadow: (highlight.item.isPrimary && highlight.item.isFinancial)
+                  ? '0 0 0 2px var(--good), 0 0 0 4px var(--accent)'
+                  : highlight.item.isPrimary ? '0 0 0 2px var(--good)'
+                  : highlight.item.isFinancial ? '0 0 0 2px var(--accent)' : 'none',
+              }}>
+                {highlight.item.initials || (highlight.item.name || '?').split(' ').map(w => w[0]).slice(0, 2).join('')}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {highlight.item.name || 'Unnamed contact'}
+                </div>
+                {highlight.item.role && <div style={{ fontSize: 10, color: 'var(--text-3)' }}>{highlight.item.role}</div>}
+              </div>
               {account.id && (
-                <button className="btn-ghost tiny" onClick={() => onPickAccount(account)} title="Close contact details">
+                <button className="icon-btn" onClick={() => onPickAccount(account)} title="Close contact details">
                   <I.close />
                 </button>
               )}
             </div>
-            <div style={{ padding: '0 18px' }}>
+            <div style={{ padding: '8px 12px' }}>
               <InlineContactDetail contactId={highlight.item.id} onCompose={onCompose} refetch={refetch} allTags={allTags} onTagsChange={refetch} />
             </div>
           </div>
