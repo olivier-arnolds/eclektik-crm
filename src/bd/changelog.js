@@ -19,9 +19,33 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.50.5';
+export const CURRENT_VERSION = '1.51.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.51.0',
+    date: '2026-06-30T08:38:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Org chart - klik op contact opent contactdetails',
+    summary:
+      'Klik je in de org chart op een contact-blokje, dan opent de contactdetail-' +
+      'weergave (dezelfde als elders in de app). Slepen om een blokje te verplaatsen ' +
+      'opent niets - alleen een echte klik. Placeholders (onbekend contact) hebben ' +
+      'geen detailweergave.',
+    changes: [
+      'OrganogramView: onNodeClick opent de contactdetails via onOpenContact.',
+      'BDApp: onOpenContact gekoppeld aan de bestaande ContactDetailModal (openContactId).',
+    ],
+    files: [
+      'src/components/organogram/OrganogramView.jsx',
+      'src/bd/BDApp.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.51.0',
+  },
   {
     version: '1.50.5',
     date: '2026-06-29T19:37:34Z',

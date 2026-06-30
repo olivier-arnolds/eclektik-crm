@@ -19,7 +19,7 @@ export default function OrganogramView(props) {
   );
 }
 
-function OrganogramCanvas({ accountId, accounts, contacts, deals, onPickAccount, onOpenDeal, expanded, onToggleExpand }) {
+function OrganogramCanvas({ accountId, accounts, contacts, deals, onPickAccount, onOpenDeal, onOpenContact, expanded, onToggleExpand }) {
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
   const [edges, setEdges, onEdgesChange] = useEdgesState([]);
   const [rfInstance, setRfInstance] = useState(null);
@@ -113,6 +113,11 @@ function OrganogramCanvas({ accountId, accounts, contacts, deals, onPickAccount,
       ? { ...x, ...handlesFor(next), data: { relType: next }, ...edgeStyleFor(next) }
       : x));
   }, [setEdges]);
+
+  // Klik op een contact-blokje opent de contactdetails (placeholder heeft geen contact).
+  const onNodeClick = useCallback((e, node) => {
+    if (node?.data?.contactId && onOpenContact) onOpenContact(node.data.contactId);
+  }, [onOpenContact]);
 
   // Context-callbacks voor ContactNode.
   const onRequestAttachDeal = useCallback((nodeId) => setDealPickerNodeId(nodeId), []);
@@ -232,7 +237,7 @@ function OrganogramCanvas({ accountId, accounts, contacts, deals, onPickAccount,
               <ReactFlow
                 nodes={nodes} edges={edges}
                 onNodesChange={onNodesChange} onEdgesChange={onEdgesChange}
-                onConnect={onConnect} onEdgeDoubleClick={onEdgeDoubleClick}
+                onConnect={onConnect} onEdgeDoubleClick={onEdgeDoubleClick} onNodeClick={onNodeClick}
                 nodeTypes={nodeTypes} onInit={setRfInstance}
                 onDrop={onDrop} onDragOver={onDragOver} fitView>
                 <Background />
