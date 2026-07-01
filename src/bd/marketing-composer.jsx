@@ -3,18 +3,30 @@ import { useAuth } from '../lib/auth';
 import { renderTemplate, varsForContact, KNOWN_VARS } from '../lib/template-vars';
 import { apiFetch } from '../lib/apiFetch';
 
+// Vaste afzenders — allemaal op het in Resend geverifieerde domein eclectik.co.
+// Andere domeinen worden door Resend geweigerd, dus het adres is een keuzelijst
+// (geen vrij tekstveld). De weergavenaam is wél vrij aan te passen.
+const SENDERS = [
+  { email: 'marketing@eclectik.co', name: 'Marketing' },
+  { email: 'olivier@eclectik.co', name: 'Olivier Arnolds' },
+  { email: 'marco@eclectik.co', name: 'Marco van Gelder' },
+  { email: 'yarmilla@eclectik.co', name: 'Yarmilla Koenders' },
+];
+
 // Composer for a Marketing campaign.
 // Props:
 //   recipients: array of contact objects (already filtered/selected)
 //   onCancel: () => void
 //   onSent: (campaign) => void
-//   defaultFromName, defaultFromEmail (read-only display; configured via env)
+//   defaultFromName, defaultFromEmail (initiële afzender; keuzelijst hieronder)
 export default function MarketingComposer({ recipients, onCancel, onSent, defaultFromName = 'Marketing', defaultFromEmail = 'marketing@eclectik.co' }) {
   const [name, setName] = useState('');
   const [subject, setSubject] = useState('');
   const [preheader, setPreheader] = useState('');
   const [htmlBody, setHtmlBody] = useState('');
   const [replyTo, setReplyTo] = useState('');
+  const [fromEmail, setFromEmail] = useState(defaultFromEmail);
+  const [fromName, setFromName] = useState(defaultFromName);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState(null);
   const fileInputRef = useRef(null);
@@ -158,6 +170,8 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
           subject,
           preheader,
           html_body: htmlBody,
+          from_name: fromName || undefined,
+          from_email: fromEmail || undefined,
           reply_to: replyTo || null,
           audience_filter: testOnly ? { test: true } : null,
           recipients: payloadRecipients,
@@ -195,8 +209,20 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
         <div>
           <div style={{ fontSize: 10, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>From</div>
-          <div style={{ padding: '7px 10px', borderRadius: 6, border: '0.5px solid var(--sep)', background: 'var(--fill-1)', fontSize: 12, color: 'var(--text-2)' }}>
-            {defaultFromName} &lt;{defaultFromEmail}&gt;
+          <div style={{ display: 'flex', gap: 6 }}>
+            <input value={fromName} onChange={e => setFromName(e.target.value)}
+              placeholder="Weergavenaam" style={{ ...inputStyle, flex: 1 }} />
+            <select value={fromEmail}
+              onChange={e => {
+                const email = e.target.value;
+                setFromEmail(email);
+                // Vul de weergavenaam automatisch mee bij een ander adres; blijft bewerkbaar.
+                const s = SENDERS.find(x => x.email === email);
+                if (s) setFromName(s.name);
+              }}
+              style={{ ...inputStyle, flex: 1, cursor: 'pointer' }}>
+              {SENDERS.map(s => <option key={s.email} value={s.email}>{s.email}</option>)}
+            </select>
           </div>
         </div>
         <div>

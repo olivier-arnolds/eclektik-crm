@@ -19,9 +19,33 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.51.5';
+export const CURRENT_VERSION = '1.51.6';
 
 export const CHANGELOG = [
+  {
+    version: '1.51.6',
+    date: '2026-07-01T14:24:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feat',
+    title: 'Campaign - afzender (From) aanpasbaar',
+    summary:
+      'In de campagne-composer kun je nu de afzender kiezen: een keuzelijst met ' +
+      'de teamadressen op eclektik.co (Marketing, Olivier, Marco, Yarmilla) plus ' +
+      'een vrij aanpasbare weergavenaam. Voorheen stond de From vast op ' +
+      'Marketing <marketing@eclectik.co>.',
+    changes: [
+      'From-adres via keuzelijst (alleen geverifieerde eclektik.co-adressen, i.v.m. bezorging via Resend).',
+      'Weergavenaam vrij aanpasbaar; vult automatisch mee bij het kiezen van een ander adres.',
+      'from_name/from_email worden meegestuurd naar de verzend-API (die dit al ondersteunde).',
+    ],
+    files: [
+      'src/bd/marketing-composer.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.51.6',
+  },
   {
     version: '1.51.5',
     date: '2026-07-01T12:35:24Z',
