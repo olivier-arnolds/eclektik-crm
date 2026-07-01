@@ -130,6 +130,7 @@ export function adaptContact(row, adaptedAccounts) {
     createdAt: row.created_at || '',
     linkedin_url: row.linkedin_url || '',
     do_not_email: !!row.do_not_email,
+    email_status: row.email_status || null,
     tags: Array.isArray(row.tags) ? row.tags : [],
   };
 }

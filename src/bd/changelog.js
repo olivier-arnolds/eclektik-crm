@@ -19,9 +19,38 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.51.4';
+export const CURRENT_VERSION = '1.51.5';
 
 export const CHANGELOG = [
+  {
+    version: '1.51.5',
+    date: '2026-07-01T12:35:24Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feat',
+    title: 'Status Email - zie de Surfe-uitkomst per contact in Marketing',
+    summary:
+      'Als je via "Find emails (Surfe)" een e-mail probeert te vinden, wordt de ' +
+      'uitkomst nu per contact vastgelegd en getoond in de Marketing-tab: een ' +
+      'groene "✓ Surfe" bij gevonden, een rode "❌ Surfe" als er niets gevonden is. ' +
+      'Zo zie je in één oogopslag wie na een Surfe-poging nog steeds geen e-mail ' +
+      'heeft (handig voor een LinkedIn-only aanpak of een volgende zoekronde).',
+    changes: [
+      'Nieuwe kolom email_status op contacten (found_surfe / not_found_surfe / leeg).',
+      'Surfe-zoekactie schrijft de uitkomst per contact terug; bij een API-fout blijft de status ongemoeid.',
+      'Badge in de contactenlijst: ✓ Surfe (groen) / ❌ Surfe (rood).',
+      'Nieuw "Status Email"-filter in het linkermenu: gevonden / niet gevonden / nog niet gezocht.',
+    ],
+    files: [
+      'sql/schema_email_status_2026-07-01.sql',
+      'api/surfe.js',
+      'src/bd/adapters.js',
+      'src/bd/marketing-contacts.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.51.5',
+  },
   {
     version: '1.51.4',
     date: '2026-06-30T12:08:31Z',

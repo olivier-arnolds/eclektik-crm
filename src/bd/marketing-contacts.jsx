@@ -84,6 +84,56 @@ function YesNoFilter({ label, value, onChange, extraLabel }) {
   );
 }
 
+// Badge voor de Surfe-e-mailstatus (Status Email). Kleur = achtergrond-tint,
+// donkere tekst (conform contrast-afspraak). null/onbekend = niets tonen.
+export function EmailStatusBadge({ status }) {
+  if (status !== 'found_surfe' && status !== 'not_found_surfe') return null;
+  const found = status === 'found_surfe';
+  return (
+    <span title={found ? 'E-mail gevonden via Surfe' : 'Gezocht via Surfe, niets gevonden'}
+      style={{
+        display: 'inline-block', marginTop: 3, padding: '1px 6px', borderRadius: 8,
+        fontSize: 10, fontWeight: 600, whiteSpace: 'nowrap',
+        background: found ? '#dcfce7' : '#fee2e2',
+        color: found ? '#15803d' : '#b91c1c',
+      }}>
+      {found ? '✓ Surfe' : '❌ Surfe'}
+    </span>
+  );
+}
+
+// Status Email-filter: drie keuzes (gevonden / niet gevonden / nog niet gezocht).
+// value: 'found' | 'not_found' | 'unsearched' | null (uit).
+function EmailStatusFilter({ value, onChange }) {
+  const opts = [
+    { key: 'found',      label: '✓ Surfe', on: '#dcfce7', onText: '#15803d', border: '#16a34a' },
+    { key: 'not_found',  label: '❌ Surfe', on: '#fee2e2', onText: '#b91c1c', border: '#dc2626' },
+    { key: 'unsearched', label: 'Nog niet', on: '#e5e7eb', onText: '#374151', border: '#9ca3af' },
+  ];
+  const btnBase = {
+    padding: '2px 10px', borderRadius: 10, fontSize: 11,
+    fontFamily: 'inherit', cursor: 'pointer', border: '0.5px solid', fontWeight: 500,
+  };
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '3px 0', flexWrap: 'wrap' }}>
+      <span style={{ fontSize: 12, minWidth: 80, color: 'var(--text-1)' }}>Status Email</span>
+      {opts.map(o => {
+        const active = value === o.key;
+        return (
+          <button key={o.key} onClick={() => onChange(active ? null : o.key)}
+            style={{
+              ...btnBase,
+              background: active ? o.on : 'transparent',
+              color: active ? o.onText : 'var(--text-3)',
+              borderColor: active ? o.border : 'var(--sep)',
+              fontWeight: active ? 600 : 400,
+            }}>{o.label}</button>
+        );
+      })}
+    </div>
+  );
+}
+
 // Werknemers-buckets voor het Account → Werknemers filter. emp-getal moet
 // binnen [min, max] vallen. Accounts zonder bekend employeeCount matchen niet
 // zodra er ≥1 bucket actief is.
@@ -374,6 +424,8 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
   const [activeFilter, setActiveFilter] = useState('yes');
   // Tag yes/no: 'yes' = heeft minstens 1 tag, 'no' = heeft geen tags, null = uit
   const [tagFilter, setTagFilter] = useState(null);
+  // Status Email (Surfe-uitkomst): 'found' | 'not_found' | 'unsearched' | null
+  const [emailStatusFilter, setEmailStatusFilter] = useState(null);
   // Sorteer-modus: 'account' (default = company A-Z dan naam) of 'updated' (recent geüpdate eerst)
   const [sortMode, setSortMode] = useState('account');
   const [showBulkTag, setShowBulkTag] = useState(false);
@@ -530,6 +582,9 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
       if (tagFilter === 'no' && hasTags) return false;
       if (emailFilter === 'yes' && !c.email) return false;
       if (emailFilter === 'no' && c.email) return false;
+      if (emailStatusFilter === 'found' && c.email_status !== 'found_surfe') return false;
+      if (emailStatusFilter === 'not_found' && c.email_status !== 'not_found_surfe') return false;
+      if (emailStatusFilter === 'unsearched' && c.email_status) return false;
       if (linkedinFilter === 'yes' && !c.linkedin_url) return false;
       if (linkedinFilter === 'no' && c.linkedin_url) return false;
       if (titleFilter === 'yes' && !c.role) return false;
@@ -613,7 +668,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
       if (cmp !== 0) return cmp;
       return (a.name || '').toLowerCase().localeCompare((b.name || '').toLowerCase());
     });
-  }, [contacts, activeFilter, tagFilter, emailFilter, linkedinFilter, titleFilter, followFilter, followedContactIds, hasGlintDeal, hasAnyDeal, accountsWithGlintDeal, accountsWithAnyDeal, accountsWithActiveProposal, selectedTagIds, selectedAccountTypes, accountTypeById, selectedCompanies, selectedCountries, selectedCities, selectedIndustries, selectedEmpBuckets, accountMetaById, searchText, hiddenPairs, sortMode]);
+  }, [contacts, activeFilter, tagFilter, emailFilter, emailStatusFilter, linkedinFilter, titleFilter, followFilter, followedContactIds, hasGlintDeal, hasAnyDeal, accountsWithGlintDeal, accountsWithAnyDeal, accountsWithActiveProposal, selectedTagIds, selectedAccountTypes, accountTypeById, selectedCompanies, selectedCountries, selectedCities, selectedIndustries, selectedEmpBuckets, accountMetaById, searchText, hiddenPairs, sortMode]);
 
   // Is er daadwerkelijk gefilterd? (alles behalve de standaard-staat). Drijft
   // de live accountlijst-koppeling: alleen dan versmalt het rechterpaneel mee.
@@ -835,6 +890,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
 
         <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '12px 0 6px' }}>Status</div>
         <YesNoFilter label="Email" value={emailFilter} onChange={setEmailFilter} />
+        <EmailStatusFilter value={emailStatusFilter} onChange={setEmailStatusFilter} />
         <YesNoFilter label="LinkedIn" value={linkedinFilter} onChange={setLinkedinFilter} />
         <YesNoFilter label="Job Title" value={titleFilter} onChange={setTitleFilter} />
         <YesNoFilter label="Follow 🔔" value={followFilter} onChange={setFollowFilter} />
@@ -1121,6 +1177,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
                     );
                   })()
                 )}
+                <div><EmailStatusBadge status={c.email_status} /></div>
               </div>
             </div>
           ))}

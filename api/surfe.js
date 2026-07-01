@@ -121,11 +121,17 @@ export default async function handler(req, res) {
                     || (person.emails || [])[0];
     if (!validEmail?.email) {
       noEmail++;
+      // Markeer als "gezocht via Surfe, niets gevonden" (❌ Surfe in de UI).
+      // Bij een API-fout/timeout komen we hier niet, dus de status blijft dan
+      // ongemoeid en kun je gewoon opnieuw proberen.
+      await supabase.from('contacts')
+        .update({ email_status: 'not_found_surfe' })
+        .eq('id', contactId);
       results.push({ contact_id: contactId, status: 'no-email' });
       continue;
     }
     const { error: updErr } = await supabase.from('contacts')
-      .update({ email: validEmail.email })
+      .update({ email: validEmail.email, email_status: 'found_surfe' })
       .eq('id', contactId);
     if (updErr) {
       failed++;
