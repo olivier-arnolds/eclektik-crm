@@ -2,13 +2,17 @@
 // Losstaand van de sales-funnel; "Promoveer" maakt pas een leads-rij aan.
 // Data wordt hier zelf opgehaald (zoals MarketingCampaigns) — geen props
 // vanuit BDApp nodig.
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { supabase } from '../supabase';
 import { fmtRelative } from './atoms';
 
 const STATUS_FILTERS = ['active', 'converted', 'archived', 'all'];
 
 // auth-e-mail → OWNERS-id voor de owner op de gepromoveerde sales lead.
+// ownerIdFromName in adapters.js mapt weergavenamen (geen e-mails), dus hier
+// een eigen map op e-mailprefix.
+// LET OP: houd in sync met OWNERS in atoms.jsx en de alias-mapping in
+// adapters.js (zie CLAUDE.md over owner-drift).
 function ownerFromEmail(email) {
   const map = { olivier: 'OA', marco: 'MVG', yarmilla: 'YK' };
   return map[String(email || '').split('@')[0].toLowerCase()] || null;
@@ -35,13 +39,18 @@ export default function MarketingLeads() {
   const [statusFilter, setStatusFilter] = useState('active');
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState(null);
+  // Staleness-guard: bij snel wisselen van statusfilter mag een oudere
+  // (tragere) response een nieuwere niet overschrijven.
+  const loadSeq = useRef(0);
 
   const load = async () => {
+    const seq = ++loadSeq.current;
     setLoading(true);
     let q = supabase.from('marketing_leads').select('*')
       .order('created_at', { ascending: false });
     if (statusFilter !== 'all') q = q.eq('status', statusFilter);
     const { data, error } = await q;
+    if (seq !== loadSeq.current) return;
     if (error) alert('Laden mislukt: ' + error.message);
     setRows(data || []);
     setLoading(false);
@@ -87,10 +96,18 @@ export default function MarketingLeads() {
       }).select('id').single();
       if (insErr) throw insErr;
 
-      const { error: updErr } = await supabase.from('marketing_leads')
+      // Status-guard: alleen updaten als de lead nog 'active' is (een ander
+      // tabblad kan hem intussen gearchiveerd/gepromoveerd hebben).
+      const { data: updated, error: updErr } = await supabase.from('marketing_leads')
         .update({ status: 'converted', converted_lead_id: created.id, updated_at: new Date().toISOString() })
-        .eq('id', lead.id);
+        .eq('id', lead.id).eq('status', 'active').select('id');
       if (updErr) throw updErr;
+      if (!updated?.length) {
+        alert(
+          'De sales lead is aangemaakt, maar de status van deze marketing lead was intussen al veranderd — ' +
+          'controleer de lijst (en de sales-funnel) op dubbelingen. Lijst wordt ververst.'
+        );
+      }
       await load();
     } catch (e) {
       alert('Promoveren mislukt: ' + (e?.message || e));
@@ -100,11 +117,27 @@ export default function MarketingLeads() {
   };
 
   const archive = async (lead) => {
+    const ok = window.confirm(
+      `${lead.full_name || lead.email} archiveren? De lead verdwijnt uit de actieve lijst.`
+    );
+    if (!ok) return;
     setBusyId(lead.id);
-    const { error } = await supabase.from('marketing_leads')
+    const { data: updated, error } = await supabase.from('marketing_leads')
       .update({ status: 'archived', updated_at: new Date().toISOString() })
-      .eq('id', lead.id);
+      .eq('id', lead.id).eq('status', 'active').select('id');
     if (error) alert('Archiveren mislukt: ' + error.message);
+    else if (!updated?.length) alert('Status is intussen veranderd — lijst wordt ververst.');
+    await load();
+    setBusyId(null);
+  };
+
+  const reactivate = async (lead) => {
+    setBusyId(lead.id);
+    const { data: updated, error } = await supabase.from('marketing_leads')
+      .update({ status: 'active', updated_at: new Date().toISOString() })
+      .eq('id', lead.id).eq('status', 'archived').select('id');
+    if (error) alert('Heractiveren mislukt: ' + error.message);
+    else if (!updated?.length) alert('Status is intussen veranderd — lijst wordt ververst.');
     await load();
     setBusyId(null);
   };
@@ -148,6 +181,7 @@ export default function MarketingLeads() {
                 onToggle={() => toggleExpand(lead)}
                 onPromote={() => promote(lead)}
                 onArchive={() => archive(lead)}
+                onReactivate={() => reactivate(lead)}
                 td={td}
               />
             ))}
@@ -158,7 +192,7 @@ export default function MarketingLeads() {
   );
 }
 
-function LeadRow({ lead, expanded, activityRows, busy, onToggle, onPromote, onArchive, td }) {
+function LeadRow({ lead, expanded, activityRows, busy, onToggle, onPromote, onArchive, onReactivate, td }) {
   return (
     <>
       <tr onClick={onToggle} style={{ cursor: 'pointer' }}>
@@ -180,6 +214,11 @@ function LeadRow({ lead, expanded, activityRows, busy, onToggle, onPromote, onAr
                 Archiveer
               </button>
             </>
+          )}
+          {lead.status === 'archived' && (
+            <button className="btn-ghost tiny" disabled={busy} onClick={onReactivate}>
+              Heractiveer
+            </button>
           )}
         </td>
       </tr>
