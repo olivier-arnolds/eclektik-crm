@@ -18,10 +18,16 @@ const supabase = (process.env.VITE_SUPABASE_URL && process.env.SUPABASE_SERVICE_
   : null;
 
 async function findByEmail(email) {
+  // Case-insensitief matchen: de unique lower(email)-index kan botsen met
+  // een rij die in andere kast is opgeslagen (bv. handmatige insert); een
+  // exacte .eq() zou die rij dan missen. ilike behandelt % en _ als
+  // wildcards en \ als escape-teken — e-mails bevatten legitiem
+  // underscores, dus escapen we die zodat het patroon letterlijk matcht.
+  const pattern = email.replace(/[\\%_]/g, '\\$&');
   const { data, error } = await supabase
     .from('marketing_leads')
     .select('id, full_name, company, role, sector')
-    .eq('email', email)
+    .ilike('email', pattern)
     .maybeSingle();
   if (error) throw error;
   return data;
@@ -37,6 +43,7 @@ export default async function handler(req, res) {
 
   try {
     const now = new Date().toISOString();
+    const src = typeof body.src === 'string' ? body.src.slice(0, 100) : null;
     let lead = await findByEmail(body.email);
 
     if (!lead) {
@@ -44,11 +51,11 @@ export default async function handler(req, res) {
         .from('marketing_leads')
         .insert({
           email: body.email,
-          full_name: typeof body.name === 'string' ? body.name.trim() || null : null,
-          company: typeof body.company === 'string' ? body.company.trim() || null : null,
-          role: typeof body.role === 'string' ? body.role.trim() || null : null,
-          sector: typeof body.sector === 'string' ? body.sector.trim() || null : null,
-          first_src: typeof body.src === 'string' ? body.src.slice(0, 100) : null,
+          full_name: typeof body.name === 'string' ? body.name.trim().slice(0, 200) || null : null,
+          company: typeof body.company === 'string' ? body.company.trim().slice(0, 200) || null : null,
+          role: typeof body.role === 'string' ? body.role.trim().slice(0, 200) || null : null,
+          sector: typeof body.sector === 'string' ? body.sector.trim().slice(0, 200) || null : null,
+          first_src: src,
           consent_at: now,
           last_activity_at: now,
         })
@@ -57,6 +64,7 @@ export default async function handler(req, res) {
       if (insErr && insErr.code === '23505') {
         // Race: tweede gelijktijdige aanmelding won de insert — pak die rij.
         lead = await findByEmail(body.email);
+        if (!lead) throw new Error('marketing lead not found after unique-violation retry');
       } else if (insErr) {
         throw insErr;
       } else {
@@ -77,7 +85,7 @@ export default async function handler(req, res) {
       marketing_lead_id: lead.id,
       event: body.event,
       payload: activityPayload(body),
-      src: typeof body.src === 'string' ? body.src.slice(0, 100) : null,
+      src,
     });
     if (actErr) throw actErr;
 
