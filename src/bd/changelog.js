@@ -19,9 +19,39 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.51.6';
+export const CURRENT_VERSION = '1.52.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.52.0',
+    date: '2026-07-08T13:53:34Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feat',
+    title: 'Marketing leads - website-aanmeldingen in een eigen administratie',
+    summary:
+      'Aanmeldingen op de nieuwe website (benchmark-waitlist, straks ook de ' +
+      'scorecards) komen nu binnen in een eigen marketing-leads-administratie, ' +
+      'los van de sales-funnel. Nieuwe tab Marketing → Leads toont ze met hun ' +
+      'volledige historie; promoveren naar een sales lead is een bewuste ' +
+      'handmatige actie.',
+    changes: [
+      'Nieuwe tabellen marketing_leads en marketing_lead_activity (losstaand, geen koppeling met de funnel).',
+      'Nieuw endpoint /api/website-signal: beveiligde intake vanaf de website; dedupliceert op e-mail en bewaart elke interactie apart.',
+      'Marketing → Leads tab: filteren op status, historie uitklappen, "Promoveer" (maakt sales lead aan), "Archiveer" en "Heractiveer".',
+      'Toekomstige formulieren (extra waitlist-vragen, scorecards) passen in het datamodel zonder schemawijziging.',
+    ],
+    files: [
+      'api/website-signal.js',
+      'api/_lib/website-signal-lib.js',
+      'src/bd/marketing-leads.jsx',
+      'src/bd/marketing-view.jsx',
+      'sql/schema_marketing_leads.sql',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.52.0',
+  },
   {
     version: '1.51.6',
     date: '2026-07-01T14:24:00Z',
