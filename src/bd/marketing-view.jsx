@@ -4,6 +4,7 @@ import MarketingContacts from './marketing-contacts';
 import MarketingCampaigns from './marketing-campaigns';
 import TagManager from './marketing-tag-manager';
 import MarketingComposer from './marketing-composer';
+import MarketingLeads from './marketing-leads';
 
 export default function MarketingView({ contacts, accounts, deals, allTags, refetch, onFilteredAccountsChange }) {
   const [tab, setTab] = useState('contacts');
@@ -38,6 +39,11 @@ export default function MarketingView({ contacts, accounts, deals, allTags, refe
               Campaigns
             </button>
             <button
+              className={tab === 'leads' ? 'btn-primary tiny' : 'btn-ghost tiny'}
+              onClick={() => setTab('leads')}>
+              Leads
+            </button>
+            <button
               className="btn-ghost tiny"
               style={{ marginLeft: 'auto' }}
               onClick={() => setShowTagManager(true)}>
@@ -57,6 +63,7 @@ export default function MarketingView({ contacts, accounts, deals, allTags, refe
             />
           )}
           {tab === 'campaigns' && <MarketingCampaigns />}
+          {tab === 'leads' && <MarketingLeads />}
 
           {showTagManager && (
             <TagManager
