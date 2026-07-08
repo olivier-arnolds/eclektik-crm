@@ -23,6 +23,10 @@ describe('validateSignal', () => {
   it('rejects a missing event', () => {
     expect(validateSignal({ email: 'a@b.co' }).error).toBeTruthy();
   });
+
+  it('rejects a non-string event', () => {
+    expect(validateSignal({ email: 'a@b.co', event: {} }).error).toBeTruthy();
+  });
 });
 
 describe('activityPayload', () => {
@@ -34,6 +38,16 @@ describe('activityPayload', () => {
     });
     // email/event/source/src zijn kolommen — niet dubbel in payload
     expect(out).toEqual({ name: 'Jane', sector: 'Tech', extra_question: 'answer' });
+  });
+
+  it('skips dangerous keys like __proto__ from untrusted JSON', () => {
+    // JSON.parse maakt (anders dan een object-literal) een échte own
+    // property "__proto__" aan — precies wat een aanvaller kan sturen.
+    const body = JSON.parse('{"__proto__": {"x": 1}, "safe": "ok"}');
+    const out = activityPayload(body);
+    expect(out).toEqual({ safe: 'ok' });
+    expect(Object.getPrototypeOf(out)).toBe(Object.prototype);
+    expect(out.x).toBeUndefined();
   });
 });
 
@@ -49,5 +63,10 @@ describe('profilePatch', () => {
 
   it('returns an empty patch when nothing new is provided', () => {
     expect(profilePatch({ full_name: 'X', company: 'Y', role: 'Z', sector: 'S' }, {})).toEqual({});
+  });
+
+  it('only accepts string values for text columns', () => {
+    const patch = profilePatch({}, { name: 42, company: { name: 'Acme' }, role: 'CHRO' });
+    expect(patch).toEqual({ role: 'CHRO' });
   });
 });

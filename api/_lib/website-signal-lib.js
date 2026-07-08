@@ -9,19 +9,23 @@
 // zo toch niet kwijt.
 const META_FIELDS = new Set(['email', 'event', 'source', 'src']);
 
+// Keys uit onvertrouwde JSON die via `out[k] = v` de prototype-keten kunnen
+// raken in plaats van een gewone property te worden.
+const DANGEROUS_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+
 export function validateSignal(body) {
   if (!body || typeof body !== 'object') return { error: 'Missing body' };
   const email = String(body.email || '').trim().toLowerCase();
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: 'Invalid email' };
-  const event = String(body.event || '').trim();
-  if (!event) return { error: 'Missing event' };
+  if (typeof body.event !== 'string' || !body.event.trim()) return { error: 'Missing event' };
+  const event = body.event.trim();
   return { value: { ...body, email, event } };
 }
 
 export function activityPayload(body) {
   const out = {};
   for (const [k, v] of Object.entries(body)) {
-    if (META_FIELDS.has(k)) continue;
+    if (META_FIELDS.has(k) || DANGEROUS_KEYS.has(k)) continue;
     if (v === undefined || v === null || v === '') continue;
     out[k] = v;
   }
@@ -39,7 +43,9 @@ export function profilePatch(existing, body) {
   };
   const patch = {};
   for (const [col, val] of Object.entries(map)) {
-    if (val && !existing[col]) patch[col] = val;
+    // Alleen strings: deze kolommen zijn text, en onvertrouwde JSON kan
+    // hier ook numbers/objects bevatten.
+    if (typeof val === 'string' && val.trim() && !existing[col]) patch[col] = val.trim();
   }
   return patch;
 }
