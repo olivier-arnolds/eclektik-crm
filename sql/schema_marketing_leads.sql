@@ -17,6 +17,7 @@ create table public.marketing_leads (
   converted_lead_id  uuid,
   consent_at         timestamptz,
   created_at         timestamptz not null default now(),
+  -- updated_at wordt door api/website-signal.js bijgehouden (geen DB-trigger)
   updated_at         timestamptz not null default now(),
   last_activity_at   timestamptz
 );
@@ -33,7 +34,7 @@ create table public.marketing_lead_activity (
 );
 comment on table public.marketing_lead_activity is
   'Eén rij per website-interactie (waitlist_joined, scorecard_*, ...). Payload = vrije JSON zodat nieuwe formuliervragen geen schemawijziging vragen.';
-create index idx_mla_lead on public.marketing_lead_activity(marketing_lead_id);
+create index idx_marketing_lead_activity_lead on public.marketing_lead_activity(marketing_lead_id);
 
 -- RLS volgens huis-stijl (RLS zelf wordt auto-enabled door de
 -- rls_auto_enable trigger; expliciet enablen is harmless en zeker).
@@ -47,3 +48,7 @@ create policy "auth users full access on marketing_leads"
 create policy "auth users full access on marketing_lead_activity"
   on public.marketing_lead_activity for all to authenticated
   using (true) with check (true);
+
+-- Aanscherpingen na code review (zelfde dag)
+create unique index marketing_leads_email_lower_key on public.marketing_leads (lower(email));
+create index idx_marketing_leads_status_created on public.marketing_leads(status, created_at desc);
