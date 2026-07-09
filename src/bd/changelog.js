@@ -19,9 +19,37 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.52.0';
+export const CURRENT_VERSION = '1.53.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.53.0',
+    date: '2026-07-09T13:43:30Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feat',
+    title: 'Scorecard-intake - antwoorden afgeschermd, samenvatting bij de lead',
+    summary:
+      'De AI Transformation Scorecard op de nieuwe website levert nu leads op. ' +
+      'Ruwe antwoorden gaan naar een afgeschermde form_responses-tabel (niet ' +
+      'zichtbaar in de CRM); de marketing lead krijgt alleen scores, kwadrant ' +
+      'en route in de historie. Marco krijgt direct mail bij een assessment-' +
+      'route of een index van 70 of hoger.',
+    changes: [
+      'Nieuwe afgeschermde tabel form_responses (generiek: toekomstige formulieren zijn een nieuwe form_type).',
+      'Nieuw endpoint /api/scorecard-intake: herberekent scores server-side, slaat ruwe antwoorden afgeschermd op.',
+      'Marketing lead + scorecard_completed-activiteit met alleen de samenvatting (privacyregel uit de scorecard-spec).',
+      'Notificatiemail bij hete leads; statistiek-views scorecard_weekly_stats en scorecard_stats_by_role.',
+    ],
+    files: [
+      'api/scorecard-intake.js',
+      'api/_lib/scorecard-lib.js',
+      'api/_lib/marketing-lead-store.js',
+      'api/website-signal.js',
+      'sql/schema_form_responses.sql',
+      'src/bd/changelog.js', 'VERSION', 'package.json',
+    ],
+    gitTag: 'v1.53.0',
+  },
   {
     version: '1.52.0',
     date: '2026-07-08T13:53:34Z',
