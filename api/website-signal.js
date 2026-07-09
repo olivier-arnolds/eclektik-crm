@@ -11,27 +11,12 @@
 // Marketing → Leads.
 import { createClient } from '@supabase/supabase-js';
 import { requireWebhookSecret } from './_lib/guard.js';
-import { validateSignal, activityPayload, profilePatch } from './_lib/website-signal-lib.js';
+import { validateSignal, activityPayload } from './_lib/website-signal-lib.js';
+import { upsertMarketingLead } from './_lib/marketing-lead-store.js';
 
 const supabase = (process.env.VITE_SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY)
   ? createClient(process.env.VITE_SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY)
   : null;
-
-async function findByEmail(email) {
-  // Case-insensitief matchen: de unique lower(email)-index kan botsen met
-  // een rij die in andere kast is opgeslagen (bv. handmatige insert); een
-  // exacte .eq() zou die rij dan missen. ilike behandelt % en _ als
-  // wildcards en \ als escape-teken — e-mails bevatten legitiem
-  // underscores, dus escapen we die zodat het patroon letterlijk matcht.
-  const pattern = email.replace(/[\\%_]/g, '\\$&');
-  const { data, error } = await supabase
-    .from('marketing_leads')
-    .select('id, full_name, company, role, sector')
-    .ilike('email', pattern)
-    .maybeSingle();
-  if (error) throw error;
-  return data;
-}
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -42,53 +27,12 @@ export default async function handler(req, res) {
   if (valError) return res.status(400).json({ error: valError });
 
   try {
-    const now = new Date().toISOString();
-    const src = typeof body.src === 'string' ? body.src.slice(0, 100) : null;
-    let lead = await findByEmail(body.email);
-
-    if (!lead) {
-      const { data: created, error: insErr } = await supabase
-        .from('marketing_leads')
-        .insert({
-          email: body.email,
-          full_name: typeof body.name === 'string' ? body.name.trim().slice(0, 200) || null : null,
-          company: typeof body.company === 'string' ? body.company.trim().slice(0, 200) || null : null,
-          role: typeof body.role === 'string' ? body.role.trim().slice(0, 200) || null : null,
-          sector: typeof body.sector === 'string' ? body.sector.trim().slice(0, 200) || null : null,
-          first_src: src,
-          consent_at: now,
-          last_activity_at: now,
-        })
-        .select('id')
-        .single();
-      if (insErr && insErr.code === '23505') {
-        // Race: tweede gelijktijdige aanmelding won de insert — pak die rij.
-        lead = await findByEmail(body.email);
-        if (!lead) throw new Error('marketing lead not found after unique-violation retry');
-      } else if (insErr) {
-        throw insErr;
-      } else {
-        lead = created;
-      }
-    } else {
-      const patch = {
-        ...profilePatch(lead, body),
-        last_activity_at: now,
-        updated_at: now,
-      };
-      const { error: updErr } = await supabase
-        .from('marketing_leads').update(patch).eq('id', lead.id);
-      if (updErr) throw updErr;
-    }
-
-    const { error: actErr } = await supabase.from('marketing_lead_activity').insert({
-      marketing_lead_id: lead.id,
-      event: body.event,
-      payload: activityPayload(body),
-      src,
+    await upsertMarketingLead(supabase, {
+      email: body.email, name: body.name, company: body.company,
+      role: body.role, sector: body.sector, src: body.src,
+    }, {
+      event: body.event, payload: activityPayload(body), src: body.src,
     });
-    if (actErr) throw actErr;
-
     return res.status(200).json({ ok: true });
   } catch (e) {
     console.error('[website-signal] failed:', e?.message || e);
