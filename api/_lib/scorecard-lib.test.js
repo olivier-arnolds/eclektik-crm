@@ -71,6 +71,33 @@ describe('computeScorecard', () => {
     expect(r.scores.change).toBeLessThan(40);
     expect(r.route).toBe('insight_review');
   });
+  it("routes renewal '6–12 months' to assessment (rule-1 second branch)", () => {
+    const r = computeScorecard(allAnswers(4, { P1: 4, P2: 0, P3: 1 }));   // P3=1 → '6–12 months'
+    expect(r.route).toBe('assessment');
+  });
+  it('classifies high value + low change as spreadsheet_confident', () => {
+    const a = allAnswers(0, { P1: 4, P2: 0, P3: 3 });  // Other, >24m
+    ['V3','V4','V5','V6','V7','V8'].forEach(id => { a[id] = 3; });  // maturity → score 3
+    ['V1','V2'].forEach(id => { a[id] = 4; });                      // range index 4 → score 3
+    const r = computeScorecard(a);                                  // value 75, change 0
+    expect(r.scores.value).toBeGreaterThanOrEqual(60);
+    expect(r.scores.change).toBeLessThan(60);
+    expect(r.quadrant).toBe('spreadsheet_confident');
+  });
+  it('classifies low value + high change as people_aware_value_blind', () => {
+    const a = allAnswers(0, { P1: 4, P2: 0, P3: 3 });  // Other, >24m
+    ['C1','C2','C4','C5','C6','C7','C8'].forEach(id => { a[id] = 3; }); // maturity → score 3
+    a.C3 = 4;                                                            // range index 4 → score 3
+    const r = computeScorecard(a);                                       // value 0, change 75
+    expect(r.scores.value).toBeLessThan(60);
+    expect(r.scores.change).toBeGreaterThanOrEqual(60);
+    expect(r.quadrant).toBe('people_aware_value_blind');
+  });
+  it("routes renewal '<6 months' + CHRO + change<40 to assessment (rule precedence)", () => {
+    const r = computeScorecard(allAnswers(0, { P1: 2, P2: 0, P3: 0 }));  // CHRO, <6 months
+    expect(r.scores.change).toBeLessThan(40);
+    expect(r.route).toBe('assessment');                                  // regel 1 wint van insight_review
+  });
   it('exposes profile labels', () => {
     const r = computeScorecard(allAnswers(2, { P1: 1, P2: 2, P3: 1 }));
     expect(r.profile).toEqual({
