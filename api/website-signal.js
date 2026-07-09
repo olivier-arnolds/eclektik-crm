@@ -29,7 +29,7 @@ export default async function handler(req, res) {
   try {
     await upsertMarketingLead(supabase, {
       email: body.email, name: body.name, company: body.company,
-      role: body.role, sector: body.sector, src: body.src,
+      role: body.role, sector: body.sector, src: body.src, consent: true,
     }, {
       event: body.event, payload: activityPayload(body), src: body.src,
     });

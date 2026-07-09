@@ -10,7 +10,7 @@
 // nooit vertrouwd. Notificatie naar Marco bij route=assessment of index>=70.
 import { createClient } from '@supabase/supabase-js';
 import { requireWebhookSecret } from './_lib/guard.js';
-import { validateScorecardAnswers, computeScorecard } from './_lib/scorecard-lib.js';
+import { validateScorecardAnswers, computeScorecard, SCORED_IDS } from './_lib/scorecard-lib.js';
 import { upsertMarketingLead } from './_lib/marketing-lead-store.js';
 
 const supabase = (process.env.VITE_SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY)
@@ -57,6 +57,7 @@ export default async function handler(req, res) {
   const body = req.body || {};
   const email = String(body.email || '').trim().toLowerCase();
   if (!email || !EMAIL_RE.test(email)) return res.status(400).json({ error: 'Invalid email' });
+  if (email.length > 200) return res.status(400).json({ error: 'Invalid email' });
   if (body.form_type !== 'scorecard') return res.status(400).json({ error: 'Unsupported form_type' });
   const door = body.door === 'change' ? 'change' : 'value';
   const { error: ansErr } = validateScorecardAnswers(body.answers);
@@ -64,15 +65,20 @@ export default async function handler(req, res) {
   const consent = body.consent === true;
   const src = typeof body.src === 'string' ? body.src.slice(0, 100) : null;
 
+  // Alleen canonieke antwoord-keys bewaren; extra keys van een directe
+  // caller komen zo nooit in form_responses terecht.
+  const cleanAnswers = {};
+  for (const id of [...SCORED_IDS, 'P1', 'P2', 'P3']) cleanAnswers[id] = body.answers[id];
+
   try {
-    const computed = computeScorecard(body.answers);
+    const computed = computeScorecard(cleanAnswers);
 
     const { error: insErr } = await supabase.from('form_responses').insert({
       form_type: 'scorecard',
       email,
       consent,
       entry_meta: { door, src },
-      answers: body.answers,
+      answers: cleanAnswers,
       computed: {
         scores: computed.scores, bands: computed.bands,
         quadrant: computed.quadrant, route: computed.route,
@@ -86,7 +92,7 @@ export default async function handler(req, res) {
     if (insErr) throw insErr;
 
     await upsertMarketingLead(supabase, {
-      email, role: computed.profile.role, src,
+      email, role: computed.profile.role, src, consent,
     }, {
       event: 'scorecard_completed',
       payload: {                                     // GEEN ruwe antwoorden (privacyregel)

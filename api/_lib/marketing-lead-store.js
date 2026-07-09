@@ -19,7 +19,7 @@ async function findByEmail(supabase, email) {
   return data;
 }
 
-// fields: { email (verplicht, lowercase), name?, company?, role?, sector?, src? }
+// fields: { email (verplicht, lowercase), name?, company?, role?, sector?, src?, consent? }
 // activity: { event, payload, src? }
 export async function upsertMarketingLead(supabase, fields, activity) {
   const now = new Date().toISOString();
@@ -35,7 +35,8 @@ export async function upsertMarketingLead(supabase, fields, activity) {
         role: cap(fields.role, 200),
         sector: cap(fields.sector, 200),
         first_src: typeof fields.src === 'string' ? fields.src.slice(0, 100) : null,
-        consent_at: now,
+        // consent_at = AVG-moment, alleen bij expliciete opt-in
+        consent_at: fields.consent === true ? now : null,
         last_activity_at: now,
       })
       .select('id')
