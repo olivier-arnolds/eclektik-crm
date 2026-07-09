@@ -12,7 +12,7 @@ async function findByEmail(supabase, email) {
   const pattern = email.replace(/[\\%_]/g, '\\$&');
   const { data, error } = await supabase
     .from('marketing_leads')
-    .select('id, full_name, company, role, sector')
+    .select('id, full_name, company, role, sector, consent_at')
     .ilike('email', pattern)
     .maybeSingle();
   if (error) throw error;
@@ -55,6 +55,8 @@ export async function upsertMarketingLead(supabase, fields, activity) {
       last_activity_at: now,
       updated_at: now,
     };
+    // Latere opt-in backfillen; bestaand consent-moment nooit overschrijven.
+    if (fields.consent === true && !lead.consent_at) patch.consent_at = now;
     const { error: updErr } = await supabase
       .from('marketing_leads').update(patch).eq('id', lead.id);
     if (updErr) throw updErr;
