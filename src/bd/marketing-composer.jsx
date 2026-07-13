@@ -29,6 +29,8 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
   const [fromName, setFromName] = useState(defaultFromName);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState(null);
+  // 'broadcast' = newsletter via Resend Broadcasts (marketingplan); 'transactional' = 1-op-1 via /emails.
+  const [sendMode, setSendMode] = useState('broadcast');
   const fileInputRef = useRef(null);
   const { session } = useAuth();
   const sentBy = session?.user?.email || '';
@@ -161,11 +163,24 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
       }
     }
 
-    try {
-      const resp = await apiFetch('/api/marketing-send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+    // Kies endpoint + body. Een REAL send via 'broadcast' gaat naar de Resend
+    // Broadcasts-API; test-sends en 'transactional' blijven /api/marketing-send.
+    const useBroadcast = !testOnly && sendMode === 'broadcast';
+    const url = useBroadcast ? '/api/resend-broadcast' : '/api/marketing-send';
+    const body = useBroadcast
+      ? {
+          campaign_name: name || subject,
+          subject,
+          html_body: htmlBody,
+          from_name: fromName,
+          from_email: fromEmail,
+          reply_to: replyTo || null,
+          recipients: recipients
+            .filter(r => r.email)
+            .map(r => ({ email: r.email, first_name: r.first_name || '', contact_id: r.id, do_not_email: r.do_not_email })),
+          sent_by: sentBy,
+        }
+      : {
           name: name || subject,
           subject,
           preheader,
@@ -176,11 +191,21 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
           audience_filter: testOnly ? { test: true } : null,
           recipients: payloadRecipients,
           sent_by: sentBy,
-        }),
+        };
+
+    try {
+      const resp = await apiFetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
       });
       const data = await resp.json();
       if (!resp.ok) throw new Error(data?.error || `HTTP ${resp.status}`);
-      setResult({ ok: true, sent: data.sent, failed: data.failed, testOnly });
+      if (useBroadcast) {
+        setResult({ ok: true, sent: data.recipients, failed: 0, testOnly: false });
+      } else {
+        setResult({ ok: true, sent: data.sent, failed: data.failed, testOnly });
+      }
       if (!testOnly && onSent) onSent(data);
     } catch (e) {
       setResult({ ok: false, error: e.message });
@@ -203,6 +228,20 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
           <div style={{ padding: '7px 10px', borderRadius: 6, border: '0.5px solid var(--sep)', background: 'var(--fill-1)', fontSize: 12, color: 'var(--text-2)' }}>
             {recipients.length} contact{recipients.length !== 1 ? 's' : ''} ({recipientsWithEmail} with email)
           </div>
+        </div>
+      </div>
+
+      <div>
+        <div style={{ fontSize: 10, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Verzenden via</div>
+        <div style={{ display: 'flex', gap: 8, fontSize: 12 }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
+            <input type="radio" name="sendmode" checked={sendMode === 'broadcast'} onChange={() => setSendMode('broadcast')} />
+            Newsletter (Broadcast) <span style={{ color: 'var(--text-3)' }}>· marketingplan, personalisatie: voornaam</span>
+          </label>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
+            <input type="radio" name="sendmode" checked={sendMode === 'transactional'} onChange={() => setSendMode('transactional')} />
+            Transactioneel (1-op-1)
+          </label>
         </div>
       </div>
 
