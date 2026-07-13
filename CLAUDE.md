@@ -180,9 +180,22 @@ DB triggers assign `companies.account_no` (ALL accounts) and a shared
   - `KYq2oN8JSPiAQSrcIfT5Ew` → marco@eclectik.co
   - `j9-n2jeNTtGUxemfjlBsZA` → yarmilla@eclectik.co
   - `tC2o50tiTBiRCt9xAnio3w` → olivier@eclectik.co
-- **Resend** (transactional email): `RESEND_API_KEY`, `MARKETING_FROM_EMAIL`.
-  `eclectik.co` DNS is on **Cloudflare** (not MijnDomein) — add DNS records
-  there, DNS-only/grey-cloud.
+- **Resend**: `RESEND_API_KEY` (moet **Full access** zijn — nodig voor
+  audiences/broadcasts, niet enkel "Sending"), `MARKETING_FROM_EMAIL`,
+  `RESEND_WEBHOOK_SECRET` (Svix). `eclectik.co` DNS is on **Cloudflare** (not
+  MijnDomein) — add DNS records there, DNS-only/grey-cloud.
+  - **Twee verzendwegen (belangrijk):** *transactioneel* (`POST /emails`,
+    `api/marketing-send.js`) telt op de transactionele dag-/maandlimiet — gebruik
+    dit voor 1-op-1 playbook-mails. *Broadcast* (`api/resend-broadcast.js`) maakt
+    per campagne een Resend-audience, vult die met de selectie en verstuurt een
+    broadcast (target = `audience_id`, geen segments) — dit telt op het
+    **marketing/contact-plan** en is de weg voor newsletters. De composer kiest
+    per verzending tussen beide (default: Broadcast).
+  - Afmelden vanuit een broadcast komt binnen als `contact.updated`
+    (`unsubscribed=true`) op de **bestaande** `api/marketing-webhook.js` en zet
+    `contacts.do_not_email=true`. Zet dat event aan op de webhook in het Resend-dashboard.
+  - Personalisatie in broadcasts: Resend merge-tag `{{{FIRST_NAME}}}` (de app zet
+    `{{first_name}}` daarnaar om). Contacten via `POST /audiences/{id}/contacts`.
 - **Vercel**: now on **Pro** (was Hobby — that had a 12 serverless-function
   limit which forced removal of dead Surfe endpoints; Surfe was replaced by
   Unipile and is fully gone).

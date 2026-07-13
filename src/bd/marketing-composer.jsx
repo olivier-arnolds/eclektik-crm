@@ -108,7 +108,9 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
     // Spam-preventie: check welke recipients in de afgelopen 3 dagen al een
     // campaign-mail van ons hebben gehad (status sent of delivered). Skip die
     // by-default, met override-optie. Test-sends skippen deze check (eigen mail).
-    if (!testOnly) {
+    // Broadcast-modus (newsletter) slaat de check over: je stuurt daar bewust
+    // naar de hele geselecteerde lijst, en Resend regelt afmeldingen zelf.
+    if (!testOnly && sendMode !== 'broadcast') {
       const threeDaysAgo = new Date(Date.now() - 3 * 86400000).toISOString();
       const contactIds = payloadRecipients.map(r => r.contact_id).filter(Boolean);
       const emails = payloadRecipients.map(r => r.email);

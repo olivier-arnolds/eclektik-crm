@@ -19,9 +19,40 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.53.0';
+export const CURRENT_VERSION = '1.54.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.54.0',
+    date: '2026-07-13T21:52:03Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feat',
+    title: 'Newsletter via Resend Broadcasts (marketingplan i.p.v. transactioneel)',
+    summary:
+      'Een campagne kun je nu als newsletter versturen via Resend Broadcasts, zodat ' +
+      'het marketing (contact-)plan wordt gebruikt en niet langer de transactionele ' +
+      'daglimiet. In de composer kies je "Verzenden via": Newsletter (Broadcast) of ' +
+      'Transactioneel (1-op-1). De 1-op-1 playbook-mails blijven transactioneel.',
+    changes: [
+      'Nieuwe verzendmodus in de composer: Newsletter (Broadcast) is de default; transactioneel blijft beschikbaar.',
+      'Per campagne wordt een Resend-audience aangemaakt, gevuld met exact de geselecteerde contacten, en als broadcast verstuurd.',
+      'Personalisatie: voornaam via Resend merge-tag (uit {{first_name}}).',
+      'Afmelden via de Resend-link zet do_not_email in de CRM (contact.updated-webhook).',
+      'Afzenderkeuze (v1.51.6) wordt meegenomen; broadcast-modus slaat de 3-daagse spam-preventie over (je mailt bewust de hele lijst).',
+    ],
+    files: [
+      'src/lib/broadcast-recipients.js',
+      'api/resend-broadcast.js',
+      'api/marketing-webhook.js',
+      'src/bd/marketing-composer.jsx',
+      'sql/schema_campaign_broadcast_2026-07-13.sql',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+      'CLAUDE.md',
+    ],
+    gitTag: 'v1.54.0',
+  },
   {
     version: '1.53.0',
     date: '2026-07-09T13:43:30Z',
