@@ -21,6 +21,19 @@ function toResendMergeTags(html) {
   return String(html || '').replaceAll('{{first_name}}', '{{{FIRST_NAME}}}');
 }
 
+// Resend voegt GEEN afmeldlink automatisch toe: de HTML moet de merge-tag
+// {{{RESEND_UNSUBSCRIBE_URL}}} bevatten, anders werkt afmelden niet (en het is
+// wettelijk verplicht). Voeg een nette footer toe als de tag ontbreekt.
+function ensureUnsubscribe(html) {
+  const h = String(html || '');
+  if (h.includes('{{{RESEND_UNSUBSCRIBE_URL}}}')) return h;
+  const footer = '<p style="font-size:12px;color:#888888;text-align:center;margin:28px 0 0">'
+    + 'Je ontvangt deze e-mail omdat je contact hebt met Eclektik. '
+    + '<a href="{{{RESEND_UNSUBSCRIBE_URL}}}" style="color:#888888">Afmelden</a>.'
+    + '</p>';
+  return /<\/body>/i.test(h) ? h.replace(/<\/body>/i, footer + '</body>') : h + footer;
+}
+
 export default async function handler(req, res) {
   const user = await requireUser(req, res);
   if (!user) return;
@@ -57,7 +70,7 @@ export default async function handler(req, res) {
   // 3) Broadcast maken + versturen.
   const bc = await rs('/broadcasts', 'POST', {
     audience_id: audienceId, from, reply_to: reply_to || undefined,
-    subject, name: campaign_name || subject, html: toResendMergeTags(html_body),
+    subject, name: campaign_name || subject, html: ensureUnsubscribe(toResendMergeTags(html_body)),
   });
   if (!bc.ok || !bc.data?.id) return res.status(502).json({ error: 'broadcast aanmaken faalde', detail: bc.data });
   const send = await rs(`/broadcasts/${bc.data.id}/send`, 'POST', {});

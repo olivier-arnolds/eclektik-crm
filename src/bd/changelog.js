@@ -19,9 +19,27 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.54.1';
+export const CURRENT_VERSION = '1.54.2';
 
 export const CHANGELOG = [
+  {
+    version: '1.54.2',
+    date: '2026-07-13T22:37:38Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Newsletter - werkende afmeldlink in broadcasts',
+    summary:
+      'Broadcasts bevatten nu een werkende afmeldlink. Resend voegt die niet ' +
+      'automatisch toe; de HTML moet de merge-tag {{{RESEND_UNSUBSCRIBE_URL}}} ' +
+      'bevatten. Zonder die link deed afmelden niets en werd niemand afgemeld. ' +
+      'De app voegt nu een afmeld-footer toe als de nieuwsbrief die tag niet heeft.',
+    changes: [
+      'resend-broadcast.js voegt automatisch een afmeld-footer met {{{RESEND_UNSUBSCRIBE_URL}}} toe als de HTML die mist (wettelijk verplicht + nodig voor afmeld-sync).',
+      'Pas als iemand via die link afmeldt, vuurt Resend contact.updated en zet de webhook do_not_email in de CRM.',
+    ],
+    files: ['api/resend-broadcast.js', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.54.2',
+  },
   {
     version: '1.54.1',
     date: '2026-07-13T22:14:20Z',
