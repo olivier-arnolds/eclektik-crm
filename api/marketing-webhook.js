@@ -85,6 +85,16 @@ export default async function handler(req, res) {
 
   const type = event?.type;
 
+  // TIJDELIJKE DIAGNOSTIEK: log elk binnenkomend event + de afmeld-relevante
+  // velden, zodat we zien of/hoe Resend een afmelding doorstuurt. Verwijderen
+  // zodra de afmeld-sync bevestigd werkt.
+  console.log('[marketing-webhook] event', {
+    type,
+    unsubscribed: event?.data?.unsubscribed,
+    email: event?.data?.email,
+    dataKeys: event?.data ? Object.keys(event.data) : null,
+  });
+
   // Afmelden vanuit een Broadcast: Resend stuurt contact.updated met
   // unsubscribed=true. Reflecteer dat naar de CRM (do_not_email) zodat we deze
   // persoon niet opnieuw mailen. Match op e-mailadres (case-insensitive).
