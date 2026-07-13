@@ -28,8 +28,8 @@ function ensureUnsubscribe(html) {
   const h = String(html || '');
   if (h.includes('{{{RESEND_UNSUBSCRIBE_URL}}}')) return h;
   const footer = '<p style="font-size:12px;color:#888888;text-align:center;margin:28px 0 0">'
-    + 'Je ontvangt deze e-mail omdat je contact hebt met Eclektik. '
-    + '<a href="{{{RESEND_UNSUBSCRIBE_URL}}}" style="color:#888888">Afmelden</a>.'
+    + 'You are receiving this email because you are in contact with Eclectik. '
+    + '<a href="{{{RESEND_UNSUBSCRIBE_URL}}}" style="color:#888888">Unsubscribe</a>.'
     + '</p>';
   return /<\/body>/i.test(h) ? h.replace(/<\/body>/i, footer + '</body>') : h + footer;
 }

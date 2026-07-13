@@ -19,9 +19,24 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.54.2';
+export const CURRENT_VERSION = '1.54.3';
 
 export const CHANGELOG = [
+  {
+    version: '1.54.3',
+    date: '2026-07-13T22:46:20Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Newsletter - afmeld-footer in het Engels',
+    summary:
+      'De automatische afmeld-footer in broadcasts staat nu in het Engels ' +
+      '("You are receiving this email because you are in contact with Eclectik. Unsubscribe").',
+    changes: [
+      'Afmeld-footer tekst van Nederlands naar Engels.',
+    ],
+    files: ['api/resend-broadcast.js', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.54.3',
+  },
   {
     version: '1.54.2',
     date: '2026-07-13T22:37:38Z',
