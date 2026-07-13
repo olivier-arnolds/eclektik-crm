@@ -36,6 +36,9 @@ async function readRawBody(req) {
 // our secret and check at least one matches.
 function verifySvixSignature(rawBody, headers, secret) {
   if (!secret) return false;
+  // Normaliseer: strip omringende quotes en whitespace/newlines die bij het
+  // plakken in Vercel per ongeluk meekomen (veel voorkomende oorzaak van 401).
+  secret = String(secret).trim().replace(/^["']|["']$/g, '').trim();
   const svixId = headers['svix-id'];
   const svixTimestamp = headers['svix-timestamp'];
   const svixSignature = headers['svix-signature'];
@@ -64,7 +67,17 @@ export default async function handler(req, res) {
   catch (e) { return res.status(400).json({ error: 'cannot read body: ' + e.message }); }
 
   const ok = verifySvixSignature(rawBody, req.headers, process.env.RESEND_WEBHOOK_SECRET);
-  if (!ok) return res.status(401).json({ error: 'invalid signature' });
+  if (!ok) {
+    // Diagnostiek zonder de secret te lekken: helpt onderscheiden tussen een
+    // ontbrekende/malformed secret en een echte mismatch.
+    const s = String(process.env.RESEND_WEBHOOK_SECRET || '');
+    console.error('[marketing-webhook] signature check failed', {
+      secretPresent: !!s, secretLen: s.length, startsWhsec: s.startsWith('whsec_'),
+      hasId: !!req.headers['svix-id'], hasTs: !!req.headers['svix-timestamp'], hasSig: !!req.headers['svix-signature'],
+      bodyLen: rawBody ? rawBody.length : 0,
+    });
+    return res.status(401).json({ error: 'invalid signature' });
+  }
 
   let event;
   try { event = JSON.parse(rawBody); }

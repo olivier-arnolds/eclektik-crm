@@ -19,9 +19,27 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.54.0';
+export const CURRENT_VERSION = '1.54.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.54.1',
+    date: '2026-07-13T22:14:20Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Webhook - robuustere afmeld-verificatie + diagnostiek',
+    summary:
+      'De Resend-webhook (afmeldingen + e-mail-tracking) normaliseert de signing ' +
+      'secret nu (strip quotes/whitespace) zodat een plak-artefact in de env-var ' +
+      'de handtekeningcontrole niet meer laat falen. Bij een mislukte controle ' +
+      'wordt nu diagnostiek gelogd (zonder de secret te tonen).',
+    changes: [
+      'verifySvixSignature trimt en strip-t quotes rond RESEND_WEBHOOK_SECRET.',
+      'Bij 401 wordt secret-lengte/prefix + aanwezige svix-headers gelogd voor diagnose.',
+    ],
+    files: ['api/marketing-webhook.js', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.54.1',
+  },
   {
     version: '1.54.0',
     date: '2026-07-13T21:52:03Z',
