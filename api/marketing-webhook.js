@@ -71,6 +71,18 @@ export default async function handler(req, res) {
   catch { return res.status(400).json({ error: 'invalid json' }); }
 
   const type = event?.type;
+
+  // Afmelden vanuit een Broadcast: Resend stuurt contact.updated met
+  // unsubscribed=true. Reflecteer dat naar de CRM (do_not_email) zodat we deze
+  // persoon niet opnieuw mailen. Match op e-mailadres (case-insensitive).
+  if (type === 'contact.updated' && event?.data?.unsubscribed === true) {
+    const email = String(event?.data?.email || '').trim().toLowerCase();
+    if (email) {
+      await supabase.from('contacts').update({ do_not_email: true }).ilike('email', email);
+    }
+    return res.status(200).json({ ok: true, handled: 'contact.updated' });
+  }
+
   const messageId = event?.data?.email_id || event?.data?.id;
   if (!messageId) return res.status(200).json({ ignored: 'no message id' });
 
