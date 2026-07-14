@@ -181,24 +181,37 @@ DB triggers assign `companies.account_no` (ALL accounts) and a shared
   - `j9-n2jeNTtGUxemfjlBsZA` → yarmilla@eclectik.co
   - `tC2o50tiTBiRCt9xAnio3w` → olivier@eclectik.co
 - **Resend**: `RESEND_API_KEY` (moet **Full access** zijn — nodig voor
-  audiences/broadcasts, niet enkel "Sending"), `MARKETING_FROM_EMAIL`,
+  segments/broadcasts, niet enkel "Sending"), `MARKETING_FROM_EMAIL`,
   `RESEND_WEBHOOK_SECRET` (Svix). `eclectik.co` DNS is on **Cloudflare** (not
   MijnDomein) — add DNS records there, DNS-only/grey-cloud.
   - **Twee verzendwegen (belangrijk):** *transactioneel* (`POST /emails`,
     `api/marketing-send.js`) telt op de transactionele dag-/maandlimiet — gebruik
-    dit voor 1-op-1 playbook-mails. *Broadcast* (`api/resend-broadcast.js`) gebruikt
-    één **vaste** audience (`RESEND_AUDIENCE_ID`) en maakt per verzending een
-    **segment** = de selectie; broadcast target = `segment_id`. Telt op het
-    **marketing/contact-plan** en is de weg voor newsletters. De composer kiest
-    per verzending tussen beide (default: Broadcast).
-  - **Afmeldingen (hard-won):** Resend stuurt **geen** `contact.updated`-webhook
-    bij een broadcast-afmelding — die aanpak werkt niet. Daarom: (a) de vaste
-    audience onthoudt afmeldingen; bestaande contacten worden via **PATCH**
-    (`/audiences/{id}/contacts/{id}`, alleen `segments`) in het segment gezet zodat
-    hun `unsubscribed` behouden blijft — **nooit** een contact opnieuw POSTen met
-    `unsubscribed`, want dat reset 'm naar subscribed. (b) Bij elke verzending
-    worden afgemelde contacten (GET per e-mail) overgeslagen én in de CRM op
-    `do_not_email` gezet (pull-sync). Nieuwe contacten via `POST`.
+    dit voor 1-op-1 playbook-mails. *Broadcast* (`api/resend-broadcast.js`) maakt
+    per verzending een **segment** = de selectie; broadcast target = `segment_id`.
+    Telt op het **marketing/contact-plan** en is de weg voor newsletters. De
+    composer kiest per verzending tussen beide (default: Broadcast).
+  - **Resend API-migratie audiences→segments (2026-07-14, hard-won):** Resend
+    hernoemde "Audiences" naar **top-level Segments** en wijzigde het model. De
+    oude aanpak (`/audiences/{id}/contacts`, `RESEND_AUDIENCE_ID`, `segments:[id]`
+    als kale strings) brak van de één op de andere dag met een 422 *"The audience
+    you are sending has no contacts"* omdat contacten niet meer aan het segment
+    gekoppeld werden. Het huidige model:
+    - Segment maken: `POST /segments {name}` (**geen** `audience_id` meer;
+      `RESEND_AUDIENCE_ID` is niet meer nodig).
+    - Bestaand contact aan segment koppelen: `POST /contacts/{email}/segments/{segmentId}`
+      (geen body). Nieuw contact: `POST /contacts {email, first_name, segments:[{id}]}`.
+    - Contact ophalen: `GET /contacts/{email}` (geeft **globale** `unsubscribed`).
+    - Segment-inhoud checken: `GET /segments/{id}/contacts`.
+    - Broadcast: `POST /broadcasts {segment_id, …}` → `POST /broadcasts/{id}/send`.
+  - **Afmeldingen (hard-won):** afmelden is nu **globaal per contact**
+    (`unsubscribed=true` ⇒ uit álle broadcasts); Resend slaat afgemelden sowieso
+    over. **Nooit** een contact opnieuw POSTen met `unsubscribed:false` — dat
+    her-abonneert 'm ongewild. Resend stuurt **geen** `contact.updated`-webhook bij
+    afmelding, dus bij elke verzending: afgemelde contacten (GET per e-mail)
+    overslaan én in de CRM op `do_not_email` zetten (pull-sync).
+  - **Eventual consistency:** segment-lidmaatschap is niet direct zichtbaar;
+    meteen versturen gaf de 422 hierboven. `resend-broadcast.js` pollt daarom
+    `GET /segments/{id}/contacts` tot het segment gevuld is voor het verstuurt.
   - Broadcasts hebben een verplichte afmeldlink nodig: de HTML moet
     `{{{RESEND_UNSUBSCRIBE_URL}}}` bevatten (Resend voegt niets automatisch toe);
     het endpoint voegt een footer toe als de tag ontbreekt.
