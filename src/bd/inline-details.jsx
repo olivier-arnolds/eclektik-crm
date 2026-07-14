@@ -320,6 +320,28 @@ export function InlineContactDetail({ contactId, onCompose, refetch, allTags, on
       <InlineField label="First name" value={row.first_name} onSave={v => saveField('first_name', v)} />
       <InlineField label="Last name" value={row.last_name} onSave={v => saveField('last_name', v)} />
       <InlineField label="Email" value={row.email} onSave={v => saveField('email', v)} type="email" colspan={2} />
+      <div style={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>Email status</div>
+        {(() => {
+          const blocked = !!row.do_not_email;
+          return (
+            <button
+              onClick={() => saveField('do_not_email', !blocked)}
+              disabled={!!saving.do_not_email}
+              title={blocked ? 'Geblokkeerd (opt-out) - klik om weer te mogen mailen' : 'Mag gemaild worden - klik om te blokkeren'}
+              style={{
+                alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: 6,
+                background: 'transparent', cursor: 'pointer', padding: '3px 8px',
+                border: `0.5px solid ${blocked ? '#dc2626' : '#16a34a'}`, borderRadius: 6,
+                color: blocked ? '#dc2626' : '#16a34a', fontSize: 12, fontWeight: 600,
+                opacity: saving.do_not_email ? 0.5 : 1,
+              }}>
+              <span style={{ fontSize: 14, lineHeight: 1 }}>{blocked ? '⊘' : '✉'}</span>
+              {blocked ? 'Geblokkeerd voor email' : 'Mag gemaild worden'}
+            </button>
+          );
+        })()}
+      </div>
       <InlineField label="Phone" value={row.phone} onSave={v => saveField('phone', v)} />
       <InlineField label="Mobile" value={row.mobile} onSave={v => saveField('mobile', v)} />
       <InlineField label="Role / title" value={row.title} onSave={v => saveField('title', v)} colspan={2} />

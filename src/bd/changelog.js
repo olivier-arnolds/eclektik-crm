@@ -19,9 +19,27 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.55.3';
+export const CURRENT_VERSION = '1.55.4';
 
 export const CHANGELOG = [
+  {
+    version: '1.55.4',
+    date: '2026-07-14T09:46:05Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feat',
+    title: 'Contactdetails - email-status (geblokkeerd / mag gemaild) tonen + togglen',
+    summary:
+      'In de contactdetails (accountview-paneel en zoekpopup) staat nu onder het ' +
+      'e-mailadres een "Email status"-regel: rood ⊘ "Geblokkeerd voor email" of ' +
+      'groen ✉ "Mag gemaild worden". Klikken schakelt de blokkade (do_not_email) ' +
+      'meteen om, met dezelfde kleuren als het icoon in de marketing-lijst.',
+    changes: [
+      'InlineContactDetail toont do_not_email als klikbare status onder het e-mailveld.',
+      'Toggle schrijft via de bestaande saveField-helper en ververst de lijst.',
+    ],
+    files: ['src/bd/inline-details.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.55.4',
+  },
   {
     version: '1.55.3',
     date: '2026-07-14T09:24:20Z',
