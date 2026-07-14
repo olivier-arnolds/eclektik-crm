@@ -19,9 +19,30 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.55.2';
+export const CURRENT_VERSION = '1.55.3';
 
 export const CHANGELOG = [
+  {
+    version: '1.55.3',
+    date: '2026-07-14T09:24:20Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feat',
+    title: 'Newsletter - afmeldingen syncen naar het verzendstatus-icoon',
+    summary:
+      'Als iemand zich bij Resend afmeldt, werd het groene envelop-icoon in de ' +
+      'marketing-tab niet rood (do_not_email veranderde niet mee). Resend stuurt ' +
+      'daar geen betrouwbare webhook voor. Nu haalt de CRM de actuele afmeld-status ' +
+      'op uit Resend - automatisch bij het openen van de marketing-tab en via een ' +
+      'knop "Sync afmeldingen" - en zet afgemelde contacten op do_not_email.',
+    changes: [
+      'Nieuw endpoint api/resend-sync-unsubscribes.js: leest alle afgemelde contacten (GET /contacts, gepagineerd) en zet ze in de CRM op do_not_email.',
+      'Eenrichting: een bestaande blokkade wordt nooit automatisch opgeheven (niemand ongewild opnieuw mailen).',
+      'Case-ongevoelige e-mailmatch tussen Resend en CRM.',
+      'Marketing-tab: auto-sync bij openen + knop "↻ Sync afmeldingen" met statustekst; herlaadt de lijst als er nieuwe afmeldingen zijn.',
+    ],
+    files: ['api/resend-sync-unsubscribes.js', 'src/bd/marketing-view.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.55.3',
+  },
   {
     version: '1.55.2',
     date: '2026-07-14T09:01:07Z',
