@@ -61,7 +61,10 @@ export default async function handler(req, res) {
   // 1) Segment voor deze verzending = jouw selectie (statische lijst).
   const segName = `${campaign_name || subject} (${new Date().toISOString().slice(0, 10)})`.slice(0, 100);
   const seg = await rs('/segments', 'POST', { name: segName, audience_id: audienceId });
-  if (!seg.ok || !seg.data?.id) return res.status(502).json({ error: 'segment aanmaken faalde', detail: seg.data });
+  if (!seg.ok || !seg.data?.id) {
+    console.error('[resend-broadcast] segment aanmaken faalde', seg.status, JSON.stringify(seg.data));
+    return res.status(502).json({ error: 'segment aanmaken faalde', detail: seg.data });
+  }
   const segmentId = seg.data.id;
 
   // 2) Zet de geselecteerde contacten in het segment. BESTAAND contact -> PATCH
@@ -93,15 +96,22 @@ export default async function handler(req, res) {
     await supabase.from('contacts').update({ do_not_email: true }).in('email', unsubscribedEmails);
   }
   if (inSeg === 0) return res.status(400).json({ error: 'geen verzendbare ontvangers (allen afgemeld of opt-out)' });
+  console.log('[resend-broadcast] segment gevuld', { segmentId, inSeg, skipped });
 
   // 3) Broadcast naar het segment; Resend slaat afgemelde contacten sowieso over.
   const bc = await rs('/broadcasts', 'POST', {
     segment_id: segmentId, from, reply_to: reply_to || undefined,
     subject, name: campaign_name || subject, html: ensureUnsubscribe(toResendMergeTags(html_body)),
   });
-  if (!bc.ok || !bc.data?.id) return res.status(502).json({ error: 'broadcast aanmaken faalde', detail: bc.data });
+  if (!bc.ok || !bc.data?.id) {
+    console.error('[resend-broadcast] broadcast aanmaken faalde', bc.status, JSON.stringify(bc.data));
+    return res.status(502).json({ error: 'broadcast aanmaken faalde', detail: bc.data });
+  }
   const send = await rs(`/broadcasts/${bc.data.id}/send`, 'POST', {});
-  if (!send.ok) return res.status(502).json({ error: 'broadcast versturen faalde', detail: send.data });
+  if (!send.ok) {
+    console.error('[resend-broadcast] broadcast versturen faalde', send.status, 'broadcastId=' + bc.data.id, JSON.stringify(send.data));
+    return res.status(502).json({ error: 'broadcast versturen faalde', detail: send.data });
+  }
 
   // 4) Log in campaigns.
   await supabase.from('campaigns').insert({

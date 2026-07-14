@@ -202,7 +202,14 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
         body: JSON.stringify(body),
       });
       const data = await resp.json();
-      if (!resp.ok) throw new Error(data?.error || `HTTP ${resp.status}`);
+      if (!resp.ok) {
+        // Toon ook Resend's eigen foutdetail, zodat de echte oorzaak zichtbaar is
+        // i.p.v. alleen de generieke tekst (bv. "broadcast versturen faalde").
+        const detail = data?.detail
+          ? (typeof data.detail === 'string' ? data.detail : (data.detail.message || JSON.stringify(data.detail)))
+          : '';
+        throw new Error((data?.error || `HTTP ${resp.status}`) + (detail ? ` — ${detail}` : ''));
+      }
       if (useBroadcast) {
         setResult({ ok: true, sent: data.recipients, failed: 0, testOnly: false });
       } else {

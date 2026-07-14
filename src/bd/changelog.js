@@ -19,9 +19,29 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.55.0';
+export const CURRENT_VERSION = '1.55.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.55.1',
+    date: '2026-07-14T08:52:55Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Newsletter - echte Resend-foutmelding tonen bij mislukte broadcast',
+    summary:
+      'Bij een mislukte broadcast toonde de app alleen een vage tekst zoals ' +
+      '"broadcast versturen faalde", terwijl Resend de echte reden in een ' +
+      'detail-veld teruggeeft. Die reden wordt nu op het scherm getoond en ' +
+      'server-side gelogd, zodat de oorzaak van een mislukte verzending direct ' +
+      'zichtbaar is.',
+    changes: [
+      'resend-broadcast.js logt nu status + Resend-detail bij elke mislukte stap (segment/broadcast/send).',
+      'Composer toont Resend\'s detail-boodschap achter de generieke fouttekst.',
+      'Diagnostische log van segment-vulling (inSeg/skipped) toegevoegd.',
+    ],
+    files: ['api/resend-broadcast.js', 'src/bd/marketing-composer.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.55.1',
+  },
   {
     version: '1.55.0',
     date: '2026-07-14T08:23:34Z',
