@@ -19,9 +19,30 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.55.1';
+export const CURRENT_VERSION = '1.55.2';
 
 export const CHANGELOG = [
+  {
+    version: '1.55.2',
+    date: '2026-07-14T09:01:07Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Newsletter - broadcast werkt weer (aangepast aan Resend\'s nieuwe segments-API)',
+    summary:
+      'Resend heeft "Audiences" hernoemd naar top-level "Segments" en het API-model ' +
+      'gewijzigd. Daardoor werden contacten niet meer correct aan het verzend-segment ' +
+      'gekoppeld en faalde elke broadcast met "The audience you are sending has no ' +
+      'contacts" (422). De broadcast koppelt contacten nu via de nieuwe endpoints en ' +
+      'wacht tot het segment gevuld is voor het verstuurt.',
+    changes: [
+      'Segment maken zonder audience_id (segments zijn nu top-level); RESEND_AUDIENCE_ID niet meer nodig.',
+      'Bestaand contact -> POST /contacts/{email}/segments/{id}; nieuw contact -> POST /contacts met segments:[{id}].',
+      'Afmelden is nu globaal per contact; afgemelden worden overgeslagen en in de CRM op do_not_email gezet.',
+      'Verificatie-poll op segment-inhoud voor het versturen (voorkomt de 422 door eventual consistency).',
+    ],
+    files: ['api/resend-broadcast.js', 'src/bd/changelog.js', 'VERSION', 'package.json'],
+    gitTag: 'v1.55.2',
+  },
   {
     version: '1.55.1',
     date: '2026-07-14T08:52:55Z',

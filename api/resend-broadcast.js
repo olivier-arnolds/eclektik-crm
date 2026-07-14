@@ -52,41 +52,46 @@ export default async function handler(req, res) {
   const contacts = toResendContacts(recipients).filter(c => !c.unsubscribed);
   if (contacts.length === 0) return res.status(400).json({ error: 'geen verzendbare ontvangers' });
 
-  // Vaste (persistente) audience: afmeldingen blijven hierin bewaard, zodat we
-  // afgemelde contacten niet per ongeluk opnieuw mailen. Zet RESEND_AUDIENCE_ID
-  // in Vercel op de id van de vaste "Eclectik Newsletter"-audience.
-  const audienceId = process.env.RESEND_AUDIENCE_ID;
-  if (!audienceId) return res.status(500).json({ error: 'RESEND_AUDIENCE_ID niet geconfigureerd' });
-
   // 1) Segment voor deze verzending = jouw selectie (statische lijst).
+  //    Sinds Resend "Audiences" hernoemde naar top-level "Segments" bestaat er
+  //    geen audience_id meer; een segment maak je met alleen een naam. Afmelden
+  //    is nu GLOBAAL per contact (unsubscribed=true => uit alle broadcasts),
+  //    dus we hoeven geen vaste audience meer bij te houden om afmeldingen te
+  //    onthouden: Resend slaat afgemelde contacten sowieso over.
   const segName = `${campaign_name || subject} (${new Date().toISOString().slice(0, 10)})`.slice(0, 100);
-  const seg = await rs('/segments', 'POST', { name: segName, audience_id: audienceId });
+  const seg = await rs('/segments', 'POST', { name: segName });
   if (!seg.ok || !seg.data?.id) {
     console.error('[resend-broadcast] segment aanmaken faalde', seg.status, JSON.stringify(seg.data));
     return res.status(502).json({ error: 'segment aanmaken faalde', detail: seg.data });
   }
   const segmentId = seg.data.id;
 
-  // 2) Zet de geselecteerde contacten in het segment. BESTAAND contact -> PATCH
-  //    (afmeld-status blijft behouden); NIEUW contact -> POST. We forceren nooit
-  //    'unsubscribed', zodat we niemand ongewild opnieuw aanmelden. Afgemelde
-  //    contacten slaan we over en markeren we in de CRM als do_not_email
-  //    (pull-sync, want Resend stuurt geen contact.updated-webhook).
+  // 2) Zet de geselecteerde contacten in het segment.
+  //    - BESTAAND contact: POST /contacts/{email}/segments/{segmentId} (koppelen,
+  //      afmeld-status blijft behouden; we forceren nooit unsubscribed:false).
+  //    - NIEUW contact: POST /contacts met segments:[{id}].
+  //    Globaal-afgemelde contacten slaan we over en markeren we in de CRM als
+  //    do_not_email (pull-sync, want Resend stuurt daar geen webhook voor).
   const unsubscribedEmails = [];
   let inSeg = 0, skipped = 0;
   const CONCURRENCY = 8;
   for (let i = 0; i < contacts.length; i += CONCURRENCY) {
     const chunk = contacts.slice(i, i + CONCURRENCY);
     await Promise.all(chunk.map(async (c) => {
-      const got = await rs(`/audiences/${audienceId}/contacts/${encodeURIComponent(c.email)}`, 'GET');
+      const enc = encodeURIComponent(c.email);
+      const got = await rs(`/contacts/${enc}`, 'GET');
       if (got.ok && got.data?.id) {
         if (got.data.unsubscribed) { unsubscribedEmails.push(c.email); skipped++; return; }
-        const p = await rs(`/audiences/${audienceId}/contacts/${got.data.id}`, 'PATCH', { segments: [segmentId] });
-        if (p.ok) inSeg++;
+        const add = await rs(`/contacts/${enc}/segments/${segmentId}`, 'POST');
+        if (add.ok) inSeg++;
+        else console.error('[resend-broadcast] contact aan segment koppelen faalde', add.status, c.email, JSON.stringify(add.data));
       } else if (got.status === 404) {
-        const post = await rs(`/audiences/${audienceId}/contacts`, 'POST',
-          { email: c.email, first_name: c.first_name, segments: [segmentId] });
+        const post = await rs('/contacts', 'POST',
+          { email: c.email, first_name: c.first_name, segments: [{ id: segmentId }] });
         if (post.ok) inSeg++;
+        else console.error('[resend-broadcast] contact aanmaken faalde', post.status, c.email, JSON.stringify(post.data));
+      } else {
+        console.error('[resend-broadcast] contact ophalen faalde', got.status, c.email, JSON.stringify(got.data));
       }
     }));
   }
@@ -96,7 +101,21 @@ export default async function handler(req, res) {
     await supabase.from('contacts').update({ do_not_email: true }).in('email', unsubscribedEmails);
   }
   if (inSeg === 0) return res.status(400).json({ error: 'geen verzendbare ontvangers (allen afgemeld of opt-out)' });
-  console.log('[resend-broadcast] segment gevuld', { segmentId, inSeg, skipped });
+
+  // 2b) Wacht tot Resend het segment daadwerkelijk gevuld heeft. Segment-lidmaatschap
+  //     is eventually consistent; direct versturen gaf eerder een 422 "audience has
+  //     no contacts". We pollen de segment-inhoud kort; lukt bevestiging niet, dan
+  //     versturen we alsnog (best-effort) - de koppeling zelf is dan al gelukt.
+  const asArray = (d) => Array.isArray(d) ? d : (Array.isArray(d?.data) ? d.data : (Array.isArray(d?.data?.data) ? d.data.data : null));
+  let confirmed = 0;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const chk = await rs(`/segments/${segmentId}/contacts`, 'GET');
+    const rows = asArray(chk.data);
+    confirmed = rows ? rows.length : 0;
+    if (confirmed > 0) break;
+    await new Promise((r) => setTimeout(r, 1000));
+  }
+  console.log('[resend-broadcast] segment gevuld', { segmentId, inSeg, skipped, confirmed });
 
   // 3) Broadcast naar het segment; Resend slaat afgemelde contacten sowieso over.
   const bc = await rs('/broadcasts', 'POST', {
@@ -118,7 +137,7 @@ export default async function handler(req, res) {
     name: campaign_name || subject, subject, html_body,
     from_name: from_name || null, from_email: fromEmail, reply_to: reply_to || null,
     status: 'sent', recipient_count: inSeg, sent_by: sent_by || null,
-    channel: 'broadcast', resend_broadcast_id: bc.data.id, resend_audience_id: audienceId,
+    channel: 'broadcast', resend_broadcast_id: bc.data.id, resend_audience_id: segmentId,
     sent_at: new Date().toISOString(),
   });
 
