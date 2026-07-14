@@ -19,9 +19,30 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.54.3';
+export const CURRENT_VERSION = '1.55.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.55.0',
+    date: '2026-07-14T08:23:34Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feat',
+    title: 'Newsletter - afmeldingen worden onthouden (vaste audience + segment)',
+    summary:
+      'De newsletter-broadcast gebruikt nu één vaste Resend-audience met een ' +
+      'segment per verzending, in plaats van elke keer een nieuwe audience. ' +
+      'Daardoor blijven afmeldingen bewaard en worden afgemelde contacten nooit ' +
+      'opnieuw gemaild. Afmeldingen worden bij elke verzending teruggesynct naar ' +
+      'do_not_email in de CRM (Resend stuurt daar zelf geen webhook voor).',
+    changes: [
+      'Vaste audience (RESEND_AUDIENCE_ID) + per-campagne segment als doelgroep.',
+      'Bestaand contact -> PATCH in segment (afmeld-status behouden); nieuw -> POST. Nooit meer unsubscribed:false forceren.',
+      'Afgemelde contacten worden overgeslagen en in de CRM op do_not_email gezet (pull-sync).',
+      'Dode contact.updated-webhooktak + tijdelijke diagnostiek verwijderd; secret-normalisatie behouden.',
+    ],
+    files: ['api/resend-broadcast.js', 'api/marketing-webhook.js', 'src/bd/changelog.js', 'VERSION', 'package.json', 'CLAUDE.md'],
+    gitTag: 'v1.55.0',
+  },
   {
     version: '1.54.3',
     date: '2026-07-13T22:46:20Z',

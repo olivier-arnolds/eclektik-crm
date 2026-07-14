@@ -67,44 +67,13 @@ export default async function handler(req, res) {
   catch (e) { return res.status(400).json({ error: 'cannot read body: ' + e.message }); }
 
   const ok = verifySvixSignature(rawBody, req.headers, process.env.RESEND_WEBHOOK_SECRET);
-  if (!ok) {
-    // Diagnostiek zonder de secret te lekken: helpt onderscheiden tussen een
-    // ontbrekende/malformed secret en een echte mismatch.
-    const s = String(process.env.RESEND_WEBHOOK_SECRET || '');
-    console.error('[marketing-webhook] signature check failed', {
-      secretPresent: !!s, secretLen: s.length, startsWhsec: s.startsWith('whsec_'),
-      hasId: !!req.headers['svix-id'], hasTs: !!req.headers['svix-timestamp'], hasSig: !!req.headers['svix-signature'],
-      bodyLen: rawBody ? rawBody.length : 0,
-    });
-    return res.status(401).json({ error: 'invalid signature' });
-  }
+  if (!ok) return res.status(401).json({ error: 'invalid signature' });
 
   let event;
   try { event = JSON.parse(rawBody); }
   catch { return res.status(400).json({ error: 'invalid json' }); }
 
   const type = event?.type;
-
-  // TIJDELIJKE DIAGNOSTIEK: log elk binnenkomend event + de afmeld-relevante
-  // velden, zodat we zien of/hoe Resend een afmelding doorstuurt. Verwijderen
-  // zodra de afmeld-sync bevestigd werkt.
-  console.log('[marketing-webhook] event', {
-    type,
-    unsubscribed: event?.data?.unsubscribed,
-    email: event?.data?.email,
-    dataKeys: event?.data ? Object.keys(event.data) : null,
-  });
-
-  // Afmelden vanuit een Broadcast: Resend stuurt contact.updated met
-  // unsubscribed=true. Reflecteer dat naar de CRM (do_not_email) zodat we deze
-  // persoon niet opnieuw mailen. Match op e-mailadres (case-insensitive).
-  if (type === 'contact.updated' && event?.data?.unsubscribed === true) {
-    const email = String(event?.data?.email || '').trim().toLowerCase();
-    if (email) {
-      await supabase.from('contacts').update({ do_not_email: true }).ilike('email', email);
-    }
-    return res.status(200).json({ ok: true, handled: 'contact.updated' });
-  }
 
   const messageId = event?.data?.email_id || event?.data?.id;
   if (!messageId) return res.status(200).json({ ignored: 'no message id' });

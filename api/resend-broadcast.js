@@ -52,24 +52,51 @@ export default async function handler(req, res) {
   const contacts = toResendContacts(recipients).filter(c => !c.unsubscribed);
   if (contacts.length === 0) return res.status(400).json({ error: 'geen verzendbare ontvangers' });
 
-  // 1) Nieuwe audience per campagne.
-  const audName = `${campaign_name || subject} (${new Date().toISOString().slice(0, 10)})`.slice(0, 100);
-  const aud = await rs('/audiences', 'POST', { name: audName });
-  if (!aud.ok || !aud.data?.id) return res.status(502).json({ error: 'audience aanmaken faalde', detail: aud.data });
-  const audienceId = aud.data.id;
+  // Vaste (persistente) audience: afmeldingen blijven hierin bewaard, zodat we
+  // afgemelde contacten niet per ongeluk opnieuw mailen. Zet RESEND_AUDIENCE_ID
+  // in Vercel op de id van de vaste "Eclectik Newsletter"-audience.
+  const audienceId = process.env.RESEND_AUDIENCE_ID;
+  if (!audienceId) return res.status(500).json({ error: 'RESEND_AUDIENCE_ID niet geconfigureerd' });
 
-  // 2) Contacten toevoegen.
-  let added = 0;
-  for (const c of contacts) {
-    const r = await rs(`/audiences/${audienceId}/contacts`, 'POST',
-      { email: c.email, first_name: c.first_name, unsubscribed: false });
-    if (r.ok) added++;
+  // 1) Segment voor deze verzending = jouw selectie (statische lijst).
+  const segName = `${campaign_name || subject} (${new Date().toISOString().slice(0, 10)})`.slice(0, 100);
+  const seg = await rs('/segments', 'POST', { name: segName, audience_id: audienceId });
+  if (!seg.ok || !seg.data?.id) return res.status(502).json({ error: 'segment aanmaken faalde', detail: seg.data });
+  const segmentId = seg.data.id;
+
+  // 2) Zet de geselecteerde contacten in het segment. BESTAAND contact -> PATCH
+  //    (afmeld-status blijft behouden); NIEUW contact -> POST. We forceren nooit
+  //    'unsubscribed', zodat we niemand ongewild opnieuw aanmelden. Afgemelde
+  //    contacten slaan we over en markeren we in de CRM als do_not_email
+  //    (pull-sync, want Resend stuurt geen contact.updated-webhook).
+  const unsubscribedEmails = [];
+  let inSeg = 0, skipped = 0;
+  const CONCURRENCY = 8;
+  for (let i = 0; i < contacts.length; i += CONCURRENCY) {
+    const chunk = contacts.slice(i, i + CONCURRENCY);
+    await Promise.all(chunk.map(async (c) => {
+      const got = await rs(`/audiences/${audienceId}/contacts/${encodeURIComponent(c.email)}`, 'GET');
+      if (got.ok && got.data?.id) {
+        if (got.data.unsubscribed) { unsubscribedEmails.push(c.email); skipped++; return; }
+        const p = await rs(`/audiences/${audienceId}/contacts/${got.data.id}`, 'PATCH', { segments: [segmentId] });
+        if (p.ok) inSeg++;
+      } else if (got.status === 404) {
+        const post = await rs(`/audiences/${audienceId}/contacts`, 'POST',
+          { email: c.email, first_name: c.first_name, segments: [segmentId] });
+        if (post.ok) inSeg++;
+      }
+    }));
   }
-  if (added === 0) return res.status(502).json({ error: 'geen contacten toegevoegd' });
 
-  // 3) Broadcast maken + versturen.
+  // Pull-sync: afgemelde contacten ook in de CRM op do_not_email zetten.
+  if (unsubscribedEmails.length) {
+    await supabase.from('contacts').update({ do_not_email: true }).in('email', unsubscribedEmails);
+  }
+  if (inSeg === 0) return res.status(400).json({ error: 'geen verzendbare ontvangers (allen afgemeld of opt-out)' });
+
+  // 3) Broadcast naar het segment; Resend slaat afgemelde contacten sowieso over.
   const bc = await rs('/broadcasts', 'POST', {
-    audience_id: audienceId, from, reply_to: reply_to || undefined,
+    segment_id: segmentId, from, reply_to: reply_to || undefined,
     subject, name: campaign_name || subject, html: ensureUnsubscribe(toResendMergeTags(html_body)),
   });
   if (!bc.ok || !bc.data?.id) return res.status(502).json({ error: 'broadcast aanmaken faalde', detail: bc.data });
@@ -80,10 +107,10 @@ export default async function handler(req, res) {
   await supabase.from('campaigns').insert({
     name: campaign_name || subject, subject, html_body,
     from_name: from_name || null, from_email: fromEmail, reply_to: reply_to || null,
-    status: 'sent', recipient_count: added, sent_by: sent_by || null,
+    status: 'sent', recipient_count: inSeg, sent_by: sent_by || null,
     channel: 'broadcast', resend_broadcast_id: bc.data.id, resend_audience_id: audienceId,
     sent_at: new Date().toISOString(),
   });
 
-  return res.status(200).json({ broadcast_id: bc.data.id, audience_id: audienceId, recipients: added });
+  return res.status(200).json({ broadcast_id: bc.data.id, segment_id: segmentId, recipients: inSeg, skipped_unsubscribed: skipped });
 }

@@ -186,16 +186,24 @@ DB triggers assign `companies.account_no` (ALL accounts) and a shared
   MijnDomein) — add DNS records there, DNS-only/grey-cloud.
   - **Twee verzendwegen (belangrijk):** *transactioneel* (`POST /emails`,
     `api/marketing-send.js`) telt op de transactionele dag-/maandlimiet — gebruik
-    dit voor 1-op-1 playbook-mails. *Broadcast* (`api/resend-broadcast.js`) maakt
-    per campagne een Resend-audience, vult die met de selectie en verstuurt een
-    broadcast (target = `audience_id`, geen segments) — dit telt op het
+    dit voor 1-op-1 playbook-mails. *Broadcast* (`api/resend-broadcast.js`) gebruikt
+    één **vaste** audience (`RESEND_AUDIENCE_ID`) en maakt per verzending een
+    **segment** = de selectie; broadcast target = `segment_id`. Telt op het
     **marketing/contact-plan** en is de weg voor newsletters. De composer kiest
     per verzending tussen beide (default: Broadcast).
-  - Afmelden vanuit een broadcast komt binnen als `contact.updated`
-    (`unsubscribed=true`) op de **bestaande** `api/marketing-webhook.js` en zet
-    `contacts.do_not_email=true`. Zet dat event aan op de webhook in het Resend-dashboard.
+  - **Afmeldingen (hard-won):** Resend stuurt **geen** `contact.updated`-webhook
+    bij een broadcast-afmelding — die aanpak werkt niet. Daarom: (a) de vaste
+    audience onthoudt afmeldingen; bestaande contacten worden via **PATCH**
+    (`/audiences/{id}/contacts/{id}`, alleen `segments`) in het segment gezet zodat
+    hun `unsubscribed` behouden blijft — **nooit** een contact opnieuw POSTen met
+    `unsubscribed`, want dat reset 'm naar subscribed. (b) Bij elke verzending
+    worden afgemelde contacten (GET per e-mail) overgeslagen én in de CRM op
+    `do_not_email` gezet (pull-sync). Nieuwe contacten via `POST`.
+  - Broadcasts hebben een verplichte afmeldlink nodig: de HTML moet
+    `{{{RESEND_UNSUBSCRIBE_URL}}}` bevatten (Resend voegt niets automatisch toe);
+    het endpoint voegt een footer toe als de tag ontbreekt.
   - Personalisatie in broadcasts: Resend merge-tag `{{{FIRST_NAME}}}` (de app zet
-    `{{first_name}}` daarnaar om). Contacten via `POST /audiences/{id}/contacts`.
+    `{{first_name}}` daarnaar om).
 - **Vercel**: now on **Pro** (was Hobby — that had a 12 serverless-function
   limit which forced removal of dead Surfe endpoints; Surfe was replaced by
   Unipile and is fully gone).
