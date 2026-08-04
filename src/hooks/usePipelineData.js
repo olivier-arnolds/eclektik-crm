@@ -274,7 +274,10 @@ export function usePipelineData() {
       supabase.from('opportunities').select('*').order('updated_at', { ascending: false }).limit(FETCH_LIMITS.opportunities),
       supabase.from('follow_ups').select('*').order('due_date', { ascending: false }).limit(FETCH_LIMITS.follow_ups),
       supabase.from('tasks').select('*').order('due_date', { ascending: false }).limit(FETCH_LIMITS.tasks),
-      fetchAllRows(() => supabase.from('comms').select('*').order('sent_at', { ascending: false }), FETCH_LIMITS.comms).then(data => ({ data })),
+      // LinkedIn wordt LIVE uit Unipile gehaald (zie lane-comms.jsx), niet uit
+      // deze DB-cache — dus laten we die rijen hier weg. Scheelt duizenden
+      // overbodige rijen en houdt de comms-fetch klein (alleen email/teams/etc.).
+      fetchAllRows(() => supabase.from('comms').select('*').neq('channel', 'linkedin').order('sent_at', { ascending: false }), FETCH_LIMITS.comms).then(data => ({ data })),
       supabase.from('calendar_events').select('*').order('start_at', { ascending: false }).limit(FETCH_LIMITS.calendar_events),
       supabase.from('tags').select('*'),
       supabase.from('contact_tags').select('contact_id, tag_id'),

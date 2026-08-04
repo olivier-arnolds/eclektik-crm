@@ -19,9 +19,32 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.55.5';
+export const CURRENT_VERSION = '1.55.6';
 
 export const CHANGELOG = [
+  {
+    version: '1.55.6',
+    date: '2026-08-04T08:13:41Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Comms: LinkedIn niet meer uit DB laden (komt al live uit Unipile)',
+    summary:
+      'De comms-fetch haalde duizenden oude LinkedIn-rijen uit de database, ' +
+      'terwijl LinkedIn in de app al live uit Unipile komt. Die rijen worden nu ' +
+      'overgeslagen, waardoor de comms-fetch klein en snel blijft (alleen ' +
+      'email/teams). De LinkedIn-tab blijft ongewijzigd werken.',
+    changes: [
+      'Comms-query sluit channel=linkedin uit (.neq).',
+      'LinkedIn blijft live via Unipile (lane-comms.jsx) — ongewijzigd.',
+    ],
+    files: [
+      'src/hooks/usePipelineData.js',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.55.6',
+  },
   {
     version: '1.55.5',
     date: '2026-08-04T08:07:03Z',
