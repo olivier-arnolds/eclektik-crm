@@ -19,9 +19,34 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.55.4';
+export const CURRENT_VERSION = '1.55.5';
 
 export const CHANGELOG = [
+  {
+    version: '1.55.5',
+    date: '2026-08-04T08:07:03Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Comms: alle records laden (waarschuwing "limiet bereikt" opgelost)',
+    summary:
+      'De comms-tabel liep tegen de laadlimiet van 1000 aan (grotendeels oude ' +
+      'LinkedIn-berichten), waardoor de oudste records niet meer zichtbaar waren ' +
+      'en de gele waarschuwing bovenin verscheen. Comms worden nu in pagina\'s ' +
+      'opgehaald tot 5000 records, zodat alles geladen wordt.',
+    changes: [
+      'FETCH_LIMITS.comms verhoogd van 1000 naar 5000.',
+      'Nieuwe fetchAllRows-helper: pagineert met .range() in batches van 1000, ' +
+        'zodat de server-side max-rows limiet (vaak 1000) omzeild wordt.',
+      'Comms-fetch gebruikt nu deze gepagineerde helper.',
+    ],
+    files: [
+      'src/hooks/usePipelineData.js',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.55.5',
+  },
   {
     version: '1.55.4',
     date: '2026-07-14T09:46:05Z',

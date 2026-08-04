@@ -218,8 +218,27 @@ export const FETCH_LIMITS = {
   opportunities: 500,
   follow_ups: 500,
   tasks: 500,
-  comms: 1000,
+  comms: 5000,
   calendar_events: 500,
+}
+
+// PostgREST caps a single response at the server-side max-rows setting
+// (often 1000), so a bare `.limit(5000)` can silently return only 1000.
+// To reliably load more we page through with `.range()` until we run dry
+// or reach the per-table cap. `build` must return a FRESH query builder on
+// each call (order/filters applied, but no range/limit).
+async function fetchAllRows(build, cap) {
+  const PAGE = 1000
+  let out = []
+  for (let from = 0; from < cap; from += PAGE) {
+    const to = Math.min(from + PAGE, cap) - 1
+    const { data, error } = await build().range(from, to)
+    if (error) throw error
+    const batch = data || []
+    out = out.concat(batch)
+    if (batch.length < (to - from + 1)) break // last (partial) page
+  }
+  return out
 }
 
 export function usePipelineData() {
@@ -255,7 +274,7 @@ export function usePipelineData() {
       supabase.from('opportunities').select('*').order('updated_at', { ascending: false }).limit(FETCH_LIMITS.opportunities),
       supabase.from('follow_ups').select('*').order('due_date', { ascending: false }).limit(FETCH_LIMITS.follow_ups),
       supabase.from('tasks').select('*').order('due_date', { ascending: false }).limit(FETCH_LIMITS.tasks),
-      supabase.from('comms').select('*').order('sent_at', { ascending: false }).limit(FETCH_LIMITS.comms),
+      fetchAllRows(() => supabase.from('comms').select('*').order('sent_at', { ascending: false }), FETCH_LIMITS.comms).then(data => ({ data })),
       supabase.from('calendar_events').select('*').order('start_at', { ascending: false }).limit(FETCH_LIMITS.calendar_events),
       supabase.from('tags').select('*'),
       supabase.from('contact_tags').select('contact_id, tag_id'),
