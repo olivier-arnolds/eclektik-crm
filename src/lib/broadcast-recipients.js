@@ -2,6 +2,8 @@
 // - Alleen contacten met een e-mailadres.
 // - do_not_email -> unsubscribed (Resend slaat unsubscribed sowieso over).
 // - E-mail genormaliseerd (trim + lowercase) en gededupliceerd (eerste wint).
+// - contact_id wordt meegenomen zodat het broadcast-pad per ontvanger een
+//   campaign_sends-rij kan schrijven (zichtbaar in de contacthistorie).
 export function toResendContacts(recipients) {
   const seen = new Set();
   const out = [];
@@ -14,6 +16,7 @@ export function toResendContacts(recipients) {
       email,
       first_name: r.first_name || '',
       unsubscribed: !!r.do_not_email,
+      contact_id: r.contact_id || r.id || null,
     });
   }
   return out;

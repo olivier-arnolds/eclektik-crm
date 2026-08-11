@@ -19,9 +19,43 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.55.6';
+export const CURRENT_VERSION = '1.55.7';
 
 export const CHANGELOG = [
+  {
+    version: '1.55.7',
+    date: '2026-08-11T12:58:20Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Marketing: newsletter-broadcast bereikte maar ~9 van de 107 (rate-limit)',
+    summary:
+      'Bij een broadcast naar een grote lijst werd het Resend-segment veel te ' +
+      'snel gevuld (8 tegelijk, geen herhaling bij een rate-limit). Resend ' +
+      'limiteert per seconde, dus na ±9 contacten viel de rest stil weg en ging ' +
+      'de nieuwsbrief maar naar een handvol mensen. Nu wordt het segment rustig ' +
+      'gevuld met retries bij een 429 en veegrondes, en mislukte contacten komen ' +
+      'terug in het antwoord (composer toont "x mislukt"). Daarnaast schrijft het ' +
+      'broadcast-pad nu per ontvanger een campaign_sends-rij, zodat een verstuurde ' +
+      'nieuwsbrief ook in de contacthistorie zichtbaar is.',
+    changes: [
+      'resend-broadcast.js: rs() herprobeert bij 429/5xx met backoff (respecteert Retry-After).',
+      'Segment vullen met lagere gelijktijdigheid (4) + max 3 veegrondes voor mislukte contacten.',
+      'Eerlijke telling: alleen echt-toegevoegde contacten tellen; failed_emails in het antwoord.',
+      'Per ontvanger een campaign_sends-rij (status sent) → zichtbaar op het contact.',
+      'Composer toont het werkelijke aantal mislukt bij een broadcast.',
+      'toResendContacts neemt contact_id mee (nodig voor campaign_sends).',
+    ],
+    files: [
+      'api/resend-broadcast.js',
+      'src/lib/broadcast-recipients.js',
+      'src/lib/broadcast-recipients.test.js',
+      'src/bd/marketing-composer.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.55.7',
+  },
   {
     version: '1.55.6',
     date: '2026-08-04T08:13:41Z',

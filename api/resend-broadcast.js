@@ -6,14 +6,31 @@ const RESEND = 'https://api.resend.com';
 const supabase = (process.env.VITE_SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY)
   ? createClient(process.env.VITE_SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY) : null;
 
-async function rs(path, method, body) {
-  const resp = await fetch(`${RESEND}${path}`, {
-    method,
-    headers: { 'Authorization': `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  const data = await resp.json().catch(() => ({}));
-  return { ok: resp.ok, status: resp.status, data };
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// Resend limiteert het aantal API-calls per seconde. Bij een 429 (of een
+// tijdelijke 5xx) opnieuw proberen met backoff, anders vallen bij het vullen van
+// een groot segment de meeste contacten stil weg (de "9 van de 107"-bug).
+async function rs(path, method, body, { retries = 4 } = {}) {
+  let attempt = 0;
+  for (;;) {
+    const resp = await fetch(`${RESEND}${path}`, {
+      method,
+      headers: { 'Authorization': `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    const data = await resp.json().catch(() => ({}));
+    if ((resp.status === 429 || resp.status >= 500) && attempt < retries) {
+      const retryAfter = Number(resp.headers.get('retry-after'));
+      const wait = Number.isFinite(retryAfter) && retryAfter > 0
+        ? retryAfter * 1000
+        : Math.min(5000, 500 * 2 ** attempt);
+      await sleep(wait);
+      attempt++;
+      continue;
+    }
+    return { ok: resp.ok, status: resp.status, data };
+  }
 }
 
 // Zet de app-placeholder {{first_name}} om naar Resend's merge-tag {{{FIRST_NAME}}}.
@@ -73,34 +90,64 @@ export default async function handler(req, res) {
   //    Globaal-afgemelde contacten slaan we over en markeren we in de CRM als
   //    do_not_email (pull-sync, want Resend stuurt daar geen webhook voor).
   const unsubscribedEmails = [];
-  let inSeg = 0, skipped = 0;
-  const CONCURRENCY = 8;
-  for (let i = 0; i < contacts.length; i += CONCURRENCY) {
-    const chunk = contacts.slice(i, i + CONCURRENCY);
-    await Promise.all(chunk.map(async (c) => {
-      const enc = encodeURIComponent(c.email);
-      const got = await rs(`/contacts/${enc}`, 'GET');
-      if (got.ok && got.data?.id) {
-        if (got.data.unsubscribed) { unsubscribedEmails.push(c.email); skipped++; return; }
-        const add = await rs(`/contacts/${enc}/segments/${segmentId}`, 'POST');
-        if (add.ok) inSeg++;
-        else console.error('[resend-broadcast] contact aan segment koppelen faalde', add.status, c.email, JSON.stringify(add.data));
-      } else if (got.status === 404) {
-        const post = await rs('/contacts', 'POST',
-          { email: c.email, first_name: c.first_name, segments: [{ id: segmentId }] });
-        if (post.ok) inSeg++;
-        else console.error('[resend-broadcast] contact aanmaken faalde', post.status, c.email, JSON.stringify(post.data));
-      } else {
-        console.error('[resend-broadcast] contact ophalen faalde', got.status, c.email, JSON.stringify(got.data));
-      }
-    }));
+  const placed = []; // { email, contact_id } — succesvol in het segment
+
+  // Voegt één contact toe aan het segment. Return:
+  //  'ok'    = in het segment (bestaand gekoppeld of nieuw aangemaakt)
+  //  'unsub' = globaal afgemeld, overslaan
+  //  'fail'  = mislukt (na rs()-retries) — komt in de veegronde terug
+  async function ensureInSegment(c) {
+    const enc = encodeURIComponent(c.email);
+    const got = await rs(`/contacts/${enc}`, 'GET');
+    if (got.ok && got.data?.id) {
+      if (got.data.unsubscribed) { unsubscribedEmails.push(c.email); return 'unsub'; }
+      const add = await rs(`/contacts/${enc}/segments/${segmentId}`, 'POST');
+      if (add.ok) { placed.push({ email: c.email, contact_id: c.contact_id }); return 'ok'; }
+      console.error('[resend-broadcast] koppelen faalde', add.status, c.email, JSON.stringify(add.data));
+      return 'fail';
+    }
+    if (got.status === 404) {
+      const post = await rs('/contacts', 'POST',
+        { email: c.email, first_name: c.first_name, segments: [{ id: segmentId }] });
+      if (post.ok) { placed.push({ email: c.email, contact_id: c.contact_id }); return 'ok'; }
+      console.error('[resend-broadcast] aanmaken faalde', post.status, c.email, JSON.stringify(post.data));
+      return 'fail';
+    }
+    console.error('[resend-broadcast] ophalen faalde', got.status, c.email, JSON.stringify(got.data));
+    return 'fail';
   }
+
+  // Vul het segment met lage gelijktijdigheid; rs() herprobeert bij 429/5xx. Wat
+  // dan nog mislukt gaat in een veegronde opnieuw mee (max 3 rondes). Zo komt
+  // iedereen in het segment i.p.v. dat de rest na de eerste seconde wegvalt.
+  const CONCURRENCY = 4;
+  let todo = contacts.slice();
+  for (let sweep = 0; sweep < 3 && todo.length; sweep++) {
+    const retryable = [];
+    for (let i = 0; i < todo.length; i += CONCURRENCY) {
+      const chunk = todo.slice(i, i + CONCURRENCY);
+      const outcomes = await Promise.all(chunk.map(ensureInSegment));
+      outcomes.forEach((o, j) => { if (o === 'fail') retryable.push(chunk[j]); });
+      await sleep(250);
+    }
+    todo = retryable;
+    if (todo.length) await sleep(1000);
+  }
+  const failedEmails = todo.map((c) => c.email);
+  const inSeg = placed.length;
+  const skipped = unsubscribedEmails.length;
 
   // Pull-sync: afgemelde contacten ook in de CRM op do_not_email zetten.
   if (unsubscribedEmails.length) {
     await supabase.from('contacts').update({ do_not_email: true }).in('email', unsubscribedEmails);
   }
   if (inSeg === 0) return res.status(400).json({ error: 'geen verzendbare ontvangers (allen afgemeld of opt-out)' });
+  if (failedEmails.length) {
+    // Blokkeer niet de hele verzending om een paar contacten, maar log het luid
+    // zodat een grote uitval (zoals de 9-van-107) zichtbaar is en meegaat in het
+    // antwoord (de composer toont het aantal mislukt).
+    console.error('[resend-broadcast] niet alle contacten in segment', { total: contacts.length, inSeg, failed: failedEmails.length });
+  }
 
   // 2b) Wacht tot Resend het segment daadwerkelijk gevuld heeft. Segment-lidmaatschap
   //     is eventually consistent; direct versturen gaf eerder een 422 "audience has
@@ -132,14 +179,38 @@ export default async function handler(req, res) {
     return res.status(502).json({ error: 'broadcast versturen faalde', detail: send.data });
   }
 
-  // 4) Log in campaigns.
-  await supabase.from('campaigns').insert({
+  // 4) Log in campaigns (+ id terug voor de per-ontvanger campaign_sends-rijen).
+  const sentAt = new Date().toISOString();
+  const { data: camp, error: campErr } = await supabase.from('campaigns').insert({
     name: campaign_name || subject, subject, html_body,
     from_name: from_name || null, from_email: fromEmail, reply_to: reply_to || null,
     status: 'sent', recipient_count: inSeg, sent_by: sent_by || null,
     channel: 'broadcast', resend_broadcast_id: bc.data.id, resend_audience_id: segmentId,
-    sent_at: new Date().toISOString(),
-  });
+    sent_at: sentAt,
+  }).select('id').single();
+  if (campErr) console.error('[resend-broadcast] campaigns insert faalde', campErr.message);
 
-  return res.status(200).json({ broadcast_id: bc.data.id, segment_id: segmentId, recipients: inSeg, skipped_unsubscribed: skipped });
+  // 5) Per ontvanger een campaign_sends-rij, zodat de broadcast in de
+  //    contacthistorie verschijnt (en de webhook later opens/clicks kan bijwerken).
+  //    Resend levert per-recipient message-id's niet terug bij een broadcast,
+  //    dus resend_message_id blijft leeg; de webhook matcht op e-mail.
+  if (camp?.id && placed.length) {
+    const rows = placed.map((p) => ({
+      campaign_id: camp.id,
+      contact_id: p.contact_id || null,
+      recipient_email: p.email,
+      status: 'sent',
+      sent_at: sentAt,
+    }));
+    for (let i = 0; i < rows.length; i += 500) {
+      const { error } = await supabase.from('campaign_sends').insert(rows.slice(i, i + 500));
+      if (error) console.error('[resend-broadcast] campaign_sends insert faalde', error.message);
+    }
+  }
+
+  return res.status(200).json({
+    broadcast_id: bc.data.id, segment_id: segmentId,
+    recipients: inSeg, skipped_unsubscribed: skipped,
+    failed: failedEmails.length, failed_emails: failedEmails.slice(0, 50),
+  });
 }

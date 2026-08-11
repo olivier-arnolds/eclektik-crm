@@ -211,7 +211,7 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
         throw new Error((data?.error || `HTTP ${resp.status}`) + (detail ? ` — ${detail}` : ''));
       }
       if (useBroadcast) {
-        setResult({ ok: true, sent: data.recipients, failed: 0, testOnly: false });
+        setResult({ ok: true, sent: data.recipients, failed: data.failed || 0, testOnly: false });
       } else {
         setResult({ ok: true, sent: data.sent, failed: data.failed, testOnly });
       }
