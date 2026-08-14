@@ -19,9 +19,30 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.64.0';
+export const CURRENT_VERSION = '1.64.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.64.1',
+    date: '2026-08-14T17:00:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Content Calendar: weekend (za/zo) uit week- en maandweergave',
+    summary:
+      'Er wordt geen content in het weekend gepland, dus het rooster toont nu alleen ' +
+      'werkdagen (ma-vr). Dat geeft meer ruimte per dag in zowel de week- als de ' +
+      'maandweergave.',
+    changes: [
+      'content-calendar-view.jsx: weekweergave 5 dagkolommen (ma-vr); maandrooster 5 kolommen, weekend-cellen weggelaten.',
+    ],
+    files: [
+      'src/bd/content-calendar-view.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.64.1',
+  },
   {
     version: '1.64.0',
     date: '2026-08-14T16:50:00Z',

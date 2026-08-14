@@ -42,7 +42,8 @@ const STATUS_STYLE = {
   published: { bg: 'rgba(22,163,74,0.16)',   border: 'rgba(22,163,74,0.55)',   label: 'Gepubliceerd' },
 };
 
-const DAY_LABELS = ['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo'];
+// Alleen werkdagen (ma-vr); in het weekend wordt geen content gepland.
+const DAY_LABELS = ['Ma', 'Di', 'Wo', 'Do', 'Vr'];
 const MONTHS_NL = ['januari', 'februari', 'maart', 'april', 'mei', 'juni', 'juli', 'augustus', 'september', 'oktober', 'november', 'december'];
 
 // --- datum-helpers (weekstart = maandag, lokale tijd) ---
@@ -116,7 +117,7 @@ export default function ContentCalendarView() {
   }, [items, patchLocal, load]);
 
   const weekStart = useMemo(() => startOfWeek(anchor), [anchor]);
-  const weekDays = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart]);
+  const weekDays = useMemo(() => Array.from({ length: 5 }, (_, i) => addDays(weekStart, i)), [weekStart]);
   const scheduled = useMemo(() => items.filter(it => it.scheduled_at), [items]);
   const unscheduled = useMemo(() => items.filter(it => !it.scheduled_at), [items]);
 
@@ -132,7 +133,7 @@ export default function ContentCalendarView() {
     return map;
   }, [scheduled, weekDays]);
 
-  const weekLabel = `${weekDays[0].getDate()} ${MONTHS_NL[weekDays[0].getMonth()].slice(0, 3)} – ${weekDays[6].getDate()} ${MONTHS_NL[weekDays[6].getMonth()].slice(0, 3)} ${weekDays[6].getFullYear()}`;
+  const weekLabel = `${weekDays[0].getDate()} ${MONTHS_NL[weekDays[0].getMonth()].slice(0, 3)} – ${weekDays[4].getDate()} ${MONTHS_NL[weekDays[4].getMonth()].slice(0, 3)} ${weekDays[4].getFullYear()}`;
   const today = new Date();
 
   const dragProps = { draggingId, setDraggingId };
@@ -241,7 +242,7 @@ function WeekGrid({ channels, weekDays, weekIndex, today, draggingId, setDraggin
 
   return (
     <div style={{ border: '0.5px solid var(--sep)', borderRadius: 8, overflow: 'hidden' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '80px repeat(7, 1fr)', background: 'var(--fill-1)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '80px repeat(5, 1fr)', background: 'var(--fill-1)' }}>
         <div style={{ padding: '6px 8px' }} />
         {weekDays.map((d, i) => {
           const isToday = sameDay(d, today);
@@ -253,7 +254,7 @@ function WeekGrid({ channels, weekDays, weekIndex, today, draggingId, setDraggin
         })}
       </div>
       {channels.map(ch => (
-        <div key={ch.key} style={{ display: 'grid', gridTemplateColumns: '80px repeat(7, 1fr)', borderTop: '0.5px solid var(--sep)', minHeight: 56 }}>
+        <div key={ch.key} style={{ display: 'grid', gridTemplateColumns: '80px repeat(5, 1fr)', borderTop: '0.5px solid var(--sep)', minHeight: 56 }}>
           <div style={{ padding: '6px 8px', display: 'flex', alignItems: 'center', gap: 6, background: 'var(--bg-1)' }}>
             <span style={{ width: 9, height: 9, borderRadius: 3, background: ch.color, display: 'inline-block' }} />
             <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-2)' }}>{ch.label}</span>
@@ -305,14 +306,14 @@ function MonthGrid({ anchor, scheduled, today, onPickDay }) {
 
   return (
     <div style={{ border: '0.5px solid var(--sep)', borderRadius: 8, overflow: 'hidden' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', background: 'var(--fill-1)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', background: 'var(--fill-1)' }}>
         {DAY_LABELS.map(l => (
           <div key={l} style={{ padding: '6px 8px', textAlign: 'center', fontSize: 11, color: 'var(--text-2)', borderLeft: '0.5px solid var(--sep)' }}>{l}</div>
         ))}
       </div>
       {Array.from({ length: 6 }, (_, w) => (
-        <div key={w} style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', borderTop: '0.5px solid var(--sep)' }}>
-          {cells.slice(w * 7, w * 7 + 7).map((d, i) => {
+        <div key={w} style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', borderTop: '0.5px solid var(--sep)' }}>
+          {cells.slice(w * 7, w * 7 + 5).map((d, i) => {
             const inMonth = d.getMonth() === anchor.getMonth();
             const isToday = sameDay(d, today);
             const k = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
