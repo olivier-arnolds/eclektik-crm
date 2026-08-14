@@ -19,9 +19,35 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.57.0';
+export const CURRENT_VERSION = '1.58.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.58.0',
+    date: '2026-08-14T10:52:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Content Calendar: nieuwe tab (scaffold - Content Calendar stap 3)',
+    summary:
+      'Nieuwe "Content"-tab in de topbar voor de content-kalender. Voorlopig een ' +
+      'lege lijstweergave die items uit content_calendar_items toont met kanaal, ' +
+      'status en geplande datum. De week- en maandweergave met goedkeuren + plannen ' +
+      'volgt in de volgende stappen.',
+    changes: [
+      'Nieuw component content-calendar-view.jsx (lijst-scaffold, kanaal-legenda GLINT/SEER/ROI/ROE).',
+      'BDApp.jsx: content-calendar toegevoegd aan NAV_VIEWS + SCROLL_VIEWS + render-blok (unified shell).',
+      'Topbar.jsx: knop "Content" (I.calendar) na Marketing.',
+    ],
+    files: [
+      'src/bd/content-calendar-view.jsx',
+      'src/bd/BDApp.jsx',
+      'src/bd/Topbar.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.58.0',
+  },
   {
     version: '1.57.0',
     date: '2026-08-14T10:50:00Z',

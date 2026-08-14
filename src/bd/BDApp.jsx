@@ -23,15 +23,16 @@ import PlaybooksHub from '../components/playbooks/PlaybooksHub';
 import OrganogramView from '../components/organogram/OrganogramView';
 import TasksView from './tasks-view';
 import MarketingView from './marketing-view';
+import ContentCalendarView from './content-calendar-view';
 import AdminView from './admin-view';
 import LogView from './log-view';
 import FeedbackModal from './feedback-modal';
 import OnepagerModal from './onepager-modal';
 
 // The single set of left-pane views. The Account 360 always sits to the right.
-const NAV_VIEWS = ['reporting', 'funnel', 'warroom', 'tasks', 'meetings', 'organogram', 'comms', 'marketing', 'playbooks', 'admin', 'log'];
+const NAV_VIEWS = ['reporting', 'funnel', 'warroom', 'tasks', 'meetings', 'organogram', 'comms', 'marketing', 'content-calendar', 'playbooks', 'admin', 'log'];
 // Views whose left pane scrolls as one block (vs. lanes that manage their own scroll).
-const SCROLL_VIEWS = ['warroom', 'reporting', 'marketing', 'admin', 'log'];
+const SCROLL_VIEWS = ['warroom', 'reporting', 'marketing', 'content-calendar', 'admin', 'log'];
 
 export default function BDApp() {
   const [theme, setTheme] = useLocal('bd_theme', 'light');
@@ -330,6 +331,8 @@ export default function BDApp() {
         <MarketingView contacts={contacts} accounts={accounts} deals={deals} allTags={allTags} refetch={refetch} onFilteredAccountsChange={setMarketingAccountIds} />
       </div>
     );
+  } else if (activeView === 'content-calendar') {
+    leftPane = <div style={{ flex: 1, minWidth: 0, overflow: 'auto' }}><ContentCalendarView /></div>;
   } else if (activeView === 'admin') {
     leftPane = <div style={{ flex: 1, minWidth: 0, overflow: 'auto' }}><AdminView /></div>;
   } else if (activeView === 'log') {
