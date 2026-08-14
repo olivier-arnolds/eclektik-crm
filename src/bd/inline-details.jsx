@@ -342,6 +342,28 @@ export function InlineContactDetail({ contactId, onCompose, refetch, allTags, on
           );
         })()}
       </div>
+      <div style={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>Marketingcontent</div>
+        {(() => {
+          const optedIn = !!row.marketing_content_opt_in;
+          return (
+            <button
+              onClick={() => saveField('marketing_content_opt_in', !optedIn)}
+              disabled={!!saving.marketing_content_opt_in}
+              title={optedIn ? 'Ontvangt content-mails (opt-in) - klik om uit te schakelen' : 'Ontvangt geen content-mails - klik om aan te zetten'}
+              style={{
+                alignSelf: 'flex-start', display: 'inline-flex', alignItems: 'center', gap: 6,
+                background: 'transparent', cursor: 'pointer', padding: '3px 8px',
+                border: `0.5px solid ${optedIn ? '#16a34a' : 'var(--text-3)'}`, borderRadius: 6,
+                color: optedIn ? '#16a34a' : 'var(--text-3)', fontSize: 12, fontWeight: 600,
+                opacity: saving.marketing_content_opt_in ? 0.5 : 1,
+              }}>
+              <span style={{ fontSize: 14, lineHeight: 1 }}>{optedIn ? '📣' : '🔕'}</span>
+              {optedIn ? 'Ontvangt marketingcontent' : 'Geen marketingcontent'}
+            </button>
+          );
+        })()}
+      </div>
       <InlineField label="Phone" value={row.phone} onSave={v => saveField('phone', v)} />
       <InlineField label="Mobile" value={row.mobile} onSave={v => saveField('mobile', v)} />
       <InlineField label="Role / title" value={row.title} onSave={v => saveField('title', v)} colspan={2} />

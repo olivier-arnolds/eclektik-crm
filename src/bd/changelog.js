@@ -19,9 +19,36 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.55.7';
+export const CURRENT_VERSION = '1.56.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.56.0',
+    date: '2026-08-14T10:40:31Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Contact: globale opt-in "Marketingcontent" (Content Calendar - stap 2)',
+    summary:
+      'Voorbereiding op de Content Calendar-tab: contacten krijgen een globale ' +
+      'opt-in voor marketingcontent. Los van de bestaande e-mail-blokkade ' +
+      '(do_not_email, die gaat over campagnes/transactioneel): straks ontvangt ' +
+      'een contact een content-mail alleen als deze opt-in aan staat EN het contact ' +
+      'de bijbehorende tag heeft. Nieuwe klikbare toggle in de contactdetails, ' +
+      'direct onder de e-mail-status. Standaard uit (bewuste keuze wie content krijgt).',
+    changes: [
+      'DB: contacts.marketing_content_opt_in (boolean, not null, default false).',
+      'inline-details.jsx: toggle "Ontvangt marketingcontent" / "Geen marketingcontent" onder Email status.',
+      'Globale opt-in (één schakelaar), niet per kanaal - zo afgesproken.',
+    ],
+    files: [
+      'sql/schema_marketing_content_optin_2026-08-14.sql',
+      'src/bd/inline-details.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.56.0',
+  },
   {
     version: '1.55.7',
     date: '2026-08-11T12:58:20Z',
