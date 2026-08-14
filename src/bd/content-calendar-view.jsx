@@ -23,6 +23,18 @@ export const CHANNELS = [
 
 const TYPE_BADGE = { email: 'Mail', linkedin_post: 'Post', linkedin_dm: 'DM' };
 
+// Unipile-accounts (CLAUDE.md §5). Leeg = default = Marco (env CONTENT_LINKEDIN_ACCOUNT_ID).
+const DEFAULT_LINKEDIN_ACCOUNT_ID = 'KYq2oN8JSPiAQSrcIfT5Ew'; // Marco
+const LINKEDIN_ACCOUNTS = [
+  { id: 'KYq2oN8JSPiAQSrcIfT5Ew', label: 'Marco' },
+  { id: 'j9-n2jeNTtGUxemfjlBsZA', label: 'Yarmilla' },
+  { id: 'tC2o50tiTBiRCt9xAnio3w', label: 'Olivier' },
+];
+const linkedinAccountLabel = (id) => {
+  const eff = id || DEFAULT_LINKEDIN_ACCOUNT_ID;
+  return LINKEDIN_ACCOUNTS.find(a => a.id === eff)?.label || eff;
+};
+
 const STATUS_STYLE = {
   draft:     { bg: 'rgba(148,163,184,0.18)', border: 'rgba(148,163,184,0.55)', label: 'Draft' },
   approved:  { bg: 'rgba(37,99,235,0.16)',   border: 'rgba(37,99,235,0.55)',   label: 'Goedgekeurd' },
@@ -367,9 +379,11 @@ function ContentItemModal({ item, tags = [], onClose, onSaved }) {
   const published = item.status === 'published';
   const isEmail = item.type === 'email';
   const initialDate = item.scheduled_at ? new Date(item.scheduled_at) : null;
+  const isLinkedIn = item.type === 'linkedin_post' || item.type === 'linkedin_dm';
   const [subject, setSubject] = useState(item.subject || '');
   const [body, setBody] = useState(item.body || '');
   const [targetTag, setTargetTag] = useState(item.target_tag || '');
+  const [accountId, setAccountId] = useState(item.linkedin_account_id || '');
   const [dateVal, setDateVal] = useState(initialDate ? toDateInput(initialDate) : '');
   const [timeVal, setTimeVal] = useState(initialDate ? toTimeInput(initialDate) : '09:00');
   const [approved, setApproved] = useState(isApproved(item.status));
@@ -394,6 +408,7 @@ function ContentItemModal({ item, tags = [], onClose, onSaved }) {
       subject: isEmail ? (subject || null) : null,
       body,
       target_tag: isEmail ? (targetTag || null) : null,
+      linkedin_account_id: isLinkedIn ? (accountId || null) : null,
       scheduled_at,
       status: nextStatus,
       updated_at: new Date().toISOString(),
@@ -401,7 +416,7 @@ function ContentItemModal({ item, tags = [], onClose, onSaved }) {
     const { error } = await supabase.from('content_calendar_items').update(fields).eq('id', item.id);
     setSaving(false);
     if (error) { setErr(error.message); return; }
-    onSaved && onSaved({ subject: fields.subject, body, target_tag: fields.target_tag, scheduled_at, status: nextStatus });
+    onSaved && onSaved({ subject: fields.subject, body, target_tag: fields.target_tag, linkedin_account_id: fields.linkedin_account_id, scheduled_at, status: nextStatus });
     onClose();
   }
 
@@ -438,6 +453,23 @@ function ContentItemModal({ item, tags = [], onClose, onSaved }) {
             <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
               <span style={{ textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'var(--font-mono)' }}>Bron: </span>{item.source_note}
             </div>
+          )}
+
+          {isLinkedIn && (
+            <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <span style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>
+                LinkedIn-account
+              </span>
+              <select value={accountId} onChange={e => setAccountId(e.target.value)} disabled={published}
+                style={{ padding: '6px 8px', borderRadius: 6, border: '0.5px solid var(--sep)', background: 'var(--bg-2)', color: 'var(--text-1)', fontSize: 13 }}>
+                <option value="">Standaard (Marco)</option>
+                {LINKEDIN_ACCOUNTS.map(a => <option key={a.id} value={a.id}>{a.label}</option>)}
+                {accountId && !LINKEDIN_ACCOUNTS.some(a => a.id === accountId) && <option value={accountId}>{accountId} (onbekend)</option>}
+              </select>
+              <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
+                Wordt geplaatst via: <strong style={{ color: 'var(--text-2)' }}>{linkedinAccountLabel(accountId)}</strong>
+              </span>
+            </label>
           )}
 
           {isEmail && (

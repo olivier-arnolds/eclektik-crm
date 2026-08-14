@@ -19,9 +19,32 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.63.0';
+export const CURRENT_VERSION = '1.63.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.63.1',
+    date: '2026-08-14T14:55:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Content Calendar: LinkedIn-account zichtbaar + kiesbaar in de modal',
+    summary:
+      'Voor LinkedIn-items (post/DM) toont de detail-modal nu welk account gaat ' +
+      'plaatsen en laat je het kiezen (Marco/Yarmilla/Olivier; standaard Marco). ' +
+      'Een "Wordt geplaatst via: …"-regel maakt de keuze meteen zichtbaar. De keuze ' +
+      'schrijft naar content_calendar_items.linkedin_account_id.',
+    changes: [
+      'content-calendar-view.jsx: account-select + "Wordt geplaatst via"-regel voor linkedin_post/linkedin_dm.',
+      'LINKEDIN_ACCOUNTS-map (CLAUDE.md §5) in de view; leeg = standaard Marco.',
+    ],
+    files: [
+      'src/bd/content-calendar-view.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.63.1',
+  },
   {
     version: '1.63.0',
     date: '2026-08-14T14:45:00Z',
