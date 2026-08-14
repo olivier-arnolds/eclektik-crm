@@ -1,8 +1,9 @@
 import { requireUser } from './_lib/guard.js';
 // Unipile API proxy — handles LinkedIn messaging, profile lookup, and posts
-// Routes: POST /api/unipile?action=send-message|start-chat|get-profile|get-posts
+// Routes: POST /api/unipile?action=send-message|start-chat|get-profile|get-posts|create-post
 
 import { createClient } from '@supabase/supabase-js';
+import { createLinkedInPost } from './_lib/unipile-post.js';
 
 const DSN = process.env.UNIPILE_BASE_URL || process.env.UNIPILE_DSN;
 const TOKEN = process.env.UNIPILE_API_KEY || process.env.UNIPILE_TOKEN;
@@ -149,6 +150,16 @@ export default async function handler(req, res) {
       }
       const result = await unipileRequest('POST', `/chats/${chat_id}/messages`, { text }, true);
       return res.status(result.error ? 400 : 200).json(result);
+    }
+
+    // ── CREATE LINKEDIN POST (text) ──
+    if (action === 'create-post' && req.method === 'POST') {
+      const { account_id, text } = req.body || {};
+      if (!account_id || !text) {
+        return res.status(400).json({ error: 'account_id and text required' });
+      }
+      const result = await createLinkedInPost({ accountId: account_id, text });
+      return res.status(result.ok ? 200 : (result.status || 400)).json(result);
     }
 
     // ── GET LINKEDIN PROFILE (by public identifier or URL) ──

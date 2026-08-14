@@ -1,6 +1,11 @@
 import { requireCron } from './_lib/guard.js';
 import { sendBroadcast } from './_lib/send-broadcast.js';
+import { createLinkedInPost } from './_lib/unipile-post.js';
 import { createClient } from '@supabase/supabase-js';
+
+// Alle content-LinkedIn-posts gaan via Marco's account (afspraak). Overschrijfbaar
+// via env zonder code-wijziging. Zie CLAUDE.md §5 voor de account-map.
+const CONTENT_LINKEDIN_ACCOUNT_ID = process.env.CONTENT_LINKEDIN_ACCOUNT_ID || 'KYq2oN8JSPiAQSrcIfT5Ew';
 
 // Content Calendar publish-cron (stap 6: e-mail). Vindt goedgekeurde, geplande
 // items waarvan de tijd verstreken is (status='scheduled' AND scheduled_at<=now())
@@ -85,6 +90,13 @@ async function publishEmail(item) {
   return { ok: true, external_message_id: send.result?.broadcast_id || null, recipients: send.result?.recipients ?? recipients.length };
 }
 
+async function publishLinkedInPost(item) {
+  if (!item.body || !String(item.body).trim()) return { ok: false, reason: 'lege tekst' };
+  const res = await createLinkedInPost({ accountId: CONTENT_LINKEDIN_ACCOUNT_ID, text: item.body });
+  if (!res.ok) return { ok: false, reason: res.error || 'LinkedIn-post mislukt' };
+  return { ok: true, external_message_id: res.postId || null };
+}
+
 export default async function handler(req, res) {
   if (!requireCron(req, res)) return;
   if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
@@ -99,19 +111,21 @@ export default async function handler(req, res) {
     .limit(BATCH);
   if (error) return res.status(500).json({ error: error.message });
 
-  const stats = { due: (due || []).length, published: 0, skipped_linkedin: 0, failed: 0 };
+  const stats = { due: (due || []).length, published: 0, skipped: 0, failed: 0 };
   const details = [];
 
   for (const item of (due || [])) {
-    if (item.type !== 'email') {
-      // LinkedIn (post/dm) volgt in stap 7-8; laat 'scheduled' staan.
-      stats.skipped_linkedin++;
-      details.push({ id: item.id, type: item.type, status: 'skipped (linkedin, nog niet ondersteund)' });
+    if (item.type === 'linkedin_dm') {
+      // 1-op-1 LinkedIn-DM volgt in stap 8; laat 'scheduled' staan.
+      stats.skipped++;
+      details.push({ id: item.id, type: item.type, status: 'skipped (linkedin_dm, nog niet ondersteund)' });
       continue;
     }
     let outcome;
     try {
-      outcome = await publishEmail(item);
+      if (item.type === 'email') outcome = await publishEmail(item);
+      else if (item.type === 'linkedin_post') outcome = await publishLinkedInPost(item);
+      else { stats.skipped++; details.push({ id: item.id, type: item.type, status: 'skipped (onbekend type)' }); continue; }
     } catch (e) {
       outcome = { ok: false, reason: e.message };
     }

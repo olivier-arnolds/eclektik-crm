@@ -19,9 +19,38 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.61.3';
+export const CURRENT_VERSION = '1.62.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.62.0',
+    date: '2026-08-14T14:35:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Content Calendar: LinkedIn-post auto-publicatie (stap 7)',
+    summary:
+      'Goedgekeurde, geplande linkedin_post-items worden nu op hun tijd automatisch ' +
+      'op LinkedIn geplaatst via Marco\'s account (afspraak; overschrijfbaar via env ' +
+      'CONTENT_LINKEDIN_ACCOUNT_ID). Nieuwe Unipile-actie create-post (POST ' +
+      '/api/v1/posts) via dezelfde DSN/auth als de werkende messaging. Bij succes: ' +
+      'status=published + external_message_id (Unipile post_id). LinkedIn-DM volgt ' +
+      'in stap 8. Er wordt niets geplaatst tot je een linkedin_post-item goedkeurt ' +
+      'en inplant.',
+    changes: [
+      'api/_lib/unipile-post.js: gedeelde createLinkedInPost (X-API-KEY, form-encoded, POST /posts).',
+      'api/content-calendar-execute.js: cron-branch linkedin_post via Marco\'s account; alleen linkedin_dm blijft nog over.',
+      'api/unipile.js: nieuwe action=create-post (thin wrapper op de gedeelde helper).',
+    ],
+    files: [
+      'api/_lib/unipile-post.js',
+      'api/content-calendar-execute.js',
+      'api/unipile.js',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.62.0',
+  },
   {
     version: '1.61.3',
     date: '2026-08-14T14:20:00Z',
