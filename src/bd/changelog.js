@@ -19,9 +19,41 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.59.1';
+export const CURRENT_VERSION = '1.60.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.60.0',
+    date: '2026-08-14T11:35:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Content Calendar: slepen + goedkeuren/plannen (stap 5)',
+    summary:
+      'Items zijn nu versleepbaar in de weekweergave: sleep een kaart naar een andere ' +
+      'dag om te (her)plannen, of naar de "Nog in te plannen"-lade om van de kalender ' +
+      'te halen. Slepen behoudt de tijd (anders 09:00) en verandert nooit de ' +
+      'goedkeuring. Klik een kaart voor de detail-modal: tekst + onderwerp bewerken, ' +
+      'bron, datum/tijd-picker en een "Goedgekeurd"-toggle. Status is een afgeleide: ' +
+      'draft (niet goedgekeurd) → approved (goedgekeurd, geen datum) → scheduled ' +
+      '(goedgekeurd + datum, dit pakt de cron in stap 6 op). Gepubliceerde items zijn ' +
+      'read-only en niet versleepbaar.',
+    changes: [
+      'content-calendar-view.jsx: HTML5 drag-drop (zelfde patroon als de funnel), drop op weekcellen + unschedule-lade.',
+      'Slepen kan het kanaal niet wijzigen (drop alleen op de eigen kanaalrij) en raakt goedkeuring niet aan.',
+      'ContentItemModal: onderwerp/tekst bewerken, bron, datum+tijd, Goedgekeurd-toggle met uitleg; published = read-only.',
+      'content-calendar-logic.js: pure statuslogica (isApproved/deriveStatus/statusAfterMove), los van de UI.',
+      'content-calendar-logic.test.js: 8 tests borgen dat slepen de goedkeuring nooit omklapt.',
+    ],
+    files: [
+      'src/bd/content-calendar-view.jsx',
+      'src/bd/content-calendar-logic.js',
+      'src/bd/content-calendar-logic.test.js',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.60.0',
+  },
   {
     version: '1.59.1',
     date: '2026-08-14T11:20:00Z',
