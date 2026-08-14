@@ -19,9 +19,33 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.63.1';
+export const CURRENT_VERSION = '1.63.2';
 
 export const CHANGELOG = [
+  {
+    version: '1.63.2',
+    date: '2026-08-14T16:35:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Content Calendar: LinkedIn-post gaf Unipile 400 (verkeerde content-type)',
+    summary:
+      'De geplande testpost werd niet geplaatst: de cron riep Unipile POST /posts ' +
+      'aan met application/x-www-form-urlencoded (zoals de chat-endpoints), maar ' +
+      '/posts vereist multipart/form-data - Unipile antwoordde met 400. De helper ' +
+      'gebruikt nu een echte FormData (fetch zet zelf de multipart-boundary) en ' +
+      'toont bij een fout de echte Unipile-detailmelding i.p.v. een generieke tekst. ' +
+      'Diagnose via de Vercel-runtime-logs.',
+    changes: [
+      'api/_lib/unipile-post.js: FormData i.p.v. URLSearchParams; geen handmatige content-type; foutmelding bevat Unipile-detail.',
+    ],
+    files: [
+      'api/_lib/unipile-post.js',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.63.2',
+  },
   {
     version: '1.63.1',
     date: '2026-08-14T14:55:00Z',

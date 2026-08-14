@@ -12,7 +12,10 @@ export async function createLinkedInPost({ accountId, text }) {
   if (!accountId) return { ok: false, error: 'accountId vereist' };
   if (!text || !String(text).trim()) return { ok: false, error: 'text vereist' };
 
-  const form = new URLSearchParams();
+  // Unipile /posts vereist multipart/form-data (niet urlencoded zoals de chat-
+  // endpoints). Gebruik een echte FormData; fetch zet zelf de juiste
+  // content-type met boundary (dus GEEN eigen content-type header meesturen).
+  const form = new FormData();
   form.append('account_id', accountId);
   form.append('text', String(text));
 
@@ -20,12 +23,8 @@ export async function createLinkedInPost({ accountId, text }) {
   try {
     resp = await fetch(`https://${DSN}/api/v1/posts`, {
       method: 'POST',
-      headers: {
-        'X-API-KEY': TOKEN,
-        'accept': 'application/json',
-        'content-type': 'application/x-www-form-urlencoded',
-      },
-      body: form.toString(),
+      headers: { 'X-API-KEY': TOKEN, 'accept': 'application/json' },
+      body: form,
     });
   } catch (e) {
     return { ok: false, error: `Unipile request faalde: ${e.message}` };
@@ -36,7 +35,8 @@ export async function createLinkedInPost({ accountId, text }) {
   try { data = JSON.parse(raw); } catch { data = { raw }; }
 
   if (!resp.ok) {
-    return { ok: false, status: resp.status, error: data?.message || data?.error || `Unipile error ${resp.status}`, details: data };
+    const detail = data?.message || data?.error || data?.detail || (raw ? raw.slice(0, 300) : '');
+    return { ok: false, status: resp.status, error: `Unipile error ${resp.status}${detail ? ': ' + detail : ''}`, details: data };
   }
   return { ok: true, postId: data?.post_id || null, data };
 }
