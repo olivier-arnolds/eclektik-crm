@@ -19,9 +19,30 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.61.0';
+export const CURRENT_VERSION = '1.61.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.61.1',
+    date: '2026-08-14T13:05:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Content Calendar: meerdere items per dag nu allemaal zichtbaar',
+    summary:
+      'De weekweergave toonde per kanaal-dag maar één kaart met een niet-klikbaar ' +
+      '"+N meer"-label, waardoor een tweede draft op dezelfde dag onbereikbaar was. ' +
+      'Nu worden alle items in de cel gestapeld getoond.',
+    changes: [
+      'content-calendar-view.jsx: weekcel rendert alle items (geen slice(0,1) + dood "+N meer" meer).',
+    ],
+    files: [
+      'src/bd/content-calendar-view.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.61.1',
+  },
   {
     version: '1.61.0',
     date: '2026-08-14T11:45:00Z',

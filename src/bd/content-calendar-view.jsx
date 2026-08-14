@@ -265,12 +265,9 @@ function WeekGrid({ channels, weekDays, weekIndex, today, draggingId, setDraggin
                   background: isOver ? 'var(--accent-tint)' : 'transparent',
                   outline: isOver ? '1px dashed var(--accent)' : 'none', outlineOffset: -2,
                 }}>
-                {cell.slice(0, 1).map(it => (
+                {cell.map(it => (
                   <ItemCard key={it.id} it={it} draggable dragging={draggingId === it.id} setDraggingId={setDraggingId} onOpen={onOpen} />
                 ))}
-                {cell.length > 1 && (
-                  <span style={{ fontSize: 9, color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>+{cell.length - 1} meer</span>
-                )}
               </div>
             );
           })}
