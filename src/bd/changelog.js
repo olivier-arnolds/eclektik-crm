@@ -19,9 +19,39 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.58.0';
+export const CURRENT_VERSION = '1.59.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.59.0',
+    date: '2026-08-14T11:00:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Content Calendar: week- en maandweergave (stap 4)',
+    summary:
+      'De Content-tab toont nu een echte kalender. Week-view (default): rijen = ' +
+      'kanalen (GLINT/SEER/ROI/ROE, vaste kleuren), kolommen = ma-zo, kaarten met ' +
+      'type-badge (Mail/Post/DM) en achtergrondkleur per status. Samenvattingschips ' +
+      'per kanaal met een oranje waarschuwing bij 0 items die week. Maand-toggle ' +
+      'rechtsboven: maandrooster met gekleurde stipjes per kanaal; klik een dag om ' +
+      'naar die week te springen. Drafts zonder datum staan in een "Nog in te ' +
+      'plannen"-lade. Read-only; goedkeuren + plannen volgt in stap 5.',
+    changes: [
+      'content-calendar-view.jsx: WeekGrid met kanaal-swimlanes + dagkolommen (ma-zo).',
+      'Kaart: type-badge boven titel, status-tint als achtergrond (tekst blijft leesbaar).',
+      'Kanaal-chips met ⚠-waarschuwingsstijl bij 0 items die week.',
+      'MonthGrid: 6-weeks maandrooster met kanaal-stipjes; klik dag → spring naar week.',
+      'Week/maand-navigatie (‹ Vandaag ›) + view-toggle.',
+      'UnscheduledTray: drafts zonder scheduled_at apart getoond.',
+    ],
+    files: [
+      'src/bd/content-calendar-view.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.59.0',
+  },
   {
     version: '1.58.0',
     date: '2026-08-14T10:52:00Z',
