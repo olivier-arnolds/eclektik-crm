@@ -65,6 +65,10 @@ export default function Topbar({ theme, setTheme, view, setView, layout, setLayo
           onClick={() => setView('marketing')} title="Marketing — segment & campaign">
           <I.send /> Marketing
         </button>
+        <button className={view === 'content-calendar' ? 'on' : ''}
+          onClick={() => setView('content-calendar')} title="Content Calendar — gedrafte content per kanaal, goedkeuren & plannen">
+          <I.calendar /> Content
+        </button>
         <button className={view === 'playbooks' ? 'on' : ''} onClick={() => setView('playbooks')} title="Playbooks">
           <I.sparkle /> Playbooks
         </button>

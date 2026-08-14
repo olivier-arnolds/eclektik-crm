@@ -19,9 +19,32 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.59.0';
+export const CURRENT_VERSION = '1.59.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.59.1',
+    date: '2026-08-14T11:20:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Content Calendar: topbar-knop ontbrak (casing-slip bij git add)',
+    summary:
+      'De "Content"-knop in de topbar was wel lokaal gemaakt maar niet meegegaan ' +
+      'in de push: het bestand heet topbar.jsx (kleine letter) maar werd als ' +
+      'Topbar.jsx (hoofdletter) ge-add. macOS is hoofdletter-ongevoelig dus lokaal ' +
+      'viel het niet op; git tracked alleen de kleine-letter-versie. Nu correct ' +
+      'gecommit zodat de tab bereikbaar is.',
+    changes: [
+      'topbar.jsx: knop "Content" (I.calendar) na Marketing - nu daadwerkelijk gecommit.',
+    ],
+    files: [
+      'src/bd/topbar.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.59.1',
+  },
   {
     version: '1.59.0',
     date: '2026-08-14T11:00:00Z',
