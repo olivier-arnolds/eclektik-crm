@@ -57,14 +57,16 @@ async function recipientsForItem(item) {
   const rows = [];
   for (let i = 0; i < ids.length; i += 500) {
     const { data, error } = await supabase.from('contacts')
-      .select('id, email, first_name, do_not_email')
+      .select('id, email, first_name, do_not_email, former, stage')
       .in('id', ids.slice(i, i + 500))
       .eq('marketing_content_opt_in', true)
       .not('email', 'is', null);
     if (error) return { error: error.message };
     rows.push(...(data || []));
   }
-  return { recipients: rows };
+  // Inactieve/former contacten overslaan (zelfde regel als de app: stage 'inactive' of former=true).
+  const active = rows.filter(r => !r.former && String(r.stage || '').toLowerCase() !== 'inactive');
+  return { recipients: active };
 }
 
 async function publishEmail(item) {

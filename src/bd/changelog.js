@@ -19,9 +19,31 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.61.2';
+export const CURRENT_VERSION = '1.61.3';
 
 export const CHANGELOG = [
+  {
+    version: '1.61.3',
+    date: '2026-08-14T14:20:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Content Calendar: cron slaat inactieve/former contacten over',
+    summary:
+      'De publish-cron bepaalde ontvangers op tag + opt-in, maar filterde niet op ' +
+      'actief/inactief. Een inactief of former contact met de tag en de content-opt-in ' +
+      'zou zo toch een content-mail krijgen. De cron slaat nu contacten met ' +
+      'stage "inactive" of former=true over (zelfde regel als de rest van de app).',
+    changes: [
+      'api/content-calendar-execute.js: recipientsForItem filtert former=true en stage="inactive" eruit.',
+    ],
+    files: [
+      'api/content-calendar-execute.js',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.61.3',
+  },
   {
     version: '1.61.2',
     date: '2026-08-14T14:10:00Z',
