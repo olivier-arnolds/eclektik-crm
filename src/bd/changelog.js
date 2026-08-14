@@ -19,9 +19,32 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.66.0';
+export const CURRENT_VERSION = '1.66.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.66.1',
+    date: '2026-08-14T18:05:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Marketing: filter "Checked" (LinkedIn-connectie al gecheckt?)',
+    summary:
+      'Nieuwe ja/nee-filter onderin het linkermenu van Marketing: toon contacten die ' +
+      'voor het gekozen account al wel/niet op LinkedIn-connectie gecheckt zijn. Zo ' +
+      'selecteer je makkelijk alleen de nog-niet-gecheckte contacten en voorkom je ' +
+      'dubbel werk (en onnodige profielweergaven). Het label toont het actieve ' +
+      'account (M/Y/O).',
+    changes: [
+      'marketing-contacts.jsx: YesNoFilter "Checked 🔗" gekoppeld aan het gekozen connectie-account.',
+    ],
+    files: [
+      'src/bd/marketing-contacts.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.66.1',
+  },
   {
     version: '1.66.0',
     date: '2026-08-14T17:55:00Z',

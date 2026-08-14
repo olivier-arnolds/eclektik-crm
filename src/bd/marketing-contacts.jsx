@@ -262,6 +262,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
   const [connections, setConnections] = useState({});
   const [connAccount, setConnAccount] = useState(LINKEDIN_ACCOUNTS[0].id); // gekozen account voor de check (default Marco)
   const [connChecking, setConnChecking] = useState(false);
+  const [connCheckedFilter, setConnCheckedFilter] = useState(null); // null | 'yes' | 'no' — gecheckt voor connAccount?
   const [enriching, setEnriching] = useState(false);
   const [enrichProgress, setEnrichProgress] = useState({ done: 0, total: 0 });
   const [openContactId, setOpenContactId] = useState(null);
@@ -676,6 +677,9 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
       if (titleFilter === 'no' && c.role) return false;
       if (followFilter === 'yes' && !followedContactIds.has(c.id)) return false;
       if (followFilter === 'no' && followedContactIds.has(c.id)) return false;
+      // Checked = heeft dit contact al een connectie-status voor het gekozen account?
+      if (connCheckedFilter === 'yes' && connections[c.id]?.[connAccount] === undefined) return false;
+      if (connCheckedFilter === 'no' && connections[c.id]?.[connAccount] !== undefined) return false;
       if (hasGlintDeal && !accountsWithGlintDeal.has(c.accountId)) return false;
       if (hasAnyDeal && !accountsWithAnyDeal.has(c.accountId)) return false;
       if (selectedTagIds.size > 0) {
@@ -753,7 +757,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
       if (cmp !== 0) return cmp;
       return (a.name || '').toLowerCase().localeCompare((b.name || '').toLowerCase());
     });
-  }, [contacts, activeFilter, tagFilter, emailFilter, emailStatusFilter, linkedinFilter, titleFilter, followFilter, followedContactIds, hasGlintDeal, hasAnyDeal, accountsWithGlintDeal, accountsWithAnyDeal, accountsWithActiveProposal, selectedTagIds, selectedAccountTypes, accountTypeById, selectedCompanies, selectedCountries, selectedCities, selectedIndustries, selectedEmpBuckets, accountMetaById, searchText, hiddenPairs, sortMode]);
+  }, [contacts, activeFilter, tagFilter, emailFilter, emailStatusFilter, linkedinFilter, titleFilter, followFilter, followedContactIds, connCheckedFilter, connections, connAccount, hasGlintDeal, hasAnyDeal, accountsWithGlintDeal, accountsWithAnyDeal, accountsWithActiveProposal, selectedTagIds, selectedAccountTypes, accountTypeById, selectedCompanies, selectedCountries, selectedCities, selectedIndustries, selectedEmpBuckets, accountMetaById, searchText, hiddenPairs, sortMode]);
 
   // Is er daadwerkelijk gefilterd? (alles behalve de standaard-staat). Drijft
   // de live accountlijst-koppeling: alleen dan versmalt het rechterpaneel mee.
@@ -763,11 +767,12 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
     selectedCities.size > 0 || selectedIndustries.size > 0 ||
     selectedEmpBuckets.size > 0 || hasGlintDeal || hasAnyDeal ||
     !!emailFilter || !!linkedinFilter || !!titleFilter || !!followFilter ||
+    !!connCheckedFilter ||
     !!tagFilter || searchText.trim() !== '' || activeFilter !== 'yes'
   ), [selectedTagIds, selectedAccountTypes, selectedCompanies, selectedCountries,
       selectedCities, selectedIndustries, selectedEmpBuckets, hasGlintDeal,
       hasAnyDeal, emailFilter, linkedinFilter, titleFilter, followFilter,
-      tagFilter, searchText, activeFilter]);
+      connCheckedFilter, tagFilter, searchText, activeFilter]);
 
   // Meld de gefilterde account-ids omhoog zodat de accountlijst (rechterpaneel)
   // live meebeweegt. null = niet filteren (toon alle accounts).
@@ -979,6 +984,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
         <YesNoFilter label="LinkedIn" value={linkedinFilter} onChange={setLinkedinFilter} />
         <YesNoFilter label="Job Title" value={titleFilter} onChange={setTitleFilter} />
         <YesNoFilter label="Follow 🔔" value={followFilter} onChange={setFollowFilter} />
+        <YesNoFilter label={`Checked 🔗 (${LINKEDIN_ACCOUNTS.find(a => a.id === connAccount)?.short || '?'})`} value={connCheckedFilter} onChange={setConnCheckedFilter} />
         <YesNoFilter label="Active" value={activeFilter} onChange={setActiveFilter} />
         <YesNoFilter label="Tag" value={tagFilter} onChange={setTagFilter} />
       </aside>
