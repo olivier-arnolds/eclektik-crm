@@ -19,9 +19,42 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.65.0';
+export const CURRENT_VERSION = '1.66.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.66.0',
+    date: '2026-08-14T17:55:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Content Calendar: LinkedIn-DM auto-verzending (stap 8)',
+    summary:
+      'Een linkedin_dm-item stuurt nu op de geplande tijd automatisch een DM naar ' +
+      'één gekozen CRM-contact, via het gekozen account. In de modal kies je de ' +
+      'ontvanger (zoeken op naam, alleen contacten met LinkedIn-URL) en zie je meteen ' +
+      'of dat account 1e-graads verbonden is (op basis van de connectie-cache), zodat ' +
+      'je weet of de DM kans van slagen heeft. De cron zoekt het profiel op via ' +
+      'Unipile (provider_id) en start een nieuwe chat met het bericht. Hiermee zijn ' +
+      'alle drie de kanalen (e-mail, post, DM) geautomatiseerd.',
+    changes: [
+      'DB: content_calendar_items.recipient_contact_id (FK contacts).',
+      'api/_lib/unipile-dm.js: sendLinkedInDM (profiel → provider_id → POST /chats).',
+      'api/content-calendar-execute.js: cron-branch linkedin_dm (ontvanger-contact + account).',
+      'content-calendar-view.jsx: ontvanger-zoekkiezer + connectie-waarschuwing in de modal.',
+      'BDApp.jsx: contacts doorgegeven aan de Content Calendar-view.',
+    ],
+    files: [
+      'sql/schema_content_calendar_dm_recipient_2026-08-14.sql',
+      'api/_lib/unipile-dm.js',
+      'api/content-calendar-execute.js',
+      'src/bd/content-calendar-view.jsx',
+      'src/bd/BDApp.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.66.0',
+  },
   {
     version: '1.65.0',
     date: '2026-08-14T17:25:00Z',

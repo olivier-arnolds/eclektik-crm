@@ -332,7 +332,7 @@ export default function BDApp() {
       </div>
     );
   } else if (activeView === 'content-calendar') {
-    leftPane = <div style={{ flex: 1, minWidth: 0, overflow: 'auto' }}><ContentCalendarView /></div>;
+    leftPane = <div style={{ flex: 1, minWidth: 0, overflow: 'auto' }}><ContentCalendarView contacts={contacts} /></div>;
   } else if (activeView === 'admin') {
     leftPane = <div style={{ flex: 1, minWidth: 0, overflow: 'auto' }}><AdminView /></div>;
   } else if (activeView === 'log') {

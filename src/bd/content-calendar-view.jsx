@@ -62,7 +62,7 @@ function pad(n) { return String(n).padStart(2, '0'); }
 function toDateInput(d) { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
 function toTimeInput(d) { return `${pad(d.getHours())}:${pad(d.getMinutes())}`; }
 
-export default function ContentCalendarView() {
+export default function ContentCalendarView({ contacts = [] }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -202,6 +202,7 @@ export default function ContentCalendarView() {
         <ContentItemModal
           item={items.find(it => it.id === openItem.id) || openItem}
           tags={tags}
+          contacts={contacts}
           onClose={() => setOpenItem(null)}
           onSaved={(fields) => { patchLocal(openItem.id, fields); }}
         />
@@ -375,16 +376,20 @@ function UnscheduledTray({ items, draggingId, setDraggingId, onMoveToDate, onOpe
 }
 
 // ---------- Detail-modal: tekst, bron, datum/tijd + goedkeuren ----------
-function ContentItemModal({ item, tags = [], onClose, onSaved }) {
+function ContentItemModal({ item, tags = [], contacts = [], onClose, onSaved }) {
   const ch = CHANNELS.find(c => c.key === item.channel);
   const published = item.status === 'published';
   const isEmail = item.type === 'email';
+  const isDM = item.type === 'linkedin_dm';
   const initialDate = item.scheduled_at ? new Date(item.scheduled_at) : null;
   const isLinkedIn = item.type === 'linkedin_post' || item.type === 'linkedin_dm';
   const [subject, setSubject] = useState(item.subject || '');
   const [body, setBody] = useState(item.body || '');
   const [targetTag, setTargetTag] = useState(item.target_tag || '');
   const [accountId, setAccountId] = useState(item.linkedin_account_id || '');
+  const [recipientId, setRecipientId] = useState(item.recipient_contact_id || '');
+  const [recipientQuery, setRecipientQuery] = useState('');
+  const [recipientConn, setRecipientConn] = useState(undefined); // undefined=nog niet geladen, null=niet gecheckt, else status
   const [dateVal, setDateVal] = useState(initialDate ? toDateInput(initialDate) : '');
   const [timeVal, setTimeVal] = useState(initialDate ? toTimeInput(initialDate) : '09:00');
   const [approved, setApproved] = useState(isApproved(item.status));
@@ -393,6 +398,18 @@ function ContentItemModal({ item, tags = [], onClose, onSaved }) {
 
   const hasDate = !!dateVal;
   const nextStatus = published ? 'published' : deriveStatus(approved, hasDate);
+  const effectiveAccountId = accountId || DEFAULT_LINKEDIN_ACCOUNT_ID;
+  const recipient = contacts.find(c => c.id === recipientId) || null;
+
+  // Laad de connectiestatus van de gekozen DM-ontvanger t.o.v. het gekozen account.
+  useEffect(() => {
+    if (!isDM || !recipientId) { setRecipientConn(undefined); return; }
+    let cancelled = false;
+    supabase.from('contact_connections').select('status')
+      .eq('contact_id', recipientId).eq('account_id', effectiveAccountId).maybeSingle()
+      .then(({ data }) => { if (!cancelled) setRecipientConn(data ? data.status : null); });
+    return () => { cancelled = true; };
+  }, [isDM, recipientId, effectiveAccountId]);
 
   async function save() {
     setSaving(true); setErr(null);
@@ -410,6 +427,7 @@ function ContentItemModal({ item, tags = [], onClose, onSaved }) {
       body,
       target_tag: isEmail ? (targetTag || null) : null,
       linkedin_account_id: isLinkedIn ? (accountId || null) : null,
+      recipient_contact_id: isDM ? (recipientId || null) : null,
       scheduled_at,
       status: nextStatus,
       updated_at: new Date().toISOString(),
@@ -417,7 +435,7 @@ function ContentItemModal({ item, tags = [], onClose, onSaved }) {
     const { error } = await supabase.from('content_calendar_items').update(fields).eq('id', item.id);
     setSaving(false);
     if (error) { setErr(error.message); return; }
-    onSaved && onSaved({ subject: fields.subject, body, target_tag: fields.target_tag, linkedin_account_id: fields.linkedin_account_id, scheduled_at, status: nextStatus });
+    onSaved && onSaved({ subject: fields.subject, body, target_tag: fields.target_tag, linkedin_account_id: fields.linkedin_account_id, recipient_contact_id: fields.recipient_contact_id, scheduled_at, status: nextStatus });
     onClose();
   }
 
@@ -489,6 +507,48 @@ function ContentItemModal({ item, tags = [], onClose, onSaved }) {
             </label>
           )}
 
+          {isDM && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <span style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>
+                Ontvanger (contact)
+              </span>
+              {recipient ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
+                  <strong>{recipient.name || recipient.full_name || '(naamloos)'}</strong>
+                  {!published && <button className="btn-ghost tiny" onClick={() => { setRecipientId(''); setRecipientQuery(''); }}>wijzig</button>}
+                </div>
+              ) : !published ? (
+                <>
+                  <input value={recipientQuery} onChange={e => setRecipientQuery(e.target.value)} placeholder="Zoek een contact met LinkedIn-URL…"
+                    style={{ padding: '6px 8px', borderRadius: 6, border: '0.5px solid var(--sep)', background: 'var(--bg-2)', color: 'var(--text-1)', fontSize: 13 }} />
+                  {recipientQuery.trim().length >= 2 && (() => {
+                    const matches = contacts.filter(c => c.linkedin_url && (c.name || c.full_name || '').toLowerCase().includes(recipientQuery.toLowerCase())).slice(0, 8);
+                    return (
+                      <div style={{ border: '0.5px solid var(--sep)', borderRadius: 6, maxHeight: 168, overflow: 'auto' }}>
+                        {matches.map(c => (
+                          <div key={c.id} onClick={() => { setRecipientId(c.id); setRecipientQuery(''); }}
+                            style={{ padding: '6px 8px', cursor: 'pointer', fontSize: 12, borderBottom: '0.5px solid var(--sep)' }}>
+                            {c.name || c.full_name}{c.account ? <span style={{ color: 'var(--text-3)' }}> · {c.account}</span> : ''}
+                          </div>
+                        ))}
+                        {matches.length === 0 && <div style={{ padding: '6px 8px', fontSize: 11, color: 'var(--text-3)' }}>Geen contact met LinkedIn-URL gevonden.</div>}
+                      </div>
+                    );
+                  })()}
+                </>
+              ) : <span style={{ fontSize: 12, color: 'var(--text-3)' }}>—</span>}
+              {recipient && (
+                recipientConn === 'connected'
+                  ? <span style={{ fontSize: 11, color: '#16a34a' }}>Verbonden via {linkedinAccountLabel(accountId)} - DM komt direct aan.</span>
+                  : recipientConn === 'not_connected'
+                    ? <span style={{ fontSize: 11, color: '#d97706' }}>Niet 1e-graads verbonden via {linkedinAccountLabel(accountId)} - DM komt aan als bericht/verzoek; grotere kans op weigering.</span>
+                    : recipientConn === undefined
+                      ? <span style={{ fontSize: 11, color: 'var(--text-3)' }}>Connectie laden…</span>
+                      : <span style={{ fontSize: 11, color: 'var(--text-3)' }}>Connectie niet gecheckt via {linkedinAccountLabel(accountId)} - check in Marketing voor zekerheid.</span>
+              )}
+            </div>
+          )}
+
           {isEmail && (
             <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
               <span style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>
@@ -527,7 +587,8 @@ function ContentItemModal({ item, tags = [], onClose, onSaved }) {
               <input type="checkbox" checked={approved} onChange={e => setApproved(e.target.checked)} />
               Goedgekeurd {approved && !hasDate && <span style={{ fontSize: 11, color: '#d97706' }}>(zonder datum plant de cron nog niet)</span>}
               {approved && hasDate && isEmail && !targetTag && <span style={{ fontSize: 11, color: '#d97706' }}>(kies een doelgroep-tag, anders kan de cron niet versturen)</span>}
-              {approved && hasDate && (!isEmail || targetTag) && <span style={{ fontSize: 11, color: '#16a34a' }}>→ wordt automatisch gepubliceerd op de geplande tijd</span>}
+              {approved && hasDate && isDM && !recipientId && <span style={{ fontSize: 11, color: '#d97706' }}>(kies een ontvanger, anders kan de cron niet versturen)</span>}
+              {approved && hasDate && ((isEmail && targetTag) || (isDM && recipientId) || item.type === 'linkedin_post') && <span style={{ fontSize: 11, color: '#16a34a' }}>→ wordt automatisch gepubliceerd op de geplande tijd</span>}
             </label>
           )}
 

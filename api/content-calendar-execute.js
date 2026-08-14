@@ -1,6 +1,7 @@
 import { requireCron } from './_lib/guard.js';
 import { sendBroadcast } from './_lib/send-broadcast.js';
 import { createLinkedInPost } from './_lib/unipile-post.js';
+import { sendLinkedInDM } from './_lib/unipile-dm.js';
 import { createClient } from '@supabase/supabase-js';
 
 // Alle content-LinkedIn-posts gaan via Marco's account (afspraak). Overschrijfbaar
@@ -98,6 +99,19 @@ async function publishLinkedInPost(item) {
   return { ok: true, external_message_id: res.postId || null };
 }
 
+async function publishLinkedInDM(item) {
+  if (!item.body || !String(item.body).trim()) return { ok: false, reason: 'lege tekst' };
+  if (!item.recipient_contact_id) return { ok: false, reason: 'geen ontvanger gekozen' };
+  const { data: c, error } = await supabase.from('contacts')
+    .select('linkedin_url').eq('id', item.recipient_contact_id).single();
+  if (error) return { ok: false, reason: `ontvanger ophalen: ${error.message}` };
+  if (!c?.linkedin_url) return { ok: false, reason: 'ontvanger heeft geen LinkedIn-URL' };
+  const accountId = item.linkedin_account_id || CONTENT_LINKEDIN_ACCOUNT_ID;
+  const res = await sendLinkedInDM({ accountId, linkedinUrl: c.linkedin_url, text: item.body });
+  if (!res.ok) return { ok: false, reason: res.error || 'LinkedIn-DM mislukt' };
+  return { ok: true, external_message_id: res.messageId || null };
+}
+
 export default async function handler(req, res) {
   if (!requireCron(req, res)) return;
   if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
@@ -116,16 +130,11 @@ export default async function handler(req, res) {
   const details = [];
 
   for (const item of (due || [])) {
-    if (item.type === 'linkedin_dm') {
-      // 1-op-1 LinkedIn-DM volgt in stap 8; laat 'scheduled' staan.
-      stats.skipped++;
-      details.push({ id: item.id, type: item.type, status: 'skipped (linkedin_dm, nog niet ondersteund)' });
-      continue;
-    }
     let outcome;
     try {
       if (item.type === 'email') outcome = await publishEmail(item);
       else if (item.type === 'linkedin_post') outcome = await publishLinkedInPost(item);
+      else if (item.type === 'linkedin_dm') outcome = await publishLinkedInDM(item);
       else { stats.skipped++; details.push({ id: item.id, type: item.type, status: 'skipped (onbekend type)' }); continue; }
     } catch (e) {
       outcome = { ok: false, reason: e.message };
