@@ -63,7 +63,10 @@ export async function sendBroadcast({ subject, html_body, from_name, from_email,
 
   const fromEmail = from_email || process.env.MARKETING_FROM_EMAIL;
   if (!fromEmail) return { ok: false, status: 500, error: 'from_email/MARKETING_FROM_EMAIL ontbreekt' };
-  const from = `${from_name || process.env.MARKETING_FROM_NAME || 'Marketing'} <${fromEmail}>`;
+  // campaigns.from_name is NOT NULL — gebruik overal de resolved naam (met fallback),
+  // anders faalt de campaigns-insert stil als de caller geen from_name meestuurt (cron).
+  const fromName = from_name || process.env.MARKETING_FROM_NAME || 'Marketing';
+  const from = `${fromName} <${fromEmail}>`;
 
   const contacts = toResendContacts(recipients).filter(c => !c.unsubscribed);
   if (contacts.length === 0) return { ok: false, status: 400, error: 'geen verzendbare ontvangers' };
@@ -159,7 +162,7 @@ export async function sendBroadcast({ subject, html_body, from_name, from_email,
   const sentAt = new Date().toISOString();
   const { data: camp, error: campErr } = await supabase.from('campaigns').insert({
     name: campaign_name || subject, subject, html_body,
-    from_name: from_name || null, from_email: fromEmail, reply_to: reply_to || null,
+    from_name: fromName, from_email: fromEmail, reply_to: reply_to || null,
     status: 'sent', recipient_count: inSeg, sent_by: sent_by || null,
     channel: 'broadcast', resend_broadcast_id: bc.data.id, resend_audience_id: segmentId,
     sent_at: sentAt,

@@ -19,9 +19,34 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.61.1';
+export const CURRENT_VERSION = '1.61.2';
 
 export const CHANGELOG = [
+  {
+    version: '1.61.2',
+    date: '2026-08-14T14:10:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Content Calendar: cron-verzending werd niet in campaigns gelogd',
+    summary:
+      'De eerste geplande content-mail werd correct verstuurd, maar verscheen niet ' +
+      'in de campagne-/contacthistorie. Oorzaak: campaigns.from_name is NOT NULL, ' +
+      'terwijl de cron geen from_name meestuurt en de insert from_name || null ' +
+      'gebruikte → de campaigns-insert botste stil op de constraint (de verzending ' +
+      'zelf zit ervóór, vandaar dat de mail wél aankwam). sendBroadcast gebruikt nu ' +
+      'overal de resolved afzendernaam (met fallback), zodat de logging ook zonder ' +
+      'meegestuurde from_name slaagt.',
+    changes: [
+      'api/_lib/send-broadcast.js: fromName met fallback (from_name || MARKETING_FROM_NAME || "Marketing") in zowel de from-header als de campaigns-insert.',
+    ],
+    files: [
+      'api/_lib/send-broadcast.js',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.61.2',
+  },
   {
     version: '1.61.1',
     date: '2026-08-14T13:05:00Z',
