@@ -19,9 +19,33 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.62.0';
+export const CURRENT_VERSION = '1.63.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.63.0',
+    date: '2026-08-14T14:45:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Content Calendar: optioneel per-item LinkedIn-account',
+    summary:
+      'Een linkedin_post/linkedin_dm-item kan nu een eigen Unipile-account meekrijgen ' +
+      '(kolom linkedin_account_id). Leeg = default (Marco, env CONTENT_LINKEDIN_ACCOUNT_ID); ' +
+      'gevuld = post via dat account. Handig om via je eigen account te testen en voor ' +
+      'toekomstige flexibiliteit.',
+    changes: [
+      'DB: content_calendar_items.linkedin_account_id (text, nullable).',
+      'content-calendar-execute.js: publishLinkedInPost gebruikt item.linkedin_account_id || default.',
+    ],
+    files: [
+      'sql/schema_content_calendar_li_account_2026-08-14.sql',
+      'api/content-calendar-execute.js',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.63.0',
+  },
   {
     version: '1.62.0',
     date: '2026-08-14T14:35:00Z',

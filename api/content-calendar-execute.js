@@ -92,7 +92,8 @@ async function publishEmail(item) {
 
 async function publishLinkedInPost(item) {
   if (!item.body || !String(item.body).trim()) return { ok: false, reason: 'lege tekst' };
-  const res = await createLinkedInPost({ accountId: CONTENT_LINKEDIN_ACCOUNT_ID, text: item.body });
+  const accountId = item.linkedin_account_id || CONTENT_LINKEDIN_ACCOUNT_ID;
+  const res = await createLinkedInPost({ accountId, text: item.body });
   if (!res.ok) return { ok: false, reason: res.error || 'LinkedIn-post mislukt' };
   return { ok: true, external_message_id: res.postId || null };
 }
