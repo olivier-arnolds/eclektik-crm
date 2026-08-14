@@ -250,6 +250,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
     catch { return []; }
   });
   const [optOutOverrides, setOptOutOverrides] = useState({}); // { [contactId]: boolean } — local optimistic state
+  const [contentOptInOverrides, setContentOptInOverrides] = useState({}); // { [contactId]: boolean } — marketing_content_opt_in optimistic state
   const [enriching, setEnriching] = useState(false);
   const [enrichProgress, setEnrichProgress] = useState({ done: 0, total: 0 });
   const [openContactId, setOpenContactId] = useState(null);
@@ -317,6 +318,26 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
       return next;
     });
     alert(`${eligible.length} contact${eligible.length === 1 ? '' : 'en'} unfollowed.`);
+  }
+
+  // Bulk: zet marketing_content_opt_in aan/uit voor de geselecteerde contacten.
+  const contentOptInOf = (c) => contentOptInOverrides[c.id] !== undefined ? contentOptInOverrides[c.id] : !!c.marketing_content_opt_in;
+  async function setContentOptInForSelected(value) {
+    const ids = filtered.filter(c => selected.has(c.id) && contentOptInOf(c) !== value).map(c => c.id);
+    if (ids.length === 0) {
+      alert(value ? 'Alle geselecteerde contacten ontvangen al marketingcontent (📣).' : 'Geen geselecteerde contacten met marketingcontent aan.');
+      return;
+    }
+    if (!confirm(`Marketingcontent ${value ? 'AAN' : 'UIT'} zetten voor ${ids.length} contact${ids.length === 1 ? '' : 'en'}?`)) return;
+    // Optimistic update
+    setContentOptInOverrides(prev => { const n = { ...prev }; for (const id of ids) n[id] = value; return n; });
+    const { error } = await supabase.from('contacts').update({ marketing_content_opt_in: value }).in('id', ids);
+    if (error) {
+      setContentOptInOverrides(prev => { const n = { ...prev }; for (const id of ids) n[id] = !value; return n; });
+      alert('Marketingcontent-toggle mislukt: ' + error.message);
+      return;
+    }
+    alert(`${ids.length} contact${ids.length === 1 ? '' : 'en'} bijgewerkt (marketingcontent ${value ? 'aan' : 'uit'}).`);
   }
 
   async function findEmailsViaSurfe() {
@@ -1034,6 +1055,28 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
                 </button>
               );
             })()}
+            {(() => {
+              const canOn = filtered.filter(c => selected.has(c.id) && !contentOptInOf(c)).length;
+              return (
+                <button className="btn-ghost tiny"
+                  onClick={() => setContentOptInForSelected(true)}
+                  disabled={canOn === 0}
+                  title={canOn === 0 ? 'Alle geselecteerde contacten ontvangen al marketingcontent' : `${canOn} geselecteerd contact${canOn === 1 ? '' : 'en'} nog geen marketingcontent`}>
+                  📣 Content aan {canOn > 0 ? `(${canOn})` : ''}
+                </button>
+              );
+            })()}
+            {(() => {
+              const canOff = filtered.filter(c => selected.has(c.id) && contentOptInOf(c)).length;
+              return (
+                <button className="btn-ghost tiny"
+                  onClick={() => setContentOptInForSelected(false)}
+                  disabled={canOff === 0}
+                  title={canOff === 0 ? 'Geen geselecteerde contacten met marketingcontent aan' : `${canOff} geselecteerd contact${canOff === 1 ? '' : 'en'} met marketingcontent aan`}>
+                  🔕 Content uit {canOff > 0 ? `(${canOff})` : ''}
+                </button>
+              );
+            })()}
             <button className="btn-primary tiny" disabled={!onComposeCampaign}
               onClick={() => {
                 if (!onComposeCampaign) return;
@@ -1137,6 +1180,31 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
                       fontWeight: 600,
                     }}>
                     {effective ? '⊘' : '✉'}
+                  </button>
+                );
+              })()}
+              {(() => {
+                // Marketingcontent opt-in: local override wint van DB-state.
+                const optedIn = contentOptInOf(c);
+                return (
+                  <button
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      const newVal = !optedIn;
+                      setContentOptInOverrides(prev => ({ ...prev, [c.id]: newVal }));
+                      const { error } = await supabase.from('contacts').update({ marketing_content_opt_in: newVal }).eq('id', c.id);
+                      if (error) {
+                        setContentOptInOverrides(prev => ({ ...prev, [c.id]: !newVal }));
+                        alert('Marketingcontent-toggle mislukt: ' + error.message);
+                      }
+                    }}
+                    title={optedIn ? 'Ontvangt marketingcontent - klik om uit te zetten' : 'Geen marketingcontent - klik om aan te zetten'}
+                    style={{
+                      background: 'transparent', border: 'none', cursor: 'pointer',
+                      fontSize: 16, padding: '2px 6px', flexShrink: 0, lineHeight: 1,
+                      opacity: optedIn ? 1 : 0.4,
+                    }}>
+                    {optedIn ? '📣' : '🔕'}
                   </button>
                 );
               })()}

@@ -19,9 +19,34 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.56.0';
+export const CURRENT_VERSION = '1.57.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.57.0',
+    date: '2026-08-14T10:50:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Marketing-lijst: marketingcontent opt-in als kolom + bulk-actie',
+    summary:
+      'De marketingcontent-opt-in uit 1.56.0 is nu ook zichtbaar en bewerkbaar in ' +
+      'de Marketing-contactenlijst: een 📣/🔕-knopje per rij (naast de e-mail-opt-out) ' +
+      'en twee bulk-knoppen ("Content aan" / "Content uit") voor de selectie. Zo kun ' +
+      'je in één keer bepalen wie content-mails ontvangt.',
+    changes: [
+      'adapters.js: adaptContact geeft marketing_content_opt_in door (level-2 pikt velden expliciet).',
+      'marketing-contacts.jsx: per-rij 📣/🔕-toggle met optimistische update (contentOptInOverrides).',
+      'marketing-contacts.jsx: bulk-knoppen "📣 Content aan (N)" / "🔕 Content uit (N)" voor de selectie.',
+    ],
+    files: [
+      'src/bd/adapters.js',
+      'src/bd/marketing-contacts.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.57.0',
+  },
   {
     version: '1.56.0',
     date: '2026-08-14T10:40:31Z',
