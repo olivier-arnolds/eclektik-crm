@@ -19,9 +19,35 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.63.2';
+export const CURRENT_VERSION = '1.64.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.64.0',
+    date: '2026-08-14T16:50:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Content Calendar: statusregel onderin de modal na publicatie',
+    summary:
+      'Zodra een content-stuk gepubliceerd is, toont de detail-modal onderin een ' +
+      'duidelijke groene statusregel: bij e-mail "E-mail gestuurd aan x contacten", ' +
+      'bij een LinkedIn-post "Gepost via LinkedIn van <naam>", bij een LinkedIn-DM ' +
+      '"Bericht gestuurd via LinkedIn van <naam>" (naam = het gebruikte account), ' +
+      'met datum/tijd. Het ontvangersaantal wordt bij verzenden vastgelegd.',
+    changes: [
+      'DB: content_calendar_items.published_recipient_count (int, nullable); cron vult dit bij e-mail.',
+      'content-calendar-view.jsx: groene statusregel in de modal-footer; knop heet "Sluiten" bij gepubliceerde items.',
+    ],
+    files: [
+      'sql/schema_content_calendar_recipient_count_2026-08-14.sql',
+      'api/content-calendar-execute.js',
+      'src/bd/content-calendar-view.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.64.0',
+  },
   {
     version: '1.63.2',
     date: '2026-08-14T16:35:00Z',

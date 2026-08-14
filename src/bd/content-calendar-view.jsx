@@ -422,6 +422,22 @@ function ContentItemModal({ item, tags = [], onClose, onSaved }) {
 
   const st = STATUS_STYLE[nextStatus] || STATUS_STYLE.draft;
 
+  // Vriendelijke statusregel onderin zodra gepubliceerd.
+  const publishedLine = () => {
+    const when = item.published_at
+      ? new Date(item.published_at).toLocaleString('nl-NL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+      : '';
+    const acct = linkedinAccountLabel(item.linkedin_account_id);
+    const tail = when ? ` · ${when}` : '';
+    if (item.type === 'email') {
+      const n = item.published_recipient_count;
+      return `E-mail gestuurd aan ${n ?? '?'} contact${n === 1 ? '' : 'en'}${tail}`;
+    }
+    if (item.type === 'linkedin_post') return `Gepost via LinkedIn van ${acct}${tail}`;
+    if (item.type === 'linkedin_dm') return `Bericht gestuurd via LinkedIn van ${acct}${tail}`;
+    return `Gepubliceerd${when ? ' op ' + when : ''}`;
+  };
+
   return (
     <div onClick={onClose}
       style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}>
@@ -514,20 +530,19 @@ function ContentItemModal({ item, tags = [], onClose, onSaved }) {
             </label>
           )}
 
-          {published && (
-            <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
-              Gepubliceerd{item.published_at ? ` op ${new Date(item.published_at).toLocaleString('nl-NL')}` : ''}{item.external_message_id ? ` · id ${item.external_message_id}` : ''}.
-            </div>
-          )}
-
           {err && <div style={{ fontSize: 12, color: '#dc2626' }}>Opslaan mislukt: {err}</div>}
         </div>
 
-        <div style={{ padding: '12px 18px', borderTop: '0.5px solid var(--sep)', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-          <button className="btn-ghost tiny" onClick={onClose}>Annuleren</button>
-          {!published && (
-            <button className="btn-primary tiny" onClick={save} disabled={saving}>{saving ? 'Opslaan…' : 'Opslaan'}</button>
-          )}
+        <div style={{ padding: '12px 18px', borderTop: '0.5px solid var(--sep)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+          <span style={{ fontSize: 11, color: '#16a34a', display: 'flex', alignItems: 'center', gap: 5, minWidth: 0 }}>
+            {published && (<><span>✓</span><span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{publishedLine()}</span></>)}
+          </span>
+          <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+            <button className="btn-ghost tiny" onClick={onClose}>{published ? 'Sluiten' : 'Annuleren'}</button>
+            {!published && (
+              <button className="btn-primary tiny" onClick={save} disabled={saving}>{saving ? 'Opslaan…' : 'Opslaan'}</button>
+            )}
+          </div>
         </div>
       </div>
     </div>

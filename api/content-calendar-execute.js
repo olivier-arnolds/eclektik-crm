@@ -135,6 +135,7 @@ export default async function handler(req, res) {
         status: 'published',
         published_at: new Date().toISOString(),
         external_message_id: outcome.external_message_id,
+        published_recipient_count: outcome.recipients ?? null,
         updated_at: new Date().toISOString(),
       }).eq('id', item.id);
       if (upErr) {
