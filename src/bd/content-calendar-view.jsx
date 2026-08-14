@@ -57,6 +57,7 @@ export default function ContentCalendarView() {
   const [anchor, setAnchor] = useState(() => new Date());
   const [draggingId, setDraggingId] = useState(null);
   const [openItem, setOpenItem] = useState(null); // item-object voor de detail-modal
+  const [tags, setTags] = useState([]);           // {id, name} voor de target_tag-kiezer
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -71,6 +72,9 @@ export default function ContentCalendarView() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    supabase.from('tags').select('id, name').order('name').then(({ data }) => setTags(data || []));
+  }, []);
 
   // Optimistische patch van één item in de lokale state.
   const patchLocal = useCallback((id, fields) => {
@@ -184,6 +188,7 @@ export default function ContentCalendarView() {
       {openItem && (
         <ContentItemModal
           item={items.find(it => it.id === openItem.id) || openItem}
+          tags={tags}
           onClose={() => setOpenItem(null)}
           onSaved={(fields) => { patchLocal(openItem.id, fields); }}
         />
@@ -360,12 +365,14 @@ function UnscheduledTray({ items, draggingId, setDraggingId, onMoveToDate, onOpe
 }
 
 // ---------- Detail-modal: tekst, bron, datum/tijd + goedkeuren ----------
-function ContentItemModal({ item, onClose, onSaved }) {
+function ContentItemModal({ item, tags = [], onClose, onSaved }) {
   const ch = CHANNELS.find(c => c.key === item.channel);
   const published = item.status === 'published';
+  const isEmail = item.type === 'email';
   const initialDate = item.scheduled_at ? new Date(item.scheduled_at) : null;
   const [subject, setSubject] = useState(item.subject || '');
   const [body, setBody] = useState(item.body || '');
+  const [targetTag, setTargetTag] = useState(item.target_tag || '');
   const [dateVal, setDateVal] = useState(initialDate ? toDateInput(initialDate) : '');
   const [timeVal, setTimeVal] = useState(initialDate ? toTimeInput(initialDate) : '09:00');
   const [approved, setApproved] = useState(isApproved(item.status));
@@ -387,8 +394,9 @@ function ContentItemModal({ item, onClose, onSaved }) {
       // Goedgekeurd zonder datum mag (status 'approved'), maar waarschuw: cron plant pas met datum.
     }
     const fields = {
-      subject: item.type === 'email' ? (subject || null) : null,
+      subject: isEmail ? (subject || null) : null,
       body,
+      target_tag: isEmail ? (targetTag || null) : null,
       scheduled_at,
       status: nextStatus,
       updated_at: new Date().toISOString(),
@@ -396,7 +404,7 @@ function ContentItemModal({ item, onClose, onSaved }) {
     const { error } = await supabase.from('content_calendar_items').update(fields).eq('id', item.id);
     setSaving(false);
     if (error) { setErr(error.message); return; }
-    onSaved && onSaved({ subject: fields.subject, body, scheduled_at, status: nextStatus });
+    onSaved && onSaved({ subject: fields.subject, body, target_tag: fields.target_tag, scheduled_at, status: nextStatus });
     onClose();
   }
 
@@ -435,6 +443,23 @@ function ContentItemModal({ item, onClose, onSaved }) {
             </div>
           )}
 
+          {isEmail && (
+            <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <span style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>
+                Doelgroep (tag)
+              </span>
+              <select value={targetTag} onChange={e => setTargetTag(e.target.value)} disabled={published}
+                style={{ padding: '6px 8px', borderRadius: 6, border: '0.5px solid var(--sep)', background: 'var(--bg-2)', color: 'var(--text-1)', fontSize: 13 }}>
+                <option value="">— kies een tag —</option>
+                {tags.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
+                {targetTag && !tags.some(t => t.name === targetTag) && <option value={targetTag}>{targetTag} (onbekend)</option>}
+              </select>
+              <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
+                Ontvangers: contacten met deze tag én de marketingcontent-opt-in aan.
+              </span>
+            </label>
+          )}
+
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
               <span style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>Datum</span>
@@ -455,7 +480,8 @@ function ContentItemModal({ item, onClose, onSaved }) {
             <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer' }}>
               <input type="checkbox" checked={approved} onChange={e => setApproved(e.target.checked)} />
               Goedgekeurd {approved && !hasDate && <span style={{ fontSize: 11, color: '#d97706' }}>(zonder datum plant de cron nog niet)</span>}
-              {approved && hasDate && <span style={{ fontSize: 11, color: '#16a34a' }}>→ wordt automatisch gepubliceerd op de geplande tijd</span>}
+              {approved && hasDate && isEmail && !targetTag && <span style={{ fontSize: 11, color: '#d97706' }}>(kies een doelgroep-tag, anders kan de cron niet versturen)</span>}
+              {approved && hasDate && (!isEmail || targetTag) && <span style={{ fontSize: 11, color: '#16a34a' }}>→ wordt automatisch gepubliceerd op de geplande tijd</span>}
             </label>
           )}
 

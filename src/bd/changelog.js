@@ -19,9 +19,43 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.60.0';
+export const CURRENT_VERSION = '1.61.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.61.0',
+    date: '2026-08-14T11:45:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Content Calendar: auto-publicatie e-mail via cron (stap 6)',
+    summary:
+      'Goedgekeurde, geplande e-mail-items worden nu automatisch verstuurd op hun ' +
+      'geplande tijd. Een nieuwe cron (elke 15 min) pakt items op met status ' +
+      '"scheduled" waarvan de tijd verstreken is, bepaalt de ontvangers (contacten ' +
+      'met de gekozen doelgroep-tag én de marketingcontent-opt-in), verstuurt via ' +
+      'de bestaande Resend-broadcast en zet het item op "published". In de modal ' +
+      'kies je nu per e-mail-item de doelgroep-tag. LinkedIn-publicatie volgt in ' +
+      'stap 7-8 (die items blijven voorlopig staan). De hard-won broadcast-logica ' +
+      'is verplaatst naar een gedeeld lib zodat composer én cron dezelfde weg delen.',
+    changes: [
+      'api/_lib/send-broadcast.js: gedeelde Resend-broadcast-logica (segment/rate-limit/eventual-consistency).',
+      'api/resend-broadcast.js: afgeslankt tot dunne user-wrapper rond sendBroadcast (gedrag identiek).',
+      'api/content-calendar-execute.js: publish-cron (requireCron), e-mail via tag+opt-in, markeert published/external_message_id.',
+      'vercel.json: cron */15 * * * * op /api/content-calendar-execute.',
+      'content-calendar-view.jsx: doelgroep-tag-kiezer in de modal + waarschuwing bij goedkeuren zonder tag.',
+    ],
+    files: [
+      'api/_lib/send-broadcast.js',
+      'api/resend-broadcast.js',
+      'api/content-calendar-execute.js',
+      'vercel.json',
+      'src/bd/content-calendar-view.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.61.0',
+  },
   {
     version: '1.60.0',
     date: '2026-08-14T11:35:00Z',
