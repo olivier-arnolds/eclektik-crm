@@ -4,6 +4,7 @@ import { requireUser } from './_lib/guard.js';
 
 import { createClient } from '@supabase/supabase-js';
 import { createLinkedInPost } from './_lib/unipile-post.js';
+import { checkRelation } from './_lib/unipile-relation.js';
 
 const DSN = process.env.UNIPILE_BASE_URL || process.env.UNIPILE_DSN;
 const TOKEN = process.env.UNIPILE_API_KEY || process.env.UNIPILE_TOKEN;
@@ -342,20 +343,9 @@ export default async function handler(req, res) {
     if (action === 'check-relation') {
       const { account_id, linkedin_url } = req.query;
       if (!account_id || !linkedin_url) return res.status(400).json({ error: 'account_id and linkedin_url required' });
-      const match = linkedin_url.match(/linkedin\.com\/in\/([^\/\?]+)/);
-      const identifier = match ? match[1] : linkedin_url;
-      // Get profile which includes network_distance field
-      const result = await unipileRequest('GET', `/users/${encodeURIComponent(identifier)}?account_id=${account_id}`);
-      if (result.success && result.data) {
-        const distance = result.data.network_distance || '';
-        const isRelationship = result.data.is_relationship;
-        let status = 'not_connected';
-        if (distance === 'FIRST_DEGREE' || distance === 'DISTANCE_1') status = 'connected';
-        else if (distance === 'SECOND_DEGREE' || distance === 'DISTANCE_2') status = 'not_connected';
-        else if (isRelationship) status = 'connected';
-        return res.status(200).json({ success: true, data: { relation: status, network_distance: distance, is_relationship: isRelationship } });
-      }
-      return res.status(result.error ? 400 : 200).json(result);
+      const r = await checkRelation({ accountId: account_id, linkedinUrl: linkedin_url });
+      if (r.status === 'error') return res.status(400).json({ error: r.error });
+      return res.status(200).json({ success: true, data: { relation: r.status, network_distance: r.networkDistance, is_relationship: r.isRelationship } });
     }
 
     // ── ENRICH COMPANY (replaces Surfe) ──

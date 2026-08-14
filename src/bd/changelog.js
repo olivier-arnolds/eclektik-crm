@@ -19,9 +19,41 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.64.1';
+export const CURRENT_VERSION = '1.65.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.65.0',
+    date: '2026-08-14T17:25:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Marketing: bulk LinkedIn-connectiecheck per account (DM-dekking)',
+    summary:
+      'Check in bulk of Marco/Yarmilla/Olivier 1e-graads verbonden is met contacten, ' +
+      'zodat je weet via wie je een LinkedIn-DM kunt sturen. In de Marketing-lijst ' +
+      'kies je een account en checkt de geselecteerde contacten (met LinkedIn-URL), ' +
+      'max 25 per ronde en gedoseerd (LinkedIn rate-limits). Resultaat wordt gecacht ' +
+      '(tabel contact_connections), per rij een 🔗-badge met wie verbonden is, en een ' +
+      'dekkingsteller (bv. "Marco: 12/40 verbonden"). Voedt de latere DM-stap.',
+    changes: [
+      'DB: tabel contact_connections (contact_id, account_id, status, network_distance).',
+      'api/_lib/unipile-relation.js: gedeelde checkRelation (network_distance → connected/not_connected).',
+      'api/linkedin-connections.js: bulk-endpoint, max 25/ronde, pacing + tijd-budget (timeout-veilig).',
+      'api/unipile.js: check-relation-actie gebruikt nu de gedeelde helper.',
+      'marketing-contacts.jsx: account-select + "🔗 Check connectie"-bulkknop, per-rij badge, dekkingsteller.',
+    ],
+    files: [
+      'sql/schema_contact_connections_2026-08-14.sql',
+      'api/_lib/unipile-relation.js',
+      'api/linkedin-connections.js',
+      'api/unipile.js',
+      'src/bd/marketing-contacts.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.65.0',
+  },
   {
     version: '1.64.1',
     date: '2026-08-14T17:00:00Z',

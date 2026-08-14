@@ -9,6 +9,13 @@ import { supabase } from '../supabase';
 import { apiFetch } from '../lib/apiFetch';
 import { relativeTime } from '../lib/constants';
 
+// Unipile-accounts voor de LinkedIn-connectiecheck (CLAUDE.md §5).
+const LINKEDIN_ACCOUNTS = [
+  { id: 'KYq2oN8JSPiAQSrcIfT5Ew', label: 'Marco', short: 'M' },
+  { id: 'j9-n2jeNTtGUxemfjlBsZA', label: 'Yarmilla', short: 'Y' },
+  { id: 'tC2o50tiTBiRCt9xAnio3w', label: 'Olivier', short: 'O' },
+];
+
 // CSV escaping: wrap in double-quotes, double-up internal quotes.
 // Excel-compatible — newlines / commas / quotes inside fields preserved.
 function csvEscape(v) {
@@ -251,6 +258,10 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
   });
   const [optOutOverrides, setOptOutOverrides] = useState({}); // { [contactId]: boolean } — local optimistic state
   const [contentOptInOverrides, setContentOptInOverrides] = useState({}); // { [contactId]: boolean } — marketing_content_opt_in optimistic state
+  // LinkedIn-connecties: { [contactId]: { [accountId]: 'connected'|'not_connected'|'error' } }
+  const [connections, setConnections] = useState({});
+  const [connAccount, setConnAccount] = useState(LINKEDIN_ACCOUNTS[0].id); // gekozen account voor de check (default Marco)
+  const [connChecking, setConnChecking] = useState(false);
   const [enriching, setEnriching] = useState(false);
   const [enrichProgress, setEnrichProgress] = useState({ done: 0, total: 0 });
   const [openContactId, setOpenContactId] = useState(null);
@@ -338,6 +349,59 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
       return;
     }
     alert(`${ids.length} contact${ids.length === 1 ? '' : 'en'} bijgewerkt (marketingcontent ${value ? 'aan' : 'uit'}).`);
+  }
+
+  // Laad bestaande connectie-statussen (cache) bij mount.
+  useEffect(() => {
+    supabase.from('contact_connections').select('contact_id, account_id, status').then(({ data }) => {
+      if (!data) return;
+      const map = {};
+      for (const r of data) {
+        map[r.contact_id] = map[r.contact_id] || {};
+        map[r.contact_id][r.account_id] = r.status;
+      }
+      setConnections(map);
+    });
+  }, []);
+
+  // Bulk: check LinkedIn-connectie voor de selectie via het gekozen account (max 25/ronde).
+  async function checkConnectionsForSelected() {
+    const acct = LINKEDIN_ACCOUNTS.find(a => a.id === connAccount);
+    const eligible = filtered.filter(c => selected.has(c.id) && c.linkedin_url);
+    if (eligible.length === 0) { alert('Geen geselecteerde contacten met een LinkedIn-URL.'); return; }
+    const MAX = 25;
+    const batch = eligible.slice(0, MAX);
+    const skipped = selected.size - eligible.length;
+    const overflow = eligible.length - batch.length;
+    const msg = `LinkedIn-connectiecheck via ${acct?.label}:\n- ${batch.length} contact${batch.length === 1 ? '' : 'en'} checken`
+      + (overflow > 0 ? `\n- ${overflow} vallen buiten deze ronde (max ${MAX})` : '')
+      + (skipped > 0 ? `\n- ${skipped} overgeslagen (geen LinkedIn-URL)` : '')
+      + `\n\nLet op: dit doet profielweergaven via het account van ${acct?.label} (LinkedIn rate-limits). Doorgaan?`;
+    if (!confirm(msg)) return;
+    setConnChecking(true);
+    try {
+      const resp = await apiFetch('/api/linkedin-connections', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ account_id: connAccount, contact_ids: batch.map(c => c.id) }),
+      });
+      const data = await resp.json();
+      setConnChecking(false);
+      if (!resp.ok) { alert('Connectiecheck fout: ' + (data.error || `HTTP ${resp.status}`)); return; }
+      setConnections(prev => {
+        const next = { ...prev };
+        for (const r of (data.results || [])) {
+          if (r.status === 'no_url') continue;
+          next[r.contact_id] = { ...(next[r.contact_id] || {}), [connAccount]: r.status };
+        }
+        return next;
+      });
+      const s = data.stats || {};
+      alert(`Connectiecheck via ${acct?.label} klaar:\n✓ ${s.connected || 0} verbonden\n– ${s.not_connected || 0} niet verbonden\n✗ ${s.errors || 0} fout`
+        + (s.skipped_time ? `\n⏱ ${s.skipped_time} niet gehaald (tijd) — draai nog een ronde` : ''));
+    } catch (err) {
+      setConnChecking(false);
+      alert('Connectiecheck mislukt: ' + err.message);
+    }
   }
 
   async function findEmailsViaSurfe() {
@@ -1055,6 +1119,32 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
                 </button>
               );
             })()}
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+              <select value={connAccount} onChange={e => setConnAccount(e.target.value)}
+                title="LinkedIn-account voor de connectiecheck"
+                style={{ fontSize: 11, padding: '2px 4px', borderRadius: 4, border: '0.5px solid var(--sep)', background: 'var(--bg-1)', color: 'var(--text-1)' }}>
+                {LINKEDIN_ACCOUNTS.map(a => <option key={a.id} value={a.id}>{a.label}</option>)}
+              </select>
+              {(() => {
+                const n = filtered.filter(c => selected.has(c.id) && c.linkedin_url).length;
+                const acct = LINKEDIN_ACCOUNTS.find(a => a.id === connAccount)?.label;
+                return (
+                  <button className="btn-ghost tiny" onClick={checkConnectionsForSelected} disabled={connChecking || n === 0}
+                    title={n === 0 ? 'Geen geselecteerde contacten met LinkedIn-URL' : `Check of ${acct} verbonden is met ${Math.min(n, 25)} contact(en)`}>
+                    {connChecking ? '🔗 bezig…' : `🔗 Check connectie${n > 0 ? ` (${Math.min(n, 25)})` : ''}`}
+                  </button>
+                );
+              })()}
+              {(() => {
+                const withUrl = filtered.filter(c => c.linkedin_url);
+                const checked = withUrl.filter(c => connections[c.id]?.[connAccount] !== undefined && connections[c.id]?.[connAccount] !== 'error');
+                const connected = withUrl.filter(c => connections[c.id]?.[connAccount] === 'connected');
+                if (checked.length === 0) return null;
+                const pct = Math.round(100 * connected.length / checked.length);
+                const acct = LINKEDIN_ACCOUNTS.find(a => a.id === connAccount)?.label;
+                return <span style={{ fontSize: 10, color: 'var(--text-3)' }} title="Van de gecheckte contacten met LinkedIn-URL">{acct}: {connected.length}/{checked.length} verbonden ({pct}%)</span>;
+              })()}
+            </span>
             {(() => {
               const canOn = filtered.filter(c => selected.has(c.id) && !contentOptInOf(c)).length;
               return (
@@ -1206,6 +1296,18 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
                     }}>
                     {optedIn ? '📣' : '🔕'}
                   </button>
+                );
+              })()}
+              {(() => {
+                const conns = connections[c.id];
+                if (!conns) return null;
+                const connectedAccts = LINKEDIN_ACCOUNTS.filter(a => conns[a.id] === 'connected');
+                if (connectedAccts.length === 0) return null;
+                return (
+                  <span title={`LinkedIn-connectie via ${connectedAccts.map(a => a.label).join(', ')}`}
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 2, flexShrink: 0, fontSize: 10, color: '#0a66c2', fontWeight: 700 }}>
+                    🔗 {connectedAccts.map(a => a.short).join('')}
+                  </span>
                 );
               })()}
               <div onClick={e => e.stopPropagation()} style={{ minWidth: 180, flexShrink: 0 }}>
