@@ -19,9 +19,30 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.67.1';
+export const CURRENT_VERSION = '1.67.2';
 
 export const CHANGELOG = [
+  {
+    version: '1.67.2',
+    date: '2026-08-15T08:45:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Marketing: Status Email toont alleen ✓/❌ (geen "Surfe")',
+    summary:
+      'De Status Email-filteropties en de per-rij badge tonen nu alleen een vinkje ' +
+      'of kruis (gevonden / niet gevonden), zonder het woord "Surfe" - dat is toch ' +
+      'de enige bron. De betekenis staat in een tooltip.',
+    changes: [
+      'marketing-contacts.jsx: EmailStatusFilter labels ✓/❌ + tooltip; EmailStatusBadge ✓/❌ zonder "Surfe".',
+    ],
+    files: [
+      'src/bd/marketing-contacts.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.67.2',
+  },
   {
     version: '1.67.1',
     date: '2026-08-15T08:35:00Z',

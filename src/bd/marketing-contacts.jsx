@@ -97,14 +97,14 @@ export function EmailStatusBadge({ status }) {
   if (status !== 'found_surfe' && status !== 'not_found_surfe') return null;
   const found = status === 'found_surfe';
   return (
-    <span title={found ? 'E-mail gevonden via Surfe' : 'Gezocht via Surfe, niets gevonden'}
+    <span title={found ? 'E-mail gevonden' : 'Gezocht, niets gevonden'}
       style={{
         display: 'inline-block', marginTop: 3, padding: '1px 6px', borderRadius: 8,
         fontSize: 10, fontWeight: 600, whiteSpace: 'nowrap',
         background: found ? '#dcfce7' : '#fee2e2',
         color: found ? '#15803d' : '#b91c1c',
       }}>
-      {found ? '✓ Surfe' : '❌ Surfe'}
+      {found ? '✓' : '❌'}
     </span>
   );
 }
@@ -113,9 +113,9 @@ export function EmailStatusBadge({ status }) {
 // value: 'found' | 'not_found' | 'unsearched' | null (uit).
 function EmailStatusFilter({ value, onChange }) {
   const opts = [
-    { key: 'found',      label: '✓ Surfe', on: '#dcfce7', onText: '#15803d', border: '#16a34a' },
-    { key: 'not_found',  label: '❌ Surfe', on: '#fee2e2', onText: '#b91c1c', border: '#dc2626' },
-    { key: 'unsearched', label: 'Nog niet', on: '#e5e7eb', onText: '#374151', border: '#9ca3af' },
+    { key: 'found',      label: '✓', title: 'E-mail gevonden', on: '#dcfce7', onText: '#15803d', border: '#16a34a' },
+    { key: 'not_found',  label: '❌', title: 'Gezocht, niets gevonden', on: '#fee2e2', onText: '#b91c1c', border: '#dc2626' },
+    { key: 'unsearched', label: 'Nog niet', title: 'Nog niet gezocht', on: '#e5e7eb', onText: '#374151', border: '#9ca3af' },
   ];
   const btnBase = {
     padding: '2px 10px', borderRadius: 10, fontSize: 11,
@@ -128,6 +128,7 @@ function EmailStatusFilter({ value, onChange }) {
         const active = value === o.key;
         return (
           <button key={o.key} onClick={() => onChange(active ? null : o.key)}
+            title={o.title}
             style={{
               ...btnBase,
               background: active ? o.on : 'transparent',
