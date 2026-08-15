@@ -26,6 +26,10 @@
     {
       "path": "/api/content-calendar-execute",
       "schedule": "*/15 * * * *"
+    },
+    {
+      "path": "/api/linkedin-invite-drip",
+      "schedule": "0 7-16 * * 1-5"
     }
   ]
 }

@@ -263,6 +263,9 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
   const [connAccount, setConnAccount] = useState(LINKEDIN_ACCOUNTS[0].id); // gekozen account voor de check (default Marco)
   const [connChecking, setConnChecking] = useState(false);
   const [connCheckedFilter, setConnCheckedFilter] = useState(null); // null | 'yes' | 'no' — gecheckt voor connAccount?
+  // Connectie-drip wachtrij: { [contactId]: { [accountId]: 'queued'|'sent'|'failed'|'skipped' } }
+  const [inviteQueue, setInviteQueue] = useState({});
+  const [enrolling, setEnrolling] = useState(false);
   const [enriching, setEnriching] = useState(false);
   const [enrichProgress, setEnrichProgress] = useState({ done: 0, total: 0 });
   const [openContactId, setOpenContactId] = useState(null);
@@ -403,6 +406,45 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
       setConnChecking(false);
       alert('Connectiecheck mislukt: ' + err.message);
     }
+  }
+
+  // Laad de connectie-drip-wachtrij (cache) bij mount.
+  useEffect(() => {
+    supabase.from('linkedin_invite_queue').select('contact_id, account_id, status').then(({ data }) => {
+      if (!data) return;
+      const map = {};
+      for (const r of data) {
+        map[r.contact_id] = map[r.contact_id] || {};
+        map[r.contact_id][r.account_id] = r.status;
+      }
+      setInviteQueue(map);
+    });
+  }, []);
+
+  // Zet geselecteerde niet-verbonden contacten aan voor de connectie-drip via het gekozen account.
+  async function enrollForInviteDrip() {
+    const acct = LINKEDIN_ACCOUNTS.find(a => a.id === connAccount);
+    const eligible = filtered.filter(c => selected.has(c.id) && c.linkedin_url
+      && connections[c.id]?.[connAccount] !== 'connected'      // niet al verbonden
+      && inviteQueue[c.id]?.[connAccount] === undefined);       // nog niet in de rij
+    if (eligible.length === 0) {
+      alert(`Geen geschikte contacten: nodig heeft LinkedIn-URL, niet al verbonden via ${acct?.label}, en nog niet in de rij.`);
+      return;
+    }
+    const msg = window.prompt(`Optioneel connectiebericht voor ${eligible.length} uitnodiging(en) via ${acct?.label}.\nLaat leeg voor een kaal verzoek. (LinkedIn limiteert invites-met-bericht.)`, '');
+    if (msg === null) return; // geannuleerd
+    if (!confirm(`${eligible.length} contact${eligible.length === 1 ? '' : 'en'} aanzetten voor de connectie-drip via ${acct?.label}?\nDe cron stuurt max ~15/dag per account, verspreid over de dag (werkdagen).`)) return;
+    setEnrolling(true);
+    const rows = eligible.map(c => ({ contact_id: c.id, account_id: connAccount, message: msg || null, status: 'queued' }));
+    const { error } = await supabase.from('linkedin_invite_queue').upsert(rows, { onConflict: 'contact_id,account_id', ignoreDuplicates: true });
+    setEnrolling(false);
+    if (error) { alert('Aanzetten mislukt: ' + error.message); return; }
+    setInviteQueue(prev => {
+      const n = { ...prev };
+      for (const c of eligible) n[c.id] = { ...(n[c.id] || {}), [connAccount]: 'queued' };
+      return n;
+    });
+    alert(`${eligible.length} contact${eligible.length === 1 ? '' : 'en'} aangezet voor de connectie-drip via ${acct?.label}.`);
   }
 
   async function findEmailsViaSurfe() {
@@ -1142,6 +1184,18 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
                 );
               })()}
               {(() => {
+                const n = filtered.filter(c => selected.has(c.id) && c.linkedin_url
+                  && connections[c.id]?.[connAccount] !== 'connected'
+                  && inviteQueue[c.id]?.[connAccount] === undefined).length;
+                const acct = LINKEDIN_ACCOUNTS.find(a => a.id === connAccount)?.label;
+                return (
+                  <button className="btn-ghost tiny" onClick={enrollForInviteDrip} disabled={enrolling || n === 0}
+                    title={n === 0 ? 'Geen geschikte contacten (geen URL, al verbonden, of al in de rij)' : `Zet ${n} contact(en) aan voor de connectie-drip via ${acct} (~15/dag)`}>
+                    {enrolling ? '✉️ bezig…' : `✉️ Nodig uit${n > 0 ? ` (${n})` : ''}`}
+                  </button>
+                );
+              })()}
+              {(() => {
                 const withUrl = filtered.filter(c => c.linkedin_url);
                 const checked = withUrl.filter(c => connections[c.id]?.[connAccount] !== undefined && connections[c.id]?.[connAccount] !== 'error');
                 const connected = withUrl.filter(c => connections[c.id]?.[connAccount] === 'connected');
@@ -1315,6 +1369,19 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
                     🔗 {connectedAccts.map(a => a.short).join('')}
                   </span>
                 );
+              })()}
+              {(() => {
+                const st = inviteQueue[c.id]?.[connAccount];
+                if (!st) return null;
+                const acct = LINKEDIN_ACCOUNTS.find(a => a.id === connAccount)?.label;
+                const map = {
+                  queued:  { t: '✉ in rij',      col: '#d97706' },
+                  sent:    { t: '✉ verstuurd',   col: '#0a66c2' },
+                  skipped: { t: '✉ al verbonden', col: 'var(--text-3)' },
+                  failed:  { t: '✉ mislukt',     col: '#dc2626' },
+                };
+                const m = map[st] || { t: `✉ ${st}`, col: 'var(--text-3)' };
+                return <span title={`Connectie-drip via ${acct}: ${st}`} style={{ fontSize: 9, color: m.col, fontWeight: 600, flexShrink: 0 }}>{m.t}</span>;
               })()}
               <div onClick={e => e.stopPropagation()} style={{ minWidth: 180, flexShrink: 0 }}>
                 {editingEmailId === c.id ? (

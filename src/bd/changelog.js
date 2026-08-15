@@ -19,9 +19,42 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.66.2';
+export const CURRENT_VERSION = '1.67.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.67.0',
+    date: '2026-08-15T08:20:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Marketing: connectie-drip (gedoseerd LinkedIn-uitnodigingen sturen)',
+    summary:
+      'Zet niet-verbonden contacten "aan" voor een connectie-drip: een cron stuurt ' +
+      'dan gedoseerd connectieverzoeken via een gekozen persoonlijk account - max ' +
+      '~15/dag per account, verspreid over de dag op werkdagen, tot de set leeg is ' +
+      '(~3 weken). In Marketing selecteer je (filter op not_connected), kiest een ' +
+      'account, optioneel een kort bericht, en klikt "Nodig uit". Wachtrij in ' +
+      'linkedin_invite_queue; per rij een ✉-badge (in rij / verstuurd / al verbonden ' +
+      '/ mislukt). Zo bouw je veilig je netwerk op zonder invite-ban-risico van bursts.',
+    changes: [
+      'DB: tabel linkedin_invite_queue (contact_id, account_id, status, message, attempts).',
+      'api/_lib/unipile-invite.js: sendLinkedInInvite (profiel → provider_id → POST /users/invite; slaat al-verbonden over).',
+      'api/linkedin-invite-drip.js: cron met dagcap per account (INVITE_DAILY_CAP, default 15) + klein aantal per run.',
+      'vercel.json: cron 0 7-16 * * 1-5 (elk uur, werkdagen, kantooruren).',
+      'marketing-contacts.jsx: "✉️ Nodig uit"-bulkknop + per-rij drip-badge; window.prompt voor optioneel bericht.',
+    ],
+    files: [
+      'sql/schema_linkedin_invite_queue_2026-08-15.sql',
+      'api/_lib/unipile-invite.js',
+      'api/linkedin-invite-drip.js',
+      'vercel.json',
+      'src/bd/marketing-contacts.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.67.0',
+  },
   {
     version: '1.66.2',
     date: '2026-08-15T07:35:00Z',
