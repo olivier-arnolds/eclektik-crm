@@ -221,6 +221,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
   const [selectedCities, setSelectedCities] = useState(new Set());
   const [selectedIndustries, setSelectedIndustries] = useState(new Set());
   const [selectedEmpBuckets, setSelectedEmpBuckets] = useState(new Set());
+  const [empOpen, setEmpOpen] = useState(false); // Werknemers-filter uitgeklapt?
   const [searchText, setSearchText] = useState('');
   const [hasGlintDeal, setHasGlintDeal] = useState(false);
   const [hasAnyDeal, setHasAnyDeal] = useState(false);
@@ -895,7 +896,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
     <div style={{ display: 'flex', gap: 16 }}>
       {/* Filter sidebar — sticky tijdens scroll */}
       <aside style={{
-        flex: '0 0 240px',
+        flex: '0 0 290px',
         background: 'var(--bg-1)',
         padding: 12,
         border: '0.5px solid var(--sep)',
@@ -982,13 +983,22 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
           selected={selectedCities} onToggle={toggleInSet(setSelectedCities)} />
         <MultiSelectFilter label="Industrie" options={accountFilterOptions.industries}
           selected={selectedIndustries} onToggle={toggleInSet(setSelectedIndustries)} />
-        <div style={{ fontSize: 12, color: 'var(--text-1)', padding: '6px 0 3px' }}>
+        <button onClick={() => setEmpOpen(v => !v)}
+          style={{
+            width: '100%', display: 'flex', alignItems: 'center', gap: 6,
+            background: 'transparent', border: 'none', cursor: 'pointer',
+            padding: '3px 0', fontSize: 12, fontFamily: 'inherit',
+            color: 'var(--text-1)', textAlign: 'left',
+          }}>
+          <span style={{ color: 'var(--text-3)', fontSize: 9 }}>{empOpen ? '▾' : '▸'}</span>
           Werknemers
           {selectedEmpBuckets.size > 0 && (
-            <span style={{ color: 'var(--accent)', fontWeight: 600 }}> ({selectedEmpBuckets.size})</span>
+            <span style={{ color: 'var(--accent)', fontWeight: 600 }}>({selectedEmpBuckets.size})</span>
           )}
-        </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+          <span style={{ marginLeft: 'auto', color: 'var(--text-3)', fontSize: 10 }}>{EMP_BUCKETS.length + (emptyEmpCount > 0 ? 1 : 0)}</span>
+        </button>
+        {empOpen && (
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 4, paddingLeft: 4 }}>
           {EMP_BUCKETS.map(b => {
             const active = selectedEmpBuckets.has(b.key);
             return (
@@ -1019,6 +1029,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
             );
           })()}
         </div>
+        )}
 
         <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '12px 0 6px' }}>Status</div>
         <YesNoFilter label="Email" value={emailFilter} onChange={setEmailFilter} />

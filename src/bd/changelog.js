@@ -19,9 +19,32 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.67.0';
+export const CURRENT_VERSION = '1.67.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.67.1',
+    date: '2026-08-15T08:35:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Marketing: Werknemers-filter nu uitklapbaar (zoals Land)',
+    summary:
+      'Het Werknemers-filter in het linkermenu is nu een inklapbare sectie met een ' +
+      '▸/▾-kop, net als Bedrijf/Land/Stad/Industrie. Standaard dichtgeklapt, zodat ' +
+      'het menu rustiger oogt; uitklappen toont de bucket-knoppen. Ook is het ' +
+      'linkermenu iets breder zodat filteropties beter op één regel passen.',
+    changes: [
+      'marketing-contacts.jsx: Werknemers-sectie met open/dicht-toggle (empOpen), buckets in het uitgeklapte deel.',
+      'marketing-contacts.jsx: linker filtermenu iets breder.',
+    ],
+    files: [
+      'src/bd/marketing-contacts.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.67.1',
+  },
   {
     version: '1.67.0',
     date: '2026-08-15T08:20:00Z',
