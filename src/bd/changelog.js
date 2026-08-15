@@ -19,9 +19,36 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.69.2';
+export const CURRENT_VERSION = '1.70.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.70.0',
+    date: '2026-08-15T12:25:09Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Marketing: Account 360 standaard ingeklapt + bulk-actiebalk breekt af',
+    summary:
+      'De marketing-tab was te krap: de bulk-actiebalk propte alle knoppen op één ' +
+      'rij en "Clear" viel buiten beeld. Nu klapt het Account 360-paneel automatisch ' +
+      'in zodra je naar Marketing gaat, zodat de contacttabel en de actiebalk de ' +
+      'volle breedte krijgen. Bij het verlaten van Marketing opent het paneel weer ' +
+      '(een handmatige inklap op een andere view blijft gerespecteerd). De actiebalk ' +
+      'breekt bovendien netjes af over meerdere regels, zodat er nooit meer iets ' +
+      'buiten het frame valt.',
+    changes: [
+      'BDApp.jsx: activeView === "marketing" klapt het rechter Account 360-paneel in (auto-restore bij verlaten).',
+      'marketing-contacts.jsx: bulk-actiebalk flexWrap + rowGap zodat knoppen (incl. Clear) altijd zichtbaar blijven.',
+    ],
+    files: [
+      'src/bd/BDApp.jsx',
+      'src/bd/marketing-contacts.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.70.0',
+  },
   {
     version: '1.69.2',
     date: '2026-08-15T12:07:40Z',

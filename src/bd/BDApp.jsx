@@ -114,6 +114,24 @@ export default function BDApp() {
     setSelectedComm(null);
   }, [activeView]);
 
+  // Marketing heeft veel horizontale ruimte nodig (brede contacttabel + bulk-
+  // actiebalk), dus klappen we het Account 360-paneel daar standaard in zodat de
+  // linkerkant de volle breedte krijgt. Bij het verlaten van marketing zetten we
+  // het weer open — maar alleen als WIJ het inklapten, zodat een handmatige
+  // inklap op een andere view gerespecteerd blijft.
+  const autoCollapsedForMarketingRef = useRef(false);
+  useEffect(() => {
+    if (activeView === 'marketing') {
+      setExpandedLane(prev => {
+        if (prev !== 'left') autoCollapsedForMarketingRef.current = true;
+        return 'left';
+      });
+    } else if (autoCollapsedForMarketingRef.current) {
+      autoCollapsedForMarketingRef.current = false;
+      setExpandedLane(null);
+    }
+  }, [activeView]);
+
   // Inbox emails + calendar events lifted to BDApp so they survive view switches
   const [graphEmails, setGraphEmails] = useState([]);
   const [graphEvents, setGraphEvents] = useState([]);
