@@ -26,11 +26,11 @@ export default function MarketingView({ contacts, accounts, deals, allTags, refe
       if (data.newly_blocked > 0 && refetch) refetch();
       setSyncMsg(
         data.newly_blocked > 0
-          ? `${data.newly_blocked} nieuwe afmelding${data.newly_blocked === 1 ? '' : 'en'} verwerkt`
-          : 'Afmeldingen up-to-date'
+          ? `${data.newly_blocked} new unsubscribe${data.newly_blocked === 1 ? '' : 's'} processed`
+          : 'Unsubscribes up to date'
       );
     } catch (e) {
-      setSyncMsg(`Sync mislukt: ${e.message}`);
+      setSyncMsg(`Sync failed: ${e.message}`);
     }
     setSyncing(false);
   };
@@ -78,8 +78,8 @@ export default function MarketingView({ contacts, accounts, deals, allTags, refe
               style={syncMsg ? undefined : { marginLeft: 'auto' }}
               disabled={syncing}
               onClick={() => syncUnsubscribes()}
-              title="Haal afmeldingen op uit Resend en werk het verzendstatus-icoon bij">
-              {syncing ? 'Synced…' : '↻ Sync afmeldingen'}
+              title="Fetch unsubscribes from Resend and update the send-status icon">
+              {syncing ? 'Syncing…' : '↻ Sync unsubscribes'}
             </button>
             <button
               className="btn-ghost tiny"

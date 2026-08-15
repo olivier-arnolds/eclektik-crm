@@ -19,9 +19,31 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.69.0';
+export const CURRENT_VERSION = '1.69.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.69.1',
+    date: '2026-08-15T12:07:40Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Marketing-toolbar: Sync-knop en meldingen naar Engels',
+    summary:
+      'De laatste Nederlandse teksten in de marketing-toolbar zijn vertaald naar ' +
+      'Engels, in lijn met de rest van de UI: de "Sync afmeldingen"-knop, de ' +
+      'tooltip en de status-meldingen. De tab-titels waren al Engels.',
+    changes: [
+      'marketing-view.jsx: "↻ Sync afmeldingen" → "↻ Sync unsubscribes", "Synced…" → "Syncing…".',
+      'Tooltip en sync-meldingen (verwerkt / up-to-date / mislukt) vertaald.',
+    ],
+    files: [
+      'src/bd/marketing-view.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.69.1',
+  },
   {
     version: '1.69.0',
     date: '2026-08-15T09:10:00Z',
