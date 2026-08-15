@@ -19,9 +19,32 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.69.1';
+export const CURRENT_VERSION = '1.69.2';
 
 export const CHANGELOG = [
+  {
+    version: '1.69.2',
+    date: '2026-08-15T12:07:40Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Marketing bulk-actiebalk: resterende NL-labels naar Engels',
+    summary:
+      'De actiebalk die verschijnt zodra je contacten aanvinkt, was deels nog ' +
+      'Nederlands. Alle zichtbare knop-labels, hover-tooltips en de bijbehorende ' +
+      'pop-ups zijn vertaald naar Engels, in lijn met de rest van de UI.',
+    changes: [
+      'marketing-contacts.jsx: "✉️ Nodig uit" → "✉️ Invite", "🔗 Check connectie" → "🔗 Check connection".',
+      '"📣 Content aan/uit" → "📣 Content on / 🔕 Content off", "Email suggesties (patroon)" → "Email suggestions (pattern)".',
+      'Tooltips (Follow/Unfollow, connectiecheck, invite-drip, content) en de bijbehorende alert/confirm-pop-ups vertaald.',
+    ],
+    files: [
+      'src/bd/marketing-contacts.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.69.2',
+  },
   {
     version: '1.69.1',
     date: '2026-08-15T12:07:40Z',

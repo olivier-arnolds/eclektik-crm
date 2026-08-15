@@ -1226,7 +1226,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
             <button className="btn-ghost tiny"
               onClick={() => {
                 const ids = filtered.filter(c => selected.has(c.id) && c.linkedin_url).map(c => c.id);
-                if (ids.length === 0) { alert('Geen geselecteerde contacten met LinkedIn-URL om te checken.'); return; }
+                if (ids.length === 0) { alert('No selected contacts with a LinkedIn URL to check.'); return; }
                 setShowDoublecheck(ids);
               }}>
               Doublecheck LinkedIn
@@ -1239,10 +1239,10 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
             <button className="btn-ghost tiny"
               onClick={() => {
                 const eligible = filtered.filter(c => selected.has(c.id) && !c.email);
-                if (eligible.length === 0) { alert('Geen geselecteerde contacten zonder email.'); return; }
+                if (eligible.length === 0) { alert('No selected contacts without an email.'); return; }
                 setShowEmailSuggest(true);
               }}>
-              Email suggesties (patroon)
+              Email suggestions (pattern)
             </button>
             {(() => {
               const notFollowedSelected = [...selected].filter(id => !followedContactIds.has(id)).length;
@@ -1250,7 +1250,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
                 <button className="btn-ghost tiny"
                   onClick={followSelected}
                   disabled={notFollowedSelected === 0}
-                  title={notFollowedSelected === 0 ? 'Alle geselecteerde contacten staan al op signal-follow' : `${notFollowedSelected} geselecteerde contact${notFollowedSelected === 1 ? '' : 'en'} nog niet op signal-follow`}>
+                  title={notFollowedSelected === 0 ? 'All selected contacts are already on signal-follow' : `${notFollowedSelected} selected contact${notFollowedSelected === 1 ? '' : 's'} not yet on signal-follow`}>
                   🔔 Follow {notFollowedSelected > 0 ? `(${notFollowedSelected})` : ''}
                 </button>
               );
@@ -1261,14 +1261,14 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
                 <button className="btn-ghost tiny"
                   onClick={unfollowSelected}
                   disabled={followedSelected === 0}
-                  title={followedSelected === 0 ? 'Geen geselecteerde contacten op signal-follow' : `${followedSelected} geselecteerde contact${followedSelected === 1 ? '' : 'en'} op signal-follow`}>
+                  title={followedSelected === 0 ? 'No selected contacts on signal-follow' : `${followedSelected} selected contact${followedSelected === 1 ? '' : 's'} on signal-follow`}>
                   🔕 Unfollow {followedSelected > 0 ? `(${followedSelected})` : ''}
                 </button>
               );
             })()}
             <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
               <select value={connAccount} onChange={e => setConnAccount(e.target.value)}
-                title="LinkedIn-account voor de connectiecheck"
+                title="LinkedIn account for the connection check"
                 style={{ fontSize: 11, padding: '2px 4px', borderRadius: 4, border: '0.5px solid var(--sep)', background: 'var(--bg-1)', color: 'var(--text-1)' }}>
                 {LINKEDIN_ACCOUNTS.map(a => <option key={a.id} value={a.id}>{a.label}</option>)}
               </select>
@@ -1277,8 +1277,8 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
                 const acct = LINKEDIN_ACCOUNTS.find(a => a.id === connAccount)?.label;
                 return (
                   <button className="btn-ghost tiny" onClick={checkConnectionsForSelected} disabled={connChecking || n === 0}
-                    title={n === 0 ? 'Geen geselecteerde contacten met LinkedIn-URL' : `Check of ${acct} verbonden is met ${Math.min(n, 25)} contact(en)`}>
-                    {connChecking ? '🔗 bezig…' : `🔗 Check connectie${n > 0 ? ` (${Math.min(n, 25)})` : ''}`}
+                    title={n === 0 ? 'No selected contacts with a LinkedIn URL' : `Check whether ${acct} is connected to ${Math.min(n, 25)} contact(s)`}>
+                    {connChecking ? '🔗 working…' : `🔗 Check connection${n > 0 ? ` (${Math.min(n, 25)})` : ''}`}
                   </button>
                 );
               })()}
@@ -1289,8 +1289,8 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
                 const acct = LINKEDIN_ACCOUNTS.find(a => a.id === connAccount)?.label;
                 return (
                   <button className="btn-ghost tiny" onClick={enrollForInviteDrip} disabled={enrolling || n === 0}
-                    title={n === 0 ? 'Geen geschikte contacten (geen URL, al verbonden, of al in de rij)' : `Zet ${n} contact(en) aan voor de connectie-drip via ${acct} (~15/dag)`}>
-                    {enrolling ? '✉️ bezig…' : `✉️ Nodig uit${n > 0 ? ` (${n})` : ''}`}
+                    title={n === 0 ? 'No eligible contacts (no URL, already connected, or already queued)' : `Enroll ${n} contact(s) in the connection drip via ${acct} (~15/day)`}>
+                    {enrolling ? '✉️ working…' : `✉️ Invite${n > 0 ? ` (${n})` : ''}`}
                   </button>
                 );
               })()}
@@ -1301,7 +1301,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
                 if (checked.length === 0) return null;
                 const pct = Math.round(100 * connected.length / checked.length);
                 const acct = LINKEDIN_ACCOUNTS.find(a => a.id === connAccount)?.label;
-                return <span style={{ fontSize: 10, color: 'var(--text-3)' }} title="Van de gecheckte contacten met LinkedIn-URL">{acct}: {connected.length}/{checked.length} verbonden ({pct}%)</span>;
+                return <span style={{ fontSize: 10, color: 'var(--text-3)' }} title="Of the checked contacts with a LinkedIn URL">{acct}: {connected.length}/{checked.length} connected ({pct}%)</span>;
               })()}
             </span>
             {(() => {
@@ -1310,8 +1310,8 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
                 <button className="btn-ghost tiny"
                   onClick={() => setContentOptInForSelected(true)}
                   disabled={canOn === 0}
-                  title={canOn === 0 ? 'Alle geselecteerde contacten ontvangen al marketingcontent' : `${canOn} geselecteerd contact${canOn === 1 ? '' : 'en'} nog geen marketingcontent`}>
-                  📣 Content aan {canOn > 0 ? `(${canOn})` : ''}
+                  title={canOn === 0 ? 'All selected contacts already receive marketing content' : `${canOn} selected contact${canOn === 1 ? '' : 's'} not yet receiving marketing content`}>
+                  📣 Content on {canOn > 0 ? `(${canOn})` : ''}
                 </button>
               );
             })()}
@@ -1321,8 +1321,8 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
                 <button className="btn-ghost tiny"
                   onClick={() => setContentOptInForSelected(false)}
                   disabled={canOff === 0}
-                  title={canOff === 0 ? 'Geen geselecteerde contacten met marketingcontent aan' : `${canOff} geselecteerd contact${canOff === 1 ? '' : 'en'} met marketingcontent aan`}>
-                  🔕 Content uit {canOff > 0 ? `(${canOff})` : ''}
+                  title={canOff === 0 ? 'No selected contacts with marketing content on' : `${canOff} selected contact${canOff === 1 ? '' : 's'} with marketing content on`}>
+                  🔕 Content off {canOff > 0 ? `(${canOff})` : ''}
                 </button>
               );
             })()}
@@ -1332,7 +1332,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
                 const isBlocked = (c) => optOutOverrides[c.id] !== undefined ? optOutOverrides[c.id] : !!c.do_not_email;
                 const eligible = filtered.filter(c => selected.has(c.id) && !isBlocked(c));
                 const optedOut = selected.size - eligible.length;
-                if (optedOut > 0 && !confirm(`${optedOut} geselecteerde contact${optedOut === 1 ? '' : 'en'} ${optedOut === 1 ? 'staat' : 'staan'} op opt-out (🚫). Ga je door met de overige ${eligible.length}?`)) {
+                if (optedOut > 0 && !confirm(`${optedOut} selected contact${optedOut === 1 ? ' is' : 's are'} opted out (🚫). Continue with the remaining ${eligible.length}?`)) {
                   return;
                 }
                 onComposeCampaign(eligible);
