@@ -19,9 +19,30 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.71.0';
+export const CURRENT_VERSION = '1.71.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.71.1',
+    date: '2026-08-15T12:55:52Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Filterpaneel: kolomindeling zoals gevraagd',
+    summary:
+      'De 2-koloms-indeling van het filterpaneel klopte nog niet. Nu: Tags bovenaan ' +
+      'over de volle breedte, daaronder links Account status en Status, rechts Deals ' +
+      'en Account.',
+    changes: [
+      'marketing-contacts.jsx: Tags full-width; linkerkolom = Account status + Status, rechterkolom = Deals + Account.',
+    ],
+    files: [
+      'src/bd/marketing-contacts.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.71.1',
+  },
   {
     version: '1.71.0',
     date: '2026-08-15T12:49:24Z',

@@ -981,8 +981,9 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
 
   return (
     <div style={{ display: 'flex', gap: 16 }}>
-      {/* Filter sidebar — sticky tijdens scroll. Twee kolommen zodat alle
-          filters (incl. Status onderaan) zonder scrollen zichtbaar zijn. */}
+      {/* Filter sidebar — sticky tijdens scroll. Tags bovenaan (volle breedte),
+          daaronder twee kolommen: LINKS Account status + Status, RECHTS Deals +
+          Account. Zo staan alle filters zonder scrollen in beeld. */}
       <aside style={{
         flex: '0 0 460px',
         background: 'var(--bg-1)',
@@ -994,12 +995,8 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
         top: 0,
         maxHeight: 'calc(100vh - 80px)',
         overflowY: 'auto',
-        display: 'flex',
-        gap: 16,
-        alignItems: 'flex-start',
       }}>
-        {/* Kolom A: Tags · Deals · Account status */}
-        <div style={{ flex: 1, minWidth: 0 }}>
+        {/* TAGS — volle breedte bovenaan */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
           <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Tags</div>
           <button onClick={() => setShowAddTag(v => !v)}
@@ -1027,17 +1024,12 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
           </label>
         ))}
 
-        <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '12px 0 6px' }}>Deals</div>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, padding: '3px 0', cursor: 'pointer' }}>
-          <input type="checkbox" checked={hasGlintDeal} onChange={() => setHasGlintDeal(v => !v)} />
-          Has Glint deal
-        </label>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, padding: '3px 0', cursor: 'pointer' }}>
-          <input type="checkbox" checked={hasAnyDeal} onChange={() => setHasAnyDeal(v => !v)} />
-          Has any deal
-        </label>
+        {/* Twee kolommen onder Tags */}
+        <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', marginTop: 12 }}>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, margin: '12px 0 6px' }}>
+        {/* LINKS: Account status · Status */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
           <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Account status</div>
           <button onClick={() => setShowAddStatus(v => !v)}
             title="Nieuwe status toevoegen (lokaal — wordt zichtbaar als filter; wijs toe via account-detail om te persisten in DB)"
@@ -1067,11 +1059,31 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
           </>
         )}
 
-        </div>{/* einde kolom A */}
+        <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '12px 0 6px' }}>Status</div>
+        <YesNoFilter label="Email" value={emailFilter} onChange={setEmailFilter} />
+        <EmailStatusFilter value={emailStatusFilter} onChange={setEmailStatusFilter} />
+        <YesNoFilter label="LinkedIn" value={linkedinFilter} onChange={setLinkedinFilter} />
+        <YesNoFilter label="Job Title" value={titleFilter} onChange={setTitleFilter} />
+        <YesNoFilter label="Follow 🔔" value={followFilter} onChange={setFollowFilter} />
+        <YesNoFilter label={`Checked 🔗 (${LINKEDIN_ACCOUNTS.find(a => a.id === connAccount)?.short || '?'})`} value={connCheckedFilter} onChange={setConnCheckedFilter} />
+        <YesNoFilter label={`Connected 🔗 (${LINKEDIN_ACCOUNTS.find(a => a.id === connAccount)?.short || '?'})`} value={connectedFilter} onChange={setConnectedFilter} />
+        <YesNoFilter label="Active" value={activeFilter} onChange={setActiveFilter} />
+        <YesNoFilter label="Tag" value={tagFilter} onChange={setTagFilter} />
+        </div>{/* einde linkerkolom */}
 
-        {/* Kolom B: Account · Status */}
+        {/* RECHTS: Deals · Account */}
         <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Account</div>
+        <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Deals</div>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, padding: '3px 0', cursor: 'pointer' }}>
+          <input type="checkbox" checked={hasGlintDeal} onChange={() => setHasGlintDeal(v => !v)} />
+          Has Glint deal
+        </label>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, padding: '3px 0', cursor: 'pointer' }}>
+          <input type="checkbox" checked={hasAnyDeal} onChange={() => setHasAnyDeal(v => !v)} />
+          Has any deal
+        </label>
+
+        <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '12px 0 6px' }}>Account</div>
         <MultiSelectFilter label="Bedrijf" options={accountFilterOptions.companies}
           selected={selectedCompanies} onToggle={toggleInSet(setSelectedCompanies)} />
         <MultiSelectFilter label="Land" options={accountFilterOptions.countries}
@@ -1127,18 +1139,9 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
           })()}
         </div>
         )}
+        </div>{/* einde rechterkolom */}
 
-        <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '12px 0 6px' }}>Status</div>
-        <YesNoFilter label="Email" value={emailFilter} onChange={setEmailFilter} />
-        <EmailStatusFilter value={emailStatusFilter} onChange={setEmailStatusFilter} />
-        <YesNoFilter label="LinkedIn" value={linkedinFilter} onChange={setLinkedinFilter} />
-        <YesNoFilter label="Job Title" value={titleFilter} onChange={setTitleFilter} />
-        <YesNoFilter label="Follow 🔔" value={followFilter} onChange={setFollowFilter} />
-        <YesNoFilter label={`Checked 🔗 (${LINKEDIN_ACCOUNTS.find(a => a.id === connAccount)?.short || '?'})`} value={connCheckedFilter} onChange={setConnCheckedFilter} />
-        <YesNoFilter label={`Connected 🔗 (${LINKEDIN_ACCOUNTS.find(a => a.id === connAccount)?.short || '?'})`} value={connectedFilter} onChange={setConnectedFilter} />
-        <YesNoFilter label="Active" value={activeFilter} onChange={setActiveFilter} />
-        <YesNoFilter label="Tag" value={tagFilter} onChange={setTagFilter} />
-        </div>{/* einde kolom B */}
+        </div>{/* einde twee kolommen */}
       </aside>
 
       {/* Contact list */}
