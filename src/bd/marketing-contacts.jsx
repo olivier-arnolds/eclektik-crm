@@ -265,6 +265,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
   const [connAccount, setConnAccount] = useState(LINKEDIN_ACCOUNTS[0].id); // gekozen account voor de check (default Marco)
   const [connChecking, setConnChecking] = useState(false);
   const [connCheckedFilter, setConnCheckedFilter] = useState(null); // null | 'yes' | 'no' — gecheckt voor connAccount?
+  const [connectedFilter, setConnectedFilter] = useState(null);     // null | 'yes' | 'no' — verbonden via connAccount? ('no' = gecheckt én niet verbonden)
   // Connectie-drip wachtrij: { [contactId]: { [accountId]: 'queued'|'sent'|'failed'|'skipped' } }
   const [inviteQueue, setInviteQueue] = useState({});
   const [enrolling, setEnrolling] = useState(false);
@@ -724,6 +725,9 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
       // Checked = heeft dit contact al een connectie-status voor het gekozen account?
       if (connCheckedFilter === 'yes' && connections[c.id]?.[connAccount] === undefined) return false;
       if (connCheckedFilter === 'no' && connections[c.id]?.[connAccount] !== undefined) return false;
+      // Connected = gecheckt-én-verbonden (yes) of gecheckt-én-niet-verbonden (no) voor dat account.
+      if (connectedFilter === 'yes' && connections[c.id]?.[connAccount] !== 'connected') return false;
+      if (connectedFilter === 'no' && connections[c.id]?.[connAccount] !== 'not_connected') return false;
       if (hasGlintDeal && !accountsWithGlintDeal.has(c.accountId)) return false;
       if (hasAnyDeal && !accountsWithAnyDeal.has(c.accountId)) return false;
       if (selectedTagIds.size > 0) {
@@ -801,7 +805,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
       if (cmp !== 0) return cmp;
       return (a.name || '').toLowerCase().localeCompare((b.name || '').toLowerCase());
     });
-  }, [contacts, activeFilter, tagFilter, emailFilter, emailStatusFilter, linkedinFilter, titleFilter, followFilter, followedContactIds, connCheckedFilter, connections, connAccount, hasGlintDeal, hasAnyDeal, accountsWithGlintDeal, accountsWithAnyDeal, accountsWithActiveProposal, selectedTagIds, selectedAccountTypes, accountTypeById, selectedCompanies, selectedCountries, selectedCities, selectedIndustries, selectedEmpBuckets, accountMetaById, searchText, hiddenPairs, sortMode]);
+  }, [contacts, activeFilter, tagFilter, emailFilter, emailStatusFilter, linkedinFilter, titleFilter, followFilter, followedContactIds, connCheckedFilter, connectedFilter, connections, connAccount, hasGlintDeal, hasAnyDeal, accountsWithGlintDeal, accountsWithAnyDeal, accountsWithActiveProposal, selectedTagIds, selectedAccountTypes, accountTypeById, selectedCompanies, selectedCountries, selectedCities, selectedIndustries, selectedEmpBuckets, accountMetaById, searchText, hiddenPairs, sortMode]);
 
   // Is er daadwerkelijk gefilterd? (alles behalve de standaard-staat). Drijft
   // de live accountlijst-koppeling: alleen dan versmalt het rechterpaneel mee.
@@ -811,12 +815,12 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
     selectedCities.size > 0 || selectedIndustries.size > 0 ||
     selectedEmpBuckets.size > 0 || hasGlintDeal || hasAnyDeal ||
     !!emailFilter || !!linkedinFilter || !!titleFilter || !!followFilter ||
-    !!connCheckedFilter ||
+    !!connCheckedFilter || !!connectedFilter ||
     !!tagFilter || searchText.trim() !== '' || activeFilter !== 'yes'
   ), [selectedTagIds, selectedAccountTypes, selectedCompanies, selectedCountries,
       selectedCities, selectedIndustries, selectedEmpBuckets, hasGlintDeal,
       hasAnyDeal, emailFilter, linkedinFilter, titleFilter, followFilter,
-      connCheckedFilter, tagFilter, searchText, activeFilter]);
+      connCheckedFilter, connectedFilter, tagFilter, searchText, activeFilter]);
 
   // Meld de gefilterde account-ids omhoog zodat de accountlijst (rechterpaneel)
   // live meebeweegt. null = niet filteren (toon alle accounts).
@@ -1039,6 +1043,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
         <YesNoFilter label="Job Title" value={titleFilter} onChange={setTitleFilter} />
         <YesNoFilter label="Follow 🔔" value={followFilter} onChange={setFollowFilter} />
         <YesNoFilter label={`Checked 🔗 (${LINKEDIN_ACCOUNTS.find(a => a.id === connAccount)?.short || '?'})`} value={connCheckedFilter} onChange={setConnCheckedFilter} />
+        <YesNoFilter label={`Connected 🔗 (${LINKEDIN_ACCOUNTS.find(a => a.id === connAccount)?.short || '?'})`} value={connectedFilter} onChange={setConnectedFilter} />
         <YesNoFilter label="Active" value={activeFilter} onChange={setActiveFilter} />
         <YesNoFilter label="Tag" value={tagFilter} onChange={setTagFilter} />
       </aside>

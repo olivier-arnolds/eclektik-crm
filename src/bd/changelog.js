@@ -19,9 +19,32 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.67.2';
+export const CURRENT_VERSION = '1.68.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.68.0',
+    date: '2026-08-15T08:55:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Marketing: filter "Connected" (verbonden ja/nee) naast "Checked"',
+    summary:
+      'Naast "Checked" (is de connectie al opgevraagd?) is er nu een aparte ' +
+      '"Connected"-ja/nee-filter, gekoppeld aan het gekozen account. Belangrijk ' +
+      'onderscheid: Checked=no betekent nog niet gecheckt; Connected=no betekent ' +
+      'gecheckt én niet verbonden - precies de groep die je voor de connectie-drip ' +
+      'wilt. Connected=yes toont je 1e-graads connecties via dat account.',
+    changes: [
+      'marketing-contacts.jsx: YesNoFilter "Connected 🔗 (account)"; yes=connected, no=not_connected (gecheckt).',
+    ],
+    files: [
+      'src/bd/marketing-contacts.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.68.0',
+  },
   {
     version: '1.67.2',
     date: '2026-08-15T08:45:00Z',
