@@ -19,9 +19,33 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.68.0';
+export const CURRENT_VERSION = '1.69.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.69.0',
+    date: '2026-08-15T09:10:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Connectie-drip: rijke invite-modal met placeholders + preview',
+    summary:
+      'De kale browser-prompt voor het connectiebericht is vervangen door een echte ' +
+      'modal: schrijf een bericht met placeholders ({{voornaam}}, {{bedrijf}}, ' +
+      '{{naam}}), met knoppen om ze in te voegen, een live preview op een ' +
+      'voorbeeldcontact en een tekenteller (LinkedIn ~300). Bij het aanzetten wordt ' +
+      'het bericht per contact gepersonaliseerd en zo in de wachtrij gezet.',
+    changes: [
+      'marketing-contacts.jsx: InviteEnrollModal (placeholder-knoppen, preview, tekenteller) i.p.v. window.prompt.',
+      'renderInviteTemplate: vult {{voornaam}}/{{bedrijf}}/{{naam}} per contact in bij het aanzetten.',
+    ],
+    files: [
+      'src/bd/marketing-contacts.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.69.0',
+  },
   {
     version: '1.68.0',
     date: '2026-08-15T08:55:00Z',

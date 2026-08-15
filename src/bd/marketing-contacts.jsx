@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import TagChip from './tag-chip';
 import BulkTagModal from './marketing-bulk-tag-modal';
 import ContactDetailModal from './contact-detail-modal';
@@ -15,6 +15,16 @@ const LINKEDIN_ACCOUNTS = [
   { id: 'j9-n2jeNTtGUxemfjlBsZA', label: 'Yarmilla', short: 'Y' },
   { id: 'tC2o50tiTBiRCt9xAnio3w', label: 'Olivier', short: 'O' },
 ];
+
+// Placeholders in het invite-bericht, per contact ingevuld (bij het aanzetten).
+function firstNameOf(c) { return (c.first_name || (c.name || '').trim().split(/\s+/)[0] || '').trim(); }
+function renderInviteTemplate(tpl, c) {
+  return String(tpl || '')
+    .replace(/\{\{\s*voornaam\s*\}\}/gi, firstNameOf(c) || '')
+    .replace(/\{\{\s*bedrijf\s*\}\}/gi, c.account || '')
+    .replace(/\{\{\s*naam\s*\}\}/gi, c.name || '')
+    .trim();
+}
 
 // CSV escaping: wrap in double-quotes, double-up internal quotes.
 // Excel-compatible — newlines / commas / quotes inside fields preserved.
@@ -210,6 +220,67 @@ function MultiSelectFilter({ label, options, selected, onToggle }) {
   );
 }
 
+// Modal om de connectie-drip aan te zetten: bericht opstellen met placeholders,
+// live preview op een voorbeeldcontact, tekenteller (LinkedIn ~300 tekens).
+function InviteEnrollModal({ eligible, accountLabel, onConfirm, onClose, busy }) {
+  const [msg, setMsg] = useState('');
+  const taRef = useRef(null);
+  const sample = eligible[0];
+  const LIMIT = 300;
+  const previewText = renderInviteTemplate(msg, sample);
+  const over = previewText.length > LIMIT;
+
+  const insert = (token) => {
+    const ta = taRef.current;
+    if (!ta) { setMsg(m => m + token); return; }
+    const s = ta.selectionStart ?? msg.length, e = ta.selectionEnd ?? msg.length;
+    const next = msg.slice(0, s) + token + msg.slice(e);
+    setMsg(next);
+    requestAnimationFrame(() => { ta.focus(); ta.selectionStart = ta.selectionEnd = s + token.length; });
+  };
+
+  return (
+    <div onClick={onClose}
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}>
+      <div onClick={e => e.stopPropagation()}
+        style={{ background: 'var(--bg-1)', border: '0.5px solid var(--sep)', borderRadius: 12, width: 'min(560px, 100%)', maxHeight: '90vh', overflow: 'auto', boxShadow: '0 12px 40px rgba(0,0,0,0.25)' }}>
+        <div style={{ padding: '14px 18px', borderBottom: '0.5px solid var(--sep)', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <strong style={{ fontSize: 14 }}>Connectie-drip aanzetten</strong>
+          <span style={{ fontSize: 12, color: 'var(--text-3)' }}>{eligible.length} contact{eligible.length === 1 ? '' : 'en'} · via {accountLabel}</span>
+          <button className="btn-ghost tiny" style={{ marginLeft: 'auto' }} onClick={onClose}>✕</button>
+        </div>
+        <div style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+            <span style={{ fontSize: 11, color: 'var(--text-3)' }}>Placeholders:</span>
+            <button className="btn-ghost tiny" onClick={() => insert('{{voornaam}}')}>+ Voornaam</button>
+            <button className="btn-ghost tiny" onClick={() => insert('{{bedrijf}}')}>+ Bedrijf</button>
+            <button className="btn-ghost tiny" onClick={() => insert('{{naam}}')}>+ Volledige naam</button>
+          </div>
+          <textarea ref={taRef} value={msg} onChange={e => setMsg(e.target.value)} rows={4}
+            placeholder={'Optioneel. Bv: Hoi {{voornaam}}, ik zie dat je bij {{bedrijf}} werkt - leek me goed om te connecten.\n\nLaat leeg voor een kaal verzoek.'}
+            style={{ padding: '8px 10px', borderRadius: 6, border: '0.5px solid var(--sep)', background: 'var(--bg-2)', color: 'var(--text-1)', fontSize: 13, resize: 'vertical', fontFamily: 'inherit', lineHeight: 1.5 }} />
+          <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>
+            Voorbeeld ({sample?.name || 'contact'})
+          </div>
+          <div style={{ fontSize: 13, color: 'var(--text-1)', background: 'var(--bg-2)', border: '0.5px solid var(--sep)', borderRadius: 6, padding: '8px 10px', minHeight: 40, whiteSpace: 'pre-wrap' }}>
+            {previewText || <span style={{ color: 'var(--text-3)' }}>(kaal verzoek, zonder bericht)</span>}
+          </div>
+          <div style={{ fontSize: 11, color: over ? '#dc2626' : 'var(--text-3)' }}>
+            {previewText.length}/{LIMIT} tekens{over ? ' — te lang, LinkedIn kapt af of weigert' : ''}
+            {'  ·  LinkedIn limiteert het aantal invites mét bericht (met Premium ruimer).'}
+          </div>
+        </div>
+        <div style={{ padding: '12px 18px', borderTop: '0.5px solid var(--sep)', display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+          <button className="btn-ghost tiny" onClick={onClose}>Annuleren</button>
+          <button className="btn-primary tiny" disabled={busy || over} onClick={() => onConfirm(msg)}>
+            {busy ? 'Aanzetten…' : `Aanzetten (${eligible.length})`}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Marketing → Contacts tab
 // Props: contacts, accounts, deals, allTags, refetch
 // Layout: filter sidebar (left, ~260px) + list (right, fills)
@@ -269,6 +340,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
   // Connectie-drip wachtrij: { [contactId]: { [accountId]: 'queued'|'sent'|'failed'|'skipped' } }
   const [inviteQueue, setInviteQueue] = useState({});
   const [enrolling, setEnrolling] = useState(false);
+  const [inviteModalEligible, setInviteModalEligible] = useState(null); // array eligible contacts of null
   const [enriching, setEnriching] = useState(false);
   const [enrichProgress, setEnrichProgress] = useState({ done: 0, total: 0 });
   const [openContactId, setOpenContactId] = useState(null);
@@ -424,8 +496,9 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
     });
   }, []);
 
-  // Zet geselecteerde niet-verbonden contacten aan voor de connectie-drip via het gekozen account.
-  async function enrollForInviteDrip() {
+  // Zet geselecteerde niet-verbonden contacten aan voor de connectie-drip.
+  // Opent een modal om het bericht (met placeholders) op te stellen.
+  function enrollForInviteDrip() {
     const acct = LINKEDIN_ACCOUNTS.find(a => a.id === connAccount);
     const eligible = filtered.filter(c => selected.has(c.id) && c.linkedin_url
       && connections[c.id]?.[connAccount] !== 'connected'      // niet al verbonden
@@ -434,11 +507,18 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
       alert(`Geen geschikte contacten: nodig heeft LinkedIn-URL, niet al verbonden via ${acct?.label}, en nog niet in de rij.`);
       return;
     }
-    const msg = window.prompt(`Optioneel connectiebericht voor ${eligible.length} uitnodiging(en) via ${acct?.label}.\nLaat leeg voor een kaal verzoek. (LinkedIn limiteert invites-met-bericht.)`, '');
-    if (msg === null) return; // geannuleerd
-    if (!confirm(`${eligible.length} contact${eligible.length === 1 ? '' : 'en'} aanzetten voor de connectie-drip via ${acct?.label}?\nDe cron stuurt max ~15/dag per account, verspreid over de dag (werkdagen).`)) return;
+    setInviteModalEligible(eligible);
+  }
+
+  // Bevestig vanuit de modal: personaliseer het bericht per contact en zet ze in de rij.
+  async function confirmInviteEnroll(template) {
+    const eligible = inviteModalEligible || [];
     setEnrolling(true);
-    const rows = eligible.map(c => ({ contact_id: c.id, account_id: connAccount, message: msg || null, status: 'queued' }));
+    const rows = eligible.map(c => ({
+      contact_id: c.id, account_id: connAccount,
+      message: template && template.trim() ? renderInviteTemplate(template, c) : null,
+      status: 'queued',
+    }));
     const { error } = await supabase.from('linkedin_invite_queue').upsert(rows, { onConflict: 'contact_id,account_id', ignoreDuplicates: true });
     setEnrolling(false);
     if (error) { alert('Aanzetten mislukt: ' + error.message); return; }
@@ -447,7 +527,9 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
       for (const c of eligible) n[c.id] = { ...(n[c.id] || {}), [connAccount]: 'queued' };
       return n;
     });
-    alert(`${eligible.length} contact${eligible.length === 1 ? '' : 'en'} aangezet voor de connectie-drip via ${acct?.label}.`);
+    const acct = LINKEDIN_ACCOUNTS.find(a => a.id === connAccount);
+    setInviteModalEligible(null);
+    alert(`${eligible.length} contact${eligible.length === 1 ? '' : 'en'} aangezet voor de connectie-drip via ${acct?.label}.\nDe cron stuurt max ~15/dag per account, verspreid over de dag (werkdagen).`);
   }
 
   async function findEmailsViaSurfe() {
@@ -1455,6 +1537,15 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
           userEmail={userEmail}
           onClose={() => setShowBulkTag(false)}
           onComplete={() => { setSelected(new Set()); if (refetch) refetch(); }}
+        />
+      )}
+      {inviteModalEligible && (
+        <InviteEnrollModal
+          eligible={inviteModalEligible}
+          accountLabel={LINKEDIN_ACCOUNTS.find(a => a.id === connAccount)?.label}
+          busy={enrolling}
+          onConfirm={confirmInviteEnroll}
+          onClose={() => setInviteModalEligible(null)}
         />
       )}
       {openContactId && (
