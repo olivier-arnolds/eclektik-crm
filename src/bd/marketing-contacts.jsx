@@ -981,9 +981,10 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
 
   return (
     <div style={{ display: 'flex', gap: 16 }}>
-      {/* Filter sidebar — sticky tijdens scroll */}
+      {/* Filter sidebar — sticky tijdens scroll. Twee kolommen zodat alle
+          filters (incl. Status onderaan) zonder scrollen zichtbaar zijn. */}
       <aside style={{
-        flex: '0 0 290px',
+        flex: '0 0 460px',
         background: 'var(--bg-1)',
         padding: 12,
         border: '0.5px solid var(--sep)',
@@ -993,7 +994,12 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
         top: 0,
         maxHeight: 'calc(100vh - 80px)',
         overflowY: 'auto',
+        display: 'flex',
+        gap: 16,
+        alignItems: 'flex-start',
       }}>
+        {/* Kolom A: Tags · Deals · Account status */}
+        <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
           <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Tags</div>
           <button onClick={() => setShowAddTag(v => !v)}
@@ -1061,7 +1067,11 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
           </>
         )}
 
-        <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '12px 0 6px' }}>Account</div>
+        </div>{/* einde kolom A */}
+
+        {/* Kolom B: Account · Status */}
+        <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Account</div>
         <MultiSelectFilter label="Bedrijf" options={accountFilterOptions.companies}
           selected={selectedCompanies} onToggle={toggleInSet(setSelectedCompanies)} />
         <MultiSelectFilter label="Land" options={accountFilterOptions.countries}
@@ -1128,6 +1138,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
         <YesNoFilter label={`Connected 🔗 (${LINKEDIN_ACCOUNTS.find(a => a.id === connAccount)?.short || '?'})`} value={connectedFilter} onChange={setConnectedFilter} />
         <YesNoFilter label="Active" value={activeFilter} onChange={setActiveFilter} />
         <YesNoFilter label="Tag" value={tagFilter} onChange={setTagFilter} />
+        </div>{/* einde kolom B */}
       </aside>
 
       {/* Contact list */}
@@ -1482,7 +1493,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
                 const m = map[st] || { t: `✉ ${st}`, col: 'var(--text-3)' };
                 return <span title={`Connectie-drip via ${acct}: ${st}`} style={{ fontSize: 9, color: m.col, fontWeight: 600, flexShrink: 0 }}>{m.t}</span>;
               })()}
-              <div onClick={e => e.stopPropagation()} style={{ minWidth: 180, flexShrink: 0 }}>
+              <div onClick={e => e.stopPropagation()} style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
                 {editingEmailId === c.id ? (
                   <input
                     autoFocus
@@ -1496,30 +1507,39 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
                     }}
                     placeholder="email@example.com"
                     style={{
-                      width: '100%', padding: '4px 6px', borderRadius: 4,
+                      width: 200, padding: '4px 6px', borderRadius: 4,
                       border: '0.5px solid var(--accent)', background: 'var(--bg-1)',
                       fontSize: 11, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
                     }} />
                 ) : (
                   (() => {
+                    // Alleen een compact @-icoon i.p.v. het volledige e-mailadres
+                    // (scheelt ruimte). Aanwezig = accent-@; afwezig = grijze @.
+                    // Hover toont het echte adres; klik opent inline-edit.
                     const blocked = optOutOverrides[c.id] !== undefined ? optOutOverrides[c.id] : !!c.do_not_email;
+                    const has = !!c.email;
                     return (
                       <span
                         onClick={() => { setEditingEmailId(c.id); setEmailDraft(c.email || ''); }}
-                        title={blocked ? 'Email geblokt (opt-out)' : 'Click to edit email'}
+                        title={has
+                          ? `${c.email}${blocked ? ' (opt-out)' : ''} — klik om te bewerken`
+                          : 'Geen e-mail — klik om toe te voegen'}
                         style={{
-                          fontSize: 11, cursor: 'text',
-                          color: c.email ? 'var(--text-2)' : 'var(--text-4)',
-                          fontStyle: c.email ? 'normal' : 'italic',
+                          display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+                          width: 22, height: 20, borderRadius: 4, cursor: 'pointer',
+                          fontSize: 13, fontWeight: 700,
+                          background: has ? 'var(--accent-tint)' : 'transparent',
+                          color: has ? 'var(--accent)' : 'var(--text-4)',
+                          border: has ? 'none' : '0.5px dashed var(--sep)',
                           textDecoration: blocked ? 'line-through' : 'none',
                           opacity: blocked ? 0.5 : 1,
                         }}>
-                        {c.email || '+ add email'}
+                        @
                       </span>
                     );
                   })()
                 )}
-                <div><EmailStatusBadge status={c.email_status} /></div>
+                {c.email && <EmailStatusBadge status={c.email_status} />}
               </div>
             </div>
           ))}

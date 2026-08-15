@@ -19,9 +19,38 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.70.1';
+export const CURRENT_VERSION = '1.71.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.71.0',
+    date: '2026-08-15T12:49:24Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Marketing overzichtelijker: vol breedte, 2-koloms filters, e-mail als icoon',
+    summary:
+      'De marketing-tab is opgeruimd. De inhoud gebruikt nu de volle breedte (de ' +
+      '1400px-cap is eraf, samen met het standaard ingeklapte Account 360-paneel), ' +
+      'zodat de bulk-actiebalk op één rij past. Het linker filterpaneel is breder en ' +
+      'in twee kolommen ingedeeld, zodat álle filters (ook de Status-filters die ' +
+      'eerst onder de vouw lagen) zonder scrollen zichtbaar zijn. In de contactlijst ' +
+      'is het volledige e-mailadres vervangen door een compact @-icoon: gevuld = ' +
+      'e-mail aanwezig, grijs/gestippeld = geen e-mail. Hover toont het echte adres, ' +
+      'klik opent de inline-edit.',
+    changes: [
+      'marketing-view.jsx: maxWidth 1400 verwijderd → marketing gebruikt de volle breedte.',
+      'marketing-contacts.jsx: filterpaneel naar 2 kolommen (kolom A Tags/Deals/Account status, kolom B Account/Status), breder (460px).',
+      'marketing-contacts.jsx: e-mailadres in de contactrij vervangen door @-icoon (aanwezig/afwezig) met adres in de tooltip.',
+    ],
+    files: [
+      'src/bd/marketing-view.jsx',
+      'src/bd/marketing-contacts.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.71.0',
+  },
   {
     version: '1.70.1',
     date: '2026-08-15T12:33:07Z',

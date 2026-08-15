@@ -39,7 +39,7 @@ export default function MarketingView({ contacts, accounts, deals, allTags, refe
   useEffect(() => { syncUnsubscribes({ silent: true }); }, []);
 
   return (
-    <div style={{ padding: '16px 24px', maxWidth: 1400, margin: '0 auto' }}>
+    <div style={{ padding: '16px 24px' }}>
       {composer ? (
         <>
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
