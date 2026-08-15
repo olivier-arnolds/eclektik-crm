@@ -245,7 +245,8 @@ DB triggers assign `companies.account_no` (ALL accounts) and a shared
 | Comms — email/Teams/LinkedIn, threaded chat view | `lane-comms.jsx` |
 | LinkedIn live fetch + per-user inbox | `lane-comms.jsx` + `api/unipile.js` + `api/unipile-webhook.js` |
 | Tasks — "With" field (Eclectik-team member) alongside "For" | `tasks-view.jsx`, `task-detail-modal.jsx`, `inline-details.jsx` |
-| Marketing — contacts, tags, CSV export, email filter/inline-edit | `marketing-contacts.jsx`, `marketing-view.jsx` |
+| Marketing — contacts, tags, CSV export, email filter/inline-edit, marketingcontent-opt-in, LinkedIn-connectiecheck | `marketing-contacts.jsx`, `marketing-view.jsx`, `api/linkedin-connections.js`, `api/_lib/unipile-relation.js` |
+| Content Calendar (4 kanalen GLINT/SEER/ROI/ROE, week/maand-view, goedkeuren+plannen, auto-publiceren e-mail/LinkedIn-post/DM) | `content-calendar-view.jsx`, `content-calendar-logic.js`, `api/content-calendar-execute.js`, `api/_lib/{send-broadcast,unipile-post,unipile-dm}.js` |
 | Feedback workflow | `feedback-modal.jsx`, `api/feedback-notify.js`, `api/next-feature-request.js`, `admin-view.jsx` |
 | Calendar / agenda (tasks filtered to current owner here, NOT in Account 360) | `lane-calendar.jsx` |
 
@@ -280,6 +281,35 @@ DB triggers assign `companies.account_no` (ALL accounts) and a shared
 - A deal moving to `sleeping` keeps its `company_id`; it's only invisible if a
   render path forgets the `sleeping` stage (was a bug; fixed with a dedicated
   Account-360 section).
+- **Content Calendar (hard-won):**
+  - **Statusmodel** = afgeleide van *goedgekeurd? × heeft datum?*: `draft`
+    (niet goedgekeurd) → `approved` (goedgekeurd, geen datum) → `scheduled`
+    (goedgekeurd + datum, dít is het cron-doelwit) → `published`. Slepen verandert
+    ALLEEN de datum, nooit de goedkeuring. Pure logica + tests in
+    `content-calendar-logic.js(.test.js)`. Goedkeuring is een permanente eis.
+  - De publish-cron (`api/content-calendar-execute.js`, `*/15`) pakt
+    `status='scheduled' AND scheduled_at<=now()`; bij een fout blijft het item
+    `scheduled` (retry) en wordt de rij NIET aangeraakt — check dus de Vercel
+    runtime-logs (`get_runtime_logs`, filter op de requestPath) voor de reden.
+  - **Unipile `POST /posts` vereist multipart/form-data** (echte `FormData`, geen
+    handmatige content-type) — urlencoded gaf een 400. De chat-endpoints (`/chats`,
+    DM) werken juist wél met `application/x-www-form-urlencoded`. Een DM start een
+    nieuwe chat: eerst profiel → `provider_id` (GET `/users/{id}?account_id`), dan
+    `POST /chats` met `attendees_ids`.
+  - Alle content-LinkedIn gaat via **Marco's account** (env
+    `CONTENT_LINKEDIN_ACCOUNT_ID`, default `KYq2oN8JSPiAQSrcIfT5Ew`), per item
+    overschrijfbaar via `content_calendar_items.linkedin_account_id`.
+  - E-mail hergebruikt de broadcast-weg via `api/_lib/send-broadcast.js` (de
+    hard-won segment/rate-limit-logica, gedeeld met `resend-broadcast.js`).
+    Ontvangers = contacten met `item.target_tag` EN `marketing_content_opt_in=true`
+    (inactieve/former overslaan). Let op: `campaigns.from_name` is NOT NULL — de
+    cron stuurt geen `from_name`, dus `sendBroadcast` vult de resolved naam met
+    fallback (anders faalt de campaigns-insert stil).
+  - **Bulk LinkedIn-connectiecheck** (`api/linkedin-connections.js`): gedoseerd
+    (max 25/ronde, pacing + tijd-budget) want elke check is een echte
+    profielweergave op het account (LinkedIn rate-limits). Cache in
+    `contact_connections` (uniek per contact+account); `network_distance`
+    `FIRST_DEGREE` = verbonden.
 
 ## 9. Open queue / parked work
 
