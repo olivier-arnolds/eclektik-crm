@@ -19,9 +19,32 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.70.0';
+export const CURRENT_VERSION = '1.70.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.70.1',
+    date: '2026-08-15T12:33:07Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Marketing bulk-actiebalk: terug naar één rij',
+    summary:
+      'De actiebalk brak af over twee rijen, wat rommeliger oogde. Nu weer op één ' +
+      'rij: de knoppen wikkelen hun eigen tekst (bijv. "Enrich / via / LinkedIn" ' +
+      'onder elkaar) en de brede ruimte komt van het ingeklapte Account 360-paneel. ' +
+      'Past het op een smal scherm toch niet, dan scrollt de balk horizontaal in ' +
+      'plaats van dat er iets buiten beeld valt.',
+    changes: [
+      'marketing-contacts.jsx: flexWrap "wrap" → "nowrap" + overflowX auto op de bulk-actiebalk.',
+    ],
+    files: [
+      'src/bd/marketing-contacts.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.70.1',
+  },
   {
     version: '1.70.0',
     date: '2026-08-15T12:25:09Z',

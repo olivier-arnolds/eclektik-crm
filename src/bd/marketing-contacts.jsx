@@ -1215,7 +1215,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
           </button>
         </div>
         {selected.size > 0 && (
-          <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, rowGap: 8, padding: '8px 12px', background: 'var(--accent-tint)', borderRadius: 8, marginBottom: 8 }}>
+          <div style={{ display: 'flex', flexWrap: 'nowrap', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'var(--accent-tint)', borderRadius: 8, marginBottom: 8, overflowX: 'auto' }}>
             <span style={{ fontSize: 12, fontWeight: 500 }}>{selected.size} selected</span>
             <button className="btn-primary tiny" onClick={() => setShowBulkTag(true)}>
               Tag selected
