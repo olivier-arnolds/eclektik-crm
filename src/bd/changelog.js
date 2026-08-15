@@ -19,9 +19,33 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.66.1';
+export const CURRENT_VERSION = '1.66.2';
 
 export const CHANGELOG = [
+  {
+    version: '1.66.2',
+    date: '2026-08-15T07:35:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Content Calendar: weekenddag verschijnt zodra er een item op staat',
+    summary:
+      'Het weekend blijft standaard verborgen (ma-vr), maar een za/zo-dag wordt nu ' +
+      'wél getoond zodra er een gepland item op valt - zodat een op een weekenddag ' +
+      'gepland item nooit meer stilletjes onzichtbaar wordt. Weekweergave toont de ' +
+      'betreffende weekenddag als kolom; maandweergave schakelt naar 7 kolommen als ' +
+      'die maand weekend-content heeft.',
+    changes: [
+      'content-calendar-view.jsx: weekDays voegt za/zo toe als die dag een item heeft; WeekGrid dynamische kolommen + label per datum.',
+      'MonthGrid: 7 kolommen als de maand weekend-content bevat, anders 5.',
+    ],
+    files: [
+      'src/bd/content-calendar-view.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.66.2',
+  },
   {
     version: '1.66.1',
     date: '2026-08-14T18:05:00Z',

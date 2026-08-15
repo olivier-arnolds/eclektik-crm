@@ -42,8 +42,10 @@ const STATUS_STYLE = {
   published: { bg: 'rgba(22,163,74,0.16)',   border: 'rgba(22,163,74,0.55)',   label: 'Gepubliceerd' },
 };
 
-// Alleen werkdagen (ma-vr); in het weekend wordt geen content gepland.
+// Werkdagen (ma-vr) standaard; weekenddagen verschijnen alleen als er content op staat.
 const DAY_LABELS = ['Ma', 'Di', 'Wo', 'Do', 'Vr'];
+const ALL_DAY_LABELS = ['Ma', 'Di', 'Wo', 'Do', 'Vr', 'Za', 'Zo'];
+const dowLabel = (d) => ALL_DAY_LABELS[(d.getDay() + 6) % 7]; // ma=0 … zo=6
 const MONTHS_NL = ['januari', 'februari', 'maart', 'april', 'mei', 'juni', 'juli', 'augustus', 'september', 'oktober', 'november', 'december'];
 
 // --- datum-helpers (weekstart = maandag, lokale tijd) ---
@@ -117,9 +119,18 @@ export default function ContentCalendarView({ contacts = [] }) {
   }, [items, patchLocal, load]);
 
   const weekStart = useMemo(() => startOfWeek(anchor), [anchor]);
-  const weekDays = useMemo(() => Array.from({ length: 5 }, (_, i) => addDays(weekStart, i)), [weekStart]);
   const scheduled = useMemo(() => items.filter(it => it.scheduled_at), [items]);
   const unscheduled = useMemo(() => items.filter(it => !it.scheduled_at), [items]);
+  // Werkdagen (ma-vr) altijd tonen; een weekenddag alleen als er een item op staat
+  // (zo blijft het weekend normaal verborgen, maar wordt niets stilletjes onzichtbaar).
+  const weekDays = useMemo(() => {
+    const full = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+    const days = full.slice(0, 5);
+    for (const wd of [5, 6]) {
+      if (scheduled.some(it => sameDay(new Date(it.scheduled_at), full[wd]))) days.push(full[wd]);
+    }
+    return days;
+  }, [weekStart, scheduled]);
 
   const weekIndex = useMemo(() => {
     const map = {};
@@ -240,22 +251,23 @@ function ItemCard({ it, draggable = false, dragging = false, setDraggingId, onOp
 function WeekGrid({ channels, weekDays, weekIndex, today, draggingId, setDraggingId, onMoveToDate, onOpen, items }) {
   const [overCell, setOverCell] = useState(null); // `${channel}|${dayIdx}`
   const draggingItem = items.find(it => it.id === draggingId);
+  const gridCols = `80px repeat(${weekDays.length}, 1fr)`;
 
   return (
     <div style={{ border: '0.5px solid var(--sep)', borderRadius: 8, overflow: 'hidden' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: '80px repeat(5, 1fr)', background: 'var(--fill-1)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: gridCols, background: 'var(--fill-1)' }}>
         <div style={{ padding: '6px 8px' }} />
         {weekDays.map((d, i) => {
           const isToday = sameDay(d, today);
           return (
             <div key={i} style={{ padding: '6px 8px', textAlign: 'center', borderLeft: '0.5px solid var(--sep)', fontSize: 11, color: isToday ? 'var(--accent)' : 'var(--text-2)', fontWeight: isToday ? 700 : 500 }}>
-              {DAY_LABELS[i]} {d.getDate()}
+              {dowLabel(d)} {d.getDate()}
             </div>
           );
         })}
       </div>
       {channels.map(ch => (
-        <div key={ch.key} style={{ display: 'grid', gridTemplateColumns: '80px repeat(5, 1fr)', borderTop: '0.5px solid var(--sep)', minHeight: 56 }}>
+        <div key={ch.key} style={{ display: 'grid', gridTemplateColumns: gridCols, borderTop: '0.5px solid var(--sep)', minHeight: 56 }}>
           <div style={{ padding: '6px 8px', display: 'flex', alignItems: 'center', gap: 6, background: 'var(--bg-1)' }}>
             <span style={{ width: 9, height: 9, borderRadius: 3, background: ch.color, display: 'inline-block' }} />
             <span style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-2)' }}>{ch.label}</span>
@@ -304,17 +316,25 @@ function MonthGrid({ anchor, scheduled, today, onPickDay }) {
     }
     return m;
   }, [scheduled]);
+  // Weekendkolommen (za/zo) alleen tonen als deze maand weekend-content heeft.
+  const monthHasWeekend = useMemo(() => scheduled.some(it => {
+    const d = new Date(it.scheduled_at);
+    return d.getMonth() === anchor.getMonth() && d.getFullYear() === anchor.getFullYear() && (d.getDay() === 0 || d.getDay() === 6);
+  }), [scheduled, anchor]);
+  const dayCount = monthHasWeekend ? 7 : 5;
+  const labels = monthHasWeekend ? ALL_DAY_LABELS : DAY_LABELS;
+  const cols = `repeat(${dayCount}, 1fr)`;
 
   return (
     <div style={{ border: '0.5px solid var(--sep)', borderRadius: 8, overflow: 'hidden' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', background: 'var(--fill-1)' }}>
-        {DAY_LABELS.map(l => (
+      <div style={{ display: 'grid', gridTemplateColumns: cols, background: 'var(--fill-1)' }}>
+        {labels.map(l => (
           <div key={l} style={{ padding: '6px 8px', textAlign: 'center', fontSize: 11, color: 'var(--text-2)', borderLeft: '0.5px solid var(--sep)' }}>{l}</div>
         ))}
       </div>
       {Array.from({ length: 6 }, (_, w) => (
-        <div key={w} style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', borderTop: '0.5px solid var(--sep)' }}>
-          {cells.slice(w * 7, w * 7 + 5).map((d, i) => {
+        <div key={w} style={{ display: 'grid', gridTemplateColumns: cols, borderTop: '0.5px solid var(--sep)' }}>
+          {cells.slice(w * 7, w * 7 + dayCount).map((d, i) => {
             const inMonth = d.getMonth() === anchor.getMonth();
             const isToday = sameDay(d, today);
             const k = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
