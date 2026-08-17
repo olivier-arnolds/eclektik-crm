@@ -26,6 +26,22 @@ zoals in de Marketing-tab, zonder dat dit een permanente tag wordt.
 4. **Compliance-vangnet blijft** in de cron: ook bij een bevroren lijst filtert
    de cron op `marketing_content_opt_in=true`, actief (niet `former`), en slaat
    afgemelde / `do_not_email` contacten over (conform CLAUDE.md §5).
+5. **Per-bedrijf ontdubbeling (hybride).** Bij grote accounts komen snel meerdere
+   contacten boven; om overkill te voorkomen wil je per bedrijf alleen de meest
+   passende contact(en). De kiezer:
+   - **groepeert de lijst per bedrijf** (met per bedrijf een teller: hoeveel van
+     hoeveel geselecteerd);
+   - biedt een **"max per bedrijf"-knop** (onbeperkt / 1 / 2 / 3) die automatisch
+     de best-passende N per bedrijf voorselecteert en de rest uitvinkt;
+   - laat je daarna **handmatig per contact bijsturen**.
+   De automatische rangorde (wie "wint" per bedrijf) = **functietitel-senioriteit
+   met een HR/People-boost**, tie-break op e-mail + opt-in aanwezig:
+   `rank = senioriteit(titel) + (HR-rol ? 25 : 0) + (e-mail ? 2 : 0) + (opt-in ? 1 : 0)`.
+   Senioriteit-tiers: exec/C-level 100, VP/Head 80, Director 60, Manager/Lead 40,
+   overig 20. HR/People-rollen (CHRO, Head of HR, People, Talent, Culture, L&D,
+   Workforce, DEI) krijgen +25 zodat ze net boven de eerstvolgende niet-HR-tier
+   uitkomen. Contacten zónder gekoppeld account worden niet gelimiteerd (elk een
+   eigen "groep").
 
 ## Datamodel
 
@@ -58,8 +74,12 @@ additief `ADD COLUMN`, geen bestaande data aangeraakt).
   - E-mail aanwezig (ja/nee)
   - Opt-in (`marketing_content_opt_in`) - default aan "ja" zodat de selectie
     standaard mailbaar is.
-- **Weergave:** live teller ("X contacten") + scrollbare lijst. Standaard staan
-  alle gefilterde contacten aangevinkt; individueel uit-/aanvinken mogelijk.
+- **Weergave:** live teller ("X van Y") + **per bedrijf gegroepeerde** lijst,
+  binnen elke groep gesorteerd op rangorde (best-passende bovenaan). Standaard
+  staan alle gefilterde contacten aangevinkt; individueel uit-/aanvinken mogelijk.
+- **Max per bedrijf:** knop (onbeperkt / 1 / 2 / 3). Bij wijziging voorselecteert
+  de kiezer automatisch de top-N per bedrijf (op basis van de rangorde in
+  beslissing #5) en vinkt de rest uit; handmatig bijsturen blijft mogelijk.
 - **Output:** knop "Gebruik deze selectie" → `onApply({ contact_ids, summary })`.
   `summary` wordt afgeleid uit de actieve filters + telling.
 - Filter-afleidingen (land/industrie/status per contact via `accountId`) volgen

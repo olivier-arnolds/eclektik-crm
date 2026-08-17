@@ -83,7 +83,7 @@ Filtervorm (`filters`): alle velden optioneel; leeg/afwezig = geen beperking.
 
 ```js
 import { describe, it, expect } from 'vitest';
-import { contactMatchesAudience, filterAudience, audienceSummary } from './content-audience-logic';
+import { contactMatchesAudience, filterAudience, audienceSummary, seniorityScore, isHrRole, contactRank, surplusExclusions } from './content-audience-logic';
 
 const meta = new Map([
   ['a1', { type: 'Prospect', country: 'Netherlands', industry: 'Retail' }],
@@ -145,6 +145,66 @@ describe('audienceSummary', () => {
     expect(s.includes('—')).toBe(false);
   });
 });
+
+describe('seniorityScore', () => {
+  it('kent tiers toe op basis van titel', () => {
+    expect(seniorityScore('Chief People Officer')).toBe(100);
+    expect(seniorityScore('VP of People')).toBe(80);
+    expect(seniorityScore('Head of HR')).toBe(80);
+    expect(seniorityScore('HR Director')).toBe(60);
+    expect(seniorityScore('HR Manager')).toBe(40);
+    expect(seniorityScore('HR Business Partner')).toBe(20);
+    expect(seniorityScore('')).toBe(20);
+  });
+  it('managing director telt als exec, niet als director', () => {
+    expect(seniorityScore('Managing Director')).toBe(100);
+  });
+});
+
+describe('isHrRole', () => {
+  it('herkent HR/People-rollen', () => {
+    expect(isHrRole('Head of People')).toBe(true);
+    expect(isHrRole('Talent Acquisition Lead')).toBe(true);
+    expect(isHrRole('CHRO')).toBe(true);
+    expect(isHrRole('Chief Financial Officer')).toBe(false);
+    expect(isHrRole('Software Engineer')).toBe(false);
+  });
+});
+
+describe('contactRank', () => {
+  it('HR-rol krijgt boost boven gelijke niet-HR-tier', () => {
+    const hrHead = { role: 'Head of HR', email: 'a@b.com', marketing_content_opt_in: true };
+    const cfo = { role: 'Chief Financial Officer', email: 'c@d.com', marketing_content_opt_in: true };
+    // Head of HR: 80 + 25 + 2 + 1 = 108 ; CFO: 100 + 0 + 2 + 1 = 103
+    expect(contactRank(hrHead)).toBeGreaterThan(contactRank(cfo));
+  });
+  it('tie-break: e-mail + opt-in verhogen de rang', () => {
+    const withBoth = { role: 'HR Manager', email: 'x@y.com', marketing_content_opt_in: true };
+    const without = { role: 'HR Manager', email: '', marketing_content_opt_in: false };
+    expect(contactRank(withBoth)).toBeGreaterThan(contactRank(without));
+  });
+  it('leest zowel role als title', () => {
+    expect(contactRank({ title: 'CHRO' })).toBeGreaterThan(contactRank({ title: 'Analyst' }));
+  });
+});
+
+describe('surplusExclusions', () => {
+  const mk = (id, accountId, role) => ({ id, accountId, role, email: 'x@y.com', marketing_content_opt_in: true });
+  it('onbeperkt (null/0) sluit niets uit', () => {
+    const cs = [mk('1', 'a', 'HR Manager'), mk('2', 'a', 'HR Director')];
+    expect(surplusExclusions(cs, null)).toEqual([]);
+    expect(surplusExclusions(cs, 0)).toEqual([]);
+  });
+  it('max 1 houdt per bedrijf de hoogst-rangschikkende, sluit de rest uit', () => {
+    const cs = [mk('1', 'a', 'HR Manager'), mk('2', 'a', 'Head of HR'), mk('3', 'b', 'HR Director')];
+    // bedrijf a: Head of HR (id 2) wint → id 1 uitgesloten; bedrijf b: enige → blijft
+    expect(surplusExclusions(cs, 1).sort()).toEqual(['1']);
+  });
+  it('contacten zonder account worden niet gelimiteerd', () => {
+    const cs = [mk('1', null, 'HR Manager'), mk('2', null, 'HR Director')];
+    expect(surplusExclusions(cs, 1)).toEqual([]);
+  });
+});
 ```
 
 - [ ] **Step 2: Run de tests, bevestig dat ze falen**
@@ -196,6 +256,56 @@ export function audienceSummary(selection = {}, count = 0) {
   const noun = count === 1 ? 'contact' : 'contacten';
   return `${head} - ${count} ${noun}`;
 }
+
+// --- Rangorde per bedrijf (voor 'max per bedrijf'-ontdubbeling) ---
+const titleOf = (c) => String(c.role || c.title || '').toLowerCase();
+
+// Senioriteit-tier op basis van functietitel. Volgorde van checks is belangrijk:
+// 'managing director' moet als exec tellen, niet als director.
+export function seniorityScore(title) {
+  const t = String(title || '').toLowerCase();
+  if (/\b(chief|chro|cfo|ceo|coo|cto|cpo|cmo|cio|founder|co-?founder|owner|president|managing director|managing partner)\b/.test(t)) return 100;
+  if (/\b(vp|svp|evp|vice president|head of|global head)\b/.test(t)) return 80;
+  if (/\bdirector\b/.test(t)) return 60;
+  if (/\b(manager|lead|principal)\b/.test(t)) return 40;
+  return 20;
+}
+
+// HR/People-relevantie (Glint-koper). 'employee engagement' voluit om marketing-
+// 'engagement' niet mee te pakken.
+export function isHrRole(title) {
+  const t = String(title || '').toLowerCase();
+  return /\b(hr|human resources|people|talent|culture|workforce|chro|l&d|learning and development|learning & development|total rewards|dei|diversity|employee experience|employee engagement)\b/.test(t);
+}
+
+export function contactRank(c) {
+  const title = titleOf(c);
+  return seniorityScore(title)
+    + (isHrRole(title) ? 25 : 0)
+    + (c.email ? 2 : 0)
+    + (c.marketing_content_opt_in ? 1 : 0);
+}
+
+// Geeft de contact-ids terug die door 'max N per bedrijf' worden uitgesloten
+// (de lager-rangschikkende boven de top-N per accountId). maxPerCompany null/0 =
+// geen limiet. Contacten zonder accountId worden niet gelimiteerd.
+export function surplusExclusions(contacts, maxPerCompany) {
+  const n = Number(maxPerCompany) || 0;
+  if (!n) return [];
+  const byCompany = new Map();
+  for (const c of (contacts || [])) {
+    if (!c.accountId) continue; // geen bedrijf → nooit limiteren
+    if (!byCompany.has(c.accountId)) byCompany.set(c.accountId, []);
+    byCompany.get(c.accountId).push(c);
+  }
+  const excluded = [];
+  for (const group of byCompany.values()) {
+    if (group.length <= n) continue;
+    const sorted = group.slice().sort((a, b) => contactRank(b) - contactRank(a));
+    for (const c of sorted.slice(n)) excluded.push(c.id);
+  }
+  return excluded;
+}
 ```
 
 - [ ] **Step 4: Run de tests, bevestig dat ze slagen**
@@ -223,7 +333,7 @@ Props: `contacts` (verrijkt), `accounts`, `allTags`, `initialContactIds` (string
 
 ```jsx
 import React, { useMemo, useState } from 'react';
-import { filterAudience, audienceSummary } from './content-audience-logic';
+import { filterAudience, audienceSummary, surplusExclusions, contactRank } from './content-audience-logic';
 
 // Tijdelijke doelgroepkiezer voor één content-item. Filtert de al ingeladen
 // contacten client-side en levert een bevroren lijst contact-IDs + samenvatting.
@@ -232,6 +342,11 @@ export default function ContentAudiencePicker({ contacts = [], accounts = [], al
   const accountMetaById = useMemo(() => {
     const m = new Map();
     for (const a of (accounts || [])) m.set(a.id, { type: a.type || '', country: a.region || '', industry: a.industry || '' });
+    return m;
+  }, [accounts]);
+  const accountNameById = useMemo(() => {
+    const m = new Map();
+    for (const a of (accounts || [])) m.set(a.id, a.name || '');
     return m;
   }, [accounts]);
 
@@ -243,8 +358,9 @@ export default function ContentAudiencePicker({ contacts = [], accounts = [], al
   const [hasEmail, setHasEmail] = useState(null); // null | true | false
   const [optIn, setOptIn] = useState(true);       // default: alleen opted-in
 
-  // Handmatige uitsluitingen (na filteren individueel afvinken).
+  // Uitsluitingen (auto via 'max per bedrijf' + handmatig afvinken).
   const [excluded, setExcluded] = useState(() => new Set());
+  const [maxPerCompany, setMaxPerCompany] = useState(null); // null = onbeperkt
 
   // Distinct opties uit de data.
   const options = useMemo(() => {
@@ -262,13 +378,36 @@ export default function ContentAudiencePicker({ contacts = [], accounts = [], al
   const matched = useMemo(() => filterAudience(contacts, filters, accountMetaById),
     [contacts, tagIds, statuses, countries, industries, hasEmail, optIn, accountMetaById]);
 
-  // Definitieve selectie = matchend minus handmatig uitgesloten.
+  // Definitieve selectie = matchend minus uitgesloten.
   const selectedContacts = matched.filter(c => !excluded.has(c.id));
+
+  // Groepeer de matchende contacten per bedrijf, binnen elke groep op rang.
+  const groups = useMemo(() => {
+    const m = new Map(); // accountId|'' → contacten
+    for (const c of matched) {
+      const k = c.accountId || '';
+      if (!m.has(k)) m.set(k, []);
+      m.get(k).push(c);
+    }
+    const out = [...m.entries()].map(([accountId, list]) => ({
+      accountId,
+      name: accountId ? (accountNameById.get(accountId) || '(onbekend bedrijf)') : '(geen bedrijf)',
+      contacts: list.slice().sort((a, b) => contactRank(b) - contactRank(a)),
+    }));
+    out.sort((a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()));
+    return out;
+  }, [matched, accountNameById]);
 
   const toggle = (setter) => (val) => setter(prev => prev.includes(val) ? prev.filter(v => v !== val) : [...prev, val]);
   const toggleExcluded = (id) => setExcluded(prev => {
     const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n;
   });
+
+  // 'Max per bedrijf' zetten: voorselecteer top-N per bedrijf (rest uitgevinkt).
+  const applyMax = (n) => {
+    setMaxPerCompany(n);
+    setExcluded(new Set(surplusExclusions(matched, n)));
+  };
 
   const tagNames = allTags.filter(t => tagIds.includes(t.id)).map(t => t.name);
 
@@ -318,22 +457,40 @@ export default function ContentAudiencePicker({ contacts = [], accounts = [], al
             <Tri label="E-mail aanwezig" value={hasEmail} onChange={setHasEmail} />
             <Tri label="Opt-in" value={optIn} onChange={setOptIn} />
           </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ fontSize: 12, color: 'var(--text-2)' }}>Max per bedrijf</span>
+            {[{ l: 'onbeperkt', v: null }, { l: '1', v: 1 }, { l: '2', v: 2 }, { l: '3', v: 3 }].map(o => (
+              <span key={o.l} style={chip(maxPerCompany === o.v)} onClick={() => applyMax(o.v)}>{o.l}</span>
+            ))}
+          </div>
         </div>
 
         <div style={{ fontSize: 13, color: 'var(--text-2)' }}>
-          <strong>{selectedContacts.length}</strong> van {matched.length} gefilterde contacten geselecteerd
-          {excluded.size > 0 && <span style={{ color: 'var(--text-3)' }}> ({excluded.size} handmatig uit)</span>}
+          <strong>{selectedContacts.length}</strong> geselecteerd uit {matched.length} gefilterde contacten
+          {' '}bij {groups.length} bedrijf{groups.length === 1 ? '' : 'ven'}
         </div>
 
-        <div style={{ border: '0.5px solid var(--sep)', borderRadius: 8, maxHeight: 260, overflow: 'auto' }}>
-          {matched.length === 0 && <div style={{ padding: 12, fontSize: 13, color: 'var(--text-3)' }}>Geen contacten voor deze filters.</div>}
-          {matched.map(c => (
-            <label key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 10px', borderBottom: '0.5px solid var(--sep)', fontSize: 13, cursor: 'pointer' }}>
-              <input type="checkbox" checked={!excluded.has(c.id)} onChange={() => toggleExcluded(c.id)} />
-              <span style={{ flex: 1 }}>{c.name || c.full_name || '(naamloos)'}</span>
-              <span style={{ color: 'var(--text-3)', fontSize: 12 }}>{c.email || 'geen e-mail'}</span>
-            </label>
-          ))}
+        <div style={{ border: '0.5px solid var(--sep)', borderRadius: 8, maxHeight: 300, overflow: 'auto' }}>
+          {groups.length === 0 && <div style={{ padding: 12, fontSize: 13, color: 'var(--text-3)' }}>Geen contacten voor deze filters.</div>}
+          {groups.map(g => {
+            const sel = g.contacts.filter(c => !excluded.has(c.id)).length;
+            return (
+              <div key={g.accountId || 'none'}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', background: 'var(--bg-2)', borderBottom: '0.5px solid var(--sep)', position: 'sticky', top: 0 }}>
+                  <strong style={{ fontSize: 12 }}>{g.name}</strong>
+                  <span style={{ fontSize: 11, color: g.contacts.length > 1 ? 'var(--text-2)' : 'var(--text-3)' }}>{sel}/{g.contacts.length} geselecteerd</span>
+                </div>
+                {g.contacts.map(c => (
+                  <label key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 10px 5px 20px', borderBottom: '0.5px solid var(--sep)', fontSize: 13, cursor: 'pointer' }}>
+                    <input type="checkbox" checked={!excluded.has(c.id)} onChange={() => toggleExcluded(c.id)} />
+                    <span style={{ flex: 1 }}>{c.name || c.full_name || '(naamloos)'}</span>
+                    <span style={{ color: 'var(--text-3)', fontSize: 12 }}>{c.role || c.title || ''}</span>
+                    <span style={{ color: 'var(--text-3)', fontSize: 12 }}>{c.email || 'geen e-mail'}</span>
+                  </label>
+                ))}
+              </div>
+            );
+          })}
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
@@ -634,8 +791,9 @@ CLAUDE.md §10: gebruiker pusht (na akkoord) → Vercel deploy (~1-2 min) → ha
 
 ## Zelf-review (uitgevoerd bij het schrijven)
 
-- **Spec-dekking:** DB-kolommen (Task 1), pure logica (Task 2), kiezer-component (Task 3), popup-integratie + waarschuwing (Task 4), props (Task 5), cron-fallback + guard (Task 6), versie/changelog + verificatie (Task 7). Alle spec-secties gedekt.
+- **Spec-dekking:** DB-kolommen (Task 1), pure logica incl. per-bedrijf rangorde + ontdubbeling (Task 2: `seniorityScore`/`isHrRole`/`contactRank`/`surplusExclusions`), kiezer-component met gegroepeerde lijst + 'max per bedrijf' (Task 3), popup-integratie + waarschuwing (Task 4), props (Task 5), cron-fallback + guard (Task 6), versie/changelog + verificatie (Task 7). Alle spec-secties (incl. beslissing #5) gedekt.
 - **Fallback-gedrag:** bestaande items zonder `target_contact_ids` gebruiken `target_tag` (Task 6, `baseContactIds`).
 - **Compliance-guard:** blijft in beide paden (opt-in, e-mail aanwezig, niet former/inactief) — Task 6.
-- **Type-consistentie:** `target_contact_ids` overal `uuid[]`/`string[]`; `audience_summary`/`audienceSummaryText` string; `filters`-vorm identiek tussen logica (Task 2) en component (Task 3); functienamen `contactMatchesAudience`/`filterAudience`/`audienceSummary` consistent gebruikt.
+- **Type-consistentie:** `target_contact_ids` overal `uuid[]`/`string[]`; `audience_summary`/`audienceSummaryText` string; `filters`-vorm identiek tussen logica (Task 2) en component (Task 3); functienamen `contactMatchesAudience`/`filterAudience`/`audienceSummary`/`seniorityScore`/`isHrRole`/`contactRank`/`surplusExclusions` consistent gebruikt; `surplusExclusions` retourneert `string[]` en wordt in de component in een `Set` gestopt (`new Set(...)`).
+- **Rangorde-titelveld:** `contactRank` leest `c.role || c.title` (verrijkte contacten dragen `role`), zodat de ranking werkt ongeacht welk veld gevuld is.
 - **Geen em-dash** in samenvatting (getest in Task 2, Step 1) — conform CLAUDE.md §2b voor content richting personen; hier UI-tekst, maar veilig gehouden.
