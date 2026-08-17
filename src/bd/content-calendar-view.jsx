@@ -496,7 +496,7 @@ function ContentItemModal({ item, contacts = [], accounts = [], allTags = [], on
       body,
       target_tag: item.target_tag || null,
       target_contact_ids: isEmail ? (targetContactIds.length ? targetContactIds : null) : null,
-      audience_summary: isEmail ? (audienceSummaryText || null) : null,
+      audience_summary: isEmail && targetContactIds.length ? (audienceSummaryText || null) : null,
       linkedin_account_id: isLinkedIn ? (accountId || null) : null,
       recipient_contact_id: isDM ? (recipientId || null) : null,
       scheduled_at,

@@ -181,8 +181,8 @@ export default function ContentAudiencePicker({ contacts = [], accounts = [], al
                       <span style={{ fontSize: 11, color: g.contacts.length > 1 ? 'var(--text-2)' : 'var(--text-3)' }}>{sel}/{g.contacts.length}</span>
                     </div>
                     {g.contacts.map(c => (
-                      <label key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 10px 5px 20px', borderBottom: '0.5px solid var(--sep)', fontSize: 13, cursor: 'pointer' }}>
-                        <input type="checkbox" checked={!excluded.has(c.id)} onChange={() => toggleExcluded(c.id)} />
+                      <label key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '5px 10px 5px 20px', borderBottom: '0.5px solid var(--sep)', fontSize: 13, cursor: audience.has(c.id) ? 'default' : 'pointer' }}>
+                        <input type="checkbox" checked={audience.has(c.id) || !excluded.has(c.id)} disabled={audience.has(c.id)} onChange={() => toggleExcluded(c.id)} />
                         <span style={{ flex: 1 }}>{c.name || c.full_name || '(naamloos)'}</span>
                         {audience.has(c.id) && <span style={{ color: 'var(--accent, #2563eb)', fontSize: 11 }}>al in doelgroep</span>}
                         <span style={{ color: 'var(--text-3)', fontSize: 12 }}>{c.role || c.title || ''}</span>
@@ -197,7 +197,7 @@ export default function ContentAudiencePicker({ contacts = [], accounts = [], al
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
               <button className="btn-ghost" onClick={onClose}>Sluiten</button>
               <button className="btn-ghost" disabled={total === 0} onClick={() => setMode('review')}>
-                Bekijk deze selectie ({total})
+                Bekijk doelgroep ({total})
               </button>
               <button className="btn-primary" disabled={pending.length === 0} onClick={addSelection}>
                 Voeg deze selectie toe (+{pending.length})

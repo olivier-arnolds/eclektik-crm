@@ -19,9 +19,39 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.73.0';
+export const CURRENT_VERSION = '1.74.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.74.0',
+    date: '2026-08-17T13:36:51Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Content Calendar: doelgroep opbouwen uit meerdere selecties + bekijken/uitvinken',
+    summary:
+      'De doelgroepkiezer is nu optellend: je stelt met filters een selectie samen en ' +
+      'klikt "Voeg deze selectie toe" om die bij de doelgroep op te tellen (dedupe). De ' +
+      'kiezer blijft open met lege filters, zodat je meerdere verschillende selecties ' +
+      'achter elkaar kunt toevoegen. Met "Bekijk doelgroep" (in de kiezer en als aparte ' +
+      'knop in de draft-popup) zie je de volledige opgetelde doelgroep gegroepeerd per ' +
+      'bedrijf en kun je contacten uitvinken. Contacten die al in de doelgroep zitten ' +
+      'worden bij het samenstellen gemarkeerd ("al in doelgroep").',
+    changes: [
+      'content-audience-picker.jsx: herbouwd naar optellend model met build- en bekijk-modus; "Voeg deze selectie toe" (blijft open, filters leeg), "Bekijk doelgroep" (uitvinken), live onChange van de lopende set.',
+      'content-calendar-view.jsx: tweede knop "Bekijk doelgroep (N)" opent de kiezer direct in bekijk-modus; kiezer koppelt live (geen auto-sluiten); audience_summary alleen opgeslagen bij een niet-lege doelgroep.',
+      'content-audience-logic.js: audienceCountLabel(count) voor de telling-samenvatting (getest).',
+    ],
+    files: [
+      'src/bd/content-audience-picker.jsx',
+      'src/bd/content-audience-logic.js',
+      'src/bd/content-audience-logic.test.js',
+      'src/bd/content-calendar-view.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.74.0',
+  },
   {
     version: '1.73.0',
     date: '2026-08-17T12:39:31Z',
