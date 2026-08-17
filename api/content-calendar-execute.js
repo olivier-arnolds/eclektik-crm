@@ -53,13 +53,23 @@ async function resolveTagId(targetTag) {
   return null;
 }
 
-// Ontvangers voor een e-mail-item: contacten met de tag EN de content-opt-in EN een e-mail.
-async function recipientsForItem(item) {
+// Ontvangers voor een e-mail-item. Voorkeur: bevroren target_contact_ids;
+// anders fallback naar de tag. Beide paden filteren op content-opt-in, e-mail,
+// en slaan afgemelde/inactieve/former contacten over (compliance-vangnet).
+async function baseContactIds(item) {
+  if (Array.isArray(item.target_contact_ids) && item.target_contact_ids.length) {
+    return { ids: item.target_contact_ids };
+  }
   const tagId = await resolveTagId(item.target_tag);
   if (!tagId) return { error: `tag "${item.target_tag || '(leeg)'}" niet gevonden` };
   const links = await supabase.from('contact_tags').select('contact_id').eq('tag_id', tagId);
-  const ids = (links.data || []).map(r => r.contact_id);
-  if (ids.length === 0) return { recipients: [] };
+  return { ids: (links.data || []).map(r => r.contact_id) };
+}
+
+async function recipientsForItem(item) {
+  const { ids, error: baseErr } = await baseContactIds(item);
+  if (baseErr) return { error: baseErr };
+  if (!ids || ids.length === 0) return { recipients: [] };
   const rows = [];
   for (let i = 0; i < ids.length; i += 500) {
     const { data, error } = await supabase.from('contacts')
@@ -79,7 +89,7 @@ async function publishEmail(item) {
   if (!item.subject) return { ok: false, reason: 'e-mail zonder onderwerp' };
   const { recipients, error } = await recipientsForItem(item);
   if (error) return { ok: false, reason: error };
-  if (!recipients || recipients.length === 0) return { ok: false, reason: 'geen opted-in ontvangers voor deze tag' };
+  if (!recipients || recipients.length === 0) return { ok: false, reason: 'geen opted-in ontvangers in de selectie' };
 
   const send = await sendBroadcast({
     subject: item.subject,
