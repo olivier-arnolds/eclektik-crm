@@ -133,7 +133,7 @@ export default function ContentAudiencePicker({ contacts = [], accounts = [], al
 
         <div style={{ fontSize: 13, color: 'var(--text-2)' }}>
           <strong>{selectedContacts.length}</strong> geselecteerd uit {matched.length} gefilterde contacten
-          {' '}bij {groups.length} bedrijf{groups.length === 1 ? '' : 'ven'}
+          {' '}bij {groups.length} {groups.length === 1 ? 'bedrijf' : 'bedrijven'}
         </div>
 
         <div style={{ border: '0.5px solid var(--sep)', borderRadius: 8, maxHeight: 300, overflow: 'auto' }}>
