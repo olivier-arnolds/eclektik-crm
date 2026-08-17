@@ -19,9 +19,41 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.71.3';
+export const CURRENT_VERSION = '1.72.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.72.0',
+    date: '2026-08-17T08:21:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Content Calendar: AI-moderatie ("Criticus") als poortwachter bij goedkeuren',
+    summary:
+      'Bij het goedkeuren van een content-item draait nu eerst een AI-moderatie op ' +
+      'basis van de Criticus-rol uit het Claude Project: onderbouwing van claims ' +
+      '(geen verzonnen cijfers/bronnen), bronhiërarchie (externe bron blijft leidend, ' +
+      'klantcase alleen ter ondersteuning), herhaling/clichés, scherpte van de ' +
+      'invalshoek, plus de externe-communicatieregels (CLAUDE.md §2b) en de ' +
+      'redactionele lijn. Bij bezwaren blokkeert de goedkeuring en toont de Criticus ' +
+      'concrete verbeterpunten; de mens kan altijd "toch goedkeuren" (eind-' +
+      'verantwoordelijk blijft de gebruiker). Tekst aanpassen triggert een nieuwe ' +
+      'beoordeling. De huisstijl-check is data-gestuurd gebouwd maar staat op ' +
+      'overslaan tot er echte voorbeeldposts in het sjabloon staan (STYLE_GUIDE in ' +
+      'api/content-moderate.js) - dan gaat die check vanzelf leven zonder herbouw.',
+    changes: [
+      'api/content-moderate.js: nieuw endpoint (requireUser-guard) met de Criticus-instructies + §2b + redactionele lijn als system-prompt; retourneert {verdict, issues[], suggestion, checked_style}. Model claude-sonnet-5 met fallback claude-haiku-4-5.',
+      'content-calendar-view.jsx: bij goedkeuren van een nog niet-goedgekeurd item eerst /api/content-moderate; fail blokkeert + toont verbeterpunten met "toch goedkeuren"-override; tekstwijziging reset het oordeel.',
+      'Huisstijl-check leest een leeg STYLE_GUIDE-sjabloon (Merk/Doelgroep/Tone-of-voice/Wat wel/Wat niet/Kanalen + voorbeeldposts); leeg = overslaan.',
+    ],
+    files: [
+      'api/content-moderate.js',
+      'src/bd/content-calendar-view.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.72.0',
+  },
   {
     version: '1.71.3',
     date: '2026-08-17T07:22:49Z',
