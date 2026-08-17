@@ -19,9 +19,30 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.71.1';
+export const CURRENT_VERSION = '1.71.2';
 
 export const CHANGELOG = [
+  {
+    version: '1.71.2',
+    date: '2026-08-17T07:18:23Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Filterpaneel: linkerkolom breder zodat "Nog niet" op één rij past',
+    summary:
+      'De filteropties-kolom (links) was net te smal, waardoor de knop "Nog niet" ' +
+      'van het Status Email-filter naar een tweede regel viel. De linkerkolom is nu ' +
+      'breder (asymmetrisch t.o.v. rechts) en het paneel iets breder (500px).',
+    changes: [
+      'marketing-contacts.jsx: aside 460px → 500px; linkerkolom flex 1 → 1.4 (rechts blijft 1).',
+    ],
+    files: [
+      'src/bd/marketing-contacts.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.71.2',
+  },
   {
     version: '1.71.1',
     date: '2026-08-15T12:55:52Z',

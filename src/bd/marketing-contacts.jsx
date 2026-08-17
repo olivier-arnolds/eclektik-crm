@@ -985,7 +985,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
           daaronder twee kolommen: LINKS Account status + Status, RECHTS Deals +
           Account. Zo staan alle filters zonder scrollen in beeld. */}
       <aside style={{
-        flex: '0 0 460px',
+        flex: '0 0 500px',
         background: 'var(--bg-1)',
         padding: 12,
         border: '0.5px solid var(--sep)',
@@ -1027,8 +1027,8 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
         {/* Twee kolommen onder Tags */}
         <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', marginTop: 12 }}>
 
-        {/* LINKS: Account status · Status */}
-        <div style={{ flex: 1, minWidth: 0 }}>
+        {/* LINKS: Account status · Status — iets breder zodat "Nog niet" op één rij past */}
+        <div style={{ flex: 1.4, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
           <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Account status</div>
           <button onClick={() => setShowAddStatus(v => !v)}
