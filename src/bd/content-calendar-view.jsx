@@ -74,7 +74,6 @@ export default function ContentCalendarView({ contacts = [], accounts = [], allT
   const [anchor, setAnchor] = useState(() => new Date());
   const [draggingId, setDraggingId] = useState(null);
   const [openItem, setOpenItem] = useState(null); // item-object voor de detail-modal
-  const [tags, setTags] = useState([]);           // {id, name} voor de target_tag-kiezer
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -89,9 +88,6 @@ export default function ContentCalendarView({ contacts = [], accounts = [], allT
   }, []);
 
   useEffect(() => { load(); }, [load]);
-  useEffect(() => {
-    supabase.from('tags').select('id, name').order('name').then(({ data }) => setTags(data || []));
-  }, []);
 
   // Optimistische patch van één item in de lokale state.
   const patchLocal = useCallback((id, fields) => {
@@ -214,7 +210,6 @@ export default function ContentCalendarView({ contacts = [], accounts = [], allT
       {openItem && (
         <ContentItemModal
           item={items.find(it => it.id === openItem.id) || openItem}
-          tags={tags}
           contacts={contacts}
           accounts={accounts}
           allTags={allTags}
@@ -400,7 +395,7 @@ function UnscheduledTray({ items, draggingId, setDraggingId, onMoveToDate, onOpe
 }
 
 // ---------- Detail-modal: tekst, bron, datum/tijd + goedkeuren ----------
-function ContentItemModal({ item, tags = [], contacts = [], accounts = [], allTags = [], onClose, onSaved }) {
+function ContentItemModal({ item, contacts = [], accounts = [], allTags = [], onClose, onSaved }) {
   const ch = CHANNELS.find(c => c.key === item.channel);
   const published = item.status === 'published';
   const isEmail = item.type === 'email';
@@ -409,7 +404,6 @@ function ContentItemModal({ item, tags = [], contacts = [], accounts = [], allTa
   const isLinkedIn = item.type === 'linkedin_post' || item.type === 'linkedin_dm';
   const [subject, setSubject] = useState(item.subject || '');
   const [body, setBody] = useState(item.body || '');
-  const [targetTag, setTargetTag] = useState(item.target_tag || '');
   const [targetContactIds, setTargetContactIds] = useState(item.target_contact_ids || []);
   const [audienceSummaryText, setAudienceSummaryText] = useState(item.audience_summary || '');
   const [showAudiencePicker, setShowAudiencePicker] = useState(false);
