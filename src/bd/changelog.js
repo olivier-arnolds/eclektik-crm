@@ -19,9 +19,47 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.72.0';
+export const CURRENT_VERSION = '1.73.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.73.0',
+    date: '2026-08-17T12:39:31Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Content Calendar: doelgroep per e-mail samenstellen met filters (tijdelijke selectie i.p.v. vaste tag)',
+    summary:
+      'De permanente "Doelgroep (tag)"-keuze op een content-e-mail is vervangen door ' +
+      'een doelgroepkiezer met marketing-achtige filters (tags, account-status, land, ' +
+      'industrie, e-mail aanwezig, opt-in). De selectie is een tijdelijke, bevroren ' +
+      'lijst contacten voor dat ene bericht - geen permanente tag. Bij grote accounts ' +
+      'komt snel overkill boven, dus de kiezer groepeert per bedrijf en kent een "max ' +
+      'per bedrijf"-knop (1/2/3) die automatisch de best-passende houdt op basis van ' +
+      'functietitel-senioriteit met een HR/People-boost; daarna kun je per contact ' +
+      'handmatig bijsturen. De publish-cron verstuurt naar die bevroren lijst maar ' +
+      'houdt het compliance-vangnet aan: alleen opted-in, actieve contacten met e-mail; ' +
+      'bestaande items met alleen een tag blijven werken via een fallback.',
+    changes: [
+      'Nieuw src/bd/content-audience-logic.js (pure, getest): filter- + samenvattingslogica en per-bedrijf rangorde (seniorityScore/isHrRole/contactRank/surplusExclusions).',
+      'Nieuw src/bd/content-audience-picker.jsx: modal met filters, per-bedrijf gegroepeerde lijst, "max per bedrijf"-voorselectie en handmatig afvinken.',
+      'content-calendar-view.jsx: tag-dropdown vervangen door "Doelgroep samenstellen"-knop + samenvatting; slaat target_contact_ids + audience_summary op; goedkeur-waarschuwing checkt op selectie.',
+      'api/content-calendar-execute.js: recipientsForItem gebruikt bevroren target_contact_ids (tag als fallback), beide door dezelfde opt-in/actief/e-mail-guard.',
+      'DB: content_calendar_items uitgebreid met target_contact_ids (uuid[]) en audience_summary (text); sql/content_target_contact_ids_2026-08-17.sql.',
+    ],
+    files: [
+      'src/bd/content-audience-logic.js',
+      'src/bd/content-audience-logic.test.js',
+      'src/bd/content-audience-picker.jsx',
+      'src/bd/content-calendar-view.jsx',
+      'src/bd/BDApp.jsx',
+      'api/content-calendar-execute.js',
+      'sql/content_target_contact_ids_2026-08-17.sql',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.73.0',
+  },
   {
     version: '1.72.0',
     date: '2026-08-17T08:21:00Z',

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../supabase';
 import { apiFetch } from '../lib/apiFetch';
 import { isApproved, deriveStatus, statusAfterMove } from './content-calendar-logic';
+import ContentAudiencePicker from './content-audience-picker';
 
 // Content Calendar — gedrafte content-items per kanaal (GLINT/SEER/ROI/ROE) met
 // verplichte menselijke goedkeuring; na goedkeuring + geplande tijd publiceert een
@@ -65,7 +66,7 @@ function pad(n) { return String(n).padStart(2, '0'); }
 function toDateInput(d) { return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; }
 function toTimeInput(d) { return `${pad(d.getHours())}:${pad(d.getMinutes())}`; }
 
-export default function ContentCalendarView({ contacts = [] }) {
+export default function ContentCalendarView({ contacts = [], accounts = [], allTags = [] }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -73,7 +74,6 @@ export default function ContentCalendarView({ contacts = [] }) {
   const [anchor, setAnchor] = useState(() => new Date());
   const [draggingId, setDraggingId] = useState(null);
   const [openItem, setOpenItem] = useState(null); // item-object voor de detail-modal
-  const [tags, setTags] = useState([]);           // {id, name} voor de target_tag-kiezer
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -88,9 +88,6 @@ export default function ContentCalendarView({ contacts = [] }) {
   }, []);
 
   useEffect(() => { load(); }, [load]);
-  useEffect(() => {
-    supabase.from('tags').select('id, name').order('name').then(({ data }) => setTags(data || []));
-  }, []);
 
   // Optimistische patch van één item in de lokale state.
   const patchLocal = useCallback((id, fields) => {
@@ -213,8 +210,9 @@ export default function ContentCalendarView({ contacts = [] }) {
       {openItem && (
         <ContentItemModal
           item={items.find(it => it.id === openItem.id) || openItem}
-          tags={tags}
           contacts={contacts}
+          accounts={accounts}
+          allTags={allTags}
           onClose={() => setOpenItem(null)}
           onSaved={(fields) => { patchLocal(openItem.id, fields); }}
         />
@@ -397,7 +395,7 @@ function UnscheduledTray({ items, draggingId, setDraggingId, onMoveToDate, onOpe
 }
 
 // ---------- Detail-modal: tekst, bron, datum/tijd + goedkeuren ----------
-function ContentItemModal({ item, tags = [], contacts = [], onClose, onSaved }) {
+function ContentItemModal({ item, contacts = [], accounts = [], allTags = [], onClose, onSaved }) {
   const ch = CHANNELS.find(c => c.key === item.channel);
   const published = item.status === 'published';
   const isEmail = item.type === 'email';
@@ -406,7 +404,9 @@ function ContentItemModal({ item, tags = [], contacts = [], onClose, onSaved }) 
   const isLinkedIn = item.type === 'linkedin_post' || item.type === 'linkedin_dm';
   const [subject, setSubject] = useState(item.subject || '');
   const [body, setBody] = useState(item.body || '');
-  const [targetTag, setTargetTag] = useState(item.target_tag || '');
+  const [targetContactIds, setTargetContactIds] = useState(item.target_contact_ids || []);
+  const [audienceSummaryText, setAudienceSummaryText] = useState(item.audience_summary || '');
+  const [showAudiencePicker, setShowAudiencePicker] = useState(false);
   const [accountId, setAccountId] = useState(item.linkedin_account_id || '');
   const [recipientId, setRecipientId] = useState(item.recipient_contact_id || '');
   const [recipientQuery, setRecipientQuery] = useState('');
@@ -493,7 +493,9 @@ function ContentItemModal({ item, tags = [], contacts = [], onClose, onSaved }) 
     const fields = {
       subject: isEmail ? (subject || null) : null,
       body,
-      target_tag: isEmail ? (targetTag || null) : null,
+      target_tag: item.target_tag || null,
+      target_contact_ids: isEmail ? (targetContactIds.length ? targetContactIds : null) : null,
+      audience_summary: isEmail ? (audienceSummaryText || null) : null,
       linkedin_account_id: isLinkedIn ? (accountId || null) : null,
       recipient_contact_id: isDM ? (recipientId || null) : null,
       scheduled_at,
@@ -503,7 +505,7 @@ function ContentItemModal({ item, tags = [], contacts = [], onClose, onSaved }) 
     const { error } = await supabase.from('content_calendar_items').update(fields).eq('id', item.id);
     setSaving(false);
     if (error) { setErr(error.message); return; }
-    onSaved && onSaved({ subject: fields.subject, body, target_tag: fields.target_tag, linkedin_account_id: fields.linkedin_account_id, recipient_contact_id: fields.recipient_contact_id, scheduled_at, status: nextStatus });
+    onSaved && onSaved({ subject: fields.subject, body, target_tag: fields.target_tag, target_contact_ids: fields.target_contact_ids, audience_summary: fields.audience_summary, linkedin_account_id: fields.linkedin_account_id, recipient_contact_id: fields.recipient_contact_id, scheduled_at, status: nextStatus });
     onClose();
   }
 
@@ -618,20 +620,22 @@ function ContentItemModal({ item, tags = [], contacts = [], onClose, onSaved }) 
           )}
 
           {isEmail && (
-            <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
               <span style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>
-                Doelgroep (tag)
+                Doelgroep
               </span>
-              <select value={targetTag} onChange={e => setTargetTag(e.target.value)} disabled={published}
-                style={{ padding: '6px 8px', borderRadius: 6, border: '0.5px solid var(--sep)', background: 'var(--bg-2)', color: 'var(--text-1)', fontSize: 13 }}>
-                <option value="">— kies een tag —</option>
-                {tags.map(t => <option key={t.id} value={t.name}>{t.name}</option>)}
-                {targetTag && !tags.some(t => t.name === targetTag) && <option value={targetTag}>{targetTag} (onbekend)</option>}
-              </select>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                <button type="button" className="btn-ghost" disabled={published} onClick={() => setShowAudiencePicker(true)}>
+                  {targetContactIds.length ? 'Doelgroep wijzigen' : 'Doelgroep samenstellen'}
+                </button>
+                {targetContactIds.length > 0
+                  ? <span style={{ fontSize: 12, color: 'var(--text-2)' }}>{audienceSummaryText || `${targetContactIds.length} contacten geselecteerd`}</span>
+                  : <span style={{ fontSize: 12, color: 'var(--text-3)' }}>Nog geen doelgroep gekozen.</span>}
+              </div>
               <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
-                Ontvangers: contacten met deze tag én de marketingcontent-opt-in aan.
+                Tijdelijke selectie voor dit bericht. De cron verstuurt alleen naar opted-in, actieve contacten.
               </span>
-            </label>
+            </div>
           )}
 
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
@@ -654,9 +658,9 @@ function ContentItemModal({ item, tags = [], contacts = [], onClose, onSaved }) 
             <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer' }}>
               <input type="checkbox" checked={approved} onChange={e => setApproved(e.target.checked)} />
               Goedgekeurd {approved && !hasDate && <span style={{ fontSize: 11, color: '#d97706' }}>(zonder datum plant de cron nog niet)</span>}
-              {approved && hasDate && isEmail && !targetTag && <span style={{ fontSize: 11, color: '#d97706' }}>(kies een doelgroep-tag, anders kan de cron niet versturen)</span>}
+              {approved && hasDate && isEmail && !targetContactIds.length && !item.target_tag && <span style={{ fontSize: 11, color: '#d97706' }}>(stel een doelgroep samen, anders kan de cron niet versturen)</span>}
               {approved && hasDate && isDM && !recipientId && <span style={{ fontSize: 11, color: '#d97706' }}>(kies een ontvanger, anders kan de cron niet versturen)</span>}
-              {approved && hasDate && ((isEmail && targetTag) || (isDM && recipientId) || item.type === 'linkedin_post') && <span style={{ fontSize: 11, color: '#16a34a' }}>→ wordt automatisch gepubliceerd op de geplande tijd</span>}
+              {approved && hasDate && ((isEmail && (targetContactIds.length || item.target_tag)) || (isDM && recipientId) || item.type === 'linkedin_post') && <span style={{ fontSize: 11, color: '#16a34a' }}>→ wordt automatisch gepubliceerd op de geplande tijd</span>}
             </label>
           )}
 
@@ -712,6 +716,16 @@ function ContentItemModal({ item, tags = [], contacts = [], onClose, onSaved }) 
           })()}
 
           {err && <div style={{ fontSize: 12, color: '#dc2626' }}>Opslaan mislukt: {err}</div>}
+
+          {showAudiencePicker && (
+            <ContentAudiencePicker
+              contacts={contacts}
+              accounts={accounts}
+              allTags={allTags}
+              onApply={({ contact_ids, summary }) => { setTargetContactIds(contact_ids); setAudienceSummaryText(summary); setShowAudiencePicker(false); }}
+              onClose={() => setShowAudiencePicker(false)}
+            />
+          )}
         </div>
 
         <div style={{ padding: '12px 18px', borderTop: '0.5px solid var(--sep)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
