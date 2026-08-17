@@ -40,6 +40,15 @@ export function audienceSummary(selection = {}, count = 0) {
   return `${head} - ${count} ${noun}`;
 }
 
+// Samenvatting voor een opgetelde ('samengestelde') doelgroep. Bij een
+// opgetelde selectie uit meerdere filterrondes zeggen de losse filterlabels
+// niets meer, dus tonen we alleen de telling.
+export function audienceCountLabel(count = 0) {
+  const n = Number(count) || 0;
+  const noun = n === 1 ? 'contact' : 'contacten';
+  return `${n} ${noun} in doelgroep`;
+}
+
 // --- Rangorde per bedrijf (voor 'max per bedrijf'-ontdubbeling) ---
 const titleOf = (c) => String(c.role || c.title || '').toLowerCase();
 

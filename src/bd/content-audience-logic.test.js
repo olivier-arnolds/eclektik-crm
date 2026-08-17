@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { contactMatchesAudience, filterAudience, audienceSummary, seniorityScore, isHrRole, contactRank, surplusExclusions } from './content-audience-logic';
+import { contactMatchesAudience, filterAudience, audienceSummary, audienceCountLabel, seniorityScore, isHrRole, contactRank, surplusExclusions } from './content-audience-logic';
 
 const meta = new Map([
   ['a1', { type: 'Prospect', country: 'Netherlands', industry: 'Retail' }],
@@ -59,6 +59,14 @@ describe('audienceSummary', () => {
   it('geen em-dash in de samenvatting', () => {
     const s = audienceSummary({ tagNames: ['Glint'] }, 3);
     expect(s.includes('—')).toBe(false);
+  });
+});
+
+describe('audienceCountLabel', () => {
+  it('telt met juist enkelvoud/meervoud', () => {
+    expect(audienceCountLabel(0)).toBe('0 contacten in doelgroep');
+    expect(audienceCountLabel(1)).toBe('1 contact in doelgroep');
+    expect(audienceCountLabel(42)).toBe('42 contacten in doelgroep');
   });
 });
 

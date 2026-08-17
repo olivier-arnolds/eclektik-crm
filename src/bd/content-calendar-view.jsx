@@ -407,6 +407,7 @@ function ContentItemModal({ item, contacts = [], accounts = [], allTags = [], on
   const [targetContactIds, setTargetContactIds] = useState(item.target_contact_ids || []);
   const [audienceSummaryText, setAudienceSummaryText] = useState(item.audience_summary || '');
   const [showAudiencePicker, setShowAudiencePicker] = useState(false);
+  const [audiencePickerMode, setAudiencePickerMode] = useState('build'); // 'build' | 'review'
   const [accountId, setAccountId] = useState(item.linkedin_account_id || '');
   const [recipientId, setRecipientId] = useState(item.recipient_contact_id || '');
   const [recipientQuery, setRecipientQuery] = useState('');
@@ -625,9 +626,14 @@ function ContentItemModal({ item, contacts = [], accounts = [], allTags = [], on
                 Doelgroep
               </span>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                <button type="button" className="btn-ghost" disabled={published} onClick={() => setShowAudiencePicker(true)}>
-                  {targetContactIds.length ? 'Doelgroep wijzigen' : 'Doelgroep samenstellen'}
+                <button type="button" className="btn-ghost" disabled={published} onClick={() => { setAudiencePickerMode('build'); setShowAudiencePicker(true); }}>
+                  {targetContactIds.length ? 'Doelgroep uitbreiden' : 'Doelgroep samenstellen'}
                 </button>
+                {targetContactIds.length > 0 && (
+                  <button type="button" className="btn-ghost" onClick={() => { setAudiencePickerMode('review'); setShowAudiencePicker(true); }}>
+                    Bekijk doelgroep ({targetContactIds.length})
+                  </button>
+                )}
                 {targetContactIds.length > 0
                   ? <span style={{ fontSize: 12, color: 'var(--text-2)' }}>{audienceSummaryText || `${targetContactIds.length} contacten geselecteerd`}</span>
                   : <span style={{ fontSize: 12, color: 'var(--text-3)' }}>Nog geen doelgroep gekozen.</span>}
@@ -722,7 +728,9 @@ function ContentItemModal({ item, contacts = [], accounts = [], allTags = [], on
               contacts={contacts}
               accounts={accounts}
               allTags={allTags}
-              onApply={({ contact_ids, summary }) => { setTargetContactIds(contact_ids); setAudienceSummaryText(summary); setShowAudiencePicker(false); }}
+              audienceIds={targetContactIds}
+              initialMode={audiencePickerMode}
+              onChange={({ contact_ids, summary }) => { setTargetContactIds(contact_ids); setAudienceSummaryText(summary); }}
               onClose={() => setShowAudiencePicker(false)}
             />
           )}
