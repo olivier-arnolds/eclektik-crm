@@ -658,9 +658,9 @@ function ContentItemModal({ item, contacts = [], accounts = [], allTags = [], on
             <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, cursor: 'pointer' }}>
               <input type="checkbox" checked={approved} onChange={e => setApproved(e.target.checked)} />
               Goedgekeurd {approved && !hasDate && <span style={{ fontSize: 11, color: '#d97706' }}>(zonder datum plant de cron nog niet)</span>}
-              {approved && hasDate && isEmail && !targetContactIds.length && <span style={{ fontSize: 11, color: '#d97706' }}>(stel een doelgroep samen, anders kan de cron niet versturen)</span>}
+              {approved && hasDate && isEmail && !targetContactIds.length && !item.target_tag && <span style={{ fontSize: 11, color: '#d97706' }}>(stel een doelgroep samen, anders kan de cron niet versturen)</span>}
               {approved && hasDate && isDM && !recipientId && <span style={{ fontSize: 11, color: '#d97706' }}>(kies een ontvanger, anders kan de cron niet versturen)</span>}
-              {approved && hasDate && ((isEmail && targetContactIds.length) || (isDM && recipientId) || item.type === 'linkedin_post') && <span style={{ fontSize: 11, color: '#16a34a' }}>→ wordt automatisch gepubliceerd op de geplande tijd</span>}
+              {approved && hasDate && ((isEmail && (targetContactIds.length || item.target_tag)) || (isDM && recipientId) || item.type === 'linkedin_post') && <span style={{ fontSize: 11, color: '#16a34a' }}>→ wordt automatisch gepubliceerd op de geplande tijd</span>}
             </label>
           )}
 
