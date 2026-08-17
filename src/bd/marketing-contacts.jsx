@@ -78,7 +78,7 @@ function YesNoFilter({ label, value, onChange, extraLabel }) {
   const noActive = value === 'no';
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '3px 0' }}>
-      <span style={{ fontSize: 12, minWidth: 80, color: 'var(--text-1)' }}>
+      <span style={{ fontSize: 12, width: 108, flexShrink: 0, whiteSpace: 'nowrap', color: 'var(--text-1)' }}>
         {label} {extraLabel && <span style={{ fontSize: 10, color: 'var(--text-3)' }}>{extraLabel}</span>}
       </span>
       <button onClick={() => onChange(yesActive ? null : 'yes')}
@@ -123,17 +123,17 @@ export function EmailStatusBadge({ status }) {
 // value: 'found' | 'not_found' | 'unsearched' | null (uit).
 function EmailStatusFilter({ value, onChange }) {
   const opts = [
-    { key: 'found',      label: '✓', title: 'E-mail gevonden', on: '#dcfce7', onText: '#15803d', border: '#16a34a' },
-    { key: 'not_found',  label: '❌', title: 'Gezocht, niets gevonden', on: '#fee2e2', onText: '#b91c1c', border: '#dc2626' },
+    { key: 'found',      label: 'Yes', title: 'E-mail gevonden', on: '#dcfce7', onText: '#15803d', border: '#16a34a' },
+    { key: 'not_found',  label: 'No', title: 'Gezocht, niets gevonden', on: '#fee2e2', onText: '#b91c1c', border: '#dc2626' },
     { key: 'unsearched', label: 'Nog niet', title: 'Nog niet gezocht', on: '#e5e7eb', onText: '#374151', border: '#9ca3af' },
   ];
   const btnBase = {
-    padding: '2px 10px', borderRadius: 10, fontSize: 11,
+    padding: '2px 12px', borderRadius: 10, fontSize: 11,
     fontFamily: 'inherit', cursor: 'pointer', border: '0.5px solid', fontWeight: 500,
   };
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '3px 0', flexWrap: 'wrap' }}>
-      <span style={{ fontSize: 12, minWidth: 80, color: 'var(--text-1)' }}>Status Email</span>
+      <span style={{ fontSize: 12, width: 108, flexShrink: 0, whiteSpace: 'nowrap', color: 'var(--text-1)' }}>Status Email</span>
       {opts.map(o => {
         const active = value === o.key;
         return (
@@ -985,7 +985,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
           daaronder twee kolommen: LINKS Account status + Status, RECHTS Deals +
           Account. Zo staan alle filters zonder scrollen in beeld. */}
       <aside style={{
-        flex: '0 0 500px',
+        flex: '0 0 520px',
         background: 'var(--bg-1)',
         padding: 12,
         border: '0.5px solid var(--sep)',
@@ -1028,7 +1028,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
         <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', marginTop: 12 }}>
 
         {/* LINKS: Account status · Status — iets breder zodat "Nog niet" op één rij past */}
-        <div style={{ flex: 1.4, minWidth: 0 }}>
+        <div style={{ flex: 1.5, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
           <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Account status</div>
           <button onClick={() => setShowAddStatus(v => !v)}

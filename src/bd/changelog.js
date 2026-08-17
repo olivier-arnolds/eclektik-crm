@@ -19,9 +19,32 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.71.2';
+export const CURRENT_VERSION = '1.71.3';
 
 export const CHANGELOG = [
+  {
+    version: '1.71.3',
+    date: '2026-08-17T07:22:49Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Status-filters: overal Yes/No + nette uitlijning',
+    summary:
+      'In het Status-filterblok gebruikte "Status Email" nog symbolen (✓/❌). Die zijn ' +
+      'nu ook "Yes"/"No" (met "Nog niet" als derde optie). Alle filterlabels hebben ' +
+      'een vaste breedte en dezelfde knop-padding, zodat de Yes/No-knoppen netjes ' +
+      'onder elkaar uitlijnen. Paneel iets breder (520px) zodat alles op één rij past.',
+    changes: [
+      'marketing-contacts.jsx: EmailStatusFilter ✓/❌ → Yes/No; label vaste breedte 108px + nowrap; knop-padding gelijk (2px 12px).',
+      'marketing-contacts.jsx: aside 500px → 520px; linkerkolom flex 1.4 → 1.5.',
+    ],
+    files: [
+      'src/bd/marketing-contacts.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.71.3',
+  },
   {
     version: '1.71.2',
     date: '2026-08-17T07:18:23Z',
