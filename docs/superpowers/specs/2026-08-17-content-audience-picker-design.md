@@ -64,8 +64,9 @@ additief `ADD COLUMN`, geen bestaande data aangeraakt).
 
 - **Input (props):** `contacts` (verrijkt, uit `useBDData` - bevat `c.tags`,
   `c.accountId`, `c.role`, `c.isFormer`, `c.email`, opt-in-status), `accounts`
-  (voor land/industrie-meta per account), `allTags`, `initialContactIds`
-  (bestaande selectie bij herbewerken), `onApply`, `onClose`.
+  (voor land/industrie-meta per account), `allTags`, `onApply`, `onClose`.
+  (Geen `initialContactIds`: we bewaren alleen ids + samenvatting, niet de
+  filters, dus "wijzigen" opent een verse kiezer.)
 - **Filters (subset), client-side over `contacts`:**
   - Tags (multi-select uit `allTags`)
   - Account-status (`companies.type`: Prospect / Customer / Partner / Relation)

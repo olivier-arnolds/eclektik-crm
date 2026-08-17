@@ -336,7 +336,7 @@ git commit -m "feat(content-calendar): pure doelgroep-filter + samenvattingslogi
 **Files:**
 - Create: `src/bd/content-audience-picker.jsx`
 
-Props: `contacts` (verrijkt), `accounts`, `allTags`, `initialContactIds` (string[]), `onApply({ contact_ids, summary })`, `onClose`.
+Props: `contacts` (verrijkt), `accounts`, `allTags`, `onApply({ contact_ids, summary })`, `onClose`. (Geen `initialContactIds`: in het bevroren-snapshot-model bewaren we alleen ids + samenvatting, niet de filters, dus "wijzigen" opent een verse kiezer.)
 
 - [ ] **Step 1: Schrijf het component**
 
@@ -346,7 +346,7 @@ import { filterAudience, audienceSummary, surplusExclusions, contactRank } from 
 
 // Tijdelijke doelgroepkiezer voor één content-item. Filtert de al ingeladen
 // contacten client-side en levert een bevroren lijst contact-IDs + samenvatting.
-export default function ContentAudiencePicker({ contacts = [], accounts = [], allTags = [], initialContactIds = [], onApply, onClose }) {
+export default function ContentAudiencePicker({ contacts = [], accounts = [], allTags = [], onApply, onClose }) {
   // Meta per account (type/land/industrie). region = land (adapters.js).
   const accountMetaById = useMemo(() => {
     const m = new Map();
@@ -641,7 +641,6 @@ Direct vóór de afsluitende return-tags van de modal (net ná het hoofd-form-bl
               contacts={contacts}
               accounts={accounts}
               allTags={allTags}
-              initialContactIds={targetContactIds}
               onApply={({ contact_ids, summary }) => { setTargetContactIds(contact_ids); setAudienceSummaryText(summary); setShowAudiencePicker(false); }}
               onClose={() => setShowAudiencePicker(false)}
             />
