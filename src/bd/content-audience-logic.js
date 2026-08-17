@@ -47,8 +47,10 @@ const titleOf = (c) => String(c.role || c.title || '').toLowerCase();
 // 'managing director' moet als exec tellen, niet als director.
 export function seniorityScore(title) {
   const t = String(title || '').toLowerCase();
-  if (/\b(chief|chro|cfo|ceo|coo|cto|cpo|cmo|cio|founder|co-?founder|owner|president|managing director|managing partner)\b/.test(t)) return 100;
+  // VP/Head-tier eerst, zodat "vice president" niet door de exec-regel
+  // (\bpresident\b) wordt opgeslokt en als C-level scoort.
   if (/\b(vp|svp|evp|vice president|head of|global head)\b/.test(t)) return 80;
+  if (/\b(chief|chro|cfo|ceo|coo|cto|cpo|cmo|cio|founder|co-?founder|owner|president|managing director|managing partner)\b/.test(t)) return 100;
   if (/\bdirector\b/.test(t)) return 60;
   if (/\b(manager|lead|principal)\b/.test(t)) return 40;
   return 20;

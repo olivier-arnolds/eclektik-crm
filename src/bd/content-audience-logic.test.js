@@ -75,6 +75,13 @@ describe('seniorityScore', () => {
   it('managing director telt als exec, niet als director', () => {
     expect(seniorityScore('Managing Director')).toBe(100);
   });
+  it('vice president is tier 80, niet exec', () => {
+    expect(seniorityScore('Vice President')).toBe(80);
+    expect(seniorityScore('Executive Vice President')).toBe(80);
+  });
+  it('losse president (geen vice) is exec', () => {
+    expect(seniorityScore('President')).toBe(100);
+  });
 });
 
 describe('isHrRole', () => {
