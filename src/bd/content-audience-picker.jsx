@@ -109,6 +109,13 @@ export default function ContentAudiencePicker({ contacts = [], accounts = [], al
     const next = new Set(audience); next.delete(id); commit(next);
   };
 
+  // Hele doelgroep leegmaken (met bevestiging, want in één klik weg).
+  const clearAudience = () => {
+    if (audience.size === 0) return;
+    if (typeof window !== 'undefined' && !window.confirm('Weet je zeker dat je de hele doelgroep wilt leegmaken?')) return;
+    commit(new Set());
+  };
+
   const chip = (active) => ({
     padding: '3px 8px', borderRadius: 12, fontSize: 12, cursor: 'pointer',
     border: '0.5px solid var(--sep)',
@@ -194,14 +201,17 @@ export default function ContentAudiencePicker({ contacts = [], accounts = [], al
               })}
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-              <button className="btn-ghost" onClick={onClose}>Sluiten</button>
-              <button className="btn-ghost" disabled={total === 0} onClick={() => setMode('review')}>
-                Bekijk doelgroep ({total})
-              </button>
-              <button className="btn-primary" disabled={pending.length === 0} onClick={addSelection}>
-                Voeg deze selectie toe (+{pending.length})
-              </button>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+              <button className="btn-ghost" disabled={total === 0} onClick={clearAudience}>Doelgroep leegmaken</button>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="btn-ghost" onClick={onClose}>Sluiten</button>
+                <button className="btn-ghost" disabled={total === 0} onClick={() => setMode('review')}>
+                  Bekijk doelgroep ({total})
+                </button>
+                <button className="btn-primary" disabled={pending.length === 0} onClick={addSelection}>
+                  Voeg deze selectie toe (+{pending.length})
+                </button>
+              </div>
             </div>
           </>
         ) : (
@@ -228,9 +238,12 @@ export default function ContentAudiencePicker({ contacts = [], accounts = [], al
                 </div>
               ))}
             </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
-              <button className="btn-ghost" onClick={onClose}>Sluiten</button>
-              <button className="btn-primary" onClick={() => setMode('build')}>+ Nieuwe selectie toevoegen</button>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+              <button className="btn-ghost" disabled={total === 0} onClick={clearAudience}>Doelgroep leegmaken</button>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="btn-ghost" onClick={onClose}>Sluiten</button>
+                <button className="btn-primary" onClick={() => setMode('build')}>+ Nieuwe selectie toevoegen</button>
+              </div>
             </div>
           </>
         )}

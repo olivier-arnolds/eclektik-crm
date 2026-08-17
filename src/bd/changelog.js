@@ -19,9 +19,30 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.74.0';
+export const CURRENT_VERSION = '1.75.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.75.0',
+    date: '2026-08-17T14:52:18Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Content Calendar: doelgroep leegmaken',
+    summary:
+      'In de doelgroepkiezer kun je nu de hele doelgroep in één keer leegmaken via ' +
+      'de knop "Doelgroep leegmaken" (in zowel de samenstel- als de bekijk-modus). ' +
+      'Er komt eerst een bevestiging, zodat je niet per ongeluk wist.',
+    changes: [
+      'content-audience-picker.jsx: knop "Doelgroep leegmaken" (met window.confirm) in beide footers; uitgeschakeld als de doelgroep al leeg is.',
+    ],
+    files: [
+      'src/bd/content-audience-picker.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.75.0',
+  },
   {
     version: '1.74.0',
     date: '2026-08-17T13:36:51Z',
