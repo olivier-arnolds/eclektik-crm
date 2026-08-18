@@ -19,9 +19,30 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.79.7';
+export const CURRENT_VERSION = '1.79.8';
 
 export const CHANGELOG = [
+  {
+    version: '1.79.8',
+    date: '2026-08-18T21:05:28Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'improvement',
+    title: 'E-mail-handtekening: complete bubbel + lijn naar onderste ronding',
+    summary:
+      'De foto-bubbel is nu een volledige cirkel met witte ring (oogde eerder ' +
+      'incompleet), en de lijn loopt precies van de E van THRIVE naar de onderste ' +
+      'ronding van de bubbel (stopt daar, niet eronderdoor).',
+    changes: [
+      'public/eclectik-email-header.png: bubbel als volle cirkel met witte ring; lijn van tagline-E naar de onderkant van de bubbel.',
+    ],
+    files: [
+      'public/eclectik-email-header.png',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.79.8',
+  },
   {
     version: '1.79.7',
     date: '2026-08-18T20:55:17Z',
