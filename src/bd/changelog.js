@@ -19,9 +19,34 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.79.5';
+export const CURRENT_VERSION = '1.79.6';
 
 export const CHANGELOG = [
+  {
+    version: '1.79.6',
+    date: '2026-08-18T20:47:41Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'E-mail-handtekening: kop als één afbeelding (wordmark komt nu door)',
+    summary:
+      'De wordmark bleef in sommige clients wegvallen als losse witte-transparante ' +
+      'laag. De kop is nu één samengestelde afbeelding (navy + Eclectik + tagline + ' +
+      'lijn + groter icoon dat op de lijn ligt), dus de tekst kan niet meer verdwijnen. ' +
+      'Rendert overal betrouwbaar; klikbare links staan er als HTML onder.',
+    changes: [
+      'public/eclectik-email-header.png: samengestelde kop (2x, 1360px), getoond op 680px.',
+      'api/_lib/signatures.js: kop = één <img> (HEADER_URL) i.p.v. losse wordmark/icoon; icoon groter en op de lijn.',
+      'Losse eclectik-email-wordmark.png/eclectik-email-icon-blue.png verwijderd.',
+    ],
+    files: [
+      'api/_lib/signatures.js',
+      'public/eclectik-email-header.png',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.79.6',
+  },
   {
     version: '1.79.5',
     date: '2026-08-18T20:41:01Z',
