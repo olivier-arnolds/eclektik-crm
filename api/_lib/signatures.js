@@ -3,11 +3,12 @@
 // inline styles, echte <a>-links (geen afbeelding nodig voor de tekst/links).
 // Het merk-logo kan later als gehoste <img> worden toegevoegd (LOGO_URL).
 
-// Uit het aangeleverde logo gesneden en gehost vanuit public/ op het CRM-domein.
-// WORDMARK = "Eclectik" + tagline (witte letters) -> linksboven.
-// ICON = cirkel-beeldmerk met blauwe foto (witte lijnen) -> rechts.
-const WORDMARK_URL = 'https://crm.eclectik-insights.co/eclectik-email-wordmark.png';
-const ICON_URL = 'https://crm.eclectik-insights.co/eclectik-email-icon-blue.png';
+// Eén samengestelde kop-afbeelding (navy achtergrond + "Eclectik" + tagline +
+// lijn + cirkel-icoon), gehost vanuit public/ op het CRM-domein. Bewust EEN
+// opaque beeld: witte letters kunnen zo nooit wegvallen op clients die de
+// tabel-achtergrond negeren, en de losse delen kunnen niet los mislukken.
+// 2x-resolutie (1360px breed), getoond op 680px voor scherpte.
+const HEADER_URL = 'https://crm.eclectik-insights.co/eclectik-email-header.png';
 
 const C = {
   bg: '#0f2537',       // donkere navy
@@ -24,19 +25,9 @@ function link(href, text, extra = '') {
 }
 
 function marcoSignature() {
-  // Split-header: wordmark ("Eclectik" + tagline) linksboven, een lijn onderlangs
-  // naar rechts, het cirkel-icoon (blauwe foto) rechts. Beide uit het logo gesneden.
-  const header = `<tr><td bgcolor="${C.bg}" style="padding:24px 28px 6px;background:${C.bg}">
-    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%">
-      <tr>
-        <td style="vertical-align:bottom;white-space:nowrap;padding-right:18px">
-          <img src="${WORDMARK_URL}" alt="Eclectik - Insights that make organizations thrive" width="300" style="display:block;border:0;width:300px;max-width:100%;height:auto;padding-bottom:6px" />
-        </td>
-        <td style="vertical-align:bottom;width:100%;text-align:right;border-bottom:1px solid ${C.line};padding-bottom:8px">
-          <img src="${ICON_URL}" alt="Eclectik" width="66" style="display:inline-block;border:0;width:66px;height:auto;vertical-align:bottom" />
-        </td>
-      </tr>
-    </table>
+  // Kop = één samengestelde afbeelding (wordmark + tagline + lijn + icoon op navy).
+  const header = `<tr><td bgcolor="${C.bg}" style="padding:0;line-height:0;background:${C.bg};border-radius:8px 8px 0 0">
+    <a href="https://www.eclectik.co" style="text-decoration:none"><img src="${HEADER_URL}" alt="Eclectik - Insights that make organizations thrive" width="680" style="display:block;border:0;width:100%;max-width:680px;height:auto" /></a>
   </td></tr>`;
   return `
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" bgcolor="${C.bg}" style="width:100%;max-width:680px;background:${C.bg};border-radius:8px;font-family:Arial,Helvetica,sans-serif">
