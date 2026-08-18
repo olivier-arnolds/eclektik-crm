@@ -3,9 +3,11 @@
 // inline styles, echte <a>-links (geen afbeelding nodig voor de tekst/links).
 // Het merk-logo kan later als gehoste <img> worden toegevoegd (LOGO_URL).
 
-// Los cirkel-icoon (wit op transparant), gehost vanuit public/ op het CRM-domein.
-// De wordmark "Eclectik" + tagline staan als tekst links; het icoon rechts.
-const ICON_URL = 'https://crm.eclectik-insights.co/eclectik-email-icon.png';
+// Uit het aangeleverde logo gesneden en gehost vanuit public/ op het CRM-domein.
+// WORDMARK = "Eclectik" + tagline (witte letters) -> linksboven.
+// ICON = cirkel-beeldmerk met blauwe foto (witte lijnen) -> rechts.
+const WORDMARK_URL = 'https://crm.eclectik-insights.co/eclectik-email-wordmark.png';
+const ICON_URL = 'https://crm.eclectik-insights.co/eclectik-email-icon-blue.png';
 
 const C = {
   bg: '#0f2537',       // donkere navy
@@ -22,20 +24,16 @@ function link(href, text, extra = '') {
 }
 
 function marcoSignature() {
-  // Split-header: "Eclectik" + tagline links, een lijn naar rechts, het cirkel-
-  // icoon rechts. Icoon als gehoste afbeelding; wordmark/tagline als tekst.
-  const iconCell = ICON_URL
-    ? `<td style="vertical-align:middle;padding-left:16px;text-align:right;white-space:nowrap"><img src="${ICON_URL}" alt="Eclectik" width="52" height="53" style="display:inline-block;border:0;width:52px;height:auto" /></td>`
-    : '';
-  const header = `<tr><td style="padding:24px 28px 0">
+  // Split-header: wordmark ("Eclectik" + tagline) linksboven, een lijn onderlangs
+  // naar rechts, het cirkel-icoon (blauwe foto) rechts. Beide uit het logo gesneden.
+  const header = `<tr><td style="padding:24px 28px 2px">
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%">
       <tr>
-        <td style="vertical-align:middle;white-space:nowrap;padding-right:16px">
-          <div style="font-size:30px;font-weight:700;color:${C.white};letter-spacing:0.5px;line-height:1.1">Eclectik</div>
-          <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:${C.teal};text-transform:uppercase;margin-top:6px">Insights that make organizations thrive</div>
+        <td style="vertical-align:bottom;white-space:nowrap;padding-right:14px">
+          <img src="${WORDMARK_URL}" alt="Eclectik - Insights that make organizations thrive" width="300" style="display:block;border:0;width:300px;max-width:100%;height:auto" />
         </td>
-        <td style="vertical-align:middle;width:100%"><div style="border-top:1px solid ${C.line};font-size:0;line-height:0">&nbsp;</div></td>
-        ${iconCell}
+        <td style="vertical-align:bottom;width:100%;padding:0 14px 10px"><div style="border-top:1px solid ${C.line};font-size:0;line-height:0">&nbsp;</div></td>
+        <td style="vertical-align:middle;text-align:right;white-space:nowrap"><img src="${ICON_URL}" alt="Eclectik" width="66" style="display:inline-block;border:0;width:66px;height:auto" /></td>
       </tr>
     </table>
   </td></tr>`;

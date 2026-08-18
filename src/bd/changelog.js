@@ -19,9 +19,35 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.79.3';
+export const CURRENT_VERSION = '1.79.4';
 
 export const CHANGELOG = [
+  {
+    version: '1.79.4',
+    date: '2026-08-18T20:33:33Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'improvement',
+    title: 'E-mail-handtekening: echte logo-onderdelen (wordmark + blauw icoon)',
+    summary:
+      'De handtekening gebruikt nu de echte logo-onderdelen uit het aangeleverde ' +
+      'bestand: de wordmark "Eclectik" + tagline (merk-font) linksboven, en het ' +
+      'cirkel-icoon met de blauwe foto rechts. De lijn loopt onderlangs de tagline ' +
+      'naar het icoon. Uitgesneden uit het logo en gehost vanuit public/.',
+    changes: [
+      'public/eclectik-email-wordmark.png + eclectik-email-icon-blue.png: uit het logo gesneden onderdelen.',
+      'api/_lib/signatures.js: wordmark-afbeelding linksboven, lijn onderlangs, blauw icoon rechts (WORDMARK_URL/ICON_URL).',
+      'Oude eclectik-email-logo.png/eclectik-email-icon.png verwijderd (niet meer gebruikt).',
+    ],
+    files: [
+      'api/_lib/signatures.js',
+      'public/eclectik-email-wordmark.png',
+      'public/eclectik-email-icon-blue.png',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.79.4',
+  },
   {
     version: '1.79.3',
     date: '2026-08-18T20:21:24Z',
