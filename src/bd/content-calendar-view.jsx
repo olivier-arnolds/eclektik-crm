@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '../supabase';
 import { apiFetch } from '../lib/apiFetch';
 import { isApproved, deriveStatus, statusAfterMove } from './content-calendar-logic';
@@ -423,6 +423,48 @@ function ContentItemModal({ item, contacts = [], accounts = [], allTags = [], on
   const [moderation, setModeration] = useState(null);
   const [overrideModeration, setOverrideModeration] = useState(false);
 
+  // Tekstvak-ref + invoeg-helpers voor merge-tags en links. Wij vervangen de
+  // huidige selectie (of voegen op de cursor in) en herstellen de cursor na de
+  // re-render. Links en merge-tags worden bij het verzenden omgezet (zie
+  // api/content-calendar-execute.js: textToHtml + api/_lib/send-broadcast.js).
+  const bodyRef = useRef(null);
+  function spliceBody(start, end, insert, caretStart, caretEnd) {
+    const next = body.slice(0, start) + insert + body.slice(end);
+    setBody(next);
+    requestAnimationFrame(() => {
+      const el = bodyRef.current;
+      if (!el) return;
+      el.focus();
+      el.setSelectionRange(start + caretStart, start + caretEnd);
+    });
+  }
+  function insertMergeTag(tag) {
+    const el = bodyRef.current;
+    const start = el ? el.selectionStart : body.length;
+    const end = el ? el.selectionEnd : body.length;
+    spliceBody(start, end, tag, tag.length, tag.length);
+  }
+  function insertLink() {
+    const el = bodyRef.current;
+    const start = el ? el.selectionStart : body.length;
+    const end = el ? el.selectionEnd : body.length;
+    const selected = body.slice(start, end);
+    const url = window.prompt('Link-URL (laat met http:// of https:// beginnen):', 'https://');
+    if (url == null) return; // geannuleerd
+    if (!/^https?:\/\/\S+/i.test(url.trim())) {
+      setErr('Ongeldige URL - een link moet met http:// of https:// beginnen.');
+      return;
+    }
+    let label = selected;
+    if (!label) {
+      label = window.prompt('Tekst die klikbaar wordt:', 'hier');
+      if (label == null) return; // geannuleerd
+      label = label.trim() || 'hier';
+    }
+    const insert = `[${label}](${url.trim()})`;
+    spliceBody(start, end, insert, 1, 1 + label.length);
+  }
+
   const hasDate = !!dateVal;
   const nextStatus = published ? 'published' : deriveStatus(approved, hasDate);
   const effectiveAccountId = accountId || DEFAULT_LINKEDIN_ACCOUNT_ID;
@@ -549,11 +591,23 @@ function ContentItemModal({ item, contacts = [], accounts = [], allTags = [], on
                 style={{ padding: '6px 8px', borderRadius: 6, border: '0.5px solid var(--sep)', background: 'var(--bg-2)', color: 'var(--text-1)', fontSize: 13 }} />
             </label>
           )}
-          <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <span style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>Tekst</span>
-            <textarea value={body} onChange={e => setBody(e.target.value)} disabled={published} rows={8}
+            {isEmail && !published && (
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 2 }}>
+                <button type="button" className="btn-ghost tiny" onClick={() => insertMergeTag('{{first_name}}')} title="Wordt per ontvanger vervangen door de voornaam">+ Voornaam</button>
+                <button type="button" className="btn-ghost tiny" onClick={() => insertMergeTag('{{last_name}}')} title="Wordt per ontvanger vervangen door de achternaam">+ Achternaam</button>
+                <button type="button" className="btn-ghost tiny" onClick={insertLink} title="Selecteer een woord en koppel er een link aan">🔗 Link invoegen</button>
+              </div>
+            )}
+            <textarea ref={bodyRef} value={body} onChange={e => setBody(e.target.value)} disabled={published} rows={8}
               style={{ padding: '8px 10px', borderRadius: 6, border: '0.5px solid var(--sep)', background: 'var(--bg-2)', color: 'var(--text-1)', fontSize: 13, resize: 'vertical', fontFamily: 'inherit', lineHeight: 1.5 }} />
-          </label>
+            {isEmail && !published && (
+              <span style={{ fontSize: 11, color: 'var(--text-3)', lineHeight: 1.5 }}>
+                {'{{first_name}}'} en {'{{last_name}}'} worden per ontvanger ingevuld. Een link zie je hier als <code>[woord](https://…)</code> en wordt in de mail een klikbaar woord.
+              </span>
+            )}
+          </div>
 
           {item.source_note && (
             <div style={{ fontSize: 11, color: 'var(--text-3)' }}>

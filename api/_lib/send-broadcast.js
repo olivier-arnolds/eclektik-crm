@@ -40,7 +40,9 @@ async function rs(path, method, body, { retries = 4 } = {}) {
 }
 
 function toResendMergeTags(html) {
-  return String(html || '').replaceAll('{{first_name}}', '{{{FIRST_NAME}}}');
+  return String(html || '')
+    .replaceAll('{{first_name}}', '{{{FIRST_NAME}}}')
+    .replaceAll('{{last_name}}', '{{{LAST_NAME}}}');
 }
 
 // Resend voegt GEEN afmeldlink automatisch toe; de HTML moet
@@ -96,7 +98,7 @@ export async function sendBroadcast({ subject, html_body, from_name, from_email,
     }
     if (got.status === 404) {
       const post = await rs('/contacts', 'POST',
-        { email: c.email, first_name: c.first_name, segments: [{ id: segmentId }] });
+        { email: c.email, first_name: c.first_name, last_name: c.last_name, segments: [{ id: segmentId }] });
       if (post.ok) { placed.push({ email: c.email, contact_id: c.contact_id }); return 'ok'; }
       console.error('[send-broadcast] aanmaken faalde', post.status, c.email, JSON.stringify(post.data));
       return 'fail';
