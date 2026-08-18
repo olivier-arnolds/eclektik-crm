@@ -2,6 +2,7 @@ import { requireCron } from './_lib/guard.js';
 import { sendBroadcast } from './_lib/send-broadcast.js';
 import { createLinkedInPost } from './_lib/unipile-post.js';
 import { sendLinkedInDM } from './_lib/unipile-dm.js';
+import { contentTextToHtml } from './_lib/content-html.js';
 import { createClient } from '@supabase/supabase-js';
 
 // Alle content-LinkedIn-posts gaan via Marco's account (afspraak). Overschrijfbaar
@@ -26,26 +27,6 @@ const supabase = (process.env.VITE_SUPABASE_URL && process.env.SUPABASE_SERVICE_
   ? createClient(process.env.VITE_SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY) : null;
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-
-function escapeHtml(s) {
-  return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-}
-// [woord](https://url) -> klikbare link. Draait NA escapeHtml zodat de
-// woord-tekst geëscaped is; & < > in de URL zijn na escape veilig in de href.
-function linkifyMarkdown(escaped) {
-  return escaped.replace(/\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/g,
-    '<a href="$2" style="color:#2563eb;text-decoration:underline">$1</a>');
-}
-// Plain-text body -> simpele HTML (dubbele newline = alinea, enkele = <br>).
-// {{first_name}}/{{last_name}} blijven staan; sendBroadcast zet ze om naar
-// Resend's merge-tags. [woord](url) wordt hier al een echte <a>.
-function textToHtml(text) {
-  const paras = String(text || '')
-    .split(/\n{2,}/)
-    .map(p => `<p>${linkifyMarkdown(escapeHtml(p)).replace(/\n/g, '<br>')}</p>`)
-    .join('');
-  return `<!doctype html><html><body style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#222222">${paras}</body></html>`;
-}
 
 // target_tag kan een tag-naam of een tag-id zijn. Geeft het tag-id terug (of null).
 async function resolveTagId(targetTag) {
@@ -100,8 +81,10 @@ async function publishEmail(item) {
 
   const send = await sendBroadcast({
     subject: item.subject,
-    html_body: textToHtml(item.body),
+    html_body: contentTextToHtml(item.body),
     recipients,
+    from_email: item.from_email || undefined,
+    from_name: item.from_name || undefined,
     campaign_name: `[${String(item.channel).toUpperCase()}] ${item.subject}`,
   });
   if (!send.ok) return { ok: false, reason: send.error || 'broadcast mislukt' };

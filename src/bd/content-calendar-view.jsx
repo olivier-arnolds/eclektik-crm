@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '../supabase';
 import { apiFetch } from '../lib/apiFetch';
+import { useAuth } from '../lib/auth';
+import { SENDERS, DEFAULT_SENDER, senderNameFor } from '../lib/senders';
 import { isApproved, deriveStatus, statusAfterMove } from './content-calendar-logic';
 import ContentAudiencePicker from './content-audience-picker';
 
@@ -423,6 +425,36 @@ function ContentItemModal({ item, contacts = [], accounts = [], allTags = [], on
   const [moderation, setModeration] = useState(null);
   const [overrideModeration, setOverrideModeration] = useState(false);
 
+  // Afzender (alleen e-mail). Leeg item = de default-afzender; per item op te slaan.
+  const [fromEmail, setFromEmail] = useState(item.from_email || DEFAULT_SENDER.email);
+  const [fromName, setFromName] = useState(item.from_name || senderNameFor(item.from_email || DEFAULT_SENDER.email));
+
+  // Testmail: stuurt direct één mail naar een adres (meestal jezelf), buiten de
+  // planning/opt-in om, zodat je de opmaak kunt controleren.
+  const { session } = useAuth();
+  const [testTo, setTestTo] = useState(session?.user?.email || '');
+  const [testSending, setTestSending] = useState(false);
+  const [testResult, setTestResult] = useState(null); // { ok, msg }
+
+  async function sendTestEmail() {
+    if (!testTo.trim()) { setTestResult({ ok: false, msg: 'Vul een testadres in.' }); return; }
+    setTestSending(true); setTestResult(null);
+    try {
+      const resp = await apiFetch('/api/content-test-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subject, body, to: testTo.trim(), from_email: fromEmail, from_name: fromName, channel: item.channel }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data?.error || `HTTP ${resp.status}`);
+      setTestResult({ ok: true, msg: `Testmail verstuurd naar ${data.to || testTo.trim()}.` });
+    } catch (e) {
+      setTestResult({ ok: false, msg: `Testmail mislukt: ${e.message}` });
+    } finally {
+      setTestSending(false);
+    }
+  }
+
   // Tekstvak-ref + invoeg-helpers voor merge-tags en links. Wij vervangen de
   // huidige selectie (of voegen op de cursor in) en herstellen de cursor na de
   // re-render. Links en merge-tags worden bij het verzenden omgezet (zie
@@ -536,6 +568,8 @@ function ContentItemModal({ item, contacts = [], accounts = [], allTags = [], on
     const fields = {
       subject: isEmail ? (subject || null) : null,
       body,
+      from_email: isEmail ? (fromEmail || null) : null,
+      from_name: isEmail ? (fromName || null) : null,
       target_tag: item.target_tag || null,
       target_contact_ids: isEmail ? (targetContactIds.length ? targetContactIds : null) : null,
       audience_summary: isEmail && targetContactIds.length ? (audienceSummaryText || null) : null,
@@ -548,7 +582,7 @@ function ContentItemModal({ item, contacts = [], accounts = [], allTags = [], on
     const { error } = await supabase.from('content_calendar_items').update(fields).eq('id', item.id);
     setSaving(false);
     if (error) { setErr(error.message); return; }
-    onSaved && onSaved({ subject: fields.subject, body, target_tag: fields.target_tag, target_contact_ids: fields.target_contact_ids, audience_summary: fields.audience_summary, linkedin_account_id: fields.linkedin_account_id, recipient_contact_id: fields.recipient_contact_id, scheduled_at, status: nextStatus });
+    onSaved && onSaved({ subject: fields.subject, body, from_email: fields.from_email, from_name: fields.from_name, target_tag: fields.target_tag, target_contact_ids: fields.target_contact_ids, audience_summary: fields.audience_summary, linkedin_account_id: fields.linkedin_account_id, recipient_contact_id: fields.recipient_contact_id, scheduled_at, status: nextStatus });
     onClose();
   }
 
@@ -589,6 +623,18 @@ function ContentItemModal({ item, contacts = [], accounts = [], allTags = [], on
               <span style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>Onderwerp</span>
               <input value={subject} onChange={e => setSubject(e.target.value)} disabled={published}
                 style={{ padding: '6px 8px', borderRadius: 6, border: '0.5px solid var(--sep)', background: 'var(--bg-2)', color: 'var(--text-1)', fontSize: 13 }} />
+            </label>
+          )}
+          {isEmail && (
+            <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <span style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>Afzender</span>
+              <select value={fromEmail} disabled={published}
+                onChange={e => { setFromEmail(e.target.value); setFromName(senderNameFor(e.target.value)); }}
+                style={{ padding: '6px 8px', borderRadius: 6, border: '0.5px solid var(--sep)', background: 'var(--bg-2)', color: 'var(--text-1)', fontSize: 13 }}>
+                {SENDERS.map(s => <option key={s.email} value={s.email}>{s.name} &lt;{s.email}&gt;</option>)}
+                {fromEmail && !SENDERS.some(s => s.email === fromEmail) && <option value={fromEmail}>{fromName} &lt;{fromEmail}&gt;</option>}
+              </select>
+              <span style={{ fontSize: 11, color: 'var(--text-3)' }}>De mail komt van dit geverifieerde eclectik.co-adres.</span>
             </label>
           )}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -695,6 +741,25 @@ function ContentItemModal({ item, contacts = [], accounts = [], allTags = [], on
               <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
                 Tijdelijke selectie voor dit bericht. De cron verstuurt alleen naar opted-in, actieve contacten.
               </span>
+            </div>
+          )}
+
+          {isEmail && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: 10, borderRadius: 8, background: 'var(--fill-1)', border: '0.5px solid var(--sep)' }}>
+              <span style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>Testmail</span>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                <input type="email" value={testTo} onChange={e => setTestTo(e.target.value)} placeholder="jouw@adres.nl"
+                  style={{ flex: 1, minWidth: 180, padding: '6px 8px', borderRadius: 6, border: '0.5px solid var(--sep)', background: 'var(--bg-2)', color: 'var(--text-1)', fontSize: 13 }} />
+                <button type="button" className="btn-ghost" disabled={testSending || !subject || !body} onClick={sendTestEmail}>
+                  {testSending ? 'Versturen…' : 'Stuur testmail'}
+                </button>
+              </div>
+              <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
+                Stuurt nu direct één mail met deze afzender/tekst, buiten planning en opt-in om. Merge-tags worden met een voorbeeldnaam ingevuld.
+              </span>
+              {testResult && (
+                <span style={{ fontSize: 12, color: testResult.ok ? '#16a34a' : '#dc2626' }}>{testResult.msg}</span>
+              )}
             </div>
           )}
 

@@ -19,9 +19,42 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.76.0';
+export const CURRENT_VERSION = '1.77.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.77.0',
+    date: '2026-08-18T09:18:53Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Content Calendar: afzender kiezen + testmail',
+    summary:
+      'Bij een e-mail-item kun je nu de afzender kiezen (de vier geverifieerde ' +
+      'eclectik.co-adressen) en direct een testmail naar jezelf sturen om de opmaak ' +
+      'te controleren. De testmail gaat buiten planning en opt-in om, met de ' +
+      'merge-tags ingevuld met een voorbeeldnaam en de links al klikbaar.',
+    changes: [
+      'content-calendar-view.jsx: afzender-dropdown (gedeelde SENDERS-lijst) na het onderwerp, en een testmail-blok (adres + "Stuur testmail") dat /api/content-test-email aanroept.',
+      'api/content-test-email.js: nieuw endpoint (requireUser) dat één transactionele testmail via Resend stuurt, merge-tags met voorbeeldnaam invult en links omzet.',
+      'api/_lib/content-html.js: gedeelde tekst→HTML-rendering (incl. [woord](url)-links), hergebruikt door de publish-cron en de testmail.',
+      'api/content-calendar-execute.js: gebruikt de gedeelde renderer en geeft de per-item afzender (from_email/from_name) door aan sendBroadcast.',
+      'src/lib/senders.js: gedeelde afzenderlijst (uit de marketing-composer gehaald, niet langer gedupliceerd).',
+      'sql/schema_content_calendar_from_sender_2026-08-18.sql: kolommen from_email/from_name op content_calendar_items (via Supabase MCP toegepast).',
+    ],
+    files: [
+      'src/bd/content-calendar-view.jsx',
+      'api/content-test-email.js',
+      'api/_lib/content-html.js',
+      'api/content-calendar-execute.js',
+      'src/lib/senders.js',
+      'src/bd/marketing-composer.jsx',
+      'sql/schema_content_calendar_from_sender_2026-08-18.sql',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.77.0',
+  },
   {
     version: '1.76.0',
     date: '2026-08-18T06:55:29Z',

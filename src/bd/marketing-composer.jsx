@@ -2,16 +2,7 @@ import { useState, useMemo, useRef } from 'react';
 import { useAuth } from '../lib/auth';
 import { renderTemplate, varsForContact, KNOWN_VARS } from '../lib/template-vars';
 import { apiFetch } from '../lib/apiFetch';
-
-// Vaste afzenders — allemaal op het in Resend geverifieerde domein eclectik.co.
-// Andere domeinen worden door Resend geweigerd, dus het adres is een keuzelijst
-// (geen vrij tekstveld). De weergavenaam is wél vrij aan te passen.
-const SENDERS = [
-  { email: 'marketing@eclectik.co', name: 'Marketing' },
-  { email: 'olivier@eclectik.co', name: 'Olivier Arnolds' },
-  { email: 'marco@eclectik.co', name: 'Marco van Gelder' },
-  { email: 'yarmilla@eclectik.co', name: 'Yarmilla Koenders' },
-];
+import { SENDERS } from '../lib/senders';
 
 // Composer for a Marketing campaign.
 // Props:
