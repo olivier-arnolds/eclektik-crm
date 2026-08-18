@@ -19,9 +19,30 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.79.6';
+export const CURRENT_VERSION = '1.79.7';
 
 export const CHANGELOG = [
+  {
+    version: '1.79.7',
+    date: '2026-08-18T20:55:17Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'improvement',
+    title: 'E-mail-handtekening: wordmark kleiner, lijn tegen tagline, losse bubbel',
+    summary:
+      'Kop-afbeelding bijgewerkt: de wordmark is 15% kleiner, de lijn raakt de ' +
+      'onderkant van de tagline (de E van THRIVE), en rechts staat alleen de ' +
+      'linkerbubbel van het icoon (de ronde foto-bubbel) die op de lijn ligt.',
+    changes: [
+      'public/eclectik-email-header.png: nieuwe compositie (wordmark -15%, lijn op taglinehoogte, losse foto-bubbel op de lijn).',
+    ],
+    files: [
+      'public/eclectik-email-header.png',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.79.7',
+  },
   {
     version: '1.79.6',
     date: '2026-08-18T20:47:41Z',
