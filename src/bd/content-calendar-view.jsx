@@ -428,6 +428,8 @@ function ContentItemModal({ item, contacts = [], accounts = [], allTags = [], on
   // Afzender (alleen e-mail). Leeg item = de default-afzender; per item op te slaan.
   const [fromEmail, setFromEmail] = useState(item.from_email || DEFAULT_SENDER.email);
   const [fromName, setFromName] = useState(item.from_name || senderNameFor(item.from_email || DEFAULT_SENDER.email));
+  // Cold outreach: negeert de opt-in-eis in de cron (alleen e-mail).
+  const [coldOutreach, setColdOutreach] = useState(!!item.cold_outreach);
 
   // Testmail: stuurt direct één mail naar een adres (meestal jezelf), buiten de
   // planning/opt-in om, zodat je de opmaak kunt controleren.
@@ -570,6 +572,7 @@ function ContentItemModal({ item, contacts = [], accounts = [], allTags = [], on
       body,
       from_email: isEmail ? (fromEmail || null) : null,
       from_name: isEmail ? (fromName || null) : null,
+      cold_outreach: isEmail ? coldOutreach : false,
       target_tag: item.target_tag || null,
       target_contact_ids: isEmail ? (targetContactIds.length ? targetContactIds : null) : null,
       audience_summary: isEmail && targetContactIds.length ? (audienceSummaryText || null) : null,
@@ -582,7 +585,7 @@ function ContentItemModal({ item, contacts = [], accounts = [], allTags = [], on
     const { error } = await supabase.from('content_calendar_items').update(fields).eq('id', item.id);
     setSaving(false);
     if (error) { setErr(error.message); return; }
-    onSaved && onSaved({ subject: fields.subject, body, from_email: fields.from_email, from_name: fields.from_name, target_tag: fields.target_tag, target_contact_ids: fields.target_contact_ids, audience_summary: fields.audience_summary, linkedin_account_id: fields.linkedin_account_id, recipient_contact_id: fields.recipient_contact_id, scheduled_at, status: nextStatus });
+    onSaved && onSaved({ subject: fields.subject, body, from_email: fields.from_email, from_name: fields.from_name, cold_outreach: fields.cold_outreach, target_tag: fields.target_tag, target_contact_ids: fields.target_contact_ids, audience_summary: fields.audience_summary, linkedin_account_id: fields.linkedin_account_id, recipient_contact_id: fields.recipient_contact_id, scheduled_at, status: nextStatus });
     onClose();
   }
 
@@ -738,8 +741,24 @@ function ContentItemModal({ item, contacts = [], accounts = [], allTags = [], on
                   : <span style={{ fontSize: 12, color: 'var(--text-3)' }}>Nog geen doelgroep gekozen.</span>}
               </div>
               <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
-                Tijdelijke selectie voor dit bericht. De cron verstuurt alleen naar opted-in, actieve contacten.
+                Tijdelijke selectie voor dit bericht. De cron verstuurt {coldOutreach ? 'naar alle actieve contacten in de selectie (ook zonder opt-in)' : 'alleen naar opted-in, actieve contacten'}.
               </span>
+              {!published && (
+                <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13, cursor: 'pointer', marginTop: 4 }}>
+                  <input type="checkbox" checked={coldOutreach} onChange={e => setColdOutreach(e.target.checked)} style={{ marginTop: 2 }} />
+                  <span>
+                    Cold outreach - negeer de opt-in-eis
+                    <span style={{ display: 'block', fontSize: 11, color: coldOutreach ? '#d97706' : 'var(--text-3)', lineHeight: 1.5 }}>
+                      {coldOutreach
+                        ? 'Let op: verstuurt naar contacten zonder marketing-opt-in. Afgemelde, do-not-email en inactieve/former contacten blijven altijd uitgesloten. Zorg dat dit past bij je outreach-afspraken.'
+                        : 'Aan voor koude prospects (bv. de Glint-lijst) die nog geen opt-in hebben.'}
+                    </span>
+                  </span>
+                </label>
+              )}
+              {published && item.cold_outreach && (
+                <span style={{ fontSize: 11, color: 'var(--text-3)' }}>Verstuurd als cold outreach (opt-in genegeerd).</span>
+              )}
             </div>
           )}
 

@@ -282,7 +282,9 @@ export function usePipelineData() {
       fetchAllRows(() => supabase.from('comms').select('*').neq('channel', 'linkedin').order('sent_at', { ascending: false }), FETCH_LIMITS.comms).then(data => ({ data })),
       supabase.from('calendar_events').select('*').order('start_at', { ascending: false }).limit(FETCH_LIMITS.calendar_events),
       supabase.from('tags').select('*'),
-      supabase.from('contact_tags').select('contact_id, tag_id'),
+      // contact_tags pagen: na de Glint-import >1000 koppelingen, anders vielen
+      // de laatst ingevoegde (prio-)tags buiten de 1000-cap (toonden 0).
+      fetchAllRows(() => supabase.from('contact_tags').select('contact_id, tag_id').order('contact_id', { ascending: true })).then(data => ({ data })),
     ])
 
     const adaptedAccounts = (companiesRaw || []).map(adaptCompany)

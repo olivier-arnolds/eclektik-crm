@@ -60,11 +60,14 @@ async function recipientsForItem(item) {
   if (!ids || ids.length === 0) return { recipients: [] };
   const rows = [];
   for (let i = 0; i < ids.length; i += 500) {
-    const { data, error } = await supabase.from('contacts')
+    let q = supabase.from('contacts')
       .select('id, email, first_name, last_name, do_not_email, former, stage')
       .in('id', ids.slice(i, i + 500))
-      .eq('marketing_content_opt_in', true)
       .not('email', 'is', null);
+    // Cold outreach negeert de opt-in-eis; do_not_email/afgemeld/former/inactief
+    // blijven altijd uitgesloten (hieronder + in sendBroadcast).
+    if (!item.cold_outreach) q = q.eq('marketing_content_opt_in', true);
+    const { data, error } = await q;
     if (error) return { error: error.message };
     rows.push(...(data || []));
   }
@@ -77,7 +80,7 @@ async function publishEmail(item) {
   if (!item.subject) return { ok: false, reason: 'e-mail zonder onderwerp' };
   const { recipients, error } = await recipientsForItem(item);
   if (error) return { ok: false, reason: error };
-  if (!recipients || recipients.length === 0) return { ok: false, reason: 'geen opted-in ontvangers in de selectie' };
+  if (!recipients || recipients.length === 0) return { ok: false, reason: item.cold_outreach ? 'geen verzendbare ontvangers in de selectie' : 'geen opted-in ontvangers in de selectie' };
 
   const send = await sendBroadcast({
     subject: item.subject,
