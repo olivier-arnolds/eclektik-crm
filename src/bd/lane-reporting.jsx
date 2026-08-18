@@ -9,6 +9,7 @@
 // that account's 360 in the persistent right pane.
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '../supabase';
+import { fetchAllRows } from '../hooks/usePipelineData';
 import IndustryBreakdown from './industry-breakdown';
 import { apiFetch } from '../lib/apiFetch';
 
@@ -90,7 +91,7 @@ export function useReportingData() {
           .limit(2000),
         supabase.from('companies').select('id,name,type,country,industry,employee_count,annual_revenue').limit(2000),
         supabase.from('account_links').select('account_id,contact_id,role').eq('link_type', 'eclectik_team').limit(2000),
-        supabase.from('contacts').select('id,first_name,last_name,full_name,title').limit(2000),
+        fetchAllRows(() => supabase.from('contacts').select('id,first_name,last_name,full_name,title').order('id', { ascending: true })).then(data => ({ data })),
       ]);
       if (o.error) throw o.error;
       if (c.error) throw c.error;

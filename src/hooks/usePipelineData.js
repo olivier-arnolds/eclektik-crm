@@ -212,8 +212,8 @@ function adaptCalEvent(row) {
 // disappearing from the UI was a real risk (see docs/ux-audit-2026-06-09.md).
 // Raise a limit (or add real pagination) when a warning starts appearing.
 export const FETCH_LIMITS = {
-  companies: 1000,
-  contacts: 1000,
+  companies: 20000,
+  contacts: 20000,
   leads: 500,
   opportunities: 500,
   follow_ups: 500,
@@ -227,7 +227,7 @@ export const FETCH_LIMITS = {
 // To reliably load more we page through with `.range()` until we run dry
 // or reach the per-table cap. `build` must return a FRESH query builder on
 // each call (order/filters applied, but no range/limit).
-async function fetchAllRows(build, cap) {
+export async function fetchAllRows(build, cap = 20000) {
   const PAGE = 1000
   let out = []
   for (let from = 0; from < cap; from += PAGE) {
@@ -268,8 +268,10 @@ export function usePipelineData() {
       { data: tagsRaw },
       { data: contactTagsRaw },
     ] = await Promise.all([
-      supabase.from('companies').select('*').limit(FETCH_LIMITS.companies),
-      supabase.from('contacts').select('*').limit(FETCH_LIMITS.contacts),
+      // companies + contacts pagen via .range() (PostgREST cap ~1000/response),
+      // anders verdwijnen rijen zodra de tabel >1000 wordt (Glint-import aug 2026).
+      fetchAllRows(() => supabase.from('companies').select('*').order('id', { ascending: true }), FETCH_LIMITS.companies).then(data => ({ data })),
+      fetchAllRows(() => supabase.from('contacts').select('*').order('id', { ascending: true }), FETCH_LIMITS.contacts).then(data => ({ data })),
       supabase.from('leads').select('*').order('updated_at', { ascending: false }).limit(FETCH_LIMITS.leads),
       supabase.from('opportunities').select('*').order('updated_at', { ascending: false }).limit(FETCH_LIMITS.opportunities),
       supabase.from('follow_ups').select('*').order('due_date', { ascending: false }).limit(FETCH_LIMITS.follow_ups),

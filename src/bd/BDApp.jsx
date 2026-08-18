@@ -6,6 +6,7 @@ import { useBDData } from './useBDData';
 import { getInboxEmails, getAllMailFolders, getCalendarEventsRange, getTeamsConversations, getTeamsChannelConversations } from '../lib/graph';
 import { syncMyCalendar } from './sync-events';
 import { supabase } from '../supabase';
+import { fetchAllRows } from '../hooks/usePipelineData';
 import Topbar from './topbar';
 import Statusbar from './statusbar';
 import FunnelLane from './lane-funnel';
@@ -187,7 +188,7 @@ export default function BDApp() {
     if (userEmail) {
       try {
         const { data: rawAccs } = await supabase.from('companies').select('id, name, website');
-        const { data: rawCs } = await supabase.from('contacts').select('id, email, company_id').not('email', 'is', null);
+        const rawCs = await fetchAllRows(() => supabase.from('contacts').select('id, email, company_id').not('email', 'is', null).order('id', { ascending: true }));
         await syncMyCalendar({
           userEmail, userName,
           accounts: rawAccs || [],

@@ -19,9 +19,36 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.77.1';
+export const CURRENT_VERSION = '1.77.2';
 
 export const CHANGELOG = [
+  {
+    version: '1.77.2',
+    date: '2026-08-18T19:06:22Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Contacten >1000 volledig laden (paging)',
+    summary:
+      'Na de Glint-import (>1000 contacten) kapte de app de contactenlijst af op ' +
+      '1000 rijen (Supabase geeft standaard max 1000 per query terug) met de melding ' +
+      '"limiet bereikt voor contacts (1000)". Contacten en bedrijven worden nu via ' +
+      '.range()-paging volledig geladen, dus alle records zijn weer zichtbaar.',
+    changes: [
+      'usePipelineData.js: companies + contacts via fetchAllRows() (paging) i.p.v. losse .limit(); FETCH_LIMITS naar 20000; fetchAllRows geëxporteerd.',
+      'BDApp.jsx + lane-accounts.jsx: contacts-fetch voor agenda-sync gepagineerd (haalde eerder ook max 1000 op).',
+      'lane-reporting.jsx: team-contacten gepagineerd (was .limit(2000), kreeg stil max 1000).',
+    ],
+    files: [
+      'src/hooks/usePipelineData.js',
+      'src/bd/BDApp.jsx',
+      'src/bd/lane-accounts.jsx',
+      'src/bd/lane-reporting.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.77.2',
+  },
   {
     version: '1.77.1',
     date: '2026-08-18T09:38:32Z',
