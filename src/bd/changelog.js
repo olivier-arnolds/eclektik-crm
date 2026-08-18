@@ -19,9 +19,38 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.77.2';
+export const CURRENT_VERSION = '1.78.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.78.0',
+    date: '2026-08-18T19:11:50Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Content Calendar: cold outreach + contact_tags-paging',
+    summary:
+      'E-mail-items hebben nu een "Cold outreach"-schakelaar: aan negeert de ' +
+      'opt-in-eis in de cron (voor koude prospects zoals de Glint-lijst), terwijl ' +
+      'afgemelde/do-not-email/inactieve contacten altijd uitgesloten blijven. ' +
+      'Ook gefixt: de contact_tags-koppeltabel werd op 1000 rijen afgekapt waardoor ' +
+      'de prio-tags 0 leken; die wordt nu volledig gepagineerd geladen.',
+    changes: [
+      'content-calendar-view.jsx: checkbox "Cold outreach - negeer de opt-in-eis" (alleen e-mail) met waarschuwing; opgeslagen als item.cold_outreach.',
+      'api/content-calendar-execute.js: recipientsForItem laat bij cold_outreach de opt-in-filter weg (do_not_email/afgemeld/former/inactief blijven uit).',
+      'usePipelineData.js: contact_tags-fetch nu via fetchAllRows() (paging) - loste de "prio-tags tonen 0"-melding op.',
+      'DB: kolom cold_outreach op content_calendar_items (Supabase MCP).',
+    ],
+    files: [
+      'src/bd/content-calendar-view.jsx',
+      'api/content-calendar-execute.js',
+      'src/hooks/usePipelineData.js',
+      'sql/schema_content_calendar_cold_outreach_2026-08-18.sql',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.78.0',
+  },
   {
     version: '1.77.2',
     date: '2026-08-18T19:06:22Z',
