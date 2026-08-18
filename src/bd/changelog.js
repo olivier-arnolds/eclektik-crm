@@ -19,9 +19,32 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.79.2';
+export const CURRENT_VERSION = '1.79.3';
 
 export const CHANGELOG = [
+  {
+    version: '1.79.3',
+    date: '2026-08-18T20:21:24Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'improvement',
+    title: 'E-mail-handtekening: split-layout + bredere balk',
+    summary:
+      'De handtekening is opnieuw ingedeeld: "Eclectik" + tagline aan de linkerkant, ' +
+      'een lijn naar rechts, en het cirkel-icoon rechts. De donkerblauwe balk is ' +
+      'breder (tot 680px). Het icoon staat nu als los, gehost bestand.',
+    changes: [
+      'api/_lib/signatures.js: split-header (wordmark/tagline links, lijn, icoon rechts); balk max-width 600 -> 680.',
+      'public/eclectik-email-icon.png: los wit cirkel-icoon (gehost).',
+    ],
+    files: [
+      'api/_lib/signatures.js',
+      'public/eclectik-email-icon.png',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.79.3',
+  },
   {
     version: '1.79.2',
     date: '2026-08-18T20:09:02Z',
