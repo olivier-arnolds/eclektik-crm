@@ -19,9 +19,40 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.75.0';
+export const CURRENT_VERSION = '1.76.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.76.0',
+    date: '2026-08-18T06:55:29Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Content Calendar: personalisatie-tags + link invoegen',
+    summary:
+      'In de tekst van een e-mail-item staan nu invoegknoppen boven het tekstvak: ' +
+      '"+ Voornaam" en "+ Achternaam" zetten {{first_name}}/{{last_name}} op de cursor ' +
+      '(worden per ontvanger ingevuld), en "🔗 Link invoegen" koppelt een link aan een ' +
+      'geselecteerd woord. Zo hoef je geen kale, lange URL meer in de tekst te plakken en ' +
+      'staat er niet langer een letterlijke placeholder als [Customer Name] in de mail.',
+    changes: [
+      'content-calendar-view.jsx: toolbar boven het tekstvak (alleen bij e-mail, niet na publicatie) met merge-tag- en link-invoegknoppen + uitleg-tip; cursor/selectie wordt netjes hersteld.',
+      'api/content-calendar-execute.js: textToHtml zet [woord](https://…) om naar een echte klikbare <a>; achternaam wordt nu ook uit contacts opgehaald.',
+      'api/_lib/send-broadcast.js: {{last_name}} → Resend {{{LAST_NAME}}}; nieuwe Resend-contacten krijgen ook de achternaam mee.',
+      'broadcast-recipients.js: last_name meegemapt naar het Resend-contactobject.',
+      'api/content-moderate.js: de Criticus flagt merge-tags en [woord](url)-links niet meer als opmaakfout.',
+    ],
+    files: [
+      'src/bd/content-calendar-view.jsx',
+      'api/content-calendar-execute.js',
+      'api/_lib/send-broadcast.js',
+      'src/lib/broadcast-recipients.js',
+      'api/content-moderate.js',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.76.0',
+  },
   {
     version: '1.75.0',
     date: '2026-08-17T14:52:18Z',

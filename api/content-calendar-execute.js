@@ -30,12 +30,19 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 function escapeHtml(s) {
   return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
+// [woord](https://url) -> klikbare link. Draait NA escapeHtml zodat de
+// woord-tekst geëscaped is; & < > in de URL zijn na escape veilig in de href.
+function linkifyMarkdown(escaped) {
+  return escaped.replace(/\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)/g,
+    '<a href="$2" style="color:#2563eb;text-decoration:underline">$1</a>');
+}
 // Plain-text body -> simpele HTML (dubbele newline = alinea, enkele = <br>).
-// {{first_name}} blijft staan; sendBroadcast zet het om naar Resend's merge-tag.
+// {{first_name}}/{{last_name}} blijven staan; sendBroadcast zet ze om naar
+// Resend's merge-tags. [woord](url) wordt hier al een echte <a>.
 function textToHtml(text) {
   const paras = String(text || '')
     .split(/\n{2,}/)
-    .map(p => `<p>${escapeHtml(p).replace(/\n/g, '<br>')}</p>`)
+    .map(p => `<p>${linkifyMarkdown(escapeHtml(p)).replace(/\n/g, '<br>')}</p>`)
     .join('');
   return `<!doctype html><html><body style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#222222">${paras}</body></html>`;
 }
@@ -73,7 +80,7 @@ async function recipientsForItem(item) {
   const rows = [];
   for (let i = 0; i < ids.length; i += 500) {
     const { data, error } = await supabase.from('contacts')
-      .select('id, email, first_name, do_not_email, former, stage')
+      .select('id, email, first_name, last_name, do_not_email, former, stage')
       .in('id', ids.slice(i, i + 500))
       .eq('marketing_content_opt_in', true)
       .not('email', 'is', null);

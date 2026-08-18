@@ -15,6 +15,7 @@ export function toResendContacts(recipients) {
     out.push({
       email,
       first_name: r.first_name || '',
+      last_name: r.last_name || '',
       unsubscribed: !!r.do_not_email,
       contact_id: r.contact_id || r.id || null,
     });

@@ -76,6 +76,7 @@ EXTERNE-COMMUNICATIEREGELS (CLAUDE.md §2b — schending = faal-reden):
 - Geen bullet-lijsten (- of *) tenzij de context daar expliciet om vraagt.
 - Maximaal 1 emoji, alleen als het natuurlijk past. Geen emoji-overload.
 - Geen filler-openingen ("Hopelijk gaat het goed!" / "I hope this message finds you well").
+- Toegestane opmaak-tokens die vóór verzending automatisch worden omgezet en dus GEEN schending zijn: de personalisatie-merge-tags {{first_name}} en {{last_name}}, en links geschreven als [woord](https://…). Beoordeel deze niet als markdown- of opmaakfout.
 
 BEOORDELING:
 - verdict = "fail" als er onderbouwingsproblemen zijn (verzonnen cijfers/bronnen), §2b-schendingen, de bronhiërarchie omgedraaid is, of de invalshoek zwak/niet uitgewerkt is.
