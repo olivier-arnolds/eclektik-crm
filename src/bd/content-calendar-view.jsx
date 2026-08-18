@@ -608,7 +608,7 @@ function ContentItemModal({ item, contacts = [], accounts = [], allTags = [], on
     <div onClick={onClose}
       style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}>
       <div onClick={e => e.stopPropagation()}
-        style={{ background: 'var(--bg-1)', border: '0.5px solid var(--sep)', borderRadius: 12, width: 'min(620px, 100%)', maxHeight: '90vh', overflow: 'auto', boxShadow: '0 12px 40px rgba(0,0,0,0.25)' }}>
+        style={{ background: 'var(--bg-1)', border: '0.5px solid var(--sep)', borderRadius: 12, width: 'min(920px, 95vw)', maxHeight: '92vh', overflow: 'auto', boxShadow: '0 12px 40px rgba(0,0,0,0.25)' }}>
         <div style={{ padding: '14px 18px', borderBottom: '0.5px solid var(--sep)', display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{ width: 10, height: 10, borderRadius: 3, background: ch?.color || 'var(--text-3)' }} />
           <span style={{ fontSize: 12, fontWeight: 700, color: ch?.color }}>{ch?.label || item.channel}</span>
@@ -618,24 +618,23 @@ function ContentItemModal({ item, contacts = [], accounts = [], allTags = [], on
         </div>
 
         <div style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 14 }}>
-          {item.type === 'email' && (
-            <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <span style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>Onderwerp</span>
-              <input value={subject} onChange={e => setSubject(e.target.value)} disabled={published}
-                style={{ padding: '6px 8px', borderRadius: 6, border: '0.5px solid var(--sep)', background: 'var(--bg-2)', color: 'var(--text-1)', fontSize: 13 }} />
-            </label>
-          )}
           {isEmail && (
-            <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-              <span style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>Afzender</span>
-              <select value={fromEmail} disabled={published}
-                onChange={e => { setFromEmail(e.target.value); setFromName(senderNameFor(e.target.value)); }}
-                style={{ padding: '6px 8px', borderRadius: 6, border: '0.5px solid var(--sep)', background: 'var(--bg-2)', color: 'var(--text-1)', fontSize: 13 }}>
-                {SENDERS.map(s => <option key={s.email} value={s.email}>{s.name} &lt;{s.email}&gt;</option>)}
-                {fromEmail && !SENDERS.some(s => s.email === fromEmail) && <option value={fromEmail}>{fromName} &lt;{fromEmail}&gt;</option>}
-              </select>
-              <span style={{ fontSize: 11, color: 'var(--text-3)' }}>De mail komt van dit geverifieerde eclectik.co-adres.</span>
-            </label>
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: '2 1 300px' }}>
+                <span style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>Onderwerp</span>
+                <input value={subject} onChange={e => setSubject(e.target.value)} disabled={published}
+                  style={{ padding: '6px 8px', borderRadius: 6, border: '0.5px solid var(--sep)', background: 'var(--bg-2)', color: 'var(--text-1)', fontSize: 13 }} />
+              </label>
+              <label style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: '1 1 240px' }}>
+                <span style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>Afzender</span>
+                <select value={fromEmail} disabled={published}
+                  onChange={e => { setFromEmail(e.target.value); setFromName(senderNameFor(e.target.value)); }}
+                  style={{ padding: '6px 8px', borderRadius: 6, border: '0.5px solid var(--sep)', background: 'var(--bg-2)', color: 'var(--text-1)', fontSize: 13 }}>
+                  {SENDERS.map(s => <option key={s.email} value={s.email}>{s.name} &lt;{s.email}&gt;</option>)}
+                  {fromEmail && !SENDERS.some(s => s.email === fromEmail) && <option value={fromEmail}>{fromName} &lt;{fromEmail}&gt;</option>}
+                </select>
+              </label>
+            </div>
           )}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             <span style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>Tekst</span>
