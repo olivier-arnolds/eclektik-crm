@@ -3,6 +3,7 @@ import { sendBroadcast } from './_lib/send-broadcast.js';
 import { createLinkedInPost } from './_lib/unipile-post.js';
 import { sendLinkedInDM } from './_lib/unipile-dm.js';
 import { contentTextToHtml } from './_lib/content-html.js';
+import { appendSignature } from './_lib/signatures.js';
 import { createClient } from '@supabase/supabase-js';
 
 // Alle content-LinkedIn-posts gaan via Marco's account (afspraak). Overschrijfbaar
@@ -84,7 +85,7 @@ async function publishEmail(item) {
 
   const send = await sendBroadcast({
     subject: item.subject,
-    html_body: contentTextToHtml(item.body),
+    html_body: appendSignature(contentTextToHtml(item.body), item.from_email),
     recipients,
     from_email: item.from_email || undefined,
     from_name: item.from_name || undefined,

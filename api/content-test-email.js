@@ -1,5 +1,6 @@
 import { requireUser } from './_lib/guard.js';
 import { contentTextToHtml } from './_lib/content-html.js';
+import { appendSignature } from './_lib/signatures.js';
 
 // POST /api/content-test-email
 // Body: { subject, body, to, from_email?, from_name?, channel? }
@@ -48,7 +49,7 @@ export default async function handler(req, res) {
   const from = `${fromName} <${fromEmail}>`;
 
   const filled = fillMergeTags(body, sampleFirstName(toAddr));
-  const html = contentTextToHtml(filled);
+  const html = appendSignature(contentTextToHtml(filled), fromEmail);
   const prefix = channel ? `[TEST ${String(channel).toUpperCase()}] ` : '[TEST] ';
 
   const resp = await fetch(RESEND_API, {
