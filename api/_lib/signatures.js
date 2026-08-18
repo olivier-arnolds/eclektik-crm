@@ -3,9 +3,9 @@
 // inline styles, echte <a>-links (geen afbeelding nodig voor de tekst/links).
 // Het merk-logo kan later als gehoste <img> worden toegevoegd (LOGO_URL).
 
-// Gehost vanuit public/ op het CRM-domein. Bevat het beeldmerk + "Eclectik" +
-// tagline (wit, transparante achtergrond) - dus geen losse HTML-wordmark meer.
-const LOGO_URL = 'https://crm.eclectik-insights.co/eclectik-email-logo.png';
+// Los cirkel-icoon (wit op transparant), gehost vanuit public/ op het CRM-domein.
+// De wordmark "Eclectik" + tagline staan als tekst links; het icoon rechts.
+const ICON_URL = 'https://crm.eclectik-insights.co/eclectik-email-icon.png';
 
 const C = {
   bg: '#0f2537',       // donkere navy
@@ -22,19 +22,27 @@ function link(href, text, extra = '') {
 }
 
 function marcoSignature() {
-  // Met logo: het beeld bevat wordmark + tagline, dus geen losse tekstkop.
-  // Zonder logo: nette tekst-fallback (wordmark + tagline).
-  const header = LOGO_URL
-    ? `<tr><td style="padding:22px 24px 4px"><img src="${LOGO_URL}" alt="Eclectik - Insights that make organizations thrive" width="280" style="display:block;border:0;width:280px;max-width:100%;height:auto" /></td></tr>`
-    : `<tr><td style="padding:22px 24px 0">
-    <div style="font-size:26px;font-weight:700;color:${C.white};letter-spacing:0.5px">Eclectik</div>
-    <div style="border-top:1px solid ${C.line};margin:8px 0 6px"></div>
-    <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:${C.teal};text-transform:uppercase">Insights that make organizations thrive</div>
+  // Split-header: "Eclectik" + tagline links, een lijn naar rechts, het cirkel-
+  // icoon rechts. Icoon als gehoste afbeelding; wordmark/tagline als tekst.
+  const iconCell = ICON_URL
+    ? `<td style="vertical-align:middle;padding-left:16px;text-align:right;white-space:nowrap"><img src="${ICON_URL}" alt="Eclectik" width="52" height="53" style="display:inline-block;border:0;width:52px;height:auto" /></td>`
+    : '';
+  const header = `<tr><td style="padding:24px 28px 0">
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%">
+      <tr>
+        <td style="vertical-align:middle;white-space:nowrap;padding-right:16px">
+          <div style="font-size:30px;font-weight:700;color:${C.white};letter-spacing:0.5px;line-height:1.1">Eclectik</div>
+          <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:${C.teal};text-transform:uppercase;margin-top:6px">Insights that make organizations thrive</div>
+        </td>
+        <td style="vertical-align:middle;width:100%"><div style="border-top:1px solid ${C.line};font-size:0;line-height:0">&nbsp;</div></td>
+        ${iconCell}
+      </tr>
+    </table>
   </td></tr>`;
   return `
-<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;background:${C.bg};border-radius:8px;font-family:Arial,Helvetica,sans-serif">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:680px;background:${C.bg};border-radius:8px;font-family:Arial,Helvetica,sans-serif">
   ${header}
-  <tr><td style="padding:10px 24px 22px">
+  <tr><td style="padding:16px 28px 24px">
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%">
       <tr>
         <td style="vertical-align:top;padding-right:16px">
