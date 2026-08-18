@@ -19,9 +19,32 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.79.0';
+export const CURRENT_VERSION = '1.79.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.79.1',
+    date: '2026-08-18T20:04:14Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'improvement',
+    title: 'E-mail-handtekening: Eclectik-logo toegevoegd',
+    summary:
+      'Het Eclectik-logo (beeldmerk + wordmark + tagline, wit op transparant) staat ' +
+      'nu bovenaan Marco\'s e-mail-handtekening. Gehost vanuit public/ op het CRM-' +
+      'domein, dus het laadt in elke mailclient. Vervangt de losse HTML-wordmark.',
+    changes: [
+      'public/eclectik-email-logo.png: gehost logo-bestand.',
+      'api/_lib/signatures.js: LOGO_URL ingevuld; logo-afbeelding als kop i.p.v. tekst-wordmark/tagline (tekst blijft als fallback).',
+    ],
+    files: [
+      'public/eclectik-email-logo.png',
+      'api/_lib/signatures.js',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.79.1',
+  },
   {
     version: '1.79.0',
     date: '2026-08-18T19:56:56Z',

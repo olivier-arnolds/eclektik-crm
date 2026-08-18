@@ -3,9 +3,9 @@
 // inline styles, echte <a>-links (geen afbeelding nodig voor de tekst/links).
 // Het merk-logo kan later als gehoste <img> worden toegevoegd (LOGO_URL).
 
-// Zet dit op de gehoste PNG zodra die in public/ staat, bv:
-// 'https://crm.eclectik-insights.co/eclectik-email-logo.png'. Leeg = geen logo.
-const LOGO_URL = '';
+// Gehost vanuit public/ op het CRM-domein. Bevat het beeldmerk + "Eclectik" +
+// tagline (wit, transparante achtergrond) - dus geen losse HTML-wordmark meer.
+const LOGO_URL = 'https://crm.eclectik-insights.co/eclectik-email-logo.png';
 
 const C = {
   bg: '#0f2537',       // donkere navy
@@ -22,18 +22,19 @@ function link(href, text, extra = '') {
 }
 
 function marcoSignature() {
-  const logo = LOGO_URL
-    ? `<tr><td style="padding:20px 24px 0"><img src="${LOGO_URL}" alt="Eclectik" width="140" style="display:block;border:0;max-width:140px;height:auto" /></td></tr>`
-    : '';
-  return `
-<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;background:${C.bg};border-radius:8px;font-family:Arial,Helvetica,sans-serif">
-  ${logo}
-  <tr><td style="padding:22px 24px 0">
+  // Met logo: het beeld bevat wordmark + tagline, dus geen losse tekstkop.
+  // Zonder logo: nette tekst-fallback (wordmark + tagline).
+  const header = LOGO_URL
+    ? `<tr><td style="padding:22px 24px 4px"><img src="${LOGO_URL}" alt="Eclectik - Insights that make organizations thrive" width="280" style="display:block;border:0;width:280px;max-width:100%;height:auto" /></td></tr>`
+    : `<tr><td style="padding:22px 24px 0">
     <div style="font-size:26px;font-weight:700;color:${C.white};letter-spacing:0.5px">Eclectik</div>
     <div style="border-top:1px solid ${C.line};margin:8px 0 6px"></div>
-    <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:${C.teal};text-transform:uppercase">Insights that help organizations thrive</div>
-  </td></tr>
-  <tr><td style="padding:14px 24px 22px">
+    <div style="font-size:11px;font-weight:700;letter-spacing:1.5px;color:${C.teal};text-transform:uppercase">Insights that make organizations thrive</div>
+  </td></tr>`;
+  return `
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;background:${C.bg};border-radius:8px;font-family:Arial,Helvetica,sans-serif">
+  ${header}
+  <tr><td style="padding:10px 24px 22px">
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%">
       <tr>
         <td style="vertical-align:top;padding-right:16px">
