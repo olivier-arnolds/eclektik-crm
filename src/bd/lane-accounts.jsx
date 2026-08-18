@@ -236,6 +236,7 @@ function LaneCollapseButton({ onToggle }) {
 import ExpandableRow from './expandable-row';
 import { InlineContactDetail, InlineMeetingDetail, InlineDealDetail, InlineAccountDetails, InlineTaskDetail } from './inline-details';
 import { supabase } from '../supabase';
+import { fetchAllRows } from '../hooks/usePipelineData';
 import { syncMyCalendar, getSharedEventsForAccount, buildDedupKey } from './sync-events';
 import { getChannelMessages } from '../lib/graph';
 import { useAuth } from '../lib/auth';
@@ -751,7 +752,7 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
       if (userEmail && localStorage.getItem('graph_token')) {
         // Get raw accounts+contacts for company resolution (with company_id directly)
         const { data: rawAccs } = await supabase.from('companies').select('id, name, website, linkedin_url');
-        const { data: rawCs } = await supabase.from('contacts').select('id, email, company_id').not('email', 'is', null);
+        const rawCs = await fetchAllRows(() => supabase.from('contacts').select('id, email, company_id').not('email', 'is', null).order('id', { ascending: true }));
         await syncMyCalendar({
           userEmail, userName,
           accounts: rawAccs || [],
