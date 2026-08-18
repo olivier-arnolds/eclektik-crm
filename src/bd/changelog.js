@@ -19,9 +19,29 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.79.1';
+export const CURRENT_VERSION = '1.79.2';
 
 export const CHANGELOG = [
+  {
+    version: '1.79.2',
+    date: '2026-08-18T20:09:02Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'improvement',
+    title: 'E-mail-handtekening: ook onder afzender Olivier',
+    summary:
+      'Marco\'s handtekening hangt nu ook onder afzender Olivier, zodat Olivier ' +
+      'kan testen/versturen zonder Marco\'s afzenderadres te gebruiken.',
+    changes: [
+      'api/_lib/signatures.js: olivier@eclectik.co gekoppeld aan dezelfde handtekening als marco@eclectik.co.',
+    ],
+    files: [
+      'api/_lib/signatures.js',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.79.2',
+  },
   {
     version: '1.79.1',
     date: '2026-08-18T20:04:14Z',

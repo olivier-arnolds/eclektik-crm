@@ -67,9 +67,12 @@ function marcoSignature() {
 </table>`;
 }
 
-// email (lowercase) -> handtekening-HTML. Alleen Marco voor nu.
+// email (lowercase) -> handtekening-HTML. Marco's handtekening hangt ook onder
+// Olivier's afzender (zodat Olivier namens/als Marco kan testen en versturen).
+const MARCO = marcoSignature();
 const SIGNATURES = {
-  'marco@eclectik.co': marcoSignature(),
+  'marco@eclectik.co': MARCO,
+  'olivier@eclectik.co': MARCO,
 };
 
 export function signatureFor(fromEmail) {
