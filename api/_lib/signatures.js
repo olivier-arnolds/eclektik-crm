@@ -26,21 +26,22 @@ function link(href, text, extra = '') {
 function marcoSignature() {
   // Split-header: wordmark ("Eclectik" + tagline) linksboven, een lijn onderlangs
   // naar rechts, het cirkel-icoon (blauwe foto) rechts. Beide uit het logo gesneden.
-  const header = `<tr><td style="padding:24px 28px 2px">
+  const header = `<tr><td bgcolor="${C.bg}" style="padding:24px 28px 6px;background:${C.bg}">
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%">
       <tr>
-        <td style="vertical-align:bottom;white-space:nowrap;padding-right:14px">
-          <img src="${WORDMARK_URL}" alt="Eclectik - Insights that make organizations thrive" width="300" style="display:block;border:0;width:300px;max-width:100%;height:auto" />
+        <td style="vertical-align:bottom;white-space:nowrap;padding-right:18px">
+          <img src="${WORDMARK_URL}" alt="Eclectik - Insights that make organizations thrive" width="300" style="display:block;border:0;width:300px;max-width:100%;height:auto;padding-bottom:6px" />
         </td>
-        <td style="vertical-align:bottom;width:100%;padding:0 14px 10px"><div style="border-top:1px solid ${C.line};font-size:0;line-height:0">&nbsp;</div></td>
-        <td style="vertical-align:middle;text-align:right;white-space:nowrap"><img src="${ICON_URL}" alt="Eclectik" width="66" style="display:inline-block;border:0;width:66px;height:auto" /></td>
+        <td style="vertical-align:bottom;width:100%;text-align:right;border-bottom:1px solid ${C.line};padding-bottom:8px">
+          <img src="${ICON_URL}" alt="Eclectik" width="66" style="display:inline-block;border:0;width:66px;height:auto;vertical-align:bottom" />
+        </td>
       </tr>
     </table>
   </td></tr>`;
   return `
-<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:680px;background:${C.bg};border-radius:8px;font-family:Arial,Helvetica,sans-serif">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" bgcolor="${C.bg}" style="width:100%;max-width:680px;background:${C.bg};border-radius:8px;font-family:Arial,Helvetica,sans-serif">
   ${header}
-  <tr><td style="padding:16px 28px 24px">
+  <tr><td bgcolor="${C.bg}" style="padding:16px 28px 24px;background:${C.bg}">
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%">
       <tr>
         <td style="vertical-align:top;padding-right:16px">

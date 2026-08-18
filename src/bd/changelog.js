@@ -19,9 +19,31 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.79.4';
+export const CURRENT_VERSION = '1.79.5';
 
 export const CHANGELOG = [
+  {
+    version: '1.79.5',
+    date: '2026-08-18T20:41:01Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'E-mail-handtekening: witte letters altijd zichtbaar + lijn lager',
+    summary:
+      'De witte wordmark verdween in mailclients die de CSS-achtergrond negeren ' +
+      '(o.a. Outlook): witte letters op wit. Nu is de donkere achtergrond via het ' +
+      'bgcolor-attribuut afgedwongen, dus altijd zichtbaar. De lijn staat lager ' +
+      '(op taglinehoogte) en loopt door tot onder het icoon.',
+    changes: [
+      'api/_lib/signatures.js: bgcolor-attribuut op de tabel en cellen (Outlook-proof); lijn als border-bottom op taglinehoogte, doorlopend tot onder het icoon.',
+    ],
+    files: [
+      'api/_lib/signatures.js',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.79.5',
+  },
   {
     version: '1.79.4',
     date: '2026-08-18T20:33:33Z',
