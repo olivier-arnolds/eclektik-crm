@@ -19,9 +19,36 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.78.0';
+export const CURRENT_VERSION = '1.79.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.79.0',
+    date: '2026-08-18T19:56:56Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Content Calendar: automatische e-mail-handtekening (Marco)',
+    summary:
+      'Kies je bij een e-mail-item afzender Marco, dan wordt automatisch zijn ' +
+      'Eclectik-handtekening onder de mail geplaatst (bij verzending én in de ' +
+      'testmail), boven de afmeldlink. E-mail-veilige HTML met echte klikbare ' +
+      'links (Services, About, Resources, website, LinkedIn, e-mail). Het merk-' +
+      'logo kan later als gehoste afbeelding worden toegevoegd.',
+    changes: [
+      'api/_lib/signatures.js: nieuwe gedeelde signature-module; per afzender een handtekening (nu Marco). appendSignature() plakt de HTML vóór </body>.',
+      'api/content-calendar-execute.js + api/content-test-email.js: handtekening automatisch toegevoegd op basis van from_email.',
+      'Logo volgt als gehoste PNG (LOGO_URL in signatures.js) zodra het bestand beschikbaar is.',
+    ],
+    files: [
+      'api/_lib/signatures.js',
+      'api/content-calendar-execute.js',
+      'api/content-test-email.js',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.79.0',
+  },
   {
     version: '1.78.0',
     date: '2026-08-18T19:11:50Z',
