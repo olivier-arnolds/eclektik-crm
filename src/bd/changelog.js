@@ -19,9 +19,30 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.77.0';
+export const CURRENT_VERSION = '1.77.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.77.1',
+    date: '2026-08-18T09:38:32Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'improvement',
+    title: 'Content Calendar: breder draft-scherm',
+    summary:
+      'Het detail-/draftscherm is breder (tot 920px) zodat je minder hoeft te ' +
+      'scrollen om alles te lezen of een knop te bereiken. Onderwerp en Afzender ' +
+      'staan nu naast elkaar, wat een rij scheelt.',
+    changes: [
+      'content-calendar-view.jsx: modal-breedte min(920px, 95vw) (was 620px), maxHeight 92vh; onderwerp + afzender op één rij (flexwrap op smalle schermen).',
+    ],
+    files: [
+      'src/bd/content-calendar-view.jsx',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.77.1',
+  },
   {
     version: '1.77.0',
     date: '2026-08-18T09:18:53Z',
