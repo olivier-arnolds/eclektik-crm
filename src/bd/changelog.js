@@ -19,9 +19,30 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.79.8';
+export const CURRENT_VERSION = '1.79.9';
 
 export const CHANGELOG = [
+  {
+    version: '1.79.9',
+    date: '2026-08-18T21:09:21Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'improvement',
+    title: 'E-mail-handtekening: volledig logo-icoon met witte lijnen',
+    summary:
+      'Het volledige logo-icoon (alle vier de cirkels, witte lijnen + foto) staat ' +
+      'nu rechts in de kop, i.p.v. alleen de losse bubbel. Wordmark blijft 15% ' +
+      'kleiner en de lijn loopt van de E van THRIVE naar de onderste ronding van het icoon.',
+    changes: [
+      'public/eclectik-email-header.png: volledig icoon (witte lijnen, uit het logo) i.p.v. de losse bubbel.',
+    ],
+    files: [
+      'public/eclectik-email-header.png',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.79.9',
+  },
   {
     version: '1.79.8',
     date: '2026-08-18T21:05:28Z',
