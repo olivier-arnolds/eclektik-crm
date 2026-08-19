@@ -57,7 +57,7 @@ function ensureUnsubscribe(html) {
   return /<\/body>/i.test(h) ? h.replace(/<\/body>/i, footer + '</body>') : h + footer;
 }
 
-export async function sendBroadcast({ subject, html_body, from_name, from_email, reply_to, recipients, campaign_name, sent_by }) {
+export async function sendBroadcast({ subject, html_body, from_name, from_email, reply_to, recipients, campaign_name, sent_by, ignoreCooldown = false }) {
   if (!supabase) return { ok: false, status: 500, error: 'Supabase not configured' };
   if (!process.env.RESEND_API_KEY) return { ok: false, status: 500, error: 'RESEND_API_KEY not configured' };
   if (!subject || !html_body || !Array.isArray(recipients) || recipients.length === 0)
@@ -72,6 +72,29 @@ export async function sendBroadcast({ subject, html_body, from_name, from_email,
 
   const contacts = toResendContacts(recipients).filter(c => !c.unsubscribed);
   if (contacts.length === 0) return { ok: false, status: 400, error: 'geen verzendbare ontvangers' };
+
+  // 5-daagse cooldown (anti-spam): sla contacten over die < N dagen geleden een
+  // marketing-mail kregen (contacts.last_email_date). Uitzetbaar via ignoreCooldown.
+  const COOLDOWN_DAYS = Number(process.env.EMAIL_COOLDOWN_DAYS) || 5;
+  let toSend = contacts;
+  let cooledDown = 0;
+  if (!ignoreCooldown && COOLDOWN_DAYS > 0) {
+    const cutoff = new Date(Date.now() - COOLDOWN_DAYS * 86400000).toISOString().slice(0, 10);
+    const emails = contacts.map(c => c.email);
+    const recent = new Set();
+    for (let i = 0; i < emails.length; i += 500) {
+      const { data } = await supabase.from('contacts')
+        .select('email,last_email_date').in('email', emails.slice(i, i + 500));
+      for (const r of (data || [])) {
+        if (r.last_email_date && String(r.last_email_date) >= cutoff) recent.add(String(r.email).toLowerCase());
+      }
+    }
+    toSend = contacts.filter(c => !recent.has(c.email.toLowerCase()));
+    cooledDown = contacts.length - toSend.length;
+    if (toSend.length === 0) {
+      return { ok: false, status: 400, error: `alle ontvangers zijn < ${COOLDOWN_DAYS} dagen geleden gemaild (cooldown)`, detail: { cooled_down: cooledDown } };
+    }
+  }
 
   // 1) Segment voor deze verzending = de selectie (statische lijst).
   const segName = `${campaign_name || subject} (${new Date().toISOString().slice(0, 10)})`.slice(0, 100);
@@ -108,7 +131,7 @@ export async function sendBroadcast({ subject, html_body, from_name, from_email,
   }
 
   const CONCURRENCY = 4;
-  let todo = contacts.slice();
+  let todo = toSend.slice();
   for (let sweep = 0; sweep < 3 && todo.length; sweep++) {
     const retryable = [];
     for (let i = 0; i < todo.length; i += CONCURRENCY) {
@@ -186,11 +209,23 @@ export async function sendBroadcast({ subject, html_body, from_name, from_email,
     }
   }
 
+  // 6) last_email_date bijwerken voor de verstuurde contacten (cooldown-basis).
+  const todayDate = sentAt.slice(0, 10);
+  const placedIds = placed.map((p) => p.contact_id).filter(Boolean);
+  for (let i = 0; i < placedIds.length; i += 500) {
+    const { error } = await supabase.from('contacts').update({ last_email_date: todayDate }).in('id', placedIds.slice(i, i + 500));
+    if (error) console.error('[send-broadcast] last_email_date update faalde', error.message);
+  }
+  const placedEmailsNoId = placed.filter((p) => !p.contact_id).map((p) => p.email);
+  for (let i = 0; i < placedEmailsNoId.length; i += 500) {
+    await supabase.from('contacts').update({ last_email_date: todayDate }).in('email', placedEmailsNoId.slice(i, i + 500));
+  }
+
   return {
     ok: true, status: 200,
     result: {
       broadcast_id: bc.data.id, segment_id: segmentId,
-      recipients: inSeg, skipped_unsubscribed: skipped,
+      recipients: inSeg, skipped_unsubscribed: skipped, cooled_down: cooledDown,
       failed: failedEmails.length, failed_emails: failedEmails.slice(0, 50),
       campaign_id: camp?.id || null,
     },

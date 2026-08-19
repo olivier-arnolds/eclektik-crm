@@ -49,7 +49,15 @@ export default async function handler(req, res) {
   const from = `${fromName} <${fromEmail}>`;
 
   const filled = fillMergeTags(body, sampleFirstName(toAddr));
-  const html = appendSignature(contentTextToHtml(filled), fromEmail);
+  let html = appendSignature(contentTextToHtml(filled), fromEmail);
+  // Voorbeeld-afmeldlink zodat de test de echte mail weerspiegelt. In een echte
+  // broadcast vult Resend hier de werkende afmeld-URL in ({{{RESEND_UNSUBSCRIBE_URL}}}).
+  const footer = '<p style="font-size:12px;color:#888888;text-align:center;margin:28px 0 0">'
+    + 'You are receiving this email because you are in contact with Eclektik. '
+    + '<a href="https://www.eclectik.co" style="color:#888888">Unsubscribe</a>. '
+    + '<span style="color:#aaaaaa">(testvoorbeeld - in de echte mail werkt deze afmeldlink)</span>'
+    + '</p>';
+  html = /<\/body>/i.test(html) ? html.replace(/<\/body>/i, footer + '</body>') : html + footer;
   const prefix = channel ? `[TEST ${String(channel).toUpperCase()}] ` : '[TEST] ';
 
   const resp = await fetch(RESEND_API, {
