@@ -103,6 +103,7 @@ async function publishEmail(item) {
     const send = await sendBroadcast({
       subject: item.subject, html_body, recipients: batch, from_email, from_name,
       campaign_name: `[${channel}] ${item.subject} (drip)`,
+      contentItemId: item.id,
     });
     if (!send.ok) return { ok: false, reason: send.error || 'drip-verzending mislukt' };
     // Alle geprobeerde adressen als 'gedaan' markeren (ook globaal-afgemelde die
@@ -120,6 +121,7 @@ async function publishEmail(item) {
   const send = await sendBroadcast({
     subject: item.subject, html_body, recipients, from_email, from_name,
     campaign_name: `[${channel}] ${item.subject}`,
+    contentItemId: item.id,
   });
   if (!send.ok) return { ok: false, reason: send.error || 'broadcast mislukt' };
   return { ok: true, done: true, external_message_id: send.result?.broadcast_id || null, recipients: send.result?.recipients ?? recipients.length };
