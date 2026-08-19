@@ -19,9 +19,32 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.79.9';
+export const CURRENT_VERSION = '1.79.10';
 
 export const CHANGELOG = [
+  {
+    version: '1.79.10',
+    date: '2026-08-19T06:44:46Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'improvement',
+    title: 'E-mail-handtekening: afgeronde hoeken van het blauwe blok',
+    summary:
+      'Het blauwe blok heeft weer afgeronde hoeken zoals in de eerste versie: ' +
+      'de bovenhoeken zijn in de kop-afbeelding gebakken (transparant) en de ' +
+      'onderhoeken via CSS afgerond.',
+    changes: [
+      'public/eclectik-email-header.png: afgeronde bovenhoeken (transparant).',
+      'api/_lib/signatures.js: navy-achtergrond alleen op het onderblok; onderhoeken border-radius; kop-cel transparant zodat de ronde hoeken doorkijken.',
+    ],
+    files: [
+      'public/eclectik-email-header.png',
+      'api/_lib/signatures.js',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.79.10',
+  },
   {
     version: '1.79.9',
     date: '2026-08-18T21:09:21Z',
