@@ -19,9 +19,33 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.81.0';
+export const CURRENT_VERSION = '1.82.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.82.0',
+    date: '2026-08-19T13:56:11Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Content Calendar: e-mail engagement (opens/kliks) in de rapportage',
+    summary: 'De rapportage-popup toont per e-mailitem hoeveel ontvangers openden en klikten. Hergebruikt de Resend-webhook + campaign_sends; broadcast-opens/kliks worden nu voor het eerst geteld.',
+    changes: [
+      'DB: campaigns.content_item_id (harde koppeling) + RPC content_item_engagement(), via Supabase MCP.',
+      'send-broadcast.js + content-calendar-execute.js: elke content-verzending wordt aan zijn content-item gekoppeld.',
+      'marketing-webhook.js: broadcast-fallback telt opens/kliks van broadcasts (voorheen genegeerd), tolerant voor dubbele ontvanger-rijen.',
+      'content-calendar-view.jsx: engagement-blok (geopend/geklikt %) in de rapportage-popup.',
+      'Eenmalige backfill voor bestaande content-items (nu no-op: nog geen verstuurde content-mails).',
+    ],
+    files: [
+      'sql/schema_campaigns_content_item_2026-08-19.sql',
+      'sql/data_backfill_campaigns_content_item_2026-08-19.sql',
+      'api/_lib/send-broadcast.js',
+      'api/content-calendar-execute.js',
+      'api/marketing-webhook.js',
+      'src/bd/content-calendar-view.jsx',
+    ],
+    gitTag: 'v1.82.0',
+  },
   {
     version: '1.81.0',
     date: '2026-08-19T11:35:58Z',
