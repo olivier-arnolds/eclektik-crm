@@ -19,9 +19,29 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.80.1';
+export const CURRENT_VERSION = '1.81.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.81.0',
+    date: '2026-08-19T11:35:58Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Content Calendar: rapportage-popup per contentstuk',
+    summary: 'Elk kaartje krijgt rechtsboven een 📊-icoon dat een popup opent met pijplijn-status, verzendresultaat en inhoud (gestructureerd + optionele AI-samenvatting). Draait op bestaande data; geen nieuwe tracking.',
+    changes: [
+      'content-calendar-logic.js: pure itemReport() met waarschuwingsregels (geen datum / verstreken / geen doelgroep / geen ontvanger) + 11 unit-tests.',
+      'content-calendar-view.jsx: nieuwe ContentReportModal + 📊-icoon op ItemCard (weekweergave + tray met ongeplande stukken; maandweergave heeft geen kaartjes). Klik op het icoon opent de rapportage, niet de editor.',
+      'api/content-summary.js: nieuw endpoint (requireUser-guard, Haiku) voor een AI-samenvatting op verzoek.',
+    ],
+    files: [
+      'src/bd/content-calendar-logic.js',
+      'src/bd/content-calendar-logic.test.js',
+      'src/bd/content-calendar-view.jsx',
+      'api/content-summary.js',
+    ],
+    gitTag: 'v1.81.0',
+  },
   {
     version: '1.80.1',
     date: '2026-08-19T10:49:51Z',
