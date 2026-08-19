@@ -57,7 +57,7 @@ function ensureUnsubscribe(html) {
   return /<\/body>/i.test(h) ? h.replace(/<\/body>/i, footer + '</body>') : h + footer;
 }
 
-export async function sendBroadcast({ subject, html_body, from_name, from_email, reply_to, recipients, campaign_name, sent_by, ignoreCooldown = false }) {
+export async function sendBroadcast({ subject, html_body, from_name, from_email, reply_to, recipients, campaign_name, sent_by, ignoreCooldown = false, contentItemId = null }) {
   if (!supabase) return { ok: false, status: 500, error: 'Supabase not configured' };
   if (!process.env.RESEND_API_KEY) return { ok: false, status: 500, error: 'RESEND_API_KEY not configured' };
   if (!subject || !html_body || !Array.isArray(recipients) || recipients.length === 0)
@@ -190,6 +190,7 @@ export async function sendBroadcast({ subject, html_body, from_name, from_email,
     from_name: fromName, from_email: fromEmail, reply_to: reply_to || null,
     status: 'sent', recipient_count: inSeg, sent_by: sent_by || null,
     channel: 'broadcast', resend_broadcast_id: bc.data.id, resend_audience_id: segmentId,
+    content_item_id: contentItemId || null,
     sent_at: sentAt,
   }).select('id').single();
   if (campErr) console.error('[send-broadcast] campaigns insert faalde', campErr.message);
