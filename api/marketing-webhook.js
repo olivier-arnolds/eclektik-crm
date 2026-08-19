@@ -100,12 +100,14 @@ export default async function handler(req, res) {
         .eq('resend_broadcast_id', broadcastId)
         .maybeSingle();
       if (camp) {
-        const { data: sendRow } = await supabase
+        const { data: sendRows } = await supabase
           .from('campaign_sends')
           .select('id, open_count, click_count')
           .eq('campaign_id', camp.id)
           .eq('recipient_email', recipientEmail)
-          .maybeSingle();
+          .order('sent_at', { ascending: false })
+          .limit(1);
+        const sendRow = sendRows?.[0];
         if (sendRow) { row = sendRow; stampMessageId = true; }
       }
     }
