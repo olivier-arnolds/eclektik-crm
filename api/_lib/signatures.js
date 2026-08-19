@@ -24,13 +24,18 @@ function link(href, text, extra = '') {
   return `<a href="${href}" style="font-size:12px;color:${C.teal};text-decoration:underline;${extra}">${text}</a>`;
 }
 
-function marcoSignature() {
+// Gedeelde handtekening-opbouw; alleen het naam-blok (naam/functie/e-mail/
+// persoonlijke LinkedIn) verschilt per persoon. Kop + LEARN/CONNECT zijn gelijk.
+// person = { name, titleLines:[...], email, linkedin }
+function personSignature(person) {
   // Kop = één samengestelde afbeelding (wordmark + tagline + lijn + icoon op navy),
   // met afgeronde bovenhoeken in het beeld gebakken (transparant). Geen navy op
   // deze cel, zodat die transparante hoeken de mail-achtergrond tonen (rond effect).
   const header = `<tr><td style="padding:0;line-height:0;font-size:0">
     <a href="https://www.eclectik.co" style="text-decoration:none"><img src="${HEADER_URL}" alt="Eclectik - Insights that make organizations thrive" width="680" style="display:block;border:0;width:100%;max-width:680px;height:auto" /></a>
   </td></tr>`;
+  const titleHtml = (person.titleLines || [])
+    .map(t => `<div style="font-size:12px;color:${C.muted}">${t}</div>`).join('');
   return `
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:680px;border-radius:10px;font-family:Arial,Helvetica,sans-serif">
   ${header}
@@ -40,13 +45,12 @@ function marcoSignature() {
         <td style="vertical-align:top;padding-right:16px">
           <table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
             <td style="vertical-align:top;padding-right:10px">
-              <a href="https://www.linkedin.com/in/marcovangelder/" style="display:inline-block;width:22px;height:22px;background:${C.liBlue};border-radius:4px;text-align:center;line-height:22px;color:${C.white};font-size:12px;font-weight:700;text-decoration:none">in</a>
+              <a href="${person.linkedin}" style="display:inline-block;width:22px;height:22px;background:${C.liBlue};border-radius:4px;text-align:center;line-height:22px;color:${C.white};font-size:12px;font-weight:700;text-decoration:none">in</a>
             </td>
             <td style="vertical-align:top">
-              <div style="font-size:13px;font-weight:700;color:${C.white};letter-spacing:0.5px">MARCO VAN GELDER</div>
-              <div style="font-size:12px;color:${C.muted}">Founder</div>
-              <div style="font-size:12px;color:${C.muted}">Client Strategy &amp; Innovation</div>
-              ${link('mailto:marco@eclectik.co', 'marco@eclectik.co')}
+              <div style="font-size:13px;font-weight:700;color:${C.white};letter-spacing:0.5px">${person.name}</div>
+              ${titleHtml}
+              ${link('mailto:' + person.email, person.email)}
             </td>
           </tr></table>
         </td>
@@ -67,12 +71,20 @@ function marcoSignature() {
 </table>`;
 }
 
-// email (lowercase) -> handtekening-HTML. Marco's handtekening hangt ook onder
-// Olivier's afzender (zodat Olivier namens/als Marco kan testen en versturen).
-const MARCO = marcoSignature();
+// email (lowercase) -> handtekening-HTML.
 const SIGNATURES = {
-  'marco@eclectik.co': MARCO,
-  'olivier@eclectik.co': MARCO,
+  'marco@eclectik.co': personSignature({
+    name: 'MARCO VAN GELDER',
+    titleLines: ['Founder', 'Client Strategy &amp; Innovation'],
+    email: 'marco@eclectik.co',
+    linkedin: 'https://www.linkedin.com/in/marcovangelder/',
+  }),
+  'olivier@eclectik.co': personSignature({
+    name: 'OLIVIER ARNOLDS',
+    titleLines: ['Chief Marketing Officer'],
+    email: 'olivier@eclectik.co',
+    linkedin: 'https://www.linkedin.com/in/olivierarnolds/',
+  }),
 };
 
 export function signatureFor(fromEmail) {

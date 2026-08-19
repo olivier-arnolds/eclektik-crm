@@ -19,9 +19,30 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.79.10';
+export const CURRENT_VERSION = '1.79.11';
 
 export const CHANGELOG = [
+  {
+    version: '1.79.11',
+    date: '2026-08-19T06:48:40Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'E-mail-handtekening: eigen versie voor Olivier',
+    summary:
+      'Afzender Olivier krijgt nu een eigen handtekening (Olivier Arnolds, Chief ' +
+      'Marketing Officer, olivier@eclectik.co, persoonlijke LinkedIn) i.p.v. die ' +
+      'van Marco. Zelfde logo-kop en LEARN/CONNECT; alleen het naam-blok verschilt.',
+    changes: [
+      'api/_lib/signatures.js: personSignature() gedeeld; aparte handtekeningen voor marco@ en olivier@ (naam/functie/e-mail/persoonlijke LinkedIn per persoon).',
+    ],
+    files: [
+      'api/_lib/signatures.js',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.79.11',
+  },
   {
     version: '1.79.10',
     date: '2026-08-19T06:44:46Z',
