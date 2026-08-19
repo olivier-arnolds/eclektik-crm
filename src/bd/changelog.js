@@ -19,9 +19,31 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.79.12';
+export const CURRENT_VERSION = '1.79.13';
 
 export const CHANGELOG = [
+  {
+    version: '1.79.13',
+    date: '2026-08-19T07:02:18Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'improvement',
+    title: 'Yarmilla-handtekening: sage-kleur naar #d3e5da',
+    summary:
+      'De achtergrondkleur van Yarmilla\'s handtekening is aangepast naar de ' +
+      'gewenste tint #d3e5da (in zowel de kop-afbeelding als het onderblok).',
+    changes: [
+      'public/eclectik-email-header-light.png: achtergrond #d3e5da.',
+      'api/_lib/signatures.js: THEME_LIGHT.bg = #d3e5da.',
+    ],
+    files: [
+      'public/eclectik-email-header-light.png',
+      'api/_lib/signatures.js',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.79.13',
+  },
   {
     version: '1.79.12',
     date: '2026-08-19T06:56:54Z',

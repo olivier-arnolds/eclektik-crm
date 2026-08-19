@@ -14,7 +14,7 @@ const THEME_DARK = {
 };
 const THEME_LIGHT = {
   headerUrl: 'https://crm.eclectik-insights.co/eclectik-email-header-light.png',
-  bg: '#d4e2db', name: '#0f2537', title: '#33424c', label: '#2f8f8c',
+  bg: '#d3e5da', name: '#0f2537', title: '#33424c', label: '#2f8f8c',
   link: '#0f2537', email: '#2f8f8c', li: '#0a66c2',
 };
 
