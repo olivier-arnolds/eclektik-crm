@@ -76,6 +76,7 @@ export default function ContentCalendarView({ contacts = [], accounts = [], allT
   const [anchor, setAnchor] = useState(() => new Date());
   const [draggingId, setDraggingId] = useState(null);
   const [openItem, setOpenItem] = useState(null); // item-object voor de detail-modal
+  const [reportItem, setReportItem] = useState(null); // item-object voor de rapportage-popup
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -199,13 +200,13 @@ export default function ContentCalendarView({ contacts = [], accounts = [], allT
 
           {mode === 'week' ? (
             <WeekGrid channels={CHANNELS} weekDays={weekDays} weekIndex={weekIndex} today={today}
-              {...dragProps} onMoveToDate={moveToDate} onOpen={setOpenItem} items={items} />
+              {...dragProps} onMoveToDate={moveToDate} onOpen={setOpenItem} onReport={setReportItem} items={items} />
           ) : (
             <MonthGrid anchor={anchor} scheduled={scheduled} today={today}
               onPickDay={(d) => { setAnchor(d); setMode('week'); }} />
           )}
 
-          <UnscheduledTray items={unscheduled} {...dragProps} onMoveToDate={moveToDate} onOpen={setOpenItem} />
+          <UnscheduledTray items={unscheduled} {...dragProps} onMoveToDate={moveToDate} onOpen={setOpenItem} onReport={setReportItem} />
         </>
       )}
 
@@ -218,6 +219,10 @@ export default function ContentCalendarView({ contacts = [], accounts = [], allT
           onClose={() => setOpenItem(null)}
           onSaved={(fields) => { patchLocal(openItem.id, fields); }}
         />
+      )}
+
+      {reportItem && (
+        <ContentReportModal item={reportItem} contacts={contacts} onClose={() => setReportItem(null)} />
       )}
     </div>
   );
@@ -370,7 +375,7 @@ function ContentReportModal({ item, contacts = [], onClose }) {
   );
 }
 
-function ItemCard({ it, draggable = false, dragging = false, setDraggingId, onOpen }) {
+function ItemCard({ it, draggable = false, dragging = false, setDraggingId, onOpen, onReport }) {
   const ch = CHANNELS.find(c => c.key === it.channel);
   const st = STATUS_STYLE[it.status] || STATUS_STYLE.draft;
   const canDrag = draggable && it.status !== 'published';
@@ -386,8 +391,17 @@ function ItemCard({ it, draggable = false, dragging = false, setDraggingId, onOp
         padding: '4px 6px', display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0,
         cursor: canDrag ? 'grab' : 'pointer', opacity: dragging ? 0.4 : 1,
       }}>
-      <span style={{ fontSize: 8, textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'var(--font-mono)', color: ch?.color || 'var(--text-2)', fontWeight: 700 }}>
-        {TYPE_BADGE[it.type] || it.type}
+      <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        <span style={{ fontSize: 8, textTransform: 'uppercase', letterSpacing: '0.06em', fontFamily: 'var(--font-mono)', color: ch?.color || 'var(--text-2)', fontWeight: 700 }}>
+          {TYPE_BADGE[it.type] || it.type}
+        </span>
+        <button
+          title="Rapportage bekijken"
+          onClick={(e) => { e.stopPropagation(); onReport && onReport(it); }}
+          onDragStart={(e) => e.preventDefault()}
+          style={{ marginLeft: 'auto', border: 'none', background: 'transparent', cursor: 'pointer', padding: 0, lineHeight: 1, fontSize: 11, color: 'var(--text-3)' }}>
+          📊
+        </button>
       </span>
       <span style={{ fontSize: 11, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
         {it.subject || it.body?.slice(0, 60) || '(geen inhoud)'}
@@ -396,7 +410,7 @@ function ItemCard({ it, draggable = false, dragging = false, setDraggingId, onOp
   );
 }
 
-function WeekGrid({ channels, weekDays, weekIndex, today, draggingId, setDraggingId, onMoveToDate, onOpen, items }) {
+function WeekGrid({ channels, weekDays, weekIndex, today, draggingId, setDraggingId, onMoveToDate, onOpen, onReport, items }) {
   const [overCell, setOverCell] = useState(null); // `${channel}|${dayIdx}`
   const draggingItem = items.find(it => it.id === draggingId);
   const gridCols = `80px repeat(${weekDays.length}, 1fr)`;
@@ -440,7 +454,7 @@ function WeekGrid({ channels, weekDays, weekIndex, today, draggingId, setDraggin
                   outline: isOver ? '1px dashed var(--accent)' : 'none', outlineOffset: -2,
                 }}>
                 {cell.map(it => (
-                  <ItemCard key={it.id} it={it} draggable dragging={draggingId === it.id} setDraggingId={setDraggingId} onOpen={onOpen} />
+                  <ItemCard key={it.id} it={it} draggable dragging={draggingId === it.id} setDraggingId={setDraggingId} onOpen={onOpen} onReport={onReport} />
                 ))}
               </div>
             );
@@ -511,7 +525,7 @@ function MonthGrid({ anchor, scheduled, today, onPickDay }) {
   );
 }
 
-function UnscheduledTray({ items, draggingId, setDraggingId, onMoveToDate, onOpen }) {
+function UnscheduledTray({ items, draggingId, setDraggingId, onMoveToDate, onOpen, onReport }) {
   const [over, setOver] = useState(false);
   return (
     <div style={{ marginTop: 16 }}>
@@ -535,7 +549,7 @@ function UnscheduledTray({ items, draggingId, setDraggingId, onMoveToDate, onOpe
         )}
         {(items || []).map(it => (
           <div key={it.id} style={{ width: 180 }}>
-            <ItemCard it={it} draggable dragging={draggingId === it.id} setDraggingId={setDraggingId} onOpen={onOpen} />
+            <ItemCard it={it} draggable dragging={draggingId === it.id} setDraggingId={setDraggingId} onOpen={onOpen} onReport={onReport} />
           </div>
         ))}
       </div>
