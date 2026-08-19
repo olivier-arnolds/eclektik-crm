@@ -25,14 +25,16 @@ function link(href, text, extra = '') {
 }
 
 function marcoSignature() {
-  // Kop = één samengestelde afbeelding (wordmark + tagline + lijn + icoon op navy).
-  const header = `<tr><td bgcolor="${C.bg}" style="padding:0;line-height:0;background:${C.bg};border-radius:8px 8px 0 0">
+  // Kop = één samengestelde afbeelding (wordmark + tagline + lijn + icoon op navy),
+  // met afgeronde bovenhoeken in het beeld gebakken (transparant). Geen navy op
+  // deze cel, zodat die transparante hoeken de mail-achtergrond tonen (rond effect).
+  const header = `<tr><td style="padding:0;line-height:0;font-size:0">
     <a href="https://www.eclectik.co" style="text-decoration:none"><img src="${HEADER_URL}" alt="Eclectik - Insights that make organizations thrive" width="680" style="display:block;border:0;width:100%;max-width:680px;height:auto" /></a>
   </td></tr>`;
   return `
-<table role="presentation" cellpadding="0" cellspacing="0" border="0" bgcolor="${C.bg}" style="width:100%;max-width:680px;background:${C.bg};border-radius:8px;font-family:Arial,Helvetica,sans-serif">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:680px;border-radius:10px;font-family:Arial,Helvetica,sans-serif">
   ${header}
-  <tr><td bgcolor="${C.bg}" style="padding:16px 28px 24px;background:${C.bg}">
+  <tr><td bgcolor="${C.bg}" style="padding:16px 28px 24px;background:${C.bg};border-radius:0 0 10px 10px">
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="width:100%">
       <tr>
         <td style="vertical-align:top;padding-right:16px">
