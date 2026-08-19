@@ -19,9 +19,33 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.79.11';
+export const CURRENT_VERSION = '1.79.12';
 
 export const CHANGELOG = [
+  {
+    version: '1.79.12',
+    date: '2026-08-19T06:56:54Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'E-mail-handtekening: eigen (lichte) versie voor Yarmilla',
+    summary:
+      'Afzender Yarmilla krijgt een handtekening in haar eigen kleurstelling: ' +
+      'sage-groene achtergrond, navy logoletters, teal tagline en het icoon met ' +
+      'blauwe lijnen. De module ondersteunt nu themas (donker voor Marco/Olivier, ' +
+      'licht voor Yarmilla).',
+    changes: [
+      'public/eclectik-email-header-light.png: lichte kop (sage bg, navy letters, teal tagline, blauw-lijnen icoon).',
+      'api/_lib/signatures.js: THEME_DARK/THEME_LIGHT; personSignature(person, theme); yarmilla@ toegevoegd met het lichte thema.',
+    ],
+    files: [
+      'public/eclectik-email-header-light.png',
+      'api/_lib/signatures.js',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.79.12',
+  },
   {
     version: '1.79.11',
     date: '2026-08-19T06:48:40Z',
