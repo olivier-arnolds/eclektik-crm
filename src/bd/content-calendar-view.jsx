@@ -249,6 +249,19 @@ function ContentReportModal({ item, contacts = [], onClose }) {
   const [aiLoading, setAiLoading] = useState(false);
   const [aiErr, setAiErr] = useState(null);
 
+  const [eng, setEng] = useState(null);        // { recipients, opened, clicked } | null
+  const [engLoading, setEngLoading] = useState(false);
+
+  useEffect(() => {
+    if (item.type !== 'email') return;
+    let cancelled = false;
+    setEngLoading(true);
+    supabase.rpc('content_item_engagement', { p_item_id: item.id })
+      .then(({ data }) => { if (!cancelled) setEng(Array.isArray(data) ? (data[0] || null) : (data || null)); })
+      .finally(() => { if (!cancelled) setEngLoading(false); });
+    return () => { cancelled = true; };
+  }, [item.id, item.type]);
+
   const rep = itemReport(item, { now: new Date() });
   const ch = CHANNELS.find(c => c.key === item.channel);
 
@@ -345,6 +358,27 @@ function ContentReportModal({ item, contacts = [], onClose }) {
                     ? <div style={{ color: 'var(--text-1)' }}>{rep.send.dripSent} verstuurd tot nu toe (drip loopt nog)</div>
                     : <div style={{ color: 'var(--text-3)' }}>Nog niet verstuurd</div>)}
               {rep.send.externalId && <div style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-3)' }}>ID: {rep.send.externalId}</div>}
+            </div>
+          )}
+
+          {/* Blok 2b: Engagement (alleen e-mail, alleen als er verstuurd is) */}
+          {item.type === 'email' && rep.send && (
+            <div style={box}>
+              <span style={label}>Engagement</span>
+              {engLoading && <div style={{ color: 'var(--text-3)' }}>Engagement laden…</div>}
+              {!engLoading && eng && eng.recipients > 0 && (
+                <>
+                  <div style={{ color: 'var(--text-1)' }}>
+                    Geopend: {eng.opened}/{eng.recipients} ({Math.round((eng.opened / eng.recipients) * 100)}%)
+                  </div>
+                  <div style={{ color: 'var(--text-1)' }}>
+                    Geklikt: {eng.clicked}/{eng.recipients} ({Math.round((eng.clicked / eng.recipients) * 100)}%)
+                  </div>
+                </>
+              )}
+              {!engLoading && (!eng || eng.recipients === 0) && (
+                <div style={{ color: 'var(--text-3)' }}>Nog geen opens/kliks geregistreerd.</div>
+              )}
             </div>
           )}
 
