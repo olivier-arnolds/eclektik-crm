@@ -3,7 +3,7 @@ import { supabase } from '../supabase';
 import { apiFetch } from '../lib/apiFetch';
 import { useAuth } from '../lib/auth';
 import { SENDERS, DEFAULT_SENDER, senderNameFor } from '../lib/senders';
-import { isApproved, deriveStatus, statusAfterMove } from './content-calendar-logic';
+import { isApproved, deriveStatus, statusAfterMove, itemReport } from './content-calendar-logic';
 import ContentAudiencePicker from './content-audience-picker';
 
 // Content Calendar — gedrafte content-items per kanaal (GLINT/SEER/ROI/ROE) met
@@ -219,6 +219,153 @@ export default function ContentCalendarView({ contacts = [], accounts = [], allT
           onSaved={(fields) => { patchLocal(openItem.id, fields); }}
         />
       )}
+    </div>
+  );
+}
+
+// Kleine datum-notatie voor de rapportage (nl-NL, dag-maand-tijd).
+function fmtReportDate(iso) {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return null;
+  return d.toLocaleString('nl-NL', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+}
+
+const REPORT_STAGES = [
+  { key: 'draft', label: 'Concept' },
+  { key: 'approved', label: 'Goedgekeurd' },
+  { key: 'scheduled', label: 'Gepland' },
+  { key: 'published', label: 'Gepubliceerd' },
+];
+
+// Rapportage-popup voor één contentstuk. Los van de editor (ContentItemModal).
+function ContentReportModal({ item, contacts = [], onClose }) {
+  const [aiSummary, setAiSummary] = useState(null);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiErr, setAiErr] = useState(null);
+
+  const rep = itemReport(item, { now: new Date() });
+  const ch = CHANNELS.find(c => c.key === item.channel);
+
+  // Afzenderregel (kanaal-afhankelijk; bewust buiten de pure itemReport gehouden).
+  let senderLine = null;
+  if (item.type === 'email') {
+    senderLine = [item.from_name, item.from_email].filter(Boolean).join(' · ') || null;
+  } else {
+    senderLine = `LinkedIn van ${linkedinAccountLabel(item.linkedin_account_id)}`;
+  }
+
+  // Doelgroep-omschrijving voor het inhoud-blok.
+  let audience = null;
+  if (item.type === 'linkedin_dm') {
+    const c = contacts.find(x => x.id === item.recipient_contact_id);
+    audience = c ? (c.name || c.full_name || c.email || 'gekozen contact') : (item.recipient_contact_id ? 'gekozen contact' : 'geen ontvanger');
+  } else if (item.target_tag) {
+    audience = `tag: ${item.target_tag}`;
+  } else if (item.audience_summary) {
+    audience = item.audience_summary;
+  } else if (Array.isArray(item.target_contact_ids) && item.target_contact_ids.length) {
+    audience = `${item.target_contact_ids.length} contact${item.target_contact_ids.length === 1 ? '' : 'en'}`;
+  }
+
+  async function runSummary() {
+    setAiLoading(true); setAiErr(null);
+    try {
+      const resp = await apiFetch('/api/content-summary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ channel: item.channel, type: item.type, subject: item.subject, body: item.body }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data?.error || `HTTP ${resp.status}`);
+      setAiSummary(data.summary || '(geen samenvatting)');
+    } catch (e) {
+      setAiErr(e.message);
+    } finally {
+      setAiLoading(false);
+    }
+  }
+
+  const box = { fontSize: 13, border: '0.5px solid var(--sep)', borderRadius: 8, padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 };
+  const label = { fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)' };
+
+  return (
+    <div onClick={onClose}
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, padding: 16 }}>
+      <div onClick={e => e.stopPropagation()}
+        style={{ background: 'var(--bg-1)', border: '0.5px solid var(--sep)', borderRadius: 12, width: 'min(560px, 95vw)', maxHeight: '90vh', overflow: 'auto', boxShadow: '0 12px 40px rgba(0,0,0,0.25)' }}>
+        <div style={{ padding: '14px 18px', borderBottom: '0.5px solid var(--sep)', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ width: 10, height: 10, borderRadius: 3, background: ch?.color || 'var(--text-3)' }} />
+          <span style={{ fontSize: 12, fontWeight: 700, color: ch?.color }}>{ch?.label || item.channel}</span>
+          <span style={{ fontSize: 10, textTransform: 'uppercase', fontFamily: 'var(--font-mono)', color: 'var(--text-3)' }}>{TYPE_BADGE[item.type] || item.type}</span>
+          <span style={{ marginLeft: 'auto', fontSize: 13, fontWeight: 700 }}>Rapportage</span>
+          <button className="btn-ghost tiny" onClick={onClose} style={{ marginLeft: 4 }}>✕</button>
+        </div>
+
+        <div style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {/* Blok 1: Status */}
+          <div style={box}>
+            <span style={label}>Status</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+              {REPORT_STAGES.map((s, i) => (
+                <span key={s.key} style={{
+                  fontSize: 11, padding: '2px 8px', borderRadius: 999,
+                  border: `1px solid ${i <= rep.stageIndex ? (ch?.color || 'var(--accent)') : 'var(--sep)'}`,
+                  background: i === rep.stageIndex ? (ch?.color || 'var(--accent)') : 'transparent',
+                  color: i === rep.stageIndex ? '#fff' : (i < rep.stageIndex ? 'var(--text-1)' : 'var(--text-3)'),
+                  fontWeight: i === rep.stageIndex ? 700 : 500,
+                }}>{s.label}</span>
+              ))}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2, color: 'var(--text-2)', fontSize: 12 }}>
+              {fmtReportDate(rep.timeline.created_at) && <div>Aangemaakt: {fmtReportDate(rep.timeline.created_at)}</div>}
+              {fmtReportDate(rep.timeline.scheduled_at) && <div>Gepland voor: {fmtReportDate(rep.timeline.scheduled_at)}</div>}
+              {fmtReportDate(rep.timeline.published_at) && <div>Gepubliceerd: {fmtReportDate(rep.timeline.published_at)}</div>}
+            </div>
+            {rep.warnings.map((w, i) => (
+              <div key={i} style={{ fontSize: 12, color: w.level === 'block' ? '#dc2626' : '#d97706' }}>
+                {w.level === 'block' ? '⛔ ' : '⚠️ '}{w.message}
+              </div>
+            ))}
+          </div>
+
+          {/* Blok 2: Verzendresultaat */}
+          {rep.send && (
+            <div style={box}>
+              <span style={label}>Verzendresultaat</span>
+              {senderLine && <div style={{ color: 'var(--text-2)', fontSize: 12 }}>Afzender: {senderLine}</div>}
+              {rep.send.recipientCount != null
+                ? <div style={{ color: 'var(--text-1)' }}>Verstuurd aan {rep.send.recipientCount} contact{rep.send.recipientCount === 1 ? '' : 'en'}</div>
+                : (rep.send.dripSent > 0
+                    ? <div style={{ color: 'var(--text-1)' }}>{rep.send.dripSent} verstuurd tot nu toe (drip loopt nog)</div>
+                    : <div style={{ color: 'var(--text-3)' }}>Nog niet verstuurd</div>)}
+              {rep.send.externalId && <div style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-3)' }}>ID: {rep.send.externalId}</div>}
+            </div>
+          )}
+
+          {/* Blok 3: Inhoud */}
+          <div style={box}>
+            <span style={label}>Inhoud</span>
+            {audience && <div style={{ color: 'var(--text-2)', fontSize: 12 }}>Doelgroep: {audience}</div>}
+            {item.subject && <div style={{ color: 'var(--text-1)', fontWeight: 600 }}>{item.subject}</div>}
+            <div style={{ color: 'var(--text-2)', whiteSpace: 'pre-wrap' }}>
+              {(item.body || '(geen inhoud)').slice(0, 240)}{(item.body || '').length > 240 ? '…' : ''}
+            </div>
+            {item.source_note && <div style={{ fontSize: 11, color: 'var(--text-3)', fontStyle: 'italic' }}>Bron: {item.source_note}</div>}
+
+            <div style={{ borderTop: '0.5px solid var(--sep)', paddingTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {aiSummary
+                ? <div style={{ color: 'var(--text-1)' }}>{aiSummary}</div>
+                : (
+                  <button className="btn-ghost tiny" style={{ alignSelf: 'flex-start' }} disabled={aiLoading} onClick={runSummary}>
+                    {aiLoading ? 'Samenvatten…' : 'AI-samenvatting'}
+                  </button>
+                )}
+              {aiErr && <div style={{ fontSize: 12, color: '#dc2626' }}>Samenvatting mislukt: {aiErr}</div>}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
