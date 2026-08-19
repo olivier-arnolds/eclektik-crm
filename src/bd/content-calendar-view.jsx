@@ -222,7 +222,7 @@ export default function ContentCalendarView({ contacts = [], accounts = [], allT
       )}
 
       {reportItem && (
-        <ContentReportModal item={reportItem} contacts={contacts} onClose={() => setReportItem(null)} />
+        <ContentReportModal item={items.find(it => it.id === reportItem.id) || reportItem} contacts={contacts} onClose={() => setReportItem(null)} />
       )}
     </div>
   );
