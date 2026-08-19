@@ -77,22 +77,52 @@ async function recipientsForItem(item) {
   return { recipients: active };
 }
 
+// Cold-outreach dript per run een klein aantal (default 7 -> ~28/uur bij de */15-cron)
+// om spamdetectie te minimaliseren. Instelbaar via env CONTENT_DRIP_PER_RUN.
+const DRIP_PER_RUN = Math.max(1, Number(process.env.CONTENT_DRIP_PER_RUN) || 7);
+
 async function publishEmail(item) {
   if (!item.subject) return { ok: false, reason: 'e-mail zonder onderwerp' };
   const { recipients, error } = await recipientsForItem(item);
   if (error) return { ok: false, reason: error };
   if (!recipients || recipients.length === 0) return { ok: false, reason: item.cold_outreach ? 'geen verzendbare ontvangers in de selectie' : 'geen opted-in ontvangers in de selectie' };
 
+  const html_body = appendSignature(contentTextToHtml(item.body), item.from_email);
+  const from_email = item.from_email || undefined;
+  const from_name = item.from_name || undefined;
+  const channel = String(item.channel).toUpperCase();
+
+  // COLD OUTREACH -> gedoseerd versturen (drip), voortgang in sent_emails.
+  if (item.cold_outreach) {
+    const already = new Set((item.sent_emails || []).map(e => String(e).toLowerCase()));
+    const remaining = recipients.filter(r => !already.has(String(r.email).toLowerCase()));
+    if (remaining.length === 0) {
+      return { ok: true, done: true, recipients: already.size };
+    }
+    const batch = remaining.slice(0, DRIP_PER_RUN);
+    const send = await sendBroadcast({
+      subject: item.subject, html_body, recipients: batch, from_email, from_name,
+      campaign_name: `[${channel}] ${item.subject} (drip)`,
+    });
+    if (!send.ok) return { ok: false, reason: send.error || 'drip-verzending mislukt' };
+    // Alle geprobeerde adressen als 'gedaan' markeren (ook globaal-afgemelde die
+    // sendBroadcast oversloeg), zodat ze niet elke run opnieuw worden geprobeerd.
+    const sent_emails = [...(item.sent_emails || []), ...batch.map(b => b.email)];
+    const done = remaining.length <= batch.length;
+    return {
+      ok: true, done, partial: !done, sent_emails,
+      recipients: sent_emails.length, total: recipients.length,
+      external_message_id: send.result?.broadcast_id || null,
+    };
+  }
+
+  // Normaal (opted-in) -> één broadcast ineens.
   const send = await sendBroadcast({
-    subject: item.subject,
-    html_body: appendSignature(contentTextToHtml(item.body), item.from_email),
-    recipients,
-    from_email: item.from_email || undefined,
-    from_name: item.from_name || undefined,
-    campaign_name: `[${String(item.channel).toUpperCase()}] ${item.subject}`,
+    subject: item.subject, html_body, recipients, from_email, from_name,
+    campaign_name: `[${channel}] ${item.subject}`,
   });
   if (!send.ok) return { ok: false, reason: send.error || 'broadcast mislukt' };
-  return { ok: true, external_message_id: send.result?.broadcast_id || null, recipients: send.result?.recipients ?? recipients.length };
+  return { ok: true, done: true, external_message_id: send.result?.broadcast_id || null, recipients: send.result?.recipients ?? recipients.length };
 }
 
 async function publishLinkedInPost(item) {
@@ -143,14 +173,31 @@ export default async function handler(req, res) {
     } catch (e) {
       outcome = { ok: false, reason: e.message };
     }
-    if (outcome.ok) {
+    if (outcome.ok && outcome.partial) {
+      // Drip nog niet klaar: alleen voortgang opslaan, item blijft 'scheduled'
+      // zodat de volgende run de volgende batch verstuurt.
       const { error: upErr } = await supabase.from('content_calendar_items').update({
+        sent_emails: outcome.sent_emails,
+        updated_at: new Date().toISOString(),
+      }).eq('id', item.id);
+      if (upErr) {
+        console.error('[content-calendar-execute] drip-batch verzonden maar voortgang-update faalde', item.id, upErr.message);
+        stats.failed++;
+        details.push({ id: item.id, channel: item.channel, status: 'drip-sent-but-not-tracked', error: upErr.message });
+      } else {
+        stats.sending = (stats.sending || 0) + 1;
+        details.push({ id: item.id, channel: item.channel, status: 'sending (drip)', sent: outcome.recipients, total: outcome.total });
+      }
+    } else if (outcome.ok) {
+      const upd = {
         status: 'published',
         published_at: new Date().toISOString(),
         external_message_id: outcome.external_message_id,
         published_recipient_count: outcome.recipients ?? null,
         updated_at: new Date().toISOString(),
-      }).eq('id', item.id);
+      };
+      if (outcome.sent_emails) upd.sent_emails = outcome.sent_emails;
+      const { error: upErr } = await supabase.from('content_calendar_items').update(upd).eq('id', item.id);
       if (upErr) {
         // Verzonden maar niet kunnen bijwerken: luid loggen (risico op dubbele verzending
         // bij de volgende run). Handmatig op 'published' zetten indien nodig.

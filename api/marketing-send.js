@@ -85,8 +85,26 @@ export default async function handler(req, res) {
   let failed = 0;
   let aborted = false;
   let abortReason = null;
+  let cooledDown = 0;
+
+  // 5-daagse cooldown (anti-spam): contacten die < N dagen geleden een marketing-
+  // mail kregen (contacts.last_email_date) worden overgeslagen. Uit via ?ignoreCooldown=1.
+  const COOLDOWN_DAYS = Number(process.env.EMAIL_COOLDOWN_DAYS) || 5;
+  const ignoreCooldown = req.query?.ignoreCooldown === '1' || req.body?.ignoreCooldown === true;
+  const onCooldown = new Set();
+  if (!ignoreCooldown && COOLDOWN_DAYS > 0) {
+    const cutoff = new Date(Date.now() - COOLDOWN_DAYS * 86400000).toISOString().slice(0, 10);
+    const emails = recipients.map(r => String(r.email || '').toLowerCase()).filter(Boolean);
+    for (let i = 0; i < emails.length; i += 500) {
+      const { data } = await supabase.from('contacts').select('email,last_email_date').in('email', emails.slice(i, i + 500));
+      for (const c of (data || [])) {
+        if (c.last_email_date && String(c.last_email_date) >= cutoff) onCooldown.add(String(c.email).toLowerCase());
+      }
+    }
+  }
 
   for (const r of recipients) {
+    if (onCooldown.has(String(r.email || '').toLowerCase())) { cooledDown++; continue; }
     // Server-side templating: nieuwe clients sturen alleen 'vars' per
     // recipient (klein); legacy/test paden kunnen nog volledige 'html'
     // meesturen. Voor 88+ recipients zou inline html een 413
@@ -111,6 +129,10 @@ export default async function handler(req, res) {
         status: 'sent',
         sent_at: new Date().toISOString(),
       });
+      // last_email_date bijwerken (cooldown-basis).
+      const today = new Date().toISOString().slice(0, 10);
+      if (r.contact_id) await supabase.from('contacts').update({ last_email_date: today }).eq('id', r.contact_id);
+      else if (r.email) await supabase.from('contacts').update({ last_email_date: today }).eq('email', r.email);
     } else if (result.status === 401 || result.status === 403) {
       aborted = true;
       abortReason = 'auth';
@@ -155,6 +177,7 @@ export default async function handler(req, res) {
     campaign_id: cid,
     sent: succeeded,
     failed,
+    cooled_down: cooledDown,
     aborted,
     abortReason,
     status: finalStatus,

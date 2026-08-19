@@ -19,9 +19,40 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.79.13';
+export const CURRENT_VERSION = '1.80.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.80.0',
+    date: '2026-08-19T08:03:10Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'E-mail: drip-verzending, 5-daagse cooldown + afmeldlink in testmail',
+    summary:
+      'Cold-outreach e-mails worden nu gedoseerd verstuurd (drip, ~28/uur, instelbaar) ' +
+      'om spamdetectie te minimaliseren i.p.v. 470 in één keer. Nieuwe kolom ' +
+      'contacts.last_email_date wordt bij elke marketing-mail gezet; contacten die ' +
+      '< 5 dagen geleden gemaild zijn worden overgeslagen (anti-spam). De testmail ' +
+      'toont nu ook een (voorbeeld-)afmeldlink.',
+    changes: [
+      'api/content-calendar-execute.js: cold-outreach dript per run (CONTENT_DRIP_PER_RUN, default 7); voortgang in content_calendar_items.sent_emails; item blijft scheduled tot alles verstuurd is.',
+      'api/_lib/send-broadcast.js + api/marketing-send.js: 5-daagse cooldown (EMAIL_COOLDOWN_DAYS) o.b.v. contacts.last_email_date; last_email_date wordt na verzending gezet; cooled_down in het resultaat.',
+      'api/content-test-email.js: voorbeeld-afmeldlink onderaan de testmail.',
+      'DB: content_calendar_items.sent_emails (jsonb) + contacts.last_email_date (date), via Supabase MCP.',
+    ],
+    files: [
+      'api/content-calendar-execute.js',
+      'api/_lib/send-broadcast.js',
+      'api/marketing-send.js',
+      'api/content-test-email.js',
+      'sql/schema_content_drip_sent_emails_2026-08-19.sql',
+      'sql/schema_contacts_last_email_date_2026-08-19.sql',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.80.0',
+  },
   {
     version: '1.79.13',
     date: '2026-08-19T07:02:18Z',
