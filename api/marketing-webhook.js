@@ -78,15 +78,43 @@ export default async function handler(req, res) {
   const messageId = event?.data?.email_id || event?.data?.id;
   if (!messageId) return res.status(200).json({ ignored: 'no message id' });
 
-  const { data: row } = await supabase
+  // 1) Directe match op de per-mail-id (transactionele mails + reeds-gestempelde broadcasts).
+  let { data: row } = await supabase
     .from('campaign_sends')
     .select('id, open_count, click_count')
     .eq('resend_message_id', messageId)
     .maybeSingle();
+
+  // 2) Broadcast-fallback: geen directe match, maar het event hoort bij een broadcast.
+  //    Resolve de campagne via resend_broadcast_id en de send-rij via ontvanger-e-mail,
+  //    en stempel resend_message_id zodat vervolg-events direct matchen.
+  let stampMessageId = false;
+  if (!row) {
+    const broadcastId = event?.data?.broadcast_id;
+    const to = event?.data?.to;
+    const recipientEmail = Array.isArray(to) ? to[0] : to;
+    if (broadcastId && recipientEmail) {
+      const { data: camp } = await supabase
+        .from('campaigns')
+        .select('id')
+        .eq('resend_broadcast_id', broadcastId)
+        .maybeSingle();
+      if (camp) {
+        const { data: sendRow } = await supabase
+          .from('campaign_sends')
+          .select('id, open_count, click_count')
+          .eq('campaign_id', camp.id)
+          .eq('recipient_email', recipientEmail)
+          .maybeSingle();
+        if (sendRow) { row = sendRow; stampMessageId = true; }
+      }
+    }
+  }
   if (!row) return res.status(200).json({ ignored: 'unknown message id' });
 
   const nowIso = new Date().toISOString();
   const updates = {};
+  if (stampMessageId) updates.resend_message_id = messageId;
   switch (type) {
     case 'email.sent':       updates.status = 'sent';      updates.sent_at = nowIso; break;
     case 'email.delivered':  updates.status = 'delivered'; updates.delivered_at = nowIso; break;
