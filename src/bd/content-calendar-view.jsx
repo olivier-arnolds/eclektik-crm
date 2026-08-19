@@ -419,11 +419,6 @@ function ContentItemModal({ item, contacts = [], accounts = [], allTags = [], on
   const [approved, setApproved] = useState(isApproved(item.status));
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState(null);
-  // Moderatie ("Criticus"): draait bij het goedkeuren van een nog niet-goedgekeurd
-  // item. moderation = laatste oordeel; overrideModeration = mens keurt tóch goed.
-  const [moderating, setModerating] = useState(false);
-  const [moderation, setModeration] = useState(null);
-  const [overrideModeration, setOverrideModeration] = useState(false);
 
   // Afzender (alleen e-mail). Leeg item = de default-afzender; per item op te slaan.
   const [fromEmail, setFromEmail] = useState(item.from_email || DEFAULT_SENDER.email);
@@ -514,50 +509,8 @@ function ContentItemModal({ item, contacts = [], accounts = [], allTags = [], on
     return () => { cancelled = true; };
   }, [isDM, recipientId, effectiveAccountId]);
 
-  // Wijzigt de tekst (of onderwerp), dan is een eerder moderatie-oordeel niet meer
-  // geldig: reset het oordeel én de override zodat de gewijzigde tekst opnieuw
-  // langs de Criticus gaat.
-  useEffect(() => {
-    setModeration(null);
-    setOverrideModeration(false);
-  }, [body, subject]);
-
-  // Moderatie-poortwachter: alleen bij het goedkeuren van een item dat nog niet
-  // goedgekeurd was. Re-saves van een al goedgekeurd item (bv. datum verzetten)
-  // slaan de check over. Bij verdict 'fail' blokkeert de goedkeuring tot de mens
-  // expliciet "toch goedkeuren" kiest.
-  async function runModeration() {
-    setModerating(true); setErr(null);
-    try {
-      const resp = await apiFetch('/api/content-moderate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ channel: item.channel, type: item.type, subject, body, source_note: item.source_note }),
-      });
-      const data = await resp.json();
-      if (!resp.ok) throw new Error(data?.error || `HTTP ${resp.status}`);
-      setModeration(data);
-      return data;
-    } catch (e) {
-      setErr(`Moderatie-check mislukt: ${e.message}`);
-      return null;
-    } finally {
-      setModerating(false);
-    }
-  }
-
-  async function save({ skipModeration = false } = {}) {
+  async function save() {
     setSaving(true); setErr(null);
-    // Poortwachter vóór het wegschrijven: keurt de gebruiker een nog niet-
-    // goedgekeurd item goed en is er nog geen override, run dan de Criticus.
-    const approvingNow = approved && !isApproved(item.status);
-    if (approvingNow && !overrideModeration && !skipModeration) {
-      setSaving(false);
-      const verdict = await runModeration();
-      if (!verdict) return;              // technische fout — al getoond, niet opslaan
-      if (verdict.verdict === 'fail') return; // geblokkeerd — issues worden getoond
-      setSaving(true);                   // pass → gewoon doorgaan met opslaan
-    }
     let scheduled_at = null;
     if (hasDate) {
       const d = new Date(`${dateVal}T${timeVal || '09:00'}`);
@@ -807,57 +760,6 @@ function ContentItemModal({ item, contacts = [], accounts = [], allTags = [], on
             </label>
           )}
 
-          {moderating && (
-            <div style={{ fontSize: 12, color: 'var(--text-3)', display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span>De Criticus beoordeelt de content…</span>
-            </div>
-          )}
-
-          {moderation && !moderating && (() => {
-            const failed = moderation.verdict === 'fail';
-            const sevColor = { high: '#dc2626', medium: '#d97706', low: 'var(--text-3)' };
-            return (
-              <div style={{
-                fontSize: 12, borderRadius: 8, padding: '10px 12px',
-                border: `1px solid ${failed ? 'rgba(220,38,38,0.5)' : 'rgba(22,163,74,0.5)'}`,
-                background: failed ? 'rgba(220,38,38,0.08)' : 'rgba(22,163,74,0.08)',
-                display: 'flex', flexDirection: 'column', gap: 8,
-              }}>
-                <div style={{ fontWeight: 700, color: failed ? '#dc2626' : '#16a34a' }}>
-                  {failed ? 'Criticus: verbeterpunten voor goedkeuring' : 'Criticus: geen bezwaren'}
-                </div>
-                {moderation.error && <div style={{ color: 'var(--text-3)' }}>{moderation.error}</div>}
-                {(moderation.issues || []).length > 0 && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    {moderation.issues.map((iss, i) => (
-                      <div key={i} style={{ display: 'flex', gap: 6, alignItems: 'baseline' }}>
-                        <span style={{ fontSize: 9, textTransform: 'uppercase', fontFamily: 'var(--font-mono)', color: sevColor[iss.severity] || 'var(--text-3)', flexShrink: 0 }}>
-                          {iss.category || iss.severity || 'punt'}
-                        </span>
-                        <span style={{ color: 'var(--text-1)' }}>{iss.note}</span>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {moderation.suggestion && (
-                  <div style={{ color: 'var(--text-2)', fontStyle: 'italic' }}>Suggestie: {moderation.suggestion}</div>
-                )}
-                {!moderation.checked_style && (
-                  <div style={{ fontSize: 10, color: 'var(--text-3)' }}>Huisstijl-check overgeslagen (nog geen voorbeeldposts ingesteld).</div>
-                )}
-                {failed && (
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                    <button className="btn-ghost tiny" disabled={saving}
-                      onClick={() => { setOverrideModeration(true); setModeration(null); save({ skipModeration: true }); }}>
-                      Toch goedkeuren
-                    </button>
-                    <span style={{ fontSize: 10, color: 'var(--text-3)' }}>Of pas de tekst aan; hij wordt dan opnieuw beoordeeld.</span>
-                  </div>
-                )}
-              </div>
-            );
-          })()}
-
           {err && <div style={{ fontSize: 12, color: '#dc2626' }}>Opslaan mislukt: {err}</div>}
 
           {showAudiencePicker && (
@@ -880,7 +782,7 @@ function ContentItemModal({ item, contacts = [], accounts = [], allTags = [], on
           <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
             <button className="btn-ghost tiny" onClick={onClose}>{published ? 'Sluiten' : 'Annuleren'}</button>
             {!published && (
-              <button className="btn-primary tiny" onClick={() => save()} disabled={saving || moderating}>{moderating ? 'Modereren…' : saving ? 'Opslaan…' : 'Opslaan'}</button>
+              <button className="btn-primary tiny" onClick={() => save()} disabled={saving}>{saving ? 'Opslaan…' : 'Opslaan'}</button>
             )}
           </div>
         </div>

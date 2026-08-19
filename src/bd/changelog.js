@@ -19,9 +19,26 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.80.0';
+export const CURRENT_VERSION = '1.80.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.80.1',
+    date: '2026-08-19T10:49:51Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'change',
+    title: 'Content Calendar: Criticus-moderatie uit het CRM gehaald',
+    summary: 'De AI-Criticus draait al in de externe Eclectik Content Agent bij het schrijven; de tweede check bij goedkeuren in het CRM voegde niets toe (paste de tekst niet aan, alleen feedback) en is verwijderd.',
+    changes: [
+      'content-calendar-view.jsx: de moderatie-poortwachter bij het aanzetten van "Goedgekeurd" is weg. Goedkeuren slaat nu direct op, zonder Criticus-tussenstap of "toch goedkeuren"-override.',
+      'api/content-moderate.js verwijderd (was het enige aanroeppunt).',
+    ],
+    files: [
+      'src/bd/content-calendar-view.jsx',
+      'api/content-moderate.js',
+    ],
+    gitTag: 'v1.80.1',
+  },
   {
     version: '1.80.0',
     date: '2026-08-19T08:03:10Z',
