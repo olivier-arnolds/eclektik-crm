@@ -4,6 +4,7 @@ import { createLinkedInPost } from './_lib/unipile-post.js';
 import { sendLinkedInDM } from './_lib/unipile-dm.js';
 import { contentTextToHtml } from './_lib/content-html.js';
 import { appendSignature } from './_lib/signatures.js';
+import { excludeAlreadyReached } from '../src/bd/content-calendar-logic.js';
 import { createClient } from '@supabase/supabase-js';
 
 // Alle content-LinkedIn-posts gaan via Marco's account (afspraak). Overschrijfbaar
@@ -74,7 +75,15 @@ async function recipientsForItem(item) {
   }
   // Inactieve/former contacten overslaan (zelfde regel als de app: stage 'inactive' of former=true).
   const active = rows.filter(r => !r.former && String(r.stage || '').toLowerCase() !== 'inactive');
-  return { recipients: active };
+
+  // Dubbel-beveiliging: sluit contacten uit die deze uiting al kregen (het
+  // origineel of een andere kopie uit dezelfde familie). Permanent, los van de
+  // 5-dagen-cooldown in sendBroadcast. content_family_reached() bepaalt de familie.
+  const { data: reached, error: reachedErr } = await supabase.rpc('content_family_reached', { p_item_id: item.id });
+  if (reachedErr) return { error: `dedup-check faalde: ${reachedErr.message}` };
+  const { kept, skipped } = excludeAlreadyReached(active, reached || []);
+  if (skipped > 0) console.log('[content-calendar-execute] uiting-dedup: overgeslagen', { item: item.id, skipped });
+  return { recipients: kept };
 }
 
 // Cold-outreach dript per run een klein aantal (default 7 -> ~28/uur bij de */15-cron)
