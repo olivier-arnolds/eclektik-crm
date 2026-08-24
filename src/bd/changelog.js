@@ -19,9 +19,38 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.82.0';
+export const CURRENT_VERSION = '1.83.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.83.0',
+    date: '2026-08-24T11:52:48Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Content Calendar: kopieer uiting naar draft + nooit dezelfde uiting 2x naar 1 contact',
+    summary:
+      'Je kunt een content-item nu naar een nieuwe draft kopiëren (zelfde tekst, andere doelgroep) - bijvoorbeeld de Glint-mail van vorige week ook naar andere contacten sturen. ' +
+      'Een tweede vangnet zorgt dat dezelfde uiting nooit twee keer bij hetzelfde contact aankomt, los van de bestaande 5-dagen-cooldown.',
+    changes: [
+      'DB: content_calendar_items.origin_item_id koppelt een kopie aan het originele item (de "root"); alle kopieën van dezelfde uiting vormen één familie.',
+      'DB: RPC content_family_reached() geeft de contacten die de uiting (root + alle kopieën) al ontvingen - gematcht op contact_id én e-mail. Enige bron van waarheid voor de familie-definitie.',
+      'Nieuwe knop "Kopieer naar draft" in de item-modal (ook voor gepubliceerde items): maakt een draft met dezelfde tekst/afzender, met een lege doelgroep en planning.',
+      'Publish-cron sluit contacten die de uiting al kregen hard uit (naast opt-in/former/inactief), ook bij drip; aantal overgeslagen wordt gelogd.',
+      'Item-modal toont vooraf "N van je selectie kreeg deze uiting al en wordt overgeslagen".',
+      'Pure, geteste helper excludeAlreadyReached() (content-calendar-logic.js) voor de uitsluiting.',
+    ],
+    files: [
+      'sql/schema_content_calendar_origin_2026-08-24.sql (new)',
+      'src/bd/content-calendar-logic.js',
+      'src/bd/content-calendar-logic.test.js',
+      'src/bd/content-calendar-view.jsx',
+      'api/content-calendar-execute.js',
+      'VERSION',
+      'package.json',
+      'src/bd/changelog.js',
+    ],
+    gitTag: 'v1.83.0',
+  },
   {
     version: '1.82.0',
     date: '2026-08-19T13:56:11Z',
