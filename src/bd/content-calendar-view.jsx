@@ -119,6 +119,32 @@ export default function ContentCalendarView({ contacts = [], accounts = [], allT
     if (error) { alert('Verplaatsen mislukt: ' + error.message); load(); }
   }, [items, patchLocal, load]);
 
+  // Kopieer een item naar een nieuwe draft (zelfde uiting, andere doelgroep).
+  // Doelgroep + planning starten leeg; origin_item_id koppelt de kopie aan de
+  // root zodat de dubbel-beveiliging weet welke contacten de uiting al kregen.
+  const copyToDraft = useCallback(async (src) => {
+    const isEmail = src.type === 'email';
+    const isLinkedIn = src.type === 'linkedin_post' || src.type === 'linkedin_dm';
+    const row = {
+      channel: src.channel,
+      type: src.type,
+      subject: isEmail ? (src.subject || null) : null,
+      body: src.body,
+      from_email: isEmail ? (src.from_email || null) : null,
+      from_name: isEmail ? (src.from_name || null) : null,
+      cold_outreach: isEmail ? !!src.cold_outreach : false,
+      source_note: src.source_note || null,
+      linkedin_account_id: isLinkedIn ? (src.linkedin_account_id || null) : null,
+      status: 'draft',
+      origin_item_id: src.origin_item_id || src.id,
+    };
+    const { data, error } = await supabase
+      .from('content_calendar_items').insert(row).select('*').single();
+    if (error) { alert('Kopiëren mislukt: ' + error.message); return; }
+    setItems(prev => [data, ...prev]);
+    setOpenItem(data); // open direct de nieuwe draft om de doelgroep te kiezen
+  }, []);
+
   const weekStart = useMemo(() => startOfWeek(anchor), [anchor]);
   const scheduled = useMemo(() => items.filter(it => it.scheduled_at), [items]);
   const unscheduled = useMemo(() => items.filter(it => !it.scheduled_at), [items]);
@@ -212,12 +238,14 @@ export default function ContentCalendarView({ contacts = [], accounts = [], allT
 
       {openItem && (
         <ContentItemModal
+          key={openItem.id}
           item={items.find(it => it.id === openItem.id) || openItem}
           contacts={contacts}
           accounts={accounts}
           allTags={allTags}
           onClose={() => setOpenItem(null)}
           onSaved={(fields) => { patchLocal(openItem.id, fields); }}
+          onCopy={copyToDraft}
         />
       )}
 
@@ -592,7 +620,7 @@ function UnscheduledTray({ items, draggingId, setDraggingId, onMoveToDate, onOpe
 }
 
 // ---------- Detail-modal: tekst, bron, datum/tijd + goedkeuren ----------
-function ContentItemModal({ item, contacts = [], accounts = [], allTags = [], onClose, onSaved }) {
+function ContentItemModal({ item, contacts = [], accounts = [], allTags = [], onClose, onSaved, onCopy }) {
   const ch = CHANNELS.find(c => c.key === item.channel);
   const published = item.status === 'published';
   const isEmail = item.type === 'email';
@@ -613,7 +641,25 @@ function ContentItemModal({ item, contacts = [], accounts = [], allTags = [], on
   const [timeVal, setTimeVal] = useState(initialDate ? toTimeInput(initialDate) : '09:00');
   const [approved, setApproved] = useState(isApproved(item.status));
   const [saving, setSaving] = useState(false);
+  const [copying, setCopying] = useState(false);
   const [err, setErr] = useState(null);
+
+  // Dubbel-beveiliging (UI-hint): contacten die deze uiting (familie) al kregen.
+  // De harde uitsluiting gebeurt in de cron; dit toont alleen vooraf hoeveel van
+  // je selectie straks wordt overgeslagen. reachedIds/reachedEmails = Sets.
+  const [reached, setReached] = useState(null); // { ids:Set, emails:Set } | null
+  useEffect(() => {
+    if (!isEmail) { setReached(null); return; }
+    let cancelled = false;
+    supabase.rpc('content_family_reached', { p_item_id: item.id })
+      .then(({ data }) => {
+        if (cancelled) return;
+        const ids = new Set((data || []).map(r => r.contact_id).filter(Boolean));
+        const emails = new Set((data || []).map(r => String(r.email || '').trim().toLowerCase()).filter(Boolean));
+        setReached({ ids, emails });
+      });
+    return () => { cancelled = true; };
+  }, [item.id, isEmail]);
 
   // Afzender (alleen e-mail). Leeg item = de default-afzender; per item op te slaan.
   const [fromEmail, setFromEmail] = useState(item.from_email || DEFAULT_SENDER.email);
@@ -693,6 +739,18 @@ function ContentItemModal({ item, contacts = [], accounts = [], allTags = [], on
   const nextStatus = published ? 'published' : deriveStatus(approved, hasDate);
   const effectiveAccountId = accountId || DEFAULT_LINKEDIN_ACCOUNT_ID;
   const recipient = contacts.find(c => c.id === recipientId) || null;
+
+  // Hoeveel van de huidige selectie kreeg deze uiting al (en wordt straks overgeslagen).
+  const reachedInSelection = useMemo(() => {
+    if (!reached || !targetContactIds.length) return 0;
+    const byId = new Map(contacts.map(c => [c.id, c]));
+    let n = 0;
+    for (const id of targetContactIds) {
+      const email = String(byId.get(id)?.email || '').trim().toLowerCase();
+      if (reached.ids.has(id) || (email && reached.emails.has(email))) n++;
+    }
+    return n;
+  }, [reached, targetContactIds, contacts]);
 
   // Laad de connectiestatus van de gekozen DM-ontvanger t.o.v. het gekozen account.
   useEffect(() => {
@@ -891,6 +949,11 @@ function ContentItemModal({ item, contacts = [], accounts = [], allTags = [], on
               <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
                 Tijdelijke selectie voor dit bericht. De cron verstuurt {coldOutreach ? 'naar alle actieve contacten in de selectie (ook zonder opt-in)' : 'alleen naar opted-in, actieve contacten'}.
               </span>
+              {reachedInSelection > 0 && (
+                <span style={{ fontSize: 11, color: '#d97706' }}>
+                  {reachedInSelection} van je selectie kreeg deze uiting al eerder en wordt automatisch overgeslagen (dubbel-beveiliging).
+                </span>
+              )}
               {!published && (
                 <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13, cursor: 'pointer', marginTop: 4 }}>
                   <input type="checkbox" checked={coldOutreach} onChange={e => setColdOutreach(e.target.checked)} style={{ marginTop: 2 }} />
@@ -975,6 +1038,13 @@ function ContentItemModal({ item, contacts = [], accounts = [], allTags = [], on
             {published && (<><span>✓</span><span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{publishedLine()}</span></>)}
           </span>
           <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+            {onCopy && (
+              <button className="btn-ghost tiny" disabled={copying || saving}
+                title="Maak een nieuwe draft met dezelfde tekst; kies daarna een andere doelgroep"
+                onClick={async () => { setCopying(true); try { await onCopy(item); } finally { setCopying(false); } }}>
+                {copying ? 'Kopiëren…' : 'Kopieer naar draft'}
+              </button>
+            )}
             <button className="btn-ghost tiny" onClick={onClose}>{published ? 'Sluiten' : 'Annuleren'}</button>
             {!published && (
               <button className="btn-primary tiny" onClick={() => save()} disabled={saving}>{saving ? 'Opslaan…' : 'Opslaan'}</button>
