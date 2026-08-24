@@ -18,6 +18,27 @@ export const deriveStatus = (approved, hasDate) =>
 export const statusAfterMove = (currentStatus, hasDate) =>
   (currentStatus === 'published' ? 'published' : deriveStatus(isApproved(currentStatus), hasDate));
 
+// Dubbel-beveiliging: sluit contacten uit die deze uiting al ontvingen. Pure
+// functie zodat ze los te testen is; de DB-kant (welke contacten al bereikt zijn)
+// komt via de RPC content_family_reached en wordt hier als `reached` doorgegeven.
+//   recipients : [{ id, email, ... }]
+//   reached    : [{ contact_id, email }]  (uit content_family_reached)
+// Matcht op contact_id EN op genormaliseerde e-mail (liever te veel uitsluiten
+// dan dezelfde uiting 2x sturen). Geeft { kept, skipped } terug.
+export function excludeAlreadyReached(recipients, reached) {
+  const list = Array.isArray(recipients) ? recipients : [];
+  const emailSet = new Set(
+    (reached || []).map(r => String(r?.email || '').trim().toLowerCase()).filter(Boolean)
+  );
+  const idSet = new Set(
+    (reached || []).map(r => r?.contact_id).filter(Boolean)
+  );
+  const kept = list.filter(r =>
+    !idSet.has(r?.id) && !emailSet.has(String(r?.email || '').trim().toLowerCase())
+  );
+  return { kept, skipped: list.length - kept.length };
+}
+
 // Afgeleide rapportage voor één contentstuk. Pure functie: `now` komt binnen als
 // parameter zodat de "verstreken tijd"-waarschuwing deterministisch testbaar is.
 // Bevat bewust GEEN afzender-string (die vergt UI-account-mapping) — de modal

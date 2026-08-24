@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isApproved, deriveStatus, statusAfterMove, itemReport } from './content-calendar-logic';
+import { isApproved, deriveStatus, statusAfterMove, itemReport, excludeAlreadyReached } from './content-calendar-logic';
 
 describe('content calendar status logic', () => {
   it('isApproved: draft is niet goedgekeurd, de rest wel', () => {
@@ -104,5 +104,40 @@ describe('itemReport — afgeleide rapportage per contentstuk', () => {
     const r = itemReport({ ...base, status: 'published', published_at: '2026-08-19T09:00:00Z' }, { now: NOW });
     expect(r.timeline.created_at).toBe('2026-08-01T09:00:00Z');
     expect(r.timeline.published_at).toBe('2026-08-19T09:00:00Z');
+  });
+});
+
+describe('excludeAlreadyReached — dubbel-beveiliging (nooit dezelfde uiting 2x)', () => {
+  const recipients = [
+    { id: 'c1', email: 'Aa@X.nl' },
+    { id: 'c2', email: 'bb@x.nl' },
+    { id: 'c3', email: 'cc@x.nl' },
+  ];
+
+  it('sluit uit op contact_id', () => {
+    const { kept, skipped } = excludeAlreadyReached(recipients, [{ contact_id: 'c2', email: null }]);
+    expect(skipped).toBe(1);
+    expect(kept.map(r => r.id)).toEqual(['c1', 'c3']);
+  });
+
+  it('sluit uit op e-mail, hoofdletter-ongevoelig', () => {
+    const { kept, skipped } = excludeAlreadyReached(recipients, [{ contact_id: null, email: 'aa@x.nl' }]);
+    expect(skipped).toBe(1);
+    expect(kept.map(r => r.id)).toEqual(['c2', 'c3']);
+  });
+
+  it('dedupe telt een contact dat op id én e-mail matcht maar 1x', () => {
+    const { kept, skipped } = excludeAlreadyReached(recipients, [{ contact_id: 'c1', email: 'aa@x.nl' }]);
+    expect(skipped).toBe(1);
+    expect(kept.map(r => r.id)).toEqual(['c2', 'c3']);
+  });
+
+  it('lege reached-lijst houdt iedereen', () => {
+    expect(excludeAlreadyReached(recipients, []).kept).toHaveLength(3);
+    expect(excludeAlreadyReached(recipients, null).kept).toHaveLength(3);
+  });
+
+  it('robuust tegen lege recipients', () => {
+    expect(excludeAlreadyReached(null, [{ contact_id: 'c1' }])).toEqual({ kept: [], skipped: 0 });
   });
 });
