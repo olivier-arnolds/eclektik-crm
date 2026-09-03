@@ -19,9 +19,29 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.83.0';
+export const CURRENT_VERSION = '1.84.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.84.0',
+    date: '2026-09-03T06:44:18Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Account 360: "+ Add comms"-knop bij Recent comms om een note toe te voegen',
+    summary:
+      'In de Account 360 staat naast de kop "Recent comms" nu een knop "+ Add comms" waarmee je direct een note aan het account toevoegt. Hergebruikt de bestaande note-modal; de note verschijnt meteen in de lijst.',
+    changes: [
+      'lane-accounts.jsx: "+ Add comms"-actie in de Recent comms-sectiekop (alleen bij een bestaand account) opent de note-modal met dit account voorgeselecteerd.',
+      'Hergebruikt CreateNoteModal (comms-rij met channel=\'note\', gekoppeld via company_id); na opslaan volgt een refetch zodat de note direct zichtbaar is.',
+    ],
+    files: [
+      'src/bd/lane-accounts.jsx',
+      'VERSION',
+      'package.json',
+      'src/bd/changelog.js',
+    ],
+    gitTag: 'v1.84.0',
+  },
   {
     version: '1.83.0',
     date: '2026-08-24T11:52:48Z',

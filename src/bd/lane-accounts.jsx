@@ -6,6 +6,7 @@ import ContactSearchModal from './contact-search-modal';
 import InactivateAccountModal from './inactivate-modal';
 import ContactDetailModal from './contact-detail-modal';
 import MeetingNoteModal from './meeting-note-modal';
+import CreateNoteModal from './create-note-modal';
 import AccountLinksSection from './account-links-section';
 import DocLinksSection from './doc-links-section';
 import LinkExistingContactModal from './link-existing-contact-modal';
@@ -716,6 +717,7 @@ function AccountsList({ accounts, contacts, deals, onPickAccount, search, onAddA
 
 function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems, comms, graphEmails, events, tasks, onPickAccount, onCompose, onOpenDeal, onSelectComm, refetch, allTags, onToggleCollapse }) {
   const [showAddContact, setShowAddContact] = useState(false);
+  const [showAddNote, setShowAddNote] = useState(false);
   const [showSearchContact, setShowSearchContact] = useState(false);
   const [showLinkExisting, setShowLinkExisting] = useState(false);
   const [showInactivate, setShowInactivate] = useState(false);
@@ -1386,7 +1388,13 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
           )}
         </Section>
 
-        <Section label={`Recent comms · ${accComms.length}`}>
+        <Section label={`Recent comms · ${accComms.length}`}
+          actions={account.id ? (
+            <button className="btn-ghost tiny" title="Add a note to this account"
+              onClick={(e) => { e.stopPropagation(); setShowAddNote(true); }}>
+              + Add comms
+            </button>
+          ) : null}>
           {accComms.length === 0 ? (
             <div className="empty" style={{ padding: '8px 0', textAlign: 'left' }}>No comms logged</div>
           ) : (
@@ -1611,6 +1619,15 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
           account={account}
           onClose={() => setMeetingNoteEvent(null)}
           refetch={refetch}
+        />
+      )}
+      {showAddNote && (
+        <CreateNoteModal
+          text=""
+          accounts={accounts}
+          defaultAccount={account}
+          onClose={() => setShowAddNote(false)}
+          onCreated={() => { setShowAddNote(false); if (refetch) refetch(); }}
         />
       )}
     </div>
