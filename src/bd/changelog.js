@@ -19,9 +19,32 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.84.1';
+export const CURRENT_VERSION = '1.84.2';
 
 export const CHANGELOG = [
+  {
+    version: '1.84.2',
+    date: '2026-09-04T08:50:43Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Funnel: "+ New Lead" — een nieuw record start altijd in Qualify',
+    summary:
+      'De knop heet nu "+ New Lead" en een nieuw record start altijd als lead in de qualify-lane. De stage-keuze bij aanmaken is weggehaald; je kon eerder direct een "develop-lead" maken die nooit een opportunity werd (onzichtbaar voor alles wat alleen opportunities leest). Promotie naar develop/opportunity gebeurt nu uitsluitend via slepen, met de bestaande atomic lead->opp-promotie.',
+    changes: [
+      'lane-funnel.jsx: knoplabel "+ New deal" -> "+ New Lead".',
+      'new-deal-modal.jsx: stage-keuze verwijderd; sub_status is vast \'qualify\'. Titel/knop -> New Lead / Add lead, met uitleg dat promotie via slepen gaat.',
+      'Losse eenmalige DB-migratie (sql/data_promote_develop_leads_2026-09-04.sql) promoveert de twee bestaande develop-leads D-0167 (Zurich) en D-0185 (Sonova) naar opportunities.',
+    ],
+    files: [
+      'src/bd/lane-funnel.jsx',
+      'src/bd/new-deal-modal.jsx',
+      'sql/data_promote_develop_leads_2026-09-04.sql (new)',
+      'VERSION',
+      'package.json',
+      'src/bd/changelog.js',
+    ],
+    gitTag: 'v1.84.2',
+  },
   {
     version: '1.84.1',
     date: '2026-09-04T08:22:47Z',
