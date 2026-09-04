@@ -19,9 +19,29 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.84.0';
+export const CURRENT_VERSION = '1.84.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.84.1',
+    date: '2026-09-04T08:22:47Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Playbook-cron: interne taken werden stil geweigerd (POST /tasks 400)',
+    summary:
+      'De playbook-cron voegde interne taken toe met een veld "type" dat niet op de tasks-tabel bestaat; PostgREST weigerde die met een 400 en de fout werd nergens getoond. Nu getagd via de bestaande task_group-kolom, en een mislukte insert wordt gelogd + in de cron-stats gemeld i.p.v. genegeerd.',
+    changes: [
+      'api/playbook-execute.js: task-insert gebruikt task_group=\'playbook_task\' i.p.v. de niet-bestaande kolom type (oorzaak van de 400).',
+      'api/playbook-execute.js: insert-fout wordt nu gecontroleerd, gelogd en als enrollment-fout in stats.errors gemeld (geen silent fail meer).',
+    ],
+    files: [
+      'api/playbook-execute.js',
+      'VERSION',
+      'package.json',
+      'src/bd/changelog.js',
+    ],
+    gitTag: 'v1.84.1',
+  },
   {
     version: '1.84.0',
     date: '2026-09-03T06:44:18Z',

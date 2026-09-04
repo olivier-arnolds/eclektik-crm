@@ -229,15 +229,19 @@ async function executeSideEffect(sideEffect, enrollment, ctx, stats) {
   if (type === 'action_internal_task') {
     const dueDate = new Date(ctx.now);
     if (config.days_due) dueDate.setDate(dueDate.getDate() + Number(config.days_due));
-    await supabase.from('tasks').insert({
+    // NB: de tasks-tabel heeft GEEN `type`-kolom. Een insert met `type` gaf een
+    // stille 400 (PostgREST weigert onbekende kolommen), waardoor elke
+    // playbook-taak faalde. Tag ze via de bestaande `task_group`-kolom.
+    const { error: taskErr } = await supabase.from('tasks').insert({
       title: substituteMergeFields(config.title || '', ctx),
-      type: 'playbook_task',
+      task_group: 'playbook_task',
       due_date: dueDate.toISOString().split('T')[0],
       contact_id: enrollment.contact_id,
       opportunity_id: ctx.deal?.id || null,
       owner: ctx.deal?.owner_name || null,
       status: 'pending',
     });
+    if (taskErr) { console.error('[playbook-execute] task insert faalde', taskErr.message); throw new Error(`task insert: ${taskErr.message}`); }
     stats.tasks_created++;
     return;
   }
