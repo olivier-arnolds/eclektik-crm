@@ -134,7 +134,7 @@ export default function FunnelLane({ deals, accounts, contacts, filters, setFilt
         </div>
         <div className="lane-actions">
           <button className="btn-primary tiny" onClick={() => setShowNewDeal(true)}>
-            <I.plus /> New deal
+            <I.plus /> New Lead
           </button>
           <button className="btn-ghost tiny" onClick={() => setShowBulkLink(true)} title="Link unlinked deals to existing accounts">
             Link deals

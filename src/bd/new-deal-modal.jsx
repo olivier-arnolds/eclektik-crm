@@ -19,7 +19,6 @@ export default function NewDealModal({ accounts, contacts, onClose, onCreated })
   const [contactIds, setContactIds] = useState([]);
   const [dealType, setDealType] = useState('');
   const [source, setSource] = useState('Inbound');
-  const [stage, setStage] = useState('qualify');
   const [value, setValue] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -34,14 +33,17 @@ export default function NewDealModal({ accounts, contacts, onClose, onCreated })
     if (!canSave) return;
     setSaving(true);
     const numericValue = parseInt((value || '').replace(/\D/g, '')) || 0;
-    // New deals always start as leads. The leads table doesn't have a
-    // contact_id column — contacts get linked via contacts.lead_id afterwards.
+    // Een nieuw record start ALTIJD als lead in de qualify-lane. Pas bij het
+    // slepen naar Develop wordt de lead een opportunity (lead→opp-promotie in
+    // lane-funnel doMove). Daarom geen stage-keuze hier — sub_status is vast
+    // 'qualify'. De leads-tabel heeft geen contact_id; contacten worden na het
+    // aanmaken gekoppeld via contacts.lead_id.
     const row = {
       full_name: title.trim(),
       topic: title.trim(),
       company_id: accountId,
       est_revenue: numericValue,
-      sub_status: stage,
+      sub_status: 'qualify',
       product_line: dealType || null,
       source: source || null,
       status: 'New',
@@ -70,7 +72,7 @@ export default function NewDealModal({ accounts, contacts, onClose, onCreated })
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal" style={{ width: 420, maxWidth: '92vw' }} onClick={e => e.stopPropagation()}>
-        <div className="modal-title">New deal</div>
+        <div className="modal-title">New Lead</div>
         <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
           <F label="Client">
@@ -112,27 +114,20 @@ export default function NewDealModal({ accounts, contacts, onClose, onCreated })
             {chipSingle(['Inbound', 'Outbound', 'Referral', 'Renewal', 'Platform'], source, setSource)}
           </F>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            <F label="Stage">
-              <select value={stage} onChange={e => setStage(e.target.value)}
-                style={{ background: 'var(--fill-1)', border: '0.5px solid var(--sep)', borderRadius: 'var(--radius-sm)', padding: '6px 8px', color: 'var(--text-1)', fontSize: 12 }}>
-                <option value="qualify">Qualify</option>
-                <option value="develop">Develop</option>
-                <option value="proposal">Proposal</option>
-                <option value="close">Close</option>
-              </select>
-            </F>
-            <F label="Value (€)">
-              <input placeholder="0" value={value} onChange={e => setValue(e.target.value)}
-                style={{ background: 'var(--fill-1)', border: '0.5px solid var(--sep)', borderRadius: 'var(--radius-sm)', padding: '6px 8px', color: 'var(--text-1)', fontSize: 12, width: '100%', boxSizing: 'border-box' }} />
-            </F>
+          <F label="Value (€) — optioneel">
+            <input placeholder="0" value={value} onChange={e => setValue(e.target.value)}
+              style={{ background: 'var(--fill-1)', border: '0.5px solid var(--sep)', borderRadius: 'var(--radius-sm)', padding: '6px 8px', color: 'var(--text-1)', fontSize: 12, width: '100%', boxSizing: 'border-box' }} />
+          </F>
+
+          <div style={{ fontSize: 11, color: 'var(--text-3)', lineHeight: 1.5 }}>
+            Een nieuwe lead start in <strong>Qualify</strong>. Sleep hem later naar Develop zodra er een gesprek/budget is — dan wordt het automatisch een opportunity.
           </div>
 
         </div>
         <div className="modal-actions">
           <button className="btn-ghost" onClick={onClose}>Cancel</button>
           <button className="btn-primary" disabled={!canSave || saving} onClick={handleAdd}>
-            {saving ? 'Saving…' : 'Add deal'}
+            {saving ? 'Saving…' : 'Add lead'}
           </button>
         </div>
       </div>
