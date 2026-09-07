@@ -14,6 +14,7 @@ import { requireUser } from './_lib/guard.js';
 //   - 401/403 → abort immediately
 import { createClient } from '@supabase/supabase-js';
 import { renderTemplate } from '../src/lib/template-vars.js';
+import { appendSignature } from './_lib/signatures.js';
 
 const RESEND_API = 'https://api.resend.com/emails';
 const PER_SEND_DELAY_MS = 250;
@@ -50,7 +51,7 @@ export default async function handler(req, res) {
   const {
     campaign_id, name, subject, preheader, html_body,
     from_name, from_email, reply_to, audience_filter, recipients,
-    sent_by,
+    sent_by, append_signature,
   } = req.body || {};
 
   if (!subject || !html_body || !Array.isArray(recipients) || recipients.length === 0) {
@@ -61,6 +62,11 @@ export default async function handler(req, res) {
   const fromEmail = from_email || process.env.MARKETING_FROM_EMAIL;
   if (!fromEmail) return res.status(500).json({ error: 'MARKETING_FROM_EMAIL not configured' });
   const fromHeader = `${fromName} <${fromEmail}>`;
+
+  // Handtekening één keer onder de body plakken (heeft geen per-ontvanger-vars).
+  // signatureFor() geeft '' bij een adres zonder handtekening, dus dit is een
+  // no-op als append_signature per ongeluk aanstaat voor bv. Marketing@.
+  const bodyHtml = append_signature ? appendSignature(html_body, fromEmail) : html_body;
 
   // Upsert the campaign row first so campaign_sends has a parent
   let cid = campaign_id;
@@ -111,7 +117,7 @@ export default async function handler(req, res) {
     // 'Request Entity Too Large' veroorzaken — vandaar de vars-flow.
     const recipientHtml = r.html
       ? r.html
-      : (r.vars ? renderTemplate(html_body, r.vars) : html_body);
+      : (r.vars ? renderTemplate(bodyHtml, r.vars) : bodyHtml);
     const headers = reply_to ? { 'Reply-To': reply_to } : undefined;
     const result = await resendSend({
       from: fromHeader, to: r.email, subject, html: recipientHtml, headers,

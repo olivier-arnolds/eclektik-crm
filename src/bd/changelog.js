@@ -19,9 +19,35 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.85.0';
+export const CURRENT_VERSION = '1.86.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.86.0',
+    date: '2026-09-07T16:03:26Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Campaign composer: handtekening van de afzender meesturen',
+    summary:
+      'De campaign-composer kan nu de persoonlijke handtekening (Marco/Olivier/Yarmilla) onder de mail plakken - net als de content-kalender al deed. Een vinkje "Handtekening toevoegen" staat standaard aan als je als persoon verstuurt en uit bij Marketing@. Werkt op beide verzendwegen (newsletter/broadcast en transactioneel/test).',
+    changes: [
+      'senders.js: markeer welke afzenders een handtekening hebben + hasSignature()-helper.',
+      'marketing-composer.jsx: toggle "Handtekening toevoegen" (default aan bij een persoon, uit bij Marketing@), volgt de afzenderkeuze; stuurt append_signature mee.',
+      'marketing-send.js: plakt de handtekening onder de body (transactioneel + test) via de gedeelde appendSignature.',
+      'resend-broadcast.js: plakt de handtekening onder de body vóór sendBroadcast; de verplichte afmeldlink komt er daarna onder (body -> handtekening -> afmeldlink).',
+      'Handtekening-HTML blijft server-side (api/_lib/signatures.js) als single source of truth; de preview toont hem niet, de test-mail wel.',
+    ],
+    files: [
+      'src/lib/senders.js',
+      'src/bd/marketing-composer.jsx',
+      'api/marketing-send.js',
+      'api/resend-broadcast.js',
+      'VERSION',
+      'package.json',
+      'src/bd/changelog.js',
+    ],
+    gitTag: 'v1.86.0',
+  },
   {
     version: '1.85.0',
     date: '2026-09-07T15:50:14Z',

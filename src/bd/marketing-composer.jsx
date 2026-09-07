@@ -2,7 +2,7 @@ import { useState, useMemo, useRef } from 'react';
 import { useAuth } from '../lib/auth';
 import { renderTemplate, varsForContact, KNOWN_VARS } from '../lib/template-vars';
 import { apiFetch } from '../lib/apiFetch';
-import { SENDERS } from '../lib/senders';
+import { SENDERS, senderNameFor, hasSignature } from '../lib/senders';
 
 // Composer for a Marketing campaign.
 // Props:
@@ -22,6 +22,9 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
   const [replyTo, setReplyTo] = useState('');
   const [fromEmail, setFromEmail] = useState(defaultFromEmail);
   const [fromName, setFromName] = useState(defaultFromName);
+  // Handtekening meesturen? Standaard aan als de afzender een persoon met
+  // handtekening is (Marco/Olivier/Yarmilla), uit bij Marketing@.
+  const [sigOn, setSigOn] = useState(() => hasSignature(defaultFromEmail));
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState(null);
   // 'broadcast' = newsletter via Resend Broadcasts (marketingplan); 'transactional' = 1-op-1 via /emails.
@@ -181,6 +184,7 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
           from_name: fromName,
           from_email: fromEmail,
           reply_to: replyTo || null,
+          append_signature: sigOn && hasSignature(fromEmail),
           recipients: recipients
             .filter(r => r.email)
             .map(r => ({ email: r.email, first_name: r.first_name || '', contact_id: r.id, do_not_email: r.do_not_email })),
@@ -194,6 +198,7 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
           from_name: fromName || undefined,
           from_email: fromEmail || undefined,
           reply_to: replyTo || null,
+          append_signature: sigOn && hasSignature(fromEmail),
           audience_filter: testOnly ? { test: true } : null,
           recipients: payloadRecipients,
           sent_by: sentBy,
@@ -271,6 +276,8 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
                 // Vul de weergavenaam automatisch mee bij een ander adres; blijft bewerkbaar.
                 const s = SENDERS.find(x => x.email === email);
                 if (s) setFromName(s.name);
+                // Handtekening-default volgt de afzender (aan bij een persoon).
+                setSigOn(hasSignature(email));
               }}
               style={{ ...inputStyle, flex: 1, cursor: 'pointer' }}>
               {SENDERS.map(s => <option key={s.email} value={s.email}>{s.email}</option>)}
@@ -282,6 +289,19 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
           <input value={replyTo} onChange={e => setReplyTo(e.target.value)} placeholder={sentBy} style={inputStyle} />
         </div>
       </div>
+
+      <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, cursor: hasSignature(fromEmail) ? 'pointer' : 'default' }}>
+        <input type="checkbox" checked={sigOn && hasSignature(fromEmail)} disabled={!hasSignature(fromEmail)}
+          onChange={e => setSigOn(e.target.checked)} />
+        <span>
+          Handtekening toevoegen
+          <span style={{ color: 'var(--text-3)', marginLeft: 6 }}>
+            {hasSignature(fromEmail)
+              ? `— handtekening van ${senderNameFor(fromEmail)}, zichtbaar in de test-mail (niet in de preview)`
+              : '— geen handtekening bekend voor dit afzenderadres'}
+          </span>
+        </span>
+      </label>
 
       <div>
         <div style={{ fontSize: 10, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Subject</div>
