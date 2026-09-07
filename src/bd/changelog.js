@@ -19,9 +19,29 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.86.0';
+export const CURRENT_VERSION = '1.86.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.86.1',
+    date: '2026-09-07T18:06:27Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Campaign composer: klikbare invoegknoppen voor merge-vars (voorkomt {{first_name}}-typefouten)',
+    summary:
+      'Een handmatig getypte variabele met een spatie of enkele accolade (bv. "{first name}") bleef letterlijk in de mail staan, omdat renderTemplate alleen exact {{first_name}} herkent. De composer heeft nu invoegknoppen (Voornaam/Achternaam/…) die de juiste token op de cursor plakken, in zowel HTML- als Plain text-modus.',
+    changes: [
+      'marketing-composer.jsx: "Invoegen"-knoppen boven het body-frame plakken {{first_name}} e.d. exact op de cursor; werkt in beide modi via één gedeelde textarea-ref.',
+      'Vervangt de passieve "Variables:"-hint door klikbare knoppen.',
+    ],
+    files: [
+      'src/bd/marketing-composer.jsx',
+      'VERSION',
+      'package.json',
+      'src/bd/changelog.js',
+    ],
+    gitTag: 'v1.86.1',
+  },
   {
     version: '1.86.0',
     date: '2026-09-07T16:03:26Z',

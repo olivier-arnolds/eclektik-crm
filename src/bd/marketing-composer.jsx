@@ -85,6 +85,29 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
   );
   const hasBody = bodyMode === 'text' ? !!textBody.trim() : !!htmlBody.trim();
 
+  // Merge-var op de cursor invoegen in het actieve tekstvak. Voorkomt typefouten
+  // (renderTemplate matcht alleen exact {{first_name}} e.d.). Eén ref volstaat:
+  // er is altijd maar één tekstvak zichtbaar (afhankelijk van bodyMode).
+  const bodyRef = useRef(null);
+  const insertVar = (token) => {
+    const el = bodyRef.current;
+    const val = bodyMode === 'text' ? textBody : htmlBody;
+    const setVal = bodyMode === 'text' ? setTextBody : setHtmlBody;
+    const start = el ? el.selectionStart : val.length;
+    const end = el ? el.selectionEnd : val.length;
+    setVal(val.slice(0, start) + token + val.slice(end));
+    requestAnimationFrame(() => {
+      if (!el) return;
+      el.focus();
+      const caret = start + token.length;
+      el.setSelectionRange(caret, caret);
+    });
+  };
+  const VAR_LABELS = {
+    first_name: 'Voornaam', last_name: 'Achternaam', full_name: 'Volledige naam',
+    company_name: 'Bedrijf', role: 'Functie',
+  };
+
   // Live preview — render with the first recipient's vars (or empty)
   const previewVars = useMemo(() => varsForContact(recipients?.[0] || {}), [recipients]);
   const previewHtml = useMemo(() => renderTemplate(effectiveHtml, previewVars), [effectiveHtml, previewVars]);
@@ -334,17 +357,24 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
               </>
             )}
           </div>
-          <div style={{ fontSize: 10, color: 'var(--text-3)' }}>
-            Variables: {KNOWN_VARS.map(v => `{{${v}}}`).join(', ')}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 10, color: 'var(--text-3)', marginRight: 2 }}>Invoegen:</span>
+            {KNOWN_VARS.map(v => (
+              <button key={v} type="button" className="btn-ghost tiny"
+                title={`Voegt {{${v}}} in — wordt per ontvanger vervangen`}
+                onClick={() => insertVar(`{{${v}}}`)}>
+                + {VAR_LABELS[v] || v}
+              </button>
+            ))}
           </div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, height: 380 }}>
           {bodyMode === 'text' ? (
-            <textarea value={textBody} onChange={e => setTextBody(e.target.value)}
+            <textarea ref={bodyRef} value={textBody} onChange={e => setTextBody(e.target.value)}
               placeholder={'Typ hier je bericht in gewone tekst.\n\nRegels en witregels blijven behouden, links (https://…) worden klikbaar, en {{first_name}} wordt per ontvanger ingevuld.'}
               style={{ ...inputStyle, resize: 'none', height: '100%', padding: 10, fontSize: 13, lineHeight: 1.5 }} />
           ) : (
-            <textarea value={htmlBody} onChange={e => setHtmlBody(e.target.value)}
+            <textarea ref={bodyRef} value={htmlBody} onChange={e => setHtmlBody(e.target.value)}
               placeholder="<html>...</html>"
               spellCheck={false}
               style={{ ...inputStyle, fontFamily: 'var(--font-mono)', resize: 'none', height: '100%', padding: 10, fontSize: 11 }} />
