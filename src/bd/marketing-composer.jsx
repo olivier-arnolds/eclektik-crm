@@ -15,6 +15,10 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
   const [subject, setSubject] = useState('');
   const [preheader, setPreheader] = useState('');
   const [htmlBody, setHtmlBody] = useState('');
+  // 'html' = ruwe HTML invoeren; 'text' = platte tekst die we bij verzenden naar
+  // nette HTML omzetten. Beide bodies apart bewaard zodat wisselen niets wist.
+  const [bodyMode, setBodyMode] = useState('html');
+  const [textBody, setTextBody] = useState('');
   const [replyTo, setReplyTo] = useState('');
   const [fromEmail, setFromEmail] = useState(defaultFromEmail);
   const [fromName, setFromName] = useState(defaultFromName);
@@ -69,12 +73,21 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
       .replace(/&nbsp;/g, ' ');
   }
 
+  // De HTML die daadwerkelijk verstuurd wordt: in text-modus zetten we de platte
+  // tekst om naar nette HTML; in html-modus is het de ruwe HTML. Merge-vars zoals
+  // {{first_name}} blijven in beide gevallen intact.
+  const effectiveHtml = useMemo(
+    () => (bodyMode === 'text' ? plainTextToHtml(textBody) : htmlBody),
+    [bodyMode, textBody, htmlBody]
+  );
+  const hasBody = bodyMode === 'text' ? !!textBody.trim() : !!htmlBody.trim();
+
   // Live preview — render with the first recipient's vars (or empty)
   const previewVars = useMemo(() => varsForContact(recipients?.[0] || {}), [recipients]);
-  const previewHtml = useMemo(() => renderTemplate(htmlBody, previewVars), [htmlBody, previewVars]);
+  const previewHtml = useMemo(() => renderTemplate(effectiveHtml, previewVars), [effectiveHtml, previewVars]);
 
   const send = async (testOnly) => {
-    if (!subject.trim() || !htmlBody.trim()) return;
+    if (!subject.trim() || !hasBody) return;
     setBusy(true);
     setResult(null);
 
@@ -164,7 +177,7 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
       ? {
           campaign_name: name || subject,
           subject,
-          html_body: htmlBody,
+          html_body: effectiveHtml,
           from_name: fromName,
           from_email: fromEmail,
           reply_to: replyTo || null,
@@ -177,7 +190,7 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
           name: name || subject,
           subject,
           preheader,
-          html_body: htmlBody,
+          html_body: effectiveHtml,
           from_name: fromName || undefined,
           from_email: fromEmail || undefined,
           reply_to: replyTo || null,
@@ -282,24 +295,40 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
 
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 4, gap: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ fontSize: 10, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>HTML body</div>
-            <button type="button" className="btn-ghost tiny" onClick={() => fileInputRef.current?.click()}>
-              📁 Open file…
-            </button>
-            <input ref={fileInputRef} type="file" accept=".html,.htm,text/html"
-              onChange={loadHtmlFromFile}
-              style={{ display: 'none' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            {/* Keuze boven het linkerframe: HTML of platte tekst */}
+            <div style={{ display: 'inline-flex', border: '0.5px solid var(--sep)', borderRadius: 6, overflow: 'hidden' }}>
+              <button type="button" className={bodyMode === 'html' ? 'btn-primary tiny' : 'btn-ghost tiny'}
+                style={{ borderRadius: 0 }} onClick={() => setBodyMode('html')}>HTML</button>
+              <button type="button" className={bodyMode === 'text' ? 'btn-primary tiny' : 'btn-ghost tiny'}
+                style={{ borderRadius: 0 }} onClick={() => setBodyMode('text')}>Plain text</button>
+            </div>
+            {bodyMode === 'html' && (
+              <>
+                <button type="button" className="btn-ghost tiny" onClick={() => fileInputRef.current?.click()}>
+                  📁 Open file…
+                </button>
+                <input ref={fileInputRef} type="file" accept=".html,.htm,text/html"
+                  onChange={loadHtmlFromFile}
+                  style={{ display: 'none' }} />
+              </>
+            )}
           </div>
           <div style={{ fontSize: 10, color: 'var(--text-3)' }}>
             Variables: {KNOWN_VARS.map(v => `{{${v}}}`).join(', ')}
           </div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, height: 380 }}>
-          <textarea value={htmlBody} onChange={e => setHtmlBody(e.target.value)}
-            placeholder="<html>...</html>"
-            spellCheck={false}
-            style={{ ...inputStyle, fontFamily: 'var(--font-mono)', resize: 'none', height: '100%', padding: 10, fontSize: 11 }} />
+          {bodyMode === 'text' ? (
+            <textarea value={textBody} onChange={e => setTextBody(e.target.value)}
+              placeholder={'Typ hier je bericht in gewone tekst.\n\nRegels en witregels blijven behouden, links (https://…) worden klikbaar, en {{first_name}} wordt per ontvanger ingevuld.'}
+              style={{ ...inputStyle, resize: 'none', height: '100%', padding: 10, fontSize: 13, lineHeight: 1.5 }} />
+          ) : (
+            <textarea value={htmlBody} onChange={e => setHtmlBody(e.target.value)}
+              placeholder="<html>...</html>"
+              spellCheck={false}
+              style={{ ...inputStyle, fontFamily: 'var(--font-mono)', resize: 'none', height: '100%', padding: 10, fontSize: 11 }} />
+          )}
           <iframe title="preview" srcDoc={previewHtml}
             sandbox=""
             style={{ width: '100%', height: '100%', border: '0.5px solid var(--sep)', borderRadius: 6, background: '#fff' }} />
@@ -316,13 +345,13 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
 
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
         <button className="btn-ghost tiny" onClick={onCancel} disabled={busy}>Cancel</button>
-        <button className="btn-ghost tiny" onClick={() => send(true)} disabled={busy || !subject.trim() || !htmlBody.trim()}>
+        <button className="btn-ghost tiny" onClick={() => send(true)} disabled={busy || !subject.trim() || !hasBody}>
           {busy ? 'Sending…' : 'Test send → me'}
         </button>
         <button className="btn-primary tiny" onClick={() => {
           if (!confirm(`Send "${subject}" to ${recipientsWithEmail} recipients?`)) return;
           send(false);
-        }} disabled={busy || recipientsWithEmail === 0 || !subject.trim() || !htmlBody.trim()}>
+        }} disabled={busy || recipientsWithEmail === 0 || !subject.trim() || !hasBody}>
           {busy ? 'Sending…' : `Send to ${recipientsWithEmail} recipient${recipientsWithEmail !== 1 ? 's' : ''}`}
         </button>
       </div>
@@ -336,3 +365,31 @@ const inputStyle = {
   fontSize: 12, fontFamily: 'inherit', outline: 'none',
   boxSizing: 'border-box',
 };
+
+function escapeHtml(s) {
+  return String(s || '')
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+// Zet platte tekst om naar nette, veilige HTML voor verzending/preview:
+// - HTML wordt ge-escaped (geen injectie vanuit gewone tekst)
+// - http(s)-links worden klikbaar (URL zelf blijft ongewijzigd in de href)
+// - regelafbrekingen worden <br>
+// - merge-vars zoals {{first_name}} blijven onaangeroerd (worden later ingevuld)
+function plainTextToHtml(text) {
+  const raw = String(text || '');
+  const urlRe = /(https?:\/\/[^\s<]+)/g;
+  let out = '';
+  let last = 0;
+  let m;
+  while ((m = urlRe.exec(raw)) !== null) {
+    out += escapeHtml(raw.slice(last, m.index));
+    const url = m[0];
+    const safeHref = url.replace(/"/g, '%22');
+    out += `<a href="${safeHref}" style="color:#2563eb">${escapeHtml(url)}</a>`;
+    last = m.index + url.length;
+  }
+  out += escapeHtml(raw.slice(last));
+  out = out.replace(/\r\n|\r|\n/g, '<br>');
+  return `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:15px;line-height:1.6;color:#1a1a1a">${out}</div>`;
+}

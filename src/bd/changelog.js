@@ -19,9 +19,30 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.84.2';
+export const CURRENT_VERSION = '1.85.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.85.0',
+    date: '2026-09-07T15:50:14Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Campaign composer: keuze HTML of Plain text boven het body-frame',
+    summary:
+      'Boven het linker body-frame kies je nu tussen HTML en Plain text. In plain-text-modus typ je gewone tekst; bij verzenden wordt die omgezet naar nette, veilige HTML (witregels behouden, links klikbaar, {{first_name}} blijft werken). Werkt op alle verzendwegen (newsletter/broadcast, transactioneel en test); geen backend-wijziging.',
+    changes: [
+      'marketing-composer.jsx: HTML/Plain text-toggle boven het linkerframe; aparte tekst- en HTML-state zodat wisselen niets wist.',
+      'Plain text → HTML-conversie met escaping (geen injectie), klikbare http(s)-links en behoud van merge-vars; live-preview toont exact wat verstuurd wordt.',
+      '"Open file…" alleen zichtbaar in HTML-modus; verzendknoppen valideren op de actieve body.',
+    ],
+    files: [
+      'src/bd/marketing-composer.jsx',
+      'VERSION',
+      'package.json',
+      'src/bd/changelog.js',
+    ],
+    gitTag: 'v1.85.0',
+  },
   {
     version: '1.84.2',
     date: '2026-09-04T08:50:43Z',
