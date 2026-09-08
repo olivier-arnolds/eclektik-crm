@@ -19,9 +19,32 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.86.1';
+export const CURRENT_VERSION = '1.87.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.87.0',
+    date: '2026-09-08T20:35:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Leesendpoint /api/event-registrations voor de deelnemerslijst van een event',
+    summary:
+      'De website stuurt inschrijvingen voor het event van 6 oktober als website-signal met event "event_registered" en de eventSlug in de payload. Dit endpoint haalt die lijst weer op voor de wachtwoordbeveiligde overzichtspagina op eclectik.co. Puur lezend, achter hetzelfde WEBSITE_WEBHOOK_SECRET als het schrijfendpoint.',
+    changes: [
+      'api/event-registrations.js: GET met verplichte event-slug, geneste select over marketing_lead_activity naar marketing_leads, Cache-Control no-store omdat het persoonsgegevens zijn.',
+      'api/_lib/event-registrations-lib.js: slugvalidatie (streng, want de waarde gaat de PostgREST-querystring in) plus vormgeven en ontdubbelen op e-mailadres; PostgREST kent geen DISTINCT ON en een view zou DDL op productie vragen.',
+      'Ontwerp: eclectik-website docs/superpowers/specs/2026-09-08-event-amsterdam-2026-design.md, onderdeel 4.',
+    ],
+    files: [
+      'api/event-registrations.js',
+      'api/_lib/event-registrations-lib.js',
+      'api/_lib/event-registrations-lib.test.js',
+      'VERSION',
+      'package.json',
+      'src/bd/changelog.js',
+    ],
+    gitTag: 'v1.87.0',
+  },
   {
     version: '1.86.1',
     date: '2026-09-07T18:06:27Z',
