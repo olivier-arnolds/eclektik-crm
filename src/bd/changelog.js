@@ -19,9 +19,30 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.87.0';
+export const CURRENT_VERSION = '1.87.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.87.1',
+    date: '2026-09-08T21:00:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Deelnemerslijst toonde verouderde naam, bedrijf en functie van terugkerende inschrijvers',
+    summary:
+      'Gevonden bij de rooktest op productie. upsertMarketingLead overschrijft bestaande profielvelden nooit, dus een e-mailadres dat al eens op de site was langsgekomen hield de gegevens van dat eerste bezoek. Het leesendpoint las die leadkolommen als eerste, waardoor iemand die zich in juli op de waitlist zette als Head of HR bij bedrijf X en zich nu inschrijft als CPO bij bedrijf Y, als Head of HR bij X op de badgelijst kwam.',
+    changes: [
+      'event-registrations-lib.js: payload krijgt voorrang op de leadkolom voor full_name, company en role; de leadkolom blijft terugval. Alleen in dit endpoint, want voor de rest van het CRM is de bestaande volgorde juist goed.',
+      'Twee tests erbij: payload wint van een gevulde maar verouderde leadkolom, en de leadkolom wint als de payload het veld mist.',
+    ],
+    files: [
+      'api/_lib/event-registrations-lib.js',
+      'api/_lib/event-registrations-lib.test.js',
+      'VERSION',
+      'package.json',
+      'src/bd/changelog.js',
+    ],
+    gitTag: 'v1.87.1',
+  },
   {
     version: '1.87.0',
     date: '2026-09-08T20:35:00Z',

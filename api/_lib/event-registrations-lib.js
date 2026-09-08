@@ -47,13 +47,23 @@ export function shapeRegistration(row) {
   return {
     occurred_at: (row && row.occurred_at) || null,
     email: str(lead.email),
-    // Naam, bedrijf en functie staan als kolom op de lead. upsertMarketingLead
-    // vult lege profielvelden aan maar overschrijft nooit, dus in de praktijk
-    // is de kolom gevuld; de payload is alleen terugval voor een lead die die
-    // kolom nog niet had toen de inschrijving binnenkwam.
-    full_name: str(lead.full_name) || str(payload.name),
-    company: str(lead.company) || str(payload.company),
-    role: str(lead.role) || str(payload.role),
+    // Payload eerst, leadkolom als terugval. Dat is bewust andersom dan de rest
+    // van het CRM doet, en de reden is dat dit een gastenlijst is.
+    //
+    // upsertMarketingLead vult lege profielvelden aan maar overschrijft nooit,
+    // dus de leadkolommen houden wat er stond toen dit e-mailadres voor het
+    // eerst ergens op de site opdook: een waitlist-aanmelding, een scorecard,
+    // een eerder event. Wie zich in juli op de waitlist zette als Head of HR
+    // bij bedrijf X en zich nu inschrijft als CPO bij bedrijf Y, stond met de
+    // oude volgorde als Head of HR bij X op de badgelijst.
+    //
+    // Voor de rest van het CRM is die volgorde juist goed: daar wil je de
+    // bekende identiteit niet laten overschrijven door een losse invoer. Hier
+    // wil je precies het omgekeerde, namelijk wie er binnenloopt en in welke
+    // functie, vandaag. Gevonden bij de rooktest van 8 september 2026.
+    full_name: str(payload.name) || str(lead.full_name),
+    company: str(payload.company) || str(lead.company),
+    role: str(payload.role) || str(lead.role),
     country: str(payload.country),
     phone: str(payload.phone),
     // Strikt: alleen een echte boolean true telt als toestemming. Het

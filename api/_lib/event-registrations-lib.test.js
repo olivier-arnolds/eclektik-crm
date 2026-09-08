@@ -75,6 +75,36 @@ describe('shapeRegistration', () => {
     expect(out.role).toBe('CHRO');
   });
 
+  // De reden dat dit endpoint de payload voorrang geeft en de rest van het CRM
+  // niet. upsertMarketingLead overschrijft bestaande profielvelden nooit, dus
+  // een terugkerend e-mailadres houdt de gegevens van zijn eerste bezoek. Voor
+  // een gastenlijst wil je juist wat er op dit formulier is ingevuld.
+  it('prefers the payload over stale lead columns for a returning registrant', () => {
+    const out = shapeRegistration({
+      ...row,
+      payload: { ...row.payload, name: 'Jane Doe', company: 'Bolt', role: 'CPO' },
+      lead: {
+        email: 'jane@acme.com',
+        full_name: 'Jane Doe',
+        company: 'Acme',
+        role: 'Head of HR',
+      },
+    });
+    expect(out.company).toBe('Bolt');
+    expect(out.role).toBe('CPO');
+  });
+
+  it('falls back to the lead column when the payload lacks the field', () => {
+    const out = shapeRegistration({
+      ...row,
+      payload: { eventSlug: 'amsterdam-2026' },
+      lead: { email: 'jane@acme.com', full_name: 'Jane Doe', company: 'Acme', role: 'CHRO' },
+    });
+    expect(out.full_name).toBe('Jane Doe');
+    expect(out.company).toBe('Acme');
+    expect(out.role).toBe('CHRO');
+  });
+
   it('returns nulls instead of undefined for a missing payload', () => {
     const out = shapeRegistration({
       occurred_at: '2026-09-08T10:00:00.000Z', payload: null,
