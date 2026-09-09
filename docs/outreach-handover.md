@@ -211,7 +211,37 @@ lezen.** Gevolgen:
   `outreach_message` wordt `conversation_id` daarmee alleen voor inbound gevuld;
   outbound slaat het Resend-message-id op.
 
-### 9.2 Graph: alleen leesrecht nodig, en welke admin-rol
+### 9.2 Graph: GEEN Azure-werk nodig (herzien 9 sept)
+
+**Dit vervangt de app-only-route die hieronder beschreven staat. Die is niet nodig.**
+
+`src/lib/graph.js` heeft al `getFolderEmails(folderName)`, dat
+`GET /me/mailFolders/{folder}/messages` doet met het token van de **ingelogde
+gebruiker**. De app leest dus al mailboxmappen via Graph, en er is al een net
+patroon voor een verlopen token (bij een 401 wordt `graph_token` gewist en vraagt de
+UI om opnieuw te verbinden). Daarmee vervalt de hele Azure-stap: geen app-registratie,
+geen admin consent, geen Exchange-policy, geen client secret die stil verloopt.
+
+Consequentie en de bijbehorende veiligheidsmaatregel:
+
+- Het token is van de ingelogde gebruiker, dus **Marco's inbox scannen kan alleen
+  terwijl Marco is ingelogd**. Olivier kan dat niet voor hem doen.
+- Het is dus niet onbeheerd. Daarom geldt: **de verzendactie blokkeert op verouderde
+  reply-data.** Bericht 2 mag alleen uit als de inbox recent gescand is (richtlijn 12
+  uur). Faalt of veroudert de scan, dan gaat er niets uit in plaats van iets verkeerds.
+
+Architectuur wordt daarmee:
+
+- **Tab "Outreach" onder Marketing** (browser, Marco's token): leest de inbox met
+  `getFolderEmails('Inbox')`, matcht met `src/bd/outreach-match.js`, en stuurt de
+  kandidaten naar een endpoint dat Claude laat classificeren (de Anthropic-key staat
+  server-side; zelfde patroon als `api/content-summary.js`).
+- **Verzenden**: endpoint met Resend, geen Graph nodig. Knop of later een cron.
+
+De app-only route hieronder blijft staan voor als dit ooit **onbeheerd en permanent**
+moet worden. Deze keuze blokkeert dat niet; de tab blijft in beide gevallen nuttig.
+
+### 9.2b Als je het ooit wél onbeheerd wil (niet nodig nu)
 
 Uitgezocht: de bestaande Graph-koppeling is **delegated en browser-side**
 (`src/lib/auth.jsx` zet `session.provider_token` in `localStorage.graph_token`). Een
