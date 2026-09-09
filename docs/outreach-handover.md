@@ -260,11 +260,17 @@ De berichtkolommen heten in het bestand:
 **Eerste golf = de 570 rijen met een nummer in `Outreach-prio`** (1 t/m 581, allemaal
 uniek). De overige 390 hebben daar letterlijk `Reserve` staan.
 
-Belangrijkste vondst: **die 570 nummers horen bij exact 570 unieke bedrijven, dus
+Belangrijkste vondst: **die 570 nummers horen bij exact 570 unieke bedrijfsnamen, dus
 één persoon per bedrijf.** De lijst is al zo samengesteld en de 390 `Reserve` zijn de
-extra contacten bij bedrijven als ING (17) en Philips (16). Gevolg: de
-per-bedrijf-regel (`max_per_company_per_week`) is voor golf 1 vrijwel irrelevant. Bouw
-hem wel, maar hij bijt pas als de reserves in beeld komen.
+extra contacten bij bedrijven als ING (17) en Philips (16).
+
+Preciezer op het niveau waar de code werkt: de per-bedrijf-regel gebruikt
+`email_domain`, en daar zijn het **549 unieke domeinen** voor 570 prospects (een
+bedrijfsnaam en een maildomein lopen niet 1-op-1, denk aan dochters of twee
+CRM-records voor dezelfde groep). Verdeling: 531 domeinen met 1 prospect, 16 met 2,
+1 met 3 en 1 met 4. Met `max_per_company_per_week = 2` raakt de regel dus **maar 2
+domeinen** en schuiven in totaal **3 prospects** een week op. Bouw de regel wel, maar
+hij bijt pas echt als de reserves in beeld komen.
 
 Samenstelling van de 570: 🟢 Top 259, 🟡 Goed 98, 🟠 Matig 213. Alle 570 hebben een
 e-mailadres. **357 hebben beide teksten en kunnen direct**; 213 missen teksten (dat is
@@ -321,4 +327,35 @@ dagelijks gebruikt ongemoeid.
 5. Job A met eigen verzendfunctie inclusief 429-backoff, eerst testcampagne op interne
    adressen.
 6. Overzichtspagina of dagelijkse samenvatting.
-7. Eerste golf van de 357, ramp naar 120 per dag.
+7. Eerste golf, ramp naar 120 per dag.
+
+### 9.7 Importresultaat (9 september, uitgevoerd)
+
+Migratie toegepast (`sql/schema_outreach_2026-09-09.sql`) en de lijst geïmporteerd met
+`scripts/import-outreach-list.py`. Campagne "Amsterdam 2026" aangemaakt met status
+`draft`, daily_cap 60, hard stop 2026-10-02.
+
+| | |
+|---|---|
+| rijen in het bestand | 960 |
+| geïmporteerd | **957** (3 dubbele e-mailadressen overgeslagen, alle drie in Reserve) |
+| golf 1 (`is_reserve = false`) | **570** |
+| status `queued`, dus direct verzendbaar | **352** |
+| status `paused` | 605 |
+| met msg1/msg2 subject + body | 474 (= 477 in het bestand min de 3 duplicaten) |
+
+Redenen voor `paused`: 381 reserve, 209 teksten ontbreken, 15 bestaande relatie.
+
+Cross-match tegen het CRM:
+- **0 matches op `contacts`.** Geen enkele prospect staat als contact in het CRM, dus
+  de lijst is volledig koud en er zit niemand met `do_not_email` tussen.
+- **111 matches op `companies`** (`company_id` gevuld), bruikbaar voor rapportage.
+- **15 prospects bij een bestaande relatie, automatisch op `paused`:** Partner (9) bij
+  Accenture, Capgemini, PwC, Microsoft en Tilburg University; Customer (6) bij
+  Boskalis, Adecco Group en Liberty Global. Die vragen een menselijke afweging: een
+  partnercontact is misschien juist een gewenste gast, maar niet via een koude pitch.
+  Vrijgeven kan per rij door `status` op `queued` te zetten en `next_action_at` te
+  vullen.
+
+Losse observatie: "Adecco Group Nederland" en "The Adecco Group" zijn twee aparte
+bedrijfsrecords in het CRM. Mogelijk een dubbeling, apart opruimpunt.
