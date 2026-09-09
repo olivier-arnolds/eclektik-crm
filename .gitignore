@@ -12,3 +12,7 @@ dist_check
 *.mov
 *.webm
 pnpm-lock.yaml
+
+# Python bytecode (scripts/)
+__pycache__/
+*.pyc
