@@ -47,6 +47,7 @@ describe('shapeRegistration', () => {
     payload: {
       name: 'Jane Doe', company: 'Acme', role: 'CHRO',
       eventSlug: 'amsterdam-2026', country: 'Netherlands',
+      invitedBy: 'Eclectik',
       phone: '+31 6 12345678', consentWorkvivo: true,
     },
     lead: { email: 'jane@acme.com', full_name: 'Jane Doe', company: 'Acme', role: 'CHRO' },
@@ -60,6 +61,7 @@ describe('shapeRegistration', () => {
       company: 'Acme',
       role: 'CHRO',
       country: 'Netherlands',
+      invited_by: 'Eclectik',
       phone: '+31 6 12345678',
       consent_workvivo: true,
     });
@@ -114,7 +116,7 @@ describe('shapeRegistration', () => {
       occurred_at: '2026-09-08T10:00:00.000Z',
       email: 'jane@acme.com',
       full_name: null, company: null, role: null,
-      country: null, phone: null, consent_workvivo: false,
+      country: null, invited_by: null, phone: null, consent_workvivo: false,
     });
   });
 

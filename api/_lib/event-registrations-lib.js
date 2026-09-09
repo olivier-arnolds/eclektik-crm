@@ -65,6 +65,9 @@ export function shapeRegistration(row) {
     company: str(payload.company) || str(lead.company),
     role: str(payload.role) || str(lead.role),
     country: str(payload.country),
+    // Welke van de twee organisatoren de gast heeft uitgenodigd. Staat alleen
+    // in de payload; inschrijvingen van voor dit veld bestond geven null.
+    invited_by: str(payload.invitedBy),
     phone: str(payload.phone),
     // Strikt: alleen een echte boolean true telt als toestemming. Het
     // formulier stuurt z.literal(true), dus een string 'true' zou betekenen

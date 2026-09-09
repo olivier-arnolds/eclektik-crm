@@ -19,9 +19,29 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.87.1';
+export const CURRENT_VERSION = '1.87.2';
 
 export const CHANGELOG = [
+  {
+    version: '1.87.2',
+    date: '2026-09-09T08:20:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Deelnemerslijst toont door wie de gast is uitgenodigd',
+    summary:
+      'Het inschrijfformulier op de website vraagt nu wie de gast heeft uitgenodigd: Eclectik, Zoom/Workvivo of Other. Het event wordt door twee partijen georganiseerd die het allebei naar hun eigen relaties pushen, dus achteraf wil je weten welke kant een aanmelding vandaan kwam. De waarde staat in de payload; het leesendpoint geeft hem terug als invited_by.',
+    changes: [
+      'event-registrations-lib.js: invited_by toegevoegd aan shapeRegistration, gelezen uit payload.invitedBy. Inschrijvingen van voor dit veld bestond geven null.',
+    ],
+    files: [
+      'api/_lib/event-registrations-lib.js',
+      'api/_lib/event-registrations-lib.test.js',
+      'VERSION',
+      'package.json',
+      'src/bd/changelog.js',
+    ],
+    gitTag: 'v1.87.2',
+  },
   {
     version: '1.87.1',
     date: '2026-09-08T21:00:00Z',
