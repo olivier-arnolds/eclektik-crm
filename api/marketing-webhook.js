@@ -1,5 +1,6 @@
 // POST /api/marketing-webhook
-// Receives Resend events and updates campaign_sends rows.
+// Receives Resend events and updates campaign_sends rows, and since v1.93.0 also
+// outreach_message / outreach_contact (see handleOutreach below).
 //
 // Resend signs each request with HMAC-SHA256 over the raw body, sent in the
 // 'svix-signature' header (Resend uses Svix for webhook delivery). We must
@@ -16,6 +17,7 @@
 // Unknown messageId → log and 200 (Resend retries on non-2xx — we don't want
 // loops for messages that aren't ours).
 import { createClient } from '@supabase/supabase-js';
+import { outreachUpdatesForEvent } from './_lib/outreach-webhook-lib.js';
 import crypto from 'crypto';
 
 const supabase = (process.env.VITE_SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY)
@@ -58,6 +60,46 @@ function verifySvixSignature(rawBody, headers, secret) {
   });
 }
 
+// Outreach-mails hebben GEEN campaign_sends-rij (die lopen via outreach_message),
+// dus ze moeten voor de campaign_sends-lookup afgehandeld worden. Anders valt het
+// event in de 'unknown message id'-return en weet de app nooit van een bounce.
+async function handleOutreach(type, event, messageId) {
+  const { data: msg } = await supabase
+    .from('outreach_message')
+    .select('id, contact_id, open_count, click_count, first_opened_at, first_clicked_at')
+    .eq('provider_message_id', messageId)
+    .eq('direction', 'outbound')
+    .maybeSingle();
+  if (!msg) return { matched: false };
+
+  const nowIso = new Date().toISOString();
+  const { handled, message, contact } = outreachUpdatesForEvent(type, event, msg, nowIso);
+  if (!handled) return { matched: true, handled: false };
+
+  if (Object.keys(message).length) {
+    const { error } = await supabase.from('outreach_message').update(message).eq('id', msg.id);
+    if (error) console.error('[marketing-webhook] outreach_message bijwerken faalde', msg.id, error.message);
+  }
+
+  if (msg.contact_id && Object.keys(contact).length) {
+    const { error } = await supabase.from('outreach_contact')
+      .update({ ...contact, updated_at: nowIso }).eq('id', msg.contact_id);
+    if (error) console.error('[marketing-webhook] outreach_contact bijwerken faalde', msg.contact_id, error.message);
+
+    // Een spamklacht ook in de CRM vastleggen, zodat andere verzendwegen deze
+    // persoon overslaan.
+    if (contact.status === 'opted_out') {
+      const { data: oc } = await supabase.from('outreach_contact')
+        .select('contact_id').eq('id', msg.contact_id).maybeSingle();
+      if (oc?.contact_id) {
+        await supabase.from('contacts').update({ do_not_email: true }).eq('id', oc.contact_id);
+      }
+    }
+  }
+
+  return { matched: true, handled: true, type, contact_updated: Object.keys(contact).length > 0 };
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
   if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
@@ -77,6 +119,13 @@ export default async function handler(req, res) {
 
   const messageId = event?.data?.email_id || event?.data?.id;
   if (!messageId) return res.status(200).json({ ignored: 'no message id' });
+
+  // Eerst outreach: die id's komen nooit in campaign_sends voor, dus als het
+  // hier matcht zijn we klaar.
+  const outreach = await handleOutreach(type, event, messageId);
+  if (outreach.matched) {
+    return res.status(200).json({ ok: true, outreach });
+  }
 
   // 1) Directe match op de per-mail-id (transactionele mails + reeds-gestempelde broadcasts).
   let { data: row } = await supabase

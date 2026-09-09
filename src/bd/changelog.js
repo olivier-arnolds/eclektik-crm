@@ -19,9 +19,33 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.92.1';
+export const CURRENT_VERSION = '1.93.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.93.0',
+    date: '2026-09-09T16:57:47Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Outreach: Resend-bounces en spamklachten komen nu in de app terecht',
+    summary:
+      'De Resend-webhook werkt nu ook de outreach-tabellen bij. Een hard gebounced adres wordt automatisch op bounced gezet en de opvolgmail vervalt; een spamklacht zet de prospect op afgemeld en ook op do_not_email in het CRM. Dit gat kwam boven water bij de eerste echte batch: 5 van 25 bouncede, en de app wist daar niets van.',
+    changes: [
+      'marketing-webhook.js: outreach-events worden afgehandeld VOOR de campaign_sends-lookup, want outreach-mails hebben geen campaign_sends-rij en vielen dus in de unknown-message-id-return.',
+      'api/_lib/outreach-webhook-lib.js: pure beslislogica met 13 tests. Een tijdelijke bounce raakt de prospect niet aan (het adres kan morgen werken), een permanente wel. Bij een onbekend bouncetype geldt permanent, want doorgaan met mailen naar een dood adres schaadt de domeinreputatie terwijl een onterecht gestopte prospect zichtbaar en handmatig te herstellen is.',
+      'Opens en clicks worden op het outreach-bericht geteld zonder de status te raken.',
+      'Eenmalige datacorrectie: de 5 bounces uit de eerste batch op bounced gezet en hun opvolgmail van 15/16 september verwijderd.',
+    ],
+    files: [
+      'api/marketing-webhook.js',
+      'api/_lib/outreach-webhook-lib.js (new)',
+      'api/_lib/outreach-webhook-lib.test.js (new)',
+      'VERSION',
+      'package.json',
+      'src/bd/changelog.js',
+    ],
+    gitTag: 'v1.93.0',
+  },
   {
     version: '1.92.1',
     date: '2026-09-09T16:15:51Z',
