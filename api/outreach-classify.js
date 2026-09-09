@@ -37,7 +37,7 @@ Bericht: ${String(bodyPreview || '').replace(/\s+/g, ' ').slice(0, 2000)}`;
 
   const message = await anthropic.messages.create({
     model: MODEL,
-    max_tokens: 400,
+    max_tokens: 200,
     system: SYSTEM,
     messages: [{ role: 'user', content: prompt }],
   });
@@ -81,7 +81,7 @@ export default async function handler(req, res) {
     let cls = null;
     try {
       if (c.isBounce) {
-        cls = { classification: 'bounce', confidence: 1, summary: 'Mail kon niet bezorgd worden.', ooo_until: null, referral_name: null, referral_email: null };
+        cls = { classification: 'bounce', confidence: 1, ooo_until: null, referral_name: null, referral_email: null };
         stats.bounces++;
       } else if (c.matchMethod === 'domain_flag') {
         // Onzeker wie dit is: alleen vastleggen, geen AI en geen statuswijziging.
@@ -108,7 +108,6 @@ export default async function handler(req, res) {
       sent_or_received_at: c.receivedAt || null,
       classification: cls?.classification || null,
       classification_confidence: cls ? cls.confidence : null,
-      summary: cls?.summary || null,
       match_method: c.matchMethod || null,
       bounced_at: c.isBounce ? (c.receivedAt || new Date().toISOString()) : null,
     });
@@ -136,7 +135,8 @@ export default async function handler(req, res) {
     const upd = {
       status: next.status,
       next_action_at: next.next_action_at,
-      last_reply_summary: cls.summary || null,
+      // De echte tekst van het antwoord, geen parafrase.
+      last_reply_summary: (c.bodyPreview || '').replace(/\s+/g, ' ').trim().slice(0, 500) || null,
       updated_at: new Date().toISOString(),
     };
     if (cls.classification === 'bounce') upd.paused_reason = 'mail bouncede';

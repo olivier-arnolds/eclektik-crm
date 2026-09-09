@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { parseClassification, SYSTEM, VALID_CLASSIFICATIONS } from './outreach-classify-lib.js';
 
 const ok = (o) => JSON.stringify({
-  classification: 'interested', confidence: 0.9, summary: 'Vraagt naar het programma.',
+  classification: 'interested', confidence: 0.9,
   ooo_until: null, referral_name: null, referral_email: null, ...o,
 });
 
@@ -10,7 +10,7 @@ describe('parseClassification - schone JSON', () => {
   it('leest de velden uit', () => {
     const r = parseClassification(ok());
     expect(r).toMatchObject({
-      classification: 'interested', confidence: 0.9, summary: 'Vraagt naar het programma.',
+      classification: 'interested', confidence: 0.9,
       ooo_until: null, referral_name: null, referral_email: null,
     });
   });
@@ -89,10 +89,6 @@ describe('parseClassification - degradeert veilig', () => {
     expect(r.referral_name).toBeNull();
     expect(r.referral_email).toBeNull();
   });
-
-  it('kapt een absurd lange samenvatting af', () => {
-    expect(parseClassification(ok({ summary: 'x'.repeat(900) })).summary).toHaveLength(500);
-  });
 });
 
 describe('de prompt zelf', () => {
@@ -102,5 +98,9 @@ describe('de prompt zelf', () => {
 
   it('vraagt expliciet om JSON zonder codeblok', () => {
     expect(SYSTEM).toMatch(/ALLEEN geldige JSON/);
+  });
+
+  it('vraagt GEEN samenvatting: de tab toont de echte antwoordtekst', () => {
+    expect(SYSTEM).not.toMatch(/summary/);
   });
 });

@@ -8,10 +8,13 @@
 
 export const MODEL = 'claude-opus-5';
 
+// Bewust GEEN samenvatting: de tab toont de echte tekst van het antwoord
+// (body_preview). Dat is korter dan een parafrase en je leest wat iemand
+// werkelijk schreef in plaats van een interpretatie ervan.
 export const SYSTEM = `Je classificeert antwoorden op een persoonlijke uitnodiging voor een zakelijk event.
 
 Geef ALLEEN geldige JSON terug, zonder inleiding, zonder codeblok:
-{"classification":"interested|declined|ooo|referral|bounce|other","confidence":0.0-1.0,"summary":"een korte zin in het Nederlands","ooo_until":"YYYY-MM-DD of null","referral_name":"naam of null","referral_email":"adres of null"}
+{"classification":"interested|declined|ooo|referral|bounce|other","confidence":0.0-1.0,"ooo_until":"YYYY-MM-DD of null","referral_name":"naam of null","referral_email":"adres of null"}
 
 Regels:
 - Een vraag over datum, programma, locatie of praktische zaken is "interested".
@@ -57,7 +60,6 @@ export function parseClassification(raw) {
     classification: known ? label : null,
     // Onbekend label betekent geen vertrouwen, ongeacht wat het model beweert.
     confidence: known && Number.isFinite(conf) ? Math.min(1, Math.max(0, conf)) : 0,
-    summary: typeof o.summary === 'string' ? o.summary.trim().slice(0, 500) || null : null,
     ooo_until: str(o.ooo_until),
     referral_name: str(o.referral_name),
     referral_email: str(o.referral_email),
