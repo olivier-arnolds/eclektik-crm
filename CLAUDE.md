@@ -313,6 +313,10 @@ DB triggers assign `companies.account_no` (ALL accounts) and a shared
 
 ## 9. Open queue / parked work
 
+- **E-mailoutreach event Amsterdam 6 okt 2026** (te bouwen): volledig ontwerp,
+  datamodel (3 tabellen), verzend- + inboxjob, veiligheidskleppen en bouwvolgorde
+  staan in `docs/outreach-handover.md`. Lees dat eerst. Advies uit de handover:
+  bouw de inboxscan (replydetectie) vóór het verzenden.
 - **Teams workspace channels** via a separate MSAL auth path (parked — needs
   Microsoft protected-API approval first; not worth code work until then).
 - Realtime updates on new inbound comms (currently refresh-on-click).
