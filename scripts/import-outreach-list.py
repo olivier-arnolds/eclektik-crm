@@ -10,8 +10,9 @@ WAAROM PYTHON EN NIET JS
   omweg reizen. Daarom staat de xlsx ook bewust niet in git.
 
 GEBRUIK
-  export SUPABASE_URL="https://<ref>.supabase.co"
-  export SUPABASE_SERVICE_KEY="<service_role key>"
+  Zet eenmalig in .env.local in de repo-root (gitignored, wordt nooit gecommit):
+    SUPABASE_URL=https://jdzaypckluncdwsoxurs.supabase.co
+    SUPABASE_SERVICE_KEY=<service_role key uit Supabase, Settings > API>
 
   # 1) Dry-run (standaard, schrijft niets):
   python3 scripts/import-outreach-list.py --file "/pad/naar/masterlijst-final-aangevuld.xlsx"
@@ -61,6 +62,26 @@ TIER_BY_PREFIX = {"\U0001F7E2": "top", "\U0001F7E1": "good", "\U0001F7E0": "medi
 
 
 # ── helpers ────────────────────────────────────────────────────────────────────
+def load_env_local():
+    """Vult ontbrekende env-vars uit .env.local in de repo-root.
+
+    Zo hoef je geen service-key in je shell-history te zetten. .env.local is
+    gitignored (.env*.local) en wordt nooit gecommit. Bestaande env-vars winnen.
+    """
+    path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env.local")
+    if not os.path.exists(path):
+        return
+    with open(path, encoding="utf-8") as fh:
+        for line in fh:
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            k, v = line.split("=", 1)
+            k, v = k.strip(), v.strip().strip('"').strip("'")
+            if k and k not in os.environ:
+                os.environ[k] = v
+
+
 def s(v):
     """Cel naar getrimde string, of '' als leeg."""
     return "" if v is None else str(v).strip()
@@ -181,10 +202,17 @@ def main():
                     help="werk ook BESTAANDE rijen bij (wist campagnevoortgang)")
     args = ap.parse_args()
 
+    load_env_local()
     url = os.environ.get("SUPABASE_URL") or os.environ.get("VITE_SUPABASE_URL")
     key = os.environ.get("SUPABASE_SERVICE_KEY")
     if not url or not key:
-        sys.exit("Zet SUPABASE_URL en SUPABASE_SERVICE_KEY in je omgeving (zie de docstring).")
+        sys.exit(
+            "SUPABASE_URL en SUPABASE_SERVICE_KEY ontbreken.\n"
+            "Zet ze in .env.local in de repo-root (gitignored), bijvoorbeeld:\n"
+            "  SUPABASE_URL=https://jdzaypckluncdwsoxurs.supabase.co\n"
+            "  SUPABASE_SERVICE_KEY=<service_role key uit Supabase, Settings > API>\n"
+            "of geef ze mee als env-var op de commandoregel."
+        )
     supa = Supa(url, key)
 
     # 1. Lijst lezen
