@@ -19,9 +19,35 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.90.0';
+export const CURRENT_VERSION = '1.91.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.91.0',
+    date: '2026-09-09T15:50:09Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Outreach: mails per contact bekijken, campagne kiezen, en een testcampagne',
+    summary:
+      'Klik in de Outreach-tab op een contact en je ziet beide mails precies zoals ze aankomen, plus wat er al verstuurd of ontvangen is. Er is een keuzelijst voor de campagne (nodig nu er een aparte testcampagne is) en het cryptische ruitje bij bedrijfsnamen is een leesbaar CRM-label geworden.',
+    changes: [
+      'Detail-modal per contact: onderwerp en volledige mail in een preview, met tabs voor bericht 1 en 2, wanneer ze verstuurd zijn, en het verloop inclusief classificatie van antwoorden.',
+      'De preview gebruikt exact dezelfde renderfunctie als het verzend-endpoint. Daarvoor is die naar src/lib/outreach-html.js verhuisd en importeert api daaruit, zodat een preview nooit kan afwijken van wat er echt uitgaat.',
+      'Campagne-keuzelijst in de kop, zichtbaar zodra er meer dan een campagne is.',
+      'Het ruitje bij bedrijfsnamen is vervangen door een leesbaar CRM-label (betekent: dit bedrijf staat al als account in het CRM).',
+      'Testcampagne "TEST Amsterdam 2026" aangemaakt met een intern adres, apart van de echte campagne zodat de cijfers daarvan niet vervuilen.',
+    ],
+    files: [
+      'src/lib/outreach-html.js (new)',
+      'src/bd/marketing-outreach.jsx',
+      'api/_lib/outreach-send-lib.js',
+      'api/_lib/outreach-send-lib.test.js',
+      'VERSION',
+      'package.json',
+      'src/bd/changelog.js',
+    ],
+    gitTag: 'v1.91.0',
+  },
   {
     version: '1.90.0',
     date: '2026-09-09T15:33:22Z',

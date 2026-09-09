@@ -6,7 +6,10 @@
 // een fout duur is (dubbel sturen, sturen na de stop, sturen op verouderde
 // reply-data), dus het staat los van de I/O en is volledig getest.
 
-import { escapeHtml, linkifyMarkdown } from './content-html.js';
+// Rendering leeft in src/lib zodat de preview in de tab exact hetzelfde
+// oplevert als wat hier verstuurd wordt.
+import { outreachTextToHtml, subjectForStep } from '../../src/lib/outreach-html.js';
+export { outreachTextToHtml, subjectForStep };
 
 // Bericht 2 mag niet uit als de inboxscan ouder is dan dit. De scan draait in de
 // browser (geen cron), dus zonder deze rem zou een opvolgmail naar iemand kunnen
@@ -14,53 +17,6 @@ import { escapeHtml, linkifyMarkdown } from './content-html.js';
 export const STALE_HOURS = 12;
 
 const TIER_RANK = { top: 0, good: 1, medium: 2 };
-
-// Kale URL's klikbaar maken. De outreach-teksten zijn met de hand geschreven en
-// bevatten https://... zonder markdown, dus zonder dit is de link in bericht 2
-// gewoon platte tekst.
-//
-// Werkt NA escapeHtml en NA linkifyMarkdown: we splitsen op bestaande <a>-blokken
-// zodat een URL die al in een href staat niet nog een keer gelinkt wordt.
-export function linkifyBareUrls(html) {
-  return String(html || '')
-    .split(/(<a\b[^>]*>.*?<\/a>)/gis)
-    .map((part, i) => (i % 2 === 1 ? part : part.replace(
-      // Laat sluitende interpunctie buiten de URL, anders wordt "zie https://x.nl."
-      // een link naar "x.nl.".
-      /(^|[\s(])(https?:\/\/[^\s<)]*[^\s<).,;:!?])/g,
-      (_m, pre, url) => `${pre}<a href="${url}" style="color:#2563eb;text-decoration:underline">${url}</a>`,
-    )))
-    .join('');
-}
-
-// Platte tekst -> HTML voor een outreach-mail. Bewust GEEN merkhandtekening: dit
-// moet een persoonlijke 1-op-1-mail zijn, en een gestileerde marketingfooter
-// verraadt precies het tegendeel. De afmeldregel is een gewone zin, geen banner.
-export function outreachTextToHtml(text, { unsubscribeUrl } = {}) {
-  const paras = String(text || '')
-    .split(/\n{2,}/)
-    .map(p => `<p>${linkifyBareUrls(linkifyMarkdown(escapeHtml(p))).replace(/\n/g, '<br>')}</p>`)
-    .join('');
-
-  // De mails zijn Engels (met de hand geschreven per persoon), dus deze regel ook.
-  // Laagdrempelig en menselijk gehouden: een marketingfooter met een grote
-  // afmeldbanner verraadt precies dat dit geen persoonlijke mail is.
-  const optOut = unsubscribeUrl
-    ? `<p style="font-size:12px;color:#888888">If you'd rather not hear more about this, <a href="${escapeHtml(unsubscribeUrl)}" style="color:#888888">opt out here</a>.</p>`
-    : '';
-
-  return `<!doctype html><html><body style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#222222">${paras}${optOut}</body></html>`;
-}
-
-// Subject voor een stap. Bericht 2 gaat als "Re: " op hetzelfde onderwerp: we
-// versturen via Resend, dus er is geen echte thread (addendum §9.1). Nooit
-// dubbel "Re: " ervoor zetten.
-export function subjectForStep(c, step) {
-  if (step === 1) return c?.msg1_subject || null;
-  const base = c?.msg2_subject || c?.msg1_subject || null;
-  if (!base) return null;
-  return /^re:\s/i.test(base) ? base : `Re: ${base}`;
-}
 
 export function bodyForStep(c, step) {
   return step === 1 ? (c?.msg1_body || null) : (c?.msg2_body || null);

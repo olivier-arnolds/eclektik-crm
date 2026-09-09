@@ -4,6 +4,7 @@ import { apiFetch } from '../lib/apiFetch';
 import { useAuth } from '../lib/auth';
 import { getFolderEmails, getMailboxFolderEmails } from '../lib/graph';
 import { scanInbox } from './outreach-match';
+import { outreachTextToHtml, subjectForStep } from '../lib/outreach-html';
 
 // Outreach-tab onder Marketing. Ontwerp: docs/outreach-handover.md addendum §9.
 //
@@ -55,6 +56,8 @@ function fmtAge(iso) {
 
 export default function MarketingOutreach() {
   const { session, hasGraphToken, reconnectMicrosoft } = useAuth();
+  const [campaigns, setCampaigns] = useState([]);
+  const [selectedId, setSelectedId] = useState(null);
   const [campaign, setCampaign] = useState(null);
   const [rows, setRows] = useState([]);
   const [sync, setSync] = useState(null);         // outreach_sync_state-rij
@@ -73,6 +76,8 @@ export default function MarketingOutreach() {
   const [batchSize, setBatchSize] = useState(25);
   const [busyStatus, setBusyStatus] = useState(false);
 
+  const [openContact, setOpenContact] = useState(null);
+
   const [statusFilter, setStatusFilter] = useState('all');
   const [prioFilter, setPrioFilter] = useState('all');
   const [showReserve, setShowReserve] = useState(false);
@@ -84,8 +89,11 @@ export default function MarketingOutreach() {
       const { data: camps, error: cErr } = await supabase
         .from('outreach_campaign').select('*').order('created_at', { ascending: true });
       if (cErr) throw cErr;
-      const camp = (camps || [])[0] || null;
+      setCampaigns(camps || []);
+      // Respecteer een handmatige keuze; anders de oudste campagne.
+      const camp = (camps || []).find(x => x.id === selectedId) || (camps || [])[0] || null;
       setCampaign(camp);
+      if (camp && camp.id !== selectedId) setSelectedId(camp.id);
       if (!camp) { setRows([]); setLoading(false); return; }
 
       const { data: cts, error: rErr } = await supabase
@@ -117,7 +125,7 @@ export default function MarketingOutreach() {
       setErr(e.message);
     }
     setLoading(false);
-  }, []);
+  }, [selectedId]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -265,7 +273,15 @@ export default function MarketingOutreach() {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       {/* Kop */}
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
-        <span style={{ fontSize: 14, fontWeight: 600 }}>{campaign.name}</span>
+        {campaigns.length > 1 ? (
+          <select value={campaign.id} onChange={e => setSelectedId(e.target.value)}
+            title="Kies een campagne"
+            style={{ padding: '4px 8px', borderRadius: 6, border: '0.5px solid var(--sep)', background: 'var(--bg-1)', fontSize: 13, fontWeight: 600 }}>
+            {campaigns.map(cx => <option key={cx.id} value={cx.id}>{cx.name}</option>)}
+          </select>
+        ) : (
+          <span style={{ fontSize: 14, fontWeight: 600 }}>{campaign.name}</span>
+        )}
         <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 999, border: '0.5px solid var(--sep)', color: 'var(--text-2)' }}>
           {campaign.status}
         </span>
@@ -482,7 +498,9 @@ export default function MarketingOutreach() {
             </thead>
             <tbody>
               {filtered.slice(0, 400).map(r => (
-                <tr key={r.id} style={{ borderBottom: '0.5px solid var(--sep)' }}>
+                <tr key={r.id} onClick={() => setOpenContact(r)}
+                  title="Bekijk de mails die naar deze persoon gaan"
+                  style={{ borderBottom: '0.5px solid var(--sep)', cursor: 'pointer' }}>
                   <td style={{ padding: '6px 10px', color: 'var(--text-3)', fontFamily: 'var(--font-mono)', whiteSpace: 'nowrap' }}>
                     {r.is_reserve ? 'res' : (r.outreach_prio ?? '')}
                   </td>
@@ -494,7 +512,12 @@ export default function MarketingOutreach() {
                   </td>
                   <td style={{ padding: '6px 10px', color: 'var(--text-2)' }}>
                     {r.company || '-'}
-                    {r.company_id && <span title="Bekend bedrijf in het CRM" style={{ marginLeft: 5, color: 'var(--text-3)' }}>◆</span>}
+                    {r.company_id && (
+                      <span title="Dit bedrijf staat al als account in het CRM"
+                        style={{ marginLeft: 6, fontSize: 9, padding: '1px 4px', borderRadius: 3, border: '0.5px solid var(--sep)', color: 'var(--text-3)', verticalAlign: 'middle' }}>
+                        CRM
+                      </span>
+                    )}
                   </td>
                   <td style={{ padding: '6px 10px', color: 'var(--text-2)', maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
                     title={r.priority_label || ''}>
@@ -526,10 +549,175 @@ export default function MarketingOutreach() {
         )}
       </div>
 
+      {openContact && (
+        <ContactMailsModal contact={openContact} campaign={campaign} onClose={() => setOpenContact(null)} />
+      )}
+
       <div style={{ fontSize: 11, color: 'var(--text-3)', lineHeight: 1.6 }}>
         Bericht 2 gaat alleen uit als de inboxscan jonger is dan {STALE_HOURS} uur, zodat een
         opvolgmail nooit naar iemand gaat die inmiddels al geantwoord heeft. Bericht 1 heeft die
         rem niet, want op een eerste contact kan nog geen antwoord zijn.
+      </div>
+    </div>
+  );
+}
+
+// Detail-modal: de mails zoals ze bij deze persoon aankomen, plus wat er al
+// verstuurd of ontvangen is. De teksten worden hier pas opgehaald (ze zitten
+// bewust niet in het lijstoverzicht) en gerenderd met exact dezelfde functie
+// als het verzend-endpoint gebruikt, zodat de preview niet liegt.
+function ContactMailsModal({ contact, campaign, onClose }) {
+  const [detail, setDetail] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState(null);
+  const [tab, setTab] = useState(1);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data: d, error: e1 } = await supabase
+          .from('outreach_contact')
+          .select('msg1_subject,msg1_body,msg2_subject,msg2_body,unsubscribe_token,paused_reason,last_reply_summary,status')
+          .eq('id', contact.id).single();
+        if (e1) throw e1;
+        const { data: h, error: e2 } = await supabase
+          .from('outreach_message')
+          .select('direction,sequence_step,subject,body_preview,sent_or_received_at,classification,classification_confidence,match_method,provider_message_id')
+          .eq('contact_id', contact.id)
+          .order('sent_or_received_at', { ascending: true, nullsFirst: false });
+        if (e2) throw e2;
+        if (!cancelled) { setDetail(d); setHistory(h || []); }
+      } catch (e) {
+        if (!cancelled) setErr(e.message);
+      }
+      if (!cancelled) setLoading(false);
+    })();
+    return () => { cancelled = true; };
+  }, [contact.id]);
+
+  const unsubUrl = detail?.unsubscribe_token
+    ? `${window.location.origin}/api/outreach-unsubscribe?t=${detail.unsubscribe_token}`
+    : null;
+
+  const subject = tab === 1
+    ? (detail?.msg1_subject || null)
+    : subjectForStep({ msg1_subject: detail?.msg1_subject, msg2_subject: detail?.msg2_subject }, 2);
+  const body = tab === 1 ? detail?.msg1_body : detail?.msg2_body;
+  const html = body ? outreachTextToHtml(body, { unsubscribeUrl: unsubUrl }) : null;
+
+  const sentStep = (n) => history.find(h => h.direction === 'outbound' && h.sequence_step === n);
+
+  return (
+    <div onClick={onClose}
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}>
+      <div onClick={e => e.stopPropagation()}
+        style={{ background: 'var(--bg-1)', border: '0.5px solid var(--sep)', borderRadius: 12, width: 'min(860px, 96vw)', maxHeight: '92vh', overflow: 'auto', boxShadow: '0 12px 40px rgba(0,0,0,0.25)' }}>
+
+        <div style={{ padding: '14px 18px', borderBottom: '0.5px solid var(--sep)', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 14, fontWeight: 600 }}>
+              {[contact.first_name, contact.last_name].filter(Boolean).join(' ') || contact.email}
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
+              {[contact.title, contact.company].filter(Boolean).join(' · ')} {contact.email ? `· ${contact.email}` : ''}
+            </div>
+          </div>
+          <span style={{ marginLeft: 'auto', fontSize: 11, color: STATUS_COLOR[contact.status] || 'var(--text-2)', fontWeight: 500 }}>
+            {STATUS_LABEL[contact.status] || contact.status}
+          </span>
+          <button className="btn-ghost tiny" onClick={onClose}>✕</button>
+        </div>
+
+        <div style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {loading && <div style={{ color: 'var(--text-3)', fontSize: 12 }}>Laden…</div>}
+          {err && <div style={{ color: '#dc2626', fontSize: 12 }}>Kon de mails niet laden: {err}</div>}
+
+          {!loading && !err && (
+            <>
+              {(detail?.paused_reason || detail?.last_reply_summary) && (
+                <div style={{ fontSize: 12, color: 'var(--text-2)', background: 'var(--fill-1)', borderRadius: 6, padding: '8px 10px' }}>
+                  {detail.last_reply_summary
+                    ? <><strong>Antwoord:</strong> {detail.last_reply_summary}</>
+                    : <><strong>Gepauzeerd:</strong> {detail.paused_reason}</>}
+                </div>
+              )}
+
+              <div style={{ display: 'inline-flex', border: '0.5px solid var(--sep)', borderRadius: 6, overflow: 'hidden', alignSelf: 'flex-start' }}>
+                {[1, 2].map(n => {
+                  const s = sentStep(n);
+                  return (
+                    <button key={n} type="button" className={tab === n ? 'btn-primary tiny' : 'btn-ghost tiny'}
+                      style={{ borderRadius: 0 }} onClick={() => setTab(n)}>
+                      Bericht {n}{s ? ' ✓' : ''}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {(() => {
+                const s = sentStep(tab);
+                return (
+                  <div style={{ fontSize: 11, color: s ? '#16a34a' : 'var(--text-3)' }}>
+                    {s
+                      ? `Verstuurd op ${String(s.sent_or_received_at || '').slice(0, 16).replace('T', ' ')}`
+                      : (tab === 2
+                        ? 'Nog niet verstuurd. Gaat 5 tot 7 dagen na bericht 1, en alleen als er geen antwoord is.'
+                        : 'Nog niet verstuurd.')}
+                  </div>
+                );
+              })()}
+
+              {!body ? (
+                <div style={{ fontSize: 12, color: '#b45309' }}>
+                  Voor bericht {tab} is nog geen tekst ingevuld, dus dit kan niet verstuurd worden.
+                </div>
+              ) : (
+                <>
+                  <div style={{ border: '0.5px solid var(--sep)', borderRadius: 6, padding: '8px 10px' }}>
+                    <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>Onderwerp</div>
+                    <div style={{ fontSize: 13, fontWeight: 600 }}>{subject || '(geen onderwerp)'}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>
+                      Van {campaign?.sender_mailbox} · antwoorden gaan naar {campaign?.sender_mailbox}
+                    </div>
+                  </div>
+                  <iframe title={`preview-${tab}`} srcDoc={html} sandbox=""
+                    style={{ width: '100%', height: 380, border: '0.5px solid var(--sep)', borderRadius: 6, background: '#fff' }} />
+                  <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
+                    Dit is exact de HTML die verstuurd wordt, met dezelfde functie gerenderd als het
+                    verzend-endpoint gebruikt.
+                  </div>
+                </>
+              )}
+
+              {history.length > 0 && (
+                <div style={{ borderTop: '0.5px solid var(--sep)', paddingTop: 10 }}>
+                  <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)', marginBottom: 6 }}>
+                    Verloop
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    {history.map((h, i) => (
+                      <div key={i} style={{ fontSize: 12, color: 'var(--text-2)', display: 'flex', gap: 8 }}>
+                        <span style={{ color: 'var(--text-3)', fontFamily: 'var(--font-mono)', fontSize: 11, whiteSpace: 'nowrap' }}>
+                          {String(h.sent_or_received_at || '').slice(0, 16).replace('T', ' ') || '-'}
+                        </span>
+                        <span style={{ whiteSpace: 'nowrap' }}>
+                          {h.direction === 'outbound' ? `→ bericht ${h.sequence_step}` : '← antwoord'}
+                        </span>
+                        <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {h.classification
+                            ? `${h.classification} (${Math.round((h.classification_confidence || 0) * 100)}%)`
+                            : (h.subject || h.body_preview || '')}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
-  linkifyBareUrls, outreachTextToHtml, subjectForStep, stepForStatus,
-  selectSendable, statusAfterSend, STALE_HOURS,
+  subjectForStep, stepForStatus, selectSendable, statusAfterSend, STALE_HOURS,
 } from './outreach-send-lib.js';
+import { linkifyBareUrls, outreachTextToHtml } from '../../src/lib/outreach-html.js';
 
 const NOW = new Date('2026-09-16T09:00:00Z');
 const FRESH = '2026-09-16T06:00:00Z';           // 3 uur oud
