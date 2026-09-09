@@ -66,6 +66,13 @@ export default function MarketingOutreach() {
   const [scanErr, setScanErr] = useState(null);
   const [scanResult, setScanResult] = useState(null);
 
+  const [sending, setSending] = useState(false);
+  const [sendPlan, setSendPlan] = useState(null);
+  const [sendResult, setSendResult] = useState(null);
+  const [sendErr, setSendErr] = useState(null);
+  const [batchSize, setBatchSize] = useState(25);
+  const [busyStatus, setBusyStatus] = useState(false);
+
   const [statusFilter, setStatusFilter] = useState('all');
   const [prioFilter, setPrioFilter] = useState('all');
   const [showReserve, setShowReserve] = useState(false);
@@ -198,6 +205,44 @@ export default function MarketingOutreach() {
     setScanning(false);
   };
 
+  const callSend = async ({ dryRun }) => {
+    if (!campaign) return;
+    setSending(true); setSendErr(null); setSendResult(null);
+    if (dryRun) setSendPlan(null);
+    try {
+      const resp = await apiFetch('/api/outreach-send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ campaign_id: campaign.id, limit: batchSize, dry_run: dryRun }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data?.error || `HTTP ${resp.status}`);
+      if (dryRun) setSendPlan(data.plan);
+      else { setSendResult({ ...data.stats, plan: data.plan, failures: data.failures || [] }); setSendPlan(null); await load(); }
+    } catch (e) {
+      setSendErr(e.message);
+    }
+    setSending(false);
+  };
+
+  const doSend = async () => {
+    const n = sendPlan?.would_send;
+    const msg = n
+      ? `${n} mail(s) versturen vanaf ${campaign.sender_mailbox}?`
+      : `Tot ${batchSize} mail(s) versturen vanaf ${campaign.sender_mailbox}?`;
+    if (!confirm(msg + '\n\nDit gaat naar echte prospects en is niet terug te draaien.')) return;
+    await callSend({ dryRun: false });
+  };
+
+  const setCampaignStatus = async (status) => {
+    setBusyStatus(true);
+    const { error } = await supabase.from('outreach_campaign')
+      .update({ status, updated_at: new Date().toISOString() }).eq('id', campaign.id);
+    setBusyStatus(false);
+    if (error) { setSendErr('Status wijzigen mislukt: ' + error.message); return; }
+    await load();
+  };
+
   if (loading) return <div style={{ padding: 24, color: 'var(--text-3)', fontSize: 12 }}>Laden…</div>;
   if (err) return <div style={{ padding: 16, color: '#dc2626', fontSize: 12 }}>Kon outreach niet laden: {err}</div>;
   if (!campaign) {
@@ -317,6 +362,84 @@ export default function MarketingOutreach() {
         )}
       </div>
 
+      {/* Verzenden */}
+      <div style={{ border: '0.5px solid var(--sep)', borderRadius: 8, padding: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 13, fontWeight: 600 }}>Verzenden</span>
+          <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
+            {sentInfo.count} verstuurd tot nu toe
+          </span>
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
+            <label style={{ fontSize: 11, color: 'var(--text-3)', display: 'flex', alignItems: 'center', gap: 5 }}>
+              batch
+              <input type="number" min={1} max={200} value={batchSize}
+                onChange={e => setBatchSize(Math.max(1, Math.min(200, Number(e.target.value) || 1)))}
+                style={{ width: 58, padding: '4px 6px', borderRadius: 6, border: '0.5px solid var(--sep)', background: 'var(--bg-1)', fontSize: 12 }} />
+            </label>
+            <button className="btn-ghost tiny" disabled={sending} onClick={() => callSend({ dryRun: true })}>
+              {sending ? 'Bezig…' : 'Bekijk wat er uitgaat'}
+            </button>
+            {campaign.status === 'active' ? (
+              <>
+                <button className="btn-primary tiny" disabled={sending} onClick={doSend}>
+                  Verstuur batch
+                </button>
+                <button className="btn-ghost tiny" disabled={busyStatus} onClick={() => setCampaignStatus('paused')}
+                  title="Killswitch: stopt het versturen onmiddellijk">
+                  Pauzeer
+                </button>
+              </>
+            ) : (
+              <button className="btn-ghost tiny" disabled={busyStatus} onClick={() => setCampaignStatus('active')}
+                title="Nodig voordat er iets verstuurd kan worden">
+                Campagne activeren
+              </button>
+            )}
+          </div>
+        </div>
+
+        {campaign.status !== 'active' && (
+          <div style={{ fontSize: 12, color: 'var(--text-3)' }}>
+            De campagne staat op <strong>{campaign.status}</strong>, dus er gaat niets uit. Een dry-run
+            kun je wel doen. Activeer pas als je echt wil versturen.
+          </div>
+        )}
+
+        {sendPlan && (
+          <div style={{ fontSize: 12, color: 'var(--text-2)', lineHeight: 1.7, background: 'var(--fill-1)', borderRadius: 6, padding: '8px 10px' }}>
+            <div>
+              <strong>{sendPlan.would_send}</strong> zouden nu uitgaan
+              {' '}(bericht 1: {sendPlan.by_step?.['1'] ?? 0}, bericht 2: {sendPlan.by_step?.['2'] ?? 0}).
+              {' '}Laatste 24 uur al verstuurd: {sendPlan.sent_last_24h} van dagcap {sendPlan.daily_cap}.
+            </div>
+            {sendPlan.skipped && Object.keys(sendPlan.skipped).length > 0 && (
+              <div style={{ color: 'var(--text-3)' }}>
+                Overgeslagen: {Object.entries(sendPlan.skipped).map(([k, v]) => `${v} ${k}`).join(', ')}.
+              </div>
+            )}
+          </div>
+        )}
+
+        {sendResult && (
+          <div style={{ fontSize: 12, lineHeight: 1.7 }}>
+            <span style={{ color: '#16a34a' }}>✓ {sendResult.sent} verstuurd.</span>
+            {sendResult.claimed_elsewhere > 0 && (
+              <span style={{ color: 'var(--text-3)' }}> {sendResult.claimed_elsewhere} al door een andere run gedaan.</span>
+            )}
+            {sendResult.failed > 0 && (
+              <span style={{ color: '#dc2626' }}> {sendResult.failed} mislukt, die worden opnieuw geprobeerd.</span>
+            )}
+            {sendResult.failures?.length > 0 && (
+              <div style={{ color: 'var(--text-3)', marginTop: 4 }}>
+                Eerste fout: {sendResult.failures[0].email} ({sendResult.failures[0].status}) {sendResult.failures[0].error}
+              </div>
+            )}
+          </div>
+        )}
+
+        {sendErr && <div style={{ fontSize: 12, color: '#dc2626' }}>{sendErr}</div>}
+      </div>
+
       {/* Filters */}
       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
         <input value={q} onChange={e => setQ(e.target.value)} placeholder="Zoek op naam, bedrijf of e-mail…"
@@ -403,9 +526,9 @@ export default function MarketingOutreach() {
       </div>
 
       <div style={{ fontSize: 11, color: 'var(--text-3)', lineHeight: 1.6 }}>
-        Verzenden zit hier nog niet in. Dat komt als aparte stap, en die knop blijft geblokkeerd
-        zolang de inboxscan ouder is dan {STALE_HOURS} uur, zodat bericht 2 nooit uitgaat op
-        verouderde reply-data.
+        Bericht 2 gaat alleen uit als de inboxscan jonger is dan {STALE_HOURS} uur, zodat een
+        opvolgmail nooit naar iemand gaat die inmiddels al geantwoord heeft. Bericht 1 heeft die
+        rem niet, want op een eerste contact kan nog geen antwoord zijn.
       </div>
     </div>
   );

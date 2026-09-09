@@ -19,9 +19,38 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.89.0';
+export const CURRENT_VERSION = '1.90.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.90.0',
+    date: '2026-09-09T15:33:22Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Outreach: verzendkant met dagcap, per-bedrijf-regel en afmeldlink',
+    summary:
+      'De Outreach-tab kan nu ook versturen. Elke prospect krijgt zijn eigen handgeschreven mail vanaf Marco, met reply-to op hetzelfde adres zodat antwoorden in zijn inbox landen. Dagcap, max 2 per bedrijf per week, harde stopdatum en een killswitch zitten erin, en bericht 2 gaat alleen uit als de inboxscan jonger is dan 12 uur.',
+    changes: [
+      'api/outreach-send.js: per persoon een mail via Resend transactioneel, met 429-backoff die Retry-After respecteert (wat marketing-send.js mist). Claimt eerst een rij in outreach_message en verstuurt daarna, zodat een crash halverwege nooit een dubbele mail oplevert; de unieke index maakt een tweede claim onmogelijk.',
+      'api/_lib/outreach-send-lib.js: pure selectielogica (dagcap over een rollend etmaal, per-bedrijf-regel, harde stop, staleness-rem op bericht 2, volgorde op tier en prio). 32 tests.',
+      'Kale URL-linkificatie: alle 474 opvolgteksten bevatten een https-link zonder markdown, die anders als platte tekst zou aankomen.',
+      'api/outreach-unsubscribe.js: afmeldlink plus List-Unsubscribe en List-Unsubscribe-Post headers (one-click). Zet de prospect op opted_out en, indien gekoppeld, do_not_email in de CRM. Bewust publiek: de token is de autorisatie.',
+      'Tab: dry-run die toont wie er uitgaat en waarom anderen afvallen, verzendknop met bevestiging, en een pauzeer/activeer-schakelaar als killswitch.',
+      'Tab: prioriteit-kolom uit de lijst met filter erop.',
+      'Geen merkhandtekening onder deze mails: het moet een persoonlijke 1-op-1-mail blijven.',
+    ],
+    files: [
+      'api/outreach-send.js (new)',
+      'api/outreach-unsubscribe.js (new)',
+      'api/_lib/outreach-send-lib.js (new)',
+      'api/_lib/outreach-send-lib.test.js (new)',
+      'src/bd/marketing-outreach.jsx',
+      'VERSION',
+      'package.json',
+      'src/bd/changelog.js',
+    ],
+    gitTag: 'v1.90.0',
+  },
   {
     version: '1.89.0',
     date: '2026-09-09T15:18:02Z',
