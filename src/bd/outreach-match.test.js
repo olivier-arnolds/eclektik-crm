@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   domainOf, isBounceMessage, looksLikeAutoReply, buildIndex, findContactEmailIn,
   matchMessage, scanInbox, statusAfterClassification,
-  MATCH_SENDER, MATCH_DOMAIN, MATCH_NONE, CONFIDENCE_FLOOR,
+  MATCH_SENDER, MATCH_DOMAIN, MATCH_NONE, CONFIDENCE_FLOOR, needsOurReply,
 } from './outreach-match';
 
 // Drie contacten, twee bij hetzelfde domein (de ING-situatie).
@@ -172,5 +172,34 @@ describe('statusAfterClassification', () => {
   it("'other' en een lege classificatie houden vast voor review", () => {
     expect(statusAfterClassification({ classification: 'other', confidence: 0.99, now: NOW }).needs_review).toBe(true);
     expect(statusAfterClassification({ classification: null, confidence: 0.99, now: NOW }).needs_review).toBe(true);
+  });
+});
+
+describe("needsOurReply - de weergave 'Onbeantwoord'", () => {
+  it('geen antwoord binnen: niets te doen', () => {
+    expect(needsOurReply({ last_inbound_at: null, answered_at: null })).toBe(false);
+    expect(needsOurReply({})).toBe(false);
+    expect(needsOurReply(null)).toBe(false);
+  });
+
+  it('antwoord binnen en wij nog niets terug: wacht op ons', () => {
+    expect(needsOurReply({ last_inbound_at: '2026-09-17T10:00:00Z', answered_at: null })).toBe(true);
+  });
+
+  it('wij hebben na het antwoord gereageerd: afgehandeld', () => {
+    expect(needsOurReply({
+      last_inbound_at: '2026-09-17T10:00:00Z', answered_at: '2026-09-17T11:00:00Z',
+    })).toBe(false);
+  });
+
+  it('KRITIEK: een nieuw antwoord na ons antwoord telt weer als onbeantwoord', () => {
+    expect(needsOurReply({
+      last_inbound_at: '2026-09-18T09:00:00Z', answered_at: '2026-09-17T11:00:00Z',
+    })).toBe(true);
+  });
+
+  it('robuust tegen onparseerbare datums', () => {
+    expect(needsOurReply({ last_inbound_at: 'kaput' })).toBe(false);
+    expect(needsOurReply({ last_inbound_at: '2026-09-17T10:00:00Z', answered_at: 'kaput' })).toBe(true);
   });
 });

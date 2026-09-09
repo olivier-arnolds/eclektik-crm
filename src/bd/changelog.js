@@ -19,9 +19,37 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.91.0';
+export const CURRENT_VERSION = '1.92.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.92.0',
+    date: '2026-09-09T16:05:12Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Outreach: klikbare statussen, Onbeantwoord, en antwoorden vanuit de detailpagina',
+    summary:
+      'De statustegels filteren nu de lijst. Er is een weergave Onbeantwoord voor prospects die geantwoord hebben terwijl wij nog niets terugstuurden, en vanuit de detailpagina kun je zelf een antwoord versturen. Dat zet de geautomatiseerde opvolging met bericht 2 stop.',
+    changes: [
+      'Statustegels zijn knoppen die de lijst filteren; nog een keer klikken zet het filter uit. Tegels gesplitst naar bericht 1 en bericht 2.',
+      'Weergave "Onbeantwoord" plus een label "wacht op ons" in de lijst. Bewust GEEN nieuwe DB-status: het is afgeleid uit last_inbound_at en answered_at, omdat "heeft geantwoord" en "wij moeten nog terug" onafhankelijke feiten zijn. Blijft daardoor ook kloppen als iemand twee keer achter elkaar antwoordt. 5 tests.',
+      'api/outreach-reply.js: antwoord versturen vanaf de campagne-afzender, met dezelfde 429-backoff. Zet next_action_at op null (opvolging stopt) en answered_at (verdwijnt uit Onbeantwoord). Weigert te sturen naar wie zich afmeldde.',
+      'De inboxscan leest nu ook Sent Items, zodat een antwoord dat Marco zelf uit Outlook stuurt ook als beantwoord telt (handover §5, stap 1).',
+      'DB: outreach_contact.last_inbound_at en answered_at; de outbound-constraint staat nu een handmatig antwoord zonder stapnummer toe.',
+    ],
+    files: [
+      'sql/schema_outreach_answered_2026-09-09.sql (new)',
+      'api/outreach-reply.js (new)',
+      'api/outreach-classify.js',
+      'src/bd/outreach-match.js',
+      'src/bd/outreach-match.test.js',
+      'src/bd/marketing-outreach.jsx',
+      'VERSION',
+      'package.json',
+      'src/bd/changelog.js',
+    ],
+    gitTag: 'v1.92.0',
+  },
   {
     version: '1.91.0',
     date: '2026-09-09T15:50:09Z',

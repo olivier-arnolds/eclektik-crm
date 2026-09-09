@@ -3,7 +3,7 @@ import { supabase } from '../supabase';
 import { apiFetch } from '../lib/apiFetch';
 import { useAuth } from '../lib/auth';
 import { getFolderEmails, getMailboxFolderEmails } from '../lib/graph';
-import { scanInbox } from './outreach-match';
+import { scanInbox, needsOurReply } from './outreach-match';
 import { outreachTextToHtml, subjectForStep } from '../lib/outreach-html';
 
 // Outreach-tab onder Marketing. Ontwerp: docs/outreach-handover.md addendum §9.
@@ -37,7 +37,9 @@ const STATUS_COLOR = {
 
 const CONTACT_COLS =
   'id,email,first_name,last_name,title,company,status,priority_tier,priority_label,outreach_prio,is_reserve,' +
-  'next_action_at,paused_reason,last_reply_summary,contact_id,company_id';
+  'next_action_at,paused_reason,last_reply_summary,contact_id,company_id,last_inbound_at,answered_at';
+
+const AWAITING = '__awaiting__';
 
 function hoursSince(iso) {
   if (!iso) return null;
@@ -133,6 +135,7 @@ export default function MarketingOutreach() {
   const counts = useMemo(() => {
     const c = {};
     for (const r of wave) c[r.status] = (c[r.status] || 0) + 1;
+    c[AWAITING] = wave.filter(needsOurReply).length;
     return c;
   }, [wave]);
 
@@ -151,7 +154,8 @@ export default function MarketingOutreach() {
     const needle = q.trim().toLowerCase();
     return rows.filter(r => {
       if (!showReserve && r.is_reserve) return false;
-      if (statusFilter !== 'all' && r.status !== statusFilter) return false;
+      if (statusFilter === AWAITING) { if (!needsOurReply(r)) return false; }
+      else if (statusFilter !== 'all' && r.status !== statusFilter) return false;
       if (prioFilter !== 'all' && (r.priority_label || '') !== prioFilter) return false;
       if (!needle) return true;
       return [r.email, r.company, r.first_name, r.last_name, r.title]
@@ -194,11 +198,41 @@ export default function MarketingOutreach() {
         for (const k of Object.keys(applied)) applied[k] += (data.stats?.[k] || 0);
       }
 
+      // Sent Items: heeft Marco zelf (buiten de app om) al geantwoord? Zo ja,
+      // dan is die prospect niet 'Onbeantwoord'. Handover §5, stap 1.
+      let answeredFound = 0;
+      try {
+        const sent = isSender
+          ? await getFolderEmails('SentItems', 300)
+          : await getMailboxFolderEmails(campaign.sender_mailbox, 'SentItems', 300);
+        const byEmail = new Map(rows.filter(r => r.email).map(r => [r.email.toLowerCase(), r]));
+        const best = new Map();
+        for (const m of sent) {
+          const when = new Date(m.date || 0).getTime();
+          if (!Number.isFinite(when)) continue;
+          for (const addr of (m.toAddresses || [])) {
+            const r = byEmail.get(String(addr).toLowerCase());
+            if (!r || !r.last_inbound_at) continue;
+            if (when <= new Date(r.last_inbound_at).getTime()) continue;   // van voor het antwoord
+            if (r.answered_at && when <= new Date(r.answered_at).getTime()) continue;
+            if (!best.has(r.id) || best.get(r.id) < when) best.set(r.id, when);
+          }
+        }
+        for (const [id, when] of best) {
+          const { error } = await supabase.from('outreach_contact')
+            .update({ answered_at: new Date(when).toISOString() }).eq('id', id);
+          if (!error) answeredFound++;
+        }
+      } catch (e) {
+        // Sent Items niet leesbaar is niet fataal: de inboxscan is al gelukt.
+        console.warn('Sent Items overslaan:', e.message);
+      }
+
       const nowIso = new Date().toISOString();
       await supabase.from('outreach_sync_state')
         .upsert({ id: 'inbox', last_synced_at: nowIso, updated_at: nowIso });
 
-      setScanResult({ scanned: stats.scanned, stats, applied, sinceISO });
+      setScanResult({ scanned: stats.scanned, stats, applied, sinceISO, answeredFound });
       await load();
     } catch (e) {
       const m = e.message || String(e);
@@ -262,12 +296,24 @@ export default function MarketingOutreach() {
     );
   }
 
-  const kpi = (label, value, color) => (
-    <div style={{ border: '0.5px solid var(--sep)', borderRadius: 8, padding: '8px 12px', minWidth: 104 }}>
-      <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>{label}</div>
-      <div style={{ fontSize: 20, fontWeight: 600, color: color || 'var(--text-1)' }}>{value}</div>
-    </div>
-  );
+  // Klikbaar: filtert de lijst op die status. Nog een keer klikken zet het filter uit.
+  const kpi = (label, value, color, filterValue) => {
+    const active = filterValue !== undefined && statusFilter === filterValue;
+    return (
+      <button type="button"
+        onClick={() => filterValue !== undefined && setStatusFilter(active ? 'all' : filterValue)}
+        title={filterValue === undefined ? undefined : (active ? 'Filter uitzetten' : `Filter op ${label.toLowerCase()}`)}
+        style={{
+          border: `0.5px solid ${active ? (color || 'var(--accent)') : 'var(--sep)'}`,
+          background: active ? 'var(--fill-1)' : 'transparent',
+          borderRadius: 8, padding: '8px 12px', minWidth: 104, textAlign: 'left',
+          cursor: filterValue === undefined ? 'default' : 'pointer', font: 'inherit',
+        }}>
+        <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>{label}</div>
+        <div style={{ fontSize: 20, fontWeight: 600, color: color || 'var(--text-1)' }}>{value}</div>
+      </button>
+    );
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -293,12 +339,14 @@ export default function MarketingOutreach() {
 
       {/* KPI's over golf 1 */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        {kpi('Golf 1', wave.length)}
-        {kpi('Klaar', counts.queued || 0, STATUS_COLOR.queued)}
-        {kpi('Verstuurd', (counts.msg1_sent || 0) + (counts.msg2_sent || 0), STATUS_COLOR.msg1_sent)}
-        {kpi('Antwoord', counts.replied || 0, STATUS_COLOR.replied)}
-        {kpi('Gebounced', counts.bounced || 0, STATUS_COLOR.bounced)}
-        {kpi('Gepauzeerd', counts.paused || 0, STATUS_COLOR.paused)}
+        {kpi('Golf 1', wave.length, undefined, 'all')}
+        {kpi('Klaar', counts.queued || 0, STATUS_COLOR.queued, 'queued')}
+        {kpi('Bericht 1', counts.msg1_sent || 0, STATUS_COLOR.msg1_sent, 'msg1_sent')}
+        {kpi('Bericht 2', counts.msg2_sent || 0, STATUS_COLOR.msg2_sent, 'msg2_sent')}
+        {kpi('Antwoord', counts.replied || 0, STATUS_COLOR.replied, 'replied')}
+        {kpi('Onbeantwoord', counts[AWAITING] || 0, '#d97706', AWAITING)}
+        {kpi('Gebounced', counts.bounced || 0, STATUS_COLOR.bounced, 'bounced')}
+        {kpi('Gepauzeerd', counts.paused || 0, STATUS_COLOR.paused, 'paused')}
         {kpi('Reserve', rows.length - wave.length, 'var(--text-3)')}
       </div>
 
@@ -365,6 +413,9 @@ export default function MarketingOutreach() {
               <> Verwerkt: {scanResult.applied.processed}, status gewijzigd bij {scanResult.applied.status_changed}.</>
             )}
             {scanResult.applied.skipped_known > 0 && <> {scanResult.applied.skipped_known} al eerder verwerkt.</>}
+            {scanResult.answeredFound > 0 && (
+              <> Bij {scanResult.answeredFound} prospect(s) bleek uit Sent Items dat er al geantwoord is.</>
+            )}
             {scanResult.applied.errors > 0 && (
               <span style={{ color: '#dc2626' }}> {scanResult.applied.errors} fout(en), die worden bij de volgende scan opnieuw geprobeerd.</span>
             )}
@@ -464,6 +515,7 @@ export default function MarketingOutreach() {
         <select value={statusFilter} onChange={e => setStatusFilter(e.target.value)}
           style={{ padding: '6px 8px', borderRadius: 6, border: '0.5px solid var(--sep)', background: 'var(--bg-1)', fontSize: 12 }}>
           <option value="all">Alle statussen</option>
+          <option value={AWAITING}>Onbeantwoord{counts[AWAITING] ? ` (${counts[AWAITING]})` : ''}</option>
           {Object.keys(STATUS_LABEL).map(s => (
             <option key={s} value={s}>{STATUS_LABEL[s]}{counts[s] ? ` (${counts[s]})` : ''}</option>
           ))}
@@ -527,6 +579,12 @@ export default function MarketingOutreach() {
                     <span style={{ color: STATUS_COLOR[r.status] || 'var(--text-2)', fontWeight: 500 }}>
                       {STATUS_LABEL[r.status] || r.status}
                     </span>
+                    {needsOurReply(r) && (
+                      <span title="Antwoord binnen, wij hebben nog niet gereageerd"
+                        style={{ marginLeft: 6, fontSize: 9, padding: '1px 4px', borderRadius: 3, background: 'rgba(217,119,6,0.15)', border: '0.5px solid rgba(217,119,6,0.5)', color: '#b45309' }}>
+                        wacht op ons
+                      </span>
+                    )}
                   </td>
                   <td style={{ padding: '6px 10px', color: 'var(--text-3)', whiteSpace: 'nowrap' }}>
                     {r.next_action_at ? String(r.next_action_at).slice(0, 10) : '-'}
@@ -550,7 +608,8 @@ export default function MarketingOutreach() {
       </div>
 
       {openContact && (
-        <ContactMailsModal contact={openContact} campaign={campaign} onClose={() => setOpenContact(null)} />
+        <ContactMailsModal contact={openContact} campaign={campaign}
+          onClose={() => setOpenContact(null)} onSent={load} />
       )}
 
       <div style={{ fontSize: 11, color: 'var(--text-3)', lineHeight: 1.6 }}>
@@ -566,12 +625,19 @@ export default function MarketingOutreach() {
 // verstuurd of ontvangen is. De teksten worden hier pas opgehaald (ze zitten
 // bewust niet in het lijstoverzicht) en gerenderd met exact dezelfde functie
 // als het verzend-endpoint gebruikt, zodat de preview niet liegt.
-function ContactMailsModal({ contact, campaign, onClose }) {
+function ContactMailsModal({ contact, campaign, onClose, onSent }) {
   const [detail, setDetail] = useState(null);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState(null);
   const [tab, setTab] = useState(1);
+
+  // Handmatig antwoord sturen.
+  const [composing, setComposing] = useState(false);
+  const [rSubject, setRSubject] = useState('');
+  const [rBody, setRBody] = useState('');
+  const [rBusy, setRBusy] = useState(false);
+  const [rResult, setRResult] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -588,7 +654,13 @@ function ContactMailsModal({ contact, campaign, onClose }) {
           .eq('contact_id', contact.id)
           .order('sent_or_received_at', { ascending: true, nullsFirst: false });
         if (e2) throw e2;
-        if (!cancelled) { setDetail(d); setHistory(h || []); }
+        if (!cancelled) {
+          setDetail(d);
+          setHistory(h || []);
+          const lastIn = [...(h || [])].reverse().find(x => x.direction === 'inbound');
+          const base = lastIn?.subject || d?.msg1_subject || '';
+          setRSubject(/^re:\s/i.test(base) ? base : (base ? `Re: ${base}` : ''));
+        }
       } catch (e) {
         if (!cancelled) setErr(e.message);
       }
@@ -596,6 +668,25 @@ function ContactMailsModal({ contact, campaign, onClose }) {
     })();
     return () => { cancelled = true; };
   }, [contact.id]);
+
+  const sendReply = async () => {
+    setRBusy(true); setRResult(null);
+    try {
+      const resp = await apiFetch('/api/outreach-reply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contact_id: contact.id, subject: rSubject, body: rBody }),
+      });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data?.error || `HTTP ${resp.status}`);
+      setRResult({ ok: true, msg: `Verstuurd naar ${data.sent_to}. De opvolging met bericht 2 is stopgezet.` });
+      setRBody(''); setComposing(false);
+      if (onSent) await onSent();
+    } catch (e) {
+      setRResult({ ok: false, msg: e.message });
+    }
+    setRBusy(false);
+  };
 
   const unsubUrl = detail?.unsubscribe_token
     ? `${window.location.origin}/api/outreach-unsubscribe?t=${detail.unsubscribe_token}`
@@ -691,6 +782,42 @@ function ContactMailsModal({ contact, campaign, onClose }) {
                 </>
               )}
 
+              <div style={{ borderTop: '0.5px solid var(--sep)', paddingTop: 10 }}>
+                {!composing ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                    <button className="btn-primary tiny" onClick={() => { setComposing(true); setRResult(null); }}>
+                      Antwoord sturen
+                    </button>
+                    <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
+                      Gaat vanaf {campaign?.sender_mailbox}. Zet de opvolging met bericht 2 stop.
+                    </span>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <input value={rSubject} onChange={e => setRSubject(e.target.value)} placeholder="Onderwerp"
+                      style={{ padding: '7px 10px', borderRadius: 6, border: '0.5px solid var(--sep)', background: 'var(--bg-1)', fontSize: 13 }} />
+                    <textarea value={rBody} onChange={e => setRBody(e.target.value)} rows={8}
+                      placeholder={'Typ je antwoord.\n\nWitregels blijven behouden en links worden klikbaar.'}
+                      style={{ padding: 10, borderRadius: 6, border: '0.5px solid var(--sep)', background: 'var(--bg-1)', fontSize: 13, lineHeight: 1.5, resize: 'vertical', fontFamily: 'inherit' }} />
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                      <button className="btn-primary tiny" disabled={rBusy || !rSubject.trim() || !rBody.trim()}
+                        onClick={sendReply}>
+                        {rBusy ? 'Versturen…' : `Verstuur naar ${contact.email}`}
+                      </button>
+                      <button className="btn-ghost tiny" disabled={rBusy} onClick={() => setComposing(false)}>Annuleren</button>
+                      <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
+                        Vanaf {campaign?.sender_mailbox}, antwoorden komen daar ook terug.
+                      </span>
+                    </div>
+                  </div>
+                )}
+                {rResult && (
+                  <div style={{ fontSize: 12, marginTop: 8, color: rResult.ok ? '#16a34a' : '#dc2626' }}>
+                    {rResult.ok ? '✓ ' : '✗ '}{rResult.msg}
+                  </div>
+                )}
+              </div>
+
               {history.length > 0 && (
                 <div style={{ borderTop: '0.5px solid var(--sep)', paddingTop: 10 }}>
                   <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)', marginBottom: 6 }}>
@@ -703,7 +830,9 @@ function ContactMailsModal({ contact, campaign, onClose }) {
                           {String(h.sent_or_received_at || '').slice(0, 16).replace('T', ' ') || '-'}
                         </span>
                         <span style={{ whiteSpace: 'nowrap' }}>
-                          {h.direction === 'outbound' ? `→ bericht ${h.sequence_step}` : '← antwoord'}
+                          {h.direction === 'outbound'
+                            ? (h.sequence_step ? `→ bericht ${h.sequence_step}` : '→ ons antwoord')
+                            : '← antwoord'}
                         </span>
                         <span style={{ minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {h.classification

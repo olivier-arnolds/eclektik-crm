@@ -232,3 +232,18 @@ export function statusAfterClassification({
       return hold;
   }
 }
+
+/**
+ * 'Onbeantwoord': er kwam een antwoord binnen en wij hebben daarna nog niets
+ * teruggestuurd. Bewust afgeleid uit twee tijdstempels in plaats van als
+ * DB-status opgeslagen: "heeft geantwoord" en "wij moeten nog terug" zijn
+ * onafhankelijke feiten, en zo blijft het ook kloppen als iemand twee keer
+ * achter elkaar antwoordt.
+ */
+export function needsOurReply(r) {
+  const inAt = r?.last_inbound_at ? new Date(r.last_inbound_at).getTime() : null;
+  if (inAt === null || !Number.isFinite(inAt)) return false;
+  const outAt = r?.answered_at ? new Date(r.answered_at).getTime() : null;
+  if (outAt === null || !Number.isFinite(outAt)) return true;
+  return outAt < inAt;
+}

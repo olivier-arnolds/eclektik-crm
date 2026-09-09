@@ -135,6 +135,9 @@ export default async function handler(req, res) {
     const upd = {
       status: next.status,
       next_action_at: next.next_action_at,
+      // Moment van het laatste binnengekomen antwoord. Samen met answered_at
+      // bepaalt dit of wij nog moeten reageren (weergave 'Onbeantwoord').
+      last_inbound_at: c.receivedAt || new Date().toISOString(),
       // De echte tekst van het antwoord, geen parafrase.
       last_reply_summary: (c.bodyPreview || '').replace(/\s+/g, ' ').trim().slice(0, 500) || null,
       updated_at: new Date().toISOString(),
