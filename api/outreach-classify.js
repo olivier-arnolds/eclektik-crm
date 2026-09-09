@@ -2,6 +2,7 @@ import { requireUser } from './_lib/guard.js';
 import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@supabase/supabase-js';
 import { statusAfterClassification } from '../src/bd/outreach-match.js';
+import { MODEL, SYSTEM, parseClassification } from './_lib/outreach-classify-lib.js';
 
 // POST /api/outreach-classify - job B, tweede helft.
 //
@@ -25,47 +26,11 @@ const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const supabase = (process.env.VITE_SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY)
   ? createClient(process.env.VITE_SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY) : null;
 
-const MODEL = 'claude-opus-5';
 const MAX_CANDIDATES = 25;
 
-const SYSTEM = `Je classificeert antwoorden op een persoonlijke uitnodiging voor een zakelijk event.
 
-Geef ALLEEN geldige JSON terug, zonder inleiding, zonder codeblok:
-{"classification":"interested|declined|ooo|referral|bounce|other","confidence":0.0-1.0,"summary":"een korte zin in het Nederlands","ooo_until":"YYYY-MM-DD of null","referral_name":"naam of null","referral_email":"adres of null"}
 
-Regels:
-- Een vraag over datum, programma, locatie of praktische zaken is "interested".
-- Expliciet afwijzen of geen interesse is "declined".
-- "Stuur het naar X" of doorverwijzen naar een collega is "referral"; vul dan referral_name en indien bekend referral_email.
-- Een automatisch antwoord zonder mens erachter is "ooo"; vul ooo_until als er een terugkeerdatum in staat.
-- Een systeemmelding over niet-bezorgen is "bounce".
-- Twijfel je, of gaat het over iets anders, dan "other" met een lage confidence.
-- confidence is je eigen zekerheid; wees streng, want bij lage confidence stopt het systeem de opvolging en laat het een mens kijken.`;
-
-// Robuust JSON uit het antwoord halen. Faalt dit, dan geven we een lage
-// confidence terug en houdt statusAfterClassification de status vast voor review.
-function parseClassification(raw) {
-  const text = String(raw || '').trim();
-  const start = text.indexOf('{');
-  const end = text.lastIndexOf('}');
-  if (start === -1 || end <= start) return null;
-  try {
-    const o = JSON.parse(text.slice(start, end + 1));
-    const conf = Number(o.confidence);
-    return {
-      classification: typeof o.classification === 'string' ? o.classification : null,
-      confidence: Number.isFinite(conf) ? Math.min(1, Math.max(0, conf)) : 0,
-      summary: typeof o.summary === 'string' ? o.summary.slice(0, 500) : null,
-      ooo_until: typeof o.ooo_until === 'string' && o.ooo_until !== 'null' ? o.ooo_until : null,
-      referral_name: typeof o.referral_name === 'string' && o.referral_name !== 'null' ? o.referral_name : null,
-      referral_email: typeof o.referral_email === 'string' && o.referral_email !== 'null' ? o.referral_email : null,
-    };
-  } catch {
-    return null;
-  }
-}
-
-async function classifyWithClaude({ fromAddress, subject, bodyPreview }) {
+export async function classifyWithClaude({ fromAddress, subject, bodyPreview }) {
   const prompt = `Afzender: ${fromAddress || 'onbekend'}
 Onderwerp: ${subject || '(geen)'}
 Bericht: ${String(bodyPreview || '').replace(/\s+/g, ' ').slice(0, 2000)}`;
