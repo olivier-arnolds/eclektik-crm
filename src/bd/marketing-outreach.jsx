@@ -11,11 +11,11 @@ import { scanInbox } from './outreach-match';
 // ingelogde gebruiker. Dat scheelt de hele Azure-app-only-route, maar het heeft
 // twee consequenties die zichtbaar in de UI moeten zitten:
 //
-//   1. Het token is van de ingelogde gebruiker, dus alleen de afzender zelf
-//      (Marco) kan zijn eigen inbox scannen. Iemand anders zou de verkeerde
-//      mailbox lezen; daarom blokkeren we de scanknop dan.
+//   1. We scannen altijd de mailbox van de campagne-AFZENDER, nooit die van wie
+//      toevallig is ingelogd. Ben je de afzender zelf, dan via /me; anders via
+//      /users/{afzender}, wat Mail.Read.Shared plus leesrechten vergt.
 //   2. Het is niet onbeheerd. Daarom tonen we prominent hoe oud de laatste scan
-//      is: bericht 2 mag straks niet uitgaan op verouderde reply-data.
+//      is: bericht 2 mag niet uitgaan op verouderde reply-data.
 //
 // De lijst met contacten wordt bewust ZONDER de berichtteksten opgehaald
 // (msg1_body/msg2_body zijn volledige e-mails); die horen niet in een overzicht.
@@ -33,10 +33,9 @@ const STATUS_COLOR = {
   bounced: '#dc2626', ooo: '#7c3aed', referred: '#0891b2', opted_out: '#6b7280',
   paused: '#6b7280', done: '#16a34a',
 };
-const TIER_LABEL = { top: 'Top', good: 'Goed', medium: 'Matig' };
 
 const CONTACT_COLS =
-  'id,email,first_name,last_name,title,company,status,priority_tier,outreach_prio,is_reserve,' +
+  'id,email,first_name,last_name,title,company,status,priority_tier,priority_label,outreach_prio,is_reserve,' +
   'next_action_at,paused_reason,last_reply_summary,contact_id,company_id';
 
 function hoursSince(iso) {
@@ -68,6 +67,7 @@ export default function MarketingOutreach() {
   const [scanResult, setScanResult] = useState(null);
 
   const [statusFilter, setStatusFilter] = useState('all');
+  const [prioFilter, setPrioFilter] = useState('all');
   const [showReserve, setShowReserve] = useState(false);
   const [q, setQ] = useState('');
 
@@ -121,18 +121,30 @@ export default function MarketingOutreach() {
     return c;
   }, [wave]);
 
+  // Prioriteit-opties uit de data zelf, met het aantal in golf 1 erbij.
+  const prioOptions = useMemo(() => {
+    const m = new Map();
+    for (const r of rows) {
+      const k = r.priority_label || '(leeg)';
+      if (!m.has(k)) m.set(k, 0);
+      if (!r.is_reserve) m.set(k, m.get(k) + 1);
+    }
+    return [...m.entries()].sort((a, b) => b[1] - a[1]);
+  }, [rows]);
+
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
     return rows.filter(r => {
       if (!showReserve && r.is_reserve) return false;
       if (statusFilter !== 'all' && r.status !== statusFilter) return false;
+      if (prioFilter !== 'all' && (r.priority_label || '') !== prioFilter) return false;
       if (!needle) return true;
       return [r.email, r.company, r.first_name, r.last_name, r.title]
         .some(v => String(v || '').toLowerCase().includes(needle));
     });
-  }, [rows, showReserve, statusFilter, q]);
+  }, [rows, showReserve, statusFilter, prioFilter, q]);
 
-  // Alleen de afzender zelf kan zijn eigen inbox scannen (delegated token).
+  // Bepaalt welk Graph-pad we gebruiken: eigen mailbox of gedeelde leesrechten.
   const myEmail = String(session?.user?.email || '').toLowerCase();
   const senderMailbox = String(campaign?.sender_mailbox || '').toLowerCase();
   const isSender = !!myEmail && myEmail === senderMailbox;
@@ -316,6 +328,14 @@ export default function MarketingOutreach() {
             <option key={s} value={s}>{STATUS_LABEL[s]}{counts[s] ? ` (${counts[s]})` : ''}</option>
           ))}
         </select>
+        <select value={prioFilter} onChange={e => setPrioFilter(e.target.value)}
+          title="Prioriteit uit de lijst"
+          style={{ padding: '6px 8px', borderRadius: 6, border: '0.5px solid var(--sep)', background: 'var(--bg-1)', fontSize: 12, maxWidth: 260 }}>
+          <option value="all">Alle prioriteiten</option>
+          {prioOptions.map(([label, n]) => (
+            <option key={label} value={label}>{label}{n ? ` (${n})` : ''}</option>
+          ))}
+        </select>
         <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, cursor: 'pointer' }}>
           <input type="checkbox" checked={showReserve} onChange={e => setShowReserve(e.target.checked)} />
           Reserve meenemen
@@ -331,7 +351,7 @@ export default function MarketingOutreach() {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
             <thead style={{ position: 'sticky', top: 0, background: 'var(--fill-1)', zIndex: 1 }}>
               <tr>
-                {['#', 'Naam', 'Bedrijf', 'Status', 'Volgende actie', 'Toelichting'].map(h => (
+                {['#', 'Naam', 'Bedrijf', 'Prioriteit', 'Status', 'Volgende actie', 'Toelichting'].map(h => (
                   <th key={h} style={{ textAlign: 'left', padding: '7px 10px', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)', borderBottom: '0.5px solid var(--sep)' }}>{h}</th>
                 ))}
               </tr>
@@ -345,15 +365,16 @@ export default function MarketingOutreach() {
                   <td style={{ padding: '6px 10px' }}>
                     <div style={{ color: 'var(--text-1)' }}>
                       {[r.first_name, r.last_name].filter(Boolean).join(' ') || r.email}
-                      {r.priority_tier && (
-                        <span style={{ marginLeft: 6, fontSize: 10, color: 'var(--text-3)' }}>{TIER_LABEL[r.priority_tier]}</span>
-                      )}
                     </div>
                     <div style={{ fontSize: 11, color: 'var(--text-3)' }}>{r.title || r.email}</div>
                   </td>
                   <td style={{ padding: '6px 10px', color: 'var(--text-2)' }}>
                     {r.company || '-'}
                     {r.company_id && <span title="Bekend bedrijf in het CRM" style={{ marginLeft: 5, color: 'var(--text-3)' }}>◆</span>}
+                  </td>
+                  <td style={{ padding: '6px 10px', color: 'var(--text-2)', maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                    title={r.priority_label || ''}>
+                    {r.priority_label || '-'}
                   </td>
                   <td style={{ padding: '6px 10px', whiteSpace: 'nowrap' }}>
                     <span style={{ color: STATUS_COLOR[r.status] || 'var(--text-2)', fontWeight: 500 }}>
@@ -369,7 +390,7 @@ export default function MarketingOutreach() {
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={6} style={{ padding: 16, textAlign: 'center', color: 'var(--text-3)' }}>Niets gevonden.</td></tr>
+                <tr><td colSpan={7} style={{ padding: 16, textAlign: 'center', color: 'var(--text-3)' }}>Niets gevonden.</td></tr>
               )}
             </tbody>
           </table>

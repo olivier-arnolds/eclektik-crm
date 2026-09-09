@@ -42,8 +42,11 @@ export function outreachTextToHtml(text, { unsubscribeUrl } = {}) {
     .map(p => `<p>${linkifyBareUrls(linkifyMarkdown(escapeHtml(p))).replace(/\n/g, '<br>')}</p>`)
     .join('');
 
+  // De mails zijn Engels (met de hand geschreven per persoon), dus deze regel ook.
+  // Laagdrempelig en menselijk gehouden: een marketingfooter met een grote
+  // afmeldbanner verraadt precies dat dit geen persoonlijke mail is.
   const optOut = unsubscribeUrl
-    ? `<p style="font-size:12px;color:#888888">Geen berichten hierover meer ontvangen? <a href="${escapeHtml(unsubscribeUrl)}" style="color:#888888">Laat het hier weten</a>.</p>`
+    ? `<p style="font-size:12px;color:#888888">If you'd rather not hear more about this, <a href="${escapeHtml(unsubscribeUrl)}" style="color:#888888">opt out here</a>.</p>`
     : '';
 
   return `<!doctype html><html><body style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#222222">${paras}${optOut}</body></html>`;
