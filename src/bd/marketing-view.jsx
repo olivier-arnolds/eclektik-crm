@@ -6,6 +6,7 @@ import MarketingCampaigns from './marketing-campaigns';
 import TagManager from './marketing-tag-manager';
 import MarketingComposer from './marketing-composer';
 import MarketingLeads from './marketing-leads';
+import MarketingOutreach from './marketing-outreach';
 
 export default function MarketingView({ contacts, accounts, deals, allTags, refetch, onFilteredAccountsChange }) {
   const [tab, setTab] = useState('contacts');
@@ -70,6 +71,11 @@ export default function MarketingView({ contacts, accounts, deals, allTags, refe
               onClick={() => setTab('leads')}>
               Leads
             </button>
+            <button
+              className={tab === 'outreach' ? 'btn-primary tiny' : 'btn-ghost tiny'}
+              onClick={() => setTab('outreach')}>
+              Outreach
+            </button>
             {syncMsg && (
               <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-3)' }}>{syncMsg}</span>
             )}
@@ -101,6 +107,7 @@ export default function MarketingView({ contacts, accounts, deals, allTags, refe
           )}
           {tab === 'campaigns' && <MarketingCampaigns />}
           {tab === 'leads' && <MarketingLeads />}
+          {tab === 'outreach' && <MarketingOutreach />}
 
           {showTagManager && (
             <TagManager

@@ -19,9 +19,42 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.88.0';
+export const CURRENT_VERSION = '1.89.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.89.0',
+    date: '2026-09-09T15:18:02Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Outreach-module: tab onder Marketing met inboxscan en replydetectie',
+    summary:
+      'Nieuwe tab Marketing > Outreach voor de e-mailoutreach van het event Amsterdam (6 okt). Toont de geimporteerde prospects met hun status, en scant met een knop de inbox van de afzender om antwoorden aan prospects te koppelen en te classificeren. Verzenden zit er nog niet in; dat volgt als aparte stap en wordt geblokkeerd zolang de inboxscan verouderd is.',
+    changes: [
+      'DB: outreach_campaign / outreach_contact / outreach_message / outreach_sync_state, met een unieke index die dubbel versturen van dezelfde stap naar dezelfde prospect op DB-niveau onmogelijk maakt.',
+      'scripts/import-outreach-list.py: importeert de lijst (957 rijen, 570 in golf 1, 352 direct verzendbaar), splitst subject/body, en cross-matcht op e-mail en domein tegen contacts en companies zodat bestaande relaties en do_not_email automatisch op paused komen.',
+      'src/bd/outreach-match.js: tweetraps matching (afzenderadres zeker, domein alleen flaggen), bounce- en autoreply-herkenning en statusovergangen met een confidence-drempel van 70 procent. 24 tests.',
+      'api/outreach-classify.js + api/_lib/outreach-classify-lib.js: classificeert antwoorden met Claude (interested/declined/ooo/referral/bounce), idempotent op het Graph-message-id. 17 tests op de parser.',
+      'marketing-outreach.jsx: overzicht, filters, en de inboxscan met een prominente indicator hoe oud de laatste scan is.',
+      'Geen Azure-app nodig: de scan gebruikt het bestaande Graph-token van de ingelogde gebruiker. Daarom kan alleen de afzender zelf zijn inbox scannen, en dat blokkeert de UI expliciet voor iemand anders.',
+    ],
+    files: [
+      'sql/schema_outreach_2026-09-09.sql (new)',
+      'scripts/import-outreach-list.py (new)',
+      'src/bd/outreach-match.js (new)',
+      'src/bd/outreach-match.test.js (new)',
+      'api/outreach-classify.js (new)',
+      'api/_lib/outreach-classify-lib.js (new)',
+      'api/_lib/outreach-classify-lib.test.js (new)',
+      'src/bd/marketing-outreach.jsx (new)',
+      'src/bd/marketing-view.jsx',
+      'docs/outreach-handover.md',
+      'VERSION',
+      'package.json',
+      'src/bd/changelog.js',
+    ],
+    gitTag: 'v1.89.0',
+  },
   {
     version: '1.88.0',
     date: '2026-09-09T12:51:00Z',
