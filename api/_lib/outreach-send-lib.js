@@ -80,6 +80,9 @@ export function stepForStatus(status) {
  *   now                    Date
  *   dailyCap               int  campagne-dagcap
  *   sentToday              int  al vandaag verstuurd (outbound van vandaag)
+ *   batchLimit             int of null: bovengrens voor DEZE aanroep. Los van de
+ *                          dagcap gehouden, want anders krijgt "de batch was vol"
+ *                          de misleidende reden "dagcap bereikt".
  *   maxPerCompanyPerWeek   int
  *   domainCounts           { [email_domain]: aantal in de afgelopen 7 dagen }
  *   hardStopAt             ISO of null  na deze datum geen bericht 2 meer
@@ -90,15 +93,23 @@ export function stepForStatus(status) {
  */
 export function selectSendable(candidates, opts = {}) {
   const {
-    now = new Date(), dailyCap = 0, sentToday = 0, maxPerCompanyPerWeek = 2,
-    domainCounts = {}, hardStopAt = null, lastScanISO = null,
-    staleHours = STALE_HOURS, onlyStep = null,
+    now = new Date(), dailyCap = 0, sentToday = 0, batchLimit = null,
+    maxPerCompanyPerWeek = 2, domainCounts = {}, hardStopAt = null,
+    lastScanISO = null, staleHours = STALE_HOURS, onlyStep = null,
   } = opts;
 
   const skipped = {};
   const bump = (reason) => { skipped[reason] = (skipped[reason] || 0) + 1; };
 
-  let remaining = Math.max(0, Number(dailyCap) - Number(sentToday));
+  // Twee onafhankelijke bovengrenzen. We onthouden welke van de twee bindt, zodat
+  // de reden die de gebruiker ziet klopt.
+  const capRoom = Math.max(0, Number(dailyCap) - Number(sentToday));
+  const batchRoom = batchLimit === null || batchLimit === undefined
+    ? Number.POSITIVE_INFINITY
+    : Math.max(0, Number(batchLimit));
+  const capIsBinding = capRoom <= batchRoom;
+  const limitReason = capIsBinding ? 'dagcap bereikt' : 'batchlimiet bereikt';
+  let remaining = Math.min(capRoom, batchRoom);
 
   const scanAgeH = lastScanISO ? (now.getTime() - new Date(lastScanISO).getTime()) / 3600000 : null;
   const scanStale = scanAgeH === null || !Number.isFinite(scanAgeH) || scanAgeH > staleHours;
@@ -143,14 +154,14 @@ export function selectSendable(candidates, opts = {}) {
 
     // Dagcap als laatste, zodat wie afvalt door een andere regel niet onnodig
     // een plek in de cap opsnoept.
-    if (remaining <= 0) { bump('dagcap bereikt'); continue; }
+    if (remaining <= 0) { bump(limitReason); continue; }
 
     batch.push({ contact: c, step, subject, body });
     if (dom) domainUsed[dom] = (domainUsed[dom] || 0) + 1;
     remaining--;
   }
 
-  return { batch, skipped, remainingCap: remaining };
+  return { batch, skipped, remainingCap: remaining, limitReason };
 }
 
 // Statusupdate na een geslaagde verzending (handover §4).

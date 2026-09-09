@@ -123,14 +123,12 @@ export default async function handler(req, res) {
     .from('outreach_sync_state').select('last_synced_at').eq('id', 'inbox').maybeSingle();
 
   const askedLimit = Number.isFinite(Number(limit)) ? Math.min(MAX_BATCH, Number(limit)) : null;
-  const effectiveCap = askedLimit === null
-    ? camp.daily_cap
-    : Math.min(camp.daily_cap, (sentToday || 0) + askedLimit);
 
   const { batch, skipped, remainingCap } = selectSendable(due || [], {
     now,
-    dailyCap: effectiveCap,
+    dailyCap: camp.daily_cap,
     sentToday: sentToday || 0,
+    batchLimit: askedLimit,
     maxPerCompanyPerWeek: camp.max_per_company_per_week,
     domainCounts,
     hardStopAt: camp.hard_stop_at,
@@ -144,6 +142,7 @@ export default async function handler(req, res) {
     sent_last_24h: sentToday || 0,
     daily_cap: camp.daily_cap,
     would_send: batch.length,
+    batch_limit: askedLimit,
     by_step: { 1: batch.filter(b => b.step === 1).length, 2: batch.filter(b => b.step === 2).length },
     skipped,
     remaining_cap: remainingCap,

@@ -101,6 +101,37 @@ describe('selectSendable - dagcap', () => {
   });
 });
 
+describe('selectSendable - dagcap versus batchlimiet', () => {
+  const rows = () => Array.from({ length: 100 }, (_, i) =>
+    c({ id: `c${i}`, email: `a${i}@x${i}.nl`, email_domain: `x${i}.nl`, outreach_prio: i }));
+
+  it('batchlimiet kleiner dan de ruimte in de dagcap: reden is batchlimiet', () => {
+    const r = selectSendable(rows(), { ...base, dailyCap: 60, sentToday: 0, batchLimit: 25 });
+    expect(r.batch).toHaveLength(25);
+    expect(r.skipped['batchlimiet bereikt']).toBe(75);
+    expect(r.skipped['dagcap bereikt']).toBeUndefined();
+  });
+
+  it('dagcap knijpt harder dan de batch: reden is dagcap', () => {
+    const r = selectSendable(rows(), { ...base, dailyCap: 60, sentToday: 50, batchLimit: 25 });
+    expect(r.batch).toHaveLength(10);
+    expect(r.skipped['dagcap bereikt']).toBe(90);
+    expect(r.skipped['batchlimiet bereikt']).toBeUndefined();
+  });
+
+  it('zonder batchlimiet is de dagcap de grens', () => {
+    const r = selectSendable(rows(), { ...base, dailyCap: 40, batchLimit: null });
+    expect(r.batch).toHaveLength(40);
+    expect(r.skipped['dagcap bereikt']).toBe(60);
+  });
+
+  it('de kleinste van de twee wint, ook als de dagcap al vol is', () => {
+    const r = selectSendable(rows(), { ...base, dailyCap: 60, sentToday: 60, batchLimit: 25 });
+    expect(r.batch).toHaveLength(0);
+    expect(r.skipped['dagcap bereikt']).toBe(100);
+  });
+});
+
 describe('selectSendable - volgorde', () => {
   it('top voor goed voor matig, daarbinnen op prio', () => {
     const rows = [

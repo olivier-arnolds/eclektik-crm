@@ -410,6 +410,7 @@ export default function MarketingOutreach() {
             <div>
               <strong>{sendPlan.would_send}</strong> zouden nu uitgaan
               {' '}(bericht 1: {sendPlan.by_step?.['1'] ?? 0}, bericht 2: {sendPlan.by_step?.['2'] ?? 0}).
+              {sendPlan.batch_limit ? ` Batch staat op ${sendPlan.batch_limit}.` : ''}
               {' '}Laatste 24 uur al verstuurd: {sendPlan.sent_last_24h} van dagcap {sendPlan.daily_cap}.
             </div>
             {sendPlan.skipped && Object.keys(sendPlan.skipped).length > 0 && (
