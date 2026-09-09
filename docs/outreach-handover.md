@@ -179,3 +179,146 @@ Systeem: je classificeert antwoorden op een persoonlijke uitnodiging voor een za
 6. Eerste groene golf, dagcap 40.
 
 Tijdlijn: vandaag is 9 september. Als de eerste golf uiterlijk 16 september gaat, valt bericht 2 rond 21 tot 23 september en is er nog ruimte voor de gele en oranje golf vóór de stop op 2 oktober.
+
+## 9. Addendum 9 september 2026: besluiten en nagemeten cijfers
+
+Toegevoegd in de BD-repo na de open punten van §7 te hebben uitgezocht. **Waar dit
+addendum afwijkt van §1 tot §8, geldt dit addendum.**
+
+### 9.1 Verzendweg: optie A (besluit)
+
+Er bestond al een werkende 1-op-1-verzendweg in de app: de transactionele modus van
+de campaign-composer (`api/marketing-send.js`, Resend `POST /emails`, één mail per
+ontvanger). Die is deze week twee keer gebruikt vanaf `marco@eclectik.co` met
+reply-to `marco@`: 57 ontvangers op 8 sept en 32 op 7 sept. Ontvangers ervaren dat
+als 1-op-1.
+
+Belangrijk: dat endpoint ondersteunt **al** volledig unieke bodies per ontvanger
+(`r.html ? r.html : renderTemplate(...)`), dus per-record teksten vragen geen nieuw
+verzendmechanisme. Wel batchen; de code waarschuwt dat inline html bij 88+
+ontvangers tegen de Vercel body-limiet loopt.
+
+**Besluit: versturen via de transactionele Resend-weg, Graph alleen om de inbox te
+lezen.** Gevolgen:
+
+- **Beslissing 4 van §3 vervalt.** Bericht 1 staat niet in Marco's mailbox, dus
+  `createReply` kan niet. Bericht 2 gaat als losse mail met "Re: " plus hetzelfde
+  subject. Olivier accepteert dat er geen echte thread is en dat Marco geen kopie in
+  zijn Sent Items heeft.
+- **De matching van §5 wordt tweetraps in plaats van drietraps.** Er is geen Graph
+  `conversation_id` voor outbound, dus: eerst afzenderadres gelijk aan
+  `outreach_contact.email` (betrouwbaar), daarna domein-flag (handmatig). In
+  `outreach_message` wordt `conversation_id` daarmee alleen voor inbound gevuld;
+  outbound slaat het Resend-message-id op.
+
+### 9.2 Graph: alleen leesrecht nodig, en welke admin-rol
+
+Uitgezocht: de bestaande Graph-koppeling is **delegated en browser-side**
+(`src/lib/auth.jsx` zet `session.provider_token` in `localStorage.graph_token`). Een
+Vercel-cron kan daar niets mee. Het enige app-only pad is `api/glint-sync.js`
+(client_credentials), gated op `GRAPH_TENANT_ID/CLIENT_ID/CLIENT_SECRET` met alleen
+Files.Read.All consent.
+
+Nodig voor job B: application permission **`Mail.Read`** plus een **application
+access policy** die de app beperkt tot Marco's mailbox. Geen `Mail.Send` en geen
+`Mail.ReadWrite`, want we versturen niet via Graph.
+
+Twee verschillende admin-rollen, dat is de valkuil:
+
+1. **Entra ID** (app registration, permission toevoegen + "Grant admin consent"):
+   vraagt Global Administrator of Cloud Application Administrator. Exchange Admin
+   Center dekt dit **niet**.
+2. **Exchange Online** (`New-ApplicationAccessPolicy`, scope op Marco's mailbox):
+   Exchange-admin, via Exchange Online PowerShell, geen knop in de EAC-GUI.
+
+Doorlooptijd is kort (zelfde dag), de enige echte wachttijd is dat de access policy
+tot circa een half uur nodig heeft; controleer met `Test-ApplicationAccessPolicy`.
+Gebruik een **aparte backend-app**, niet de delegated login-app. Het
+token-ophaalstuk staat werkend in `glint-sync.js`; diezelfde app activeert dan ook
+de geparkeerde glint-sync.
+
+### 9.3 De lijst, nagemeten
+
+Bestand: `masterlijst-final-aangevuld.xlsx`. **Staat bewust NIET in git**: 960 met
+naam genoemde personen met werk-e-mailadres, functie en werkgever hoort niet in een
+permanente git-history. Importeren gaat rechtstreeks naar Supabase; het importscript
+neemt een pad als argument. (Los punt: er staan al 10 `All *_Dynamics_*.xlsx`-exports
+getrackt in deze repo. Aparte opruimbeslissing.)
+
+Werkelijke cijfers (§2 wijkt licht af, deze gelden):
+
+| | handover §2 | werkelijk |
+|---|---|---|
+| rijen | 967 | **960** |
+| unieke bedrijven | 576 | **572** |
+| met beide teksten | 481 | **477** |
+
+De berichtkolommen heten in het bestand:
+`Message 1: the gap + peer afternoon (test, 6 Oct)` en
+`Message 2: programme + link (day 5-7, non-responders)`.
+
+**Eerste golf = de 570 rijen met een nummer in `Outreach-prio`** (1 t/m 581, allemaal
+uniek). De overige 390 hebben daar letterlijk `Reserve` staan.
+
+Belangrijkste vondst: **die 570 nummers horen bij exact 570 unieke bedrijven, dus
+één persoon per bedrijf.** De lijst is al zo samengesteld en de 390 `Reserve` zijn de
+extra contacten bij bedrijven als ING (17) en Philips (16). Gevolg: de
+per-bedrijf-regel (`max_per_company_per_week`) is voor golf 1 vrijwel irrelevant. Bouw
+hem wel, maar hij bijt pas als de reserves in beeld komen.
+
+Samenstelling van de 570: 🟢 Top 259, 🟡 Goed 98, 🟠 Matig 213. Alle 570 hebben een
+e-mailadres. **357 hebben beide teksten en kunnen direct**; 213 missen teksten (dat is
+open punt 5 van §7, nu concreet 213 en niet 486).
+
+### 9.4 Resend-limieten (nagekeken 9 sept) en de dagcap
+
+De transactionele meter stond op **Free**: 3.000 per maand en een hard plafond van
+**100 per dag**. Op 9 september geüpgraded naar **transactioneel Pro** ($20/mnd):
+**50.000 per maand, daglimiet Unlimited** (stand: 110 / 50.000, vernieuwt 12 sept).
+Marketing is een **aparte** meter en stond al op Pro (495 / 5.000 contacten).
+
+**Dagcap: doel 120**, met een ramp van circa 60 naar 120 over twee dagen zolang de
+bounce onder 2 à 3 procent blijft. Reden voor de ramp is niet het plafond maar
+reputatie: `eclectik.co` draagt ook de nieuwsbrief. Spreid over de drie
+verzendvensters, dus ongeveer 40 per venster in plaats van één burst.
+
+Doorrekening (alleen werkdagen, start woensdag 16 september):
+
+| Dagcap | 357 mails klaar | alle 570 klaar | bericht 2 valt |
+|---|---|---|---|
+| 100 | ma 21 sept | wo 23 sept | 28 tot 30 sept |
+| **120** | **vr 18 sept** | **di 22 sept** | **27 tot 29 sept** |
+
+Totaalvolume 570 × 2 = 1.140 mails, dus de maandlimiet knelt niet.
+
+### 9.5 Must-fix vóór productie: 429-afhandeling
+
+`api/marketing-send.js` heeft **geen** 429- of `Retry-After`-logica. Een 429 valt daar
+in de generieke 4xx-tak ("log and continue"): de prospect wordt als `failed` in
+`campaign_sends` geschreven en **nooit opnieuw geprobeerd**. Bij honderden mails
+verlies je zo stil prospects. De code wacht 250 ms tussen mails (4 requests per
+seconde), wat boven sommige Resend-rate-limits ligt.
+
+`api/_lib/send-broadcast.js` heeft het juiste patroon al: de `rs()`-helper probeert
+opnieuw bij 429 en 5xx, respecteert `Retry-After` en doet exponentiële backoff.
+
+**Besluit: de outreach-job krijgt zijn eigen verzendfunctie met die backoff en
+hergebruikt de loop van `marketing-send.js` niet.** We hebben toch al per-record html,
+een eigen statemachine en idempotentie nodig, en zo blijft de campagne-weg die Marco
+dagelijks gebruikt ongemoeid.
+
+### 9.6 Aangepaste bouwvolgorde
+
+1. Azure: backend-app met `Mail.Read` + access policy op Marco's mailbox (parallel
+   starten, het blokkeert job B).
+2. Migratie: drie tabellen plus sync-state, indexen op `email`, `email_domain`,
+   `conversation_id`, `next_action_at`.
+3. Importscript (pad als argument, niet in git): subject/body splitsen, tier uit het
+   kleurprefix, `Reserve` apart markeren, `paused` bij ontbrekende teksten, en
+   **cross-match op e-mail en domein tegen `contacts` en `companies`** zodat bestaande
+   klantrelaties automatisch op `paused` komen en `do_not_email` gerespecteerd wordt.
+4. Job B (inbox scannen en matchen), testen op bestaande mails.
+5. Job A met eigen verzendfunctie inclusief 429-backoff, eerst testcampagne op interne
+   adressen.
+6. Overzichtspagina of dagelijkse samenvatting.
+7. Eerste golf van de 357, ramp naar 120 per dag.
