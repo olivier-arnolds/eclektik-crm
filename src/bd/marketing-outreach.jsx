@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../supabase';
 import { apiFetch } from '../lib/apiFetch';
 import { useAuth } from '../lib/auth';
-import { getFolderEmails } from '../lib/graph';
+import { getFolderEmails, getMailboxFolderEmails } from '../lib/graph';
 import { scanInbox } from './outreach-match';
 
 // Outreach-tab onder Marketing. Ontwerp: docs/outreach-handover.md addendum §9.
@@ -144,7 +144,13 @@ export default function MarketingOutreach() {
     if (!campaign) return;
     setScanning(true); setScanErr(null); setScanResult(null);
     try {
-      const messages = await getFolderEmails('Inbox', 500);
+      // We scannen ALTIJD de mailbox van de campagne-afzender, ongeacht wie is
+      // ingelogd. Ben je dat zelf, dan gaat het via /me (bewezen pad). Ben je
+      // iemand anders, dan via /users/{afzender}: dat vraagt Mail.Read.Shared
+      // plus leesrechten op die mailbox.
+      const messages = isSender
+        ? await getFolderEmails('Inbox', 500)
+        : await getMailboxFolderEmails(campaign.sender_mailbox, 'Inbox', 500);
       const sinceISO = sentInfo.firstAt || campaign.created_at;
       const { candidates, stats } = scanInbox(messages, rows, { sinceISO });
 
@@ -168,9 +174,14 @@ export default function MarketingOutreach() {
       setScanResult({ scanned: stats.scanned, stats, applied, sinceISO });
       await load();
     } catch (e) {
-      setScanErr(e.message === 'Token expired'
-        ? 'Je Microsoft-verbinding is verlopen. Verbind opnieuw en scan daarna nog eens.'
-        : e.message);
+      const m = e.message || String(e);
+      if (m === 'Token expired' || m.startsWith('No Microsoft token')) {
+        setScanErr('Je Microsoft-verbinding is verlopen. Verbind opnieuw en scan daarna nog eens.');
+      } else if (m.startsWith('GEEN_TOEGANG')) {
+        setScanErr('NO_ACCESS');
+      } else {
+        setScanErr(m);
+      }
     }
     setScanning(false);
   };
@@ -237,25 +248,37 @@ export default function MarketingOutreach() {
             {!hasGraphToken && (
               <button className="btn-primary tiny" onClick={reconnectMicrosoft}>Verbind Microsoft</button>
             )}
-            <button className="btn-primary tiny" disabled={scanning || !hasGraphToken || !isSender}
+            <button className="btn-primary tiny" disabled={scanning || !hasGraphToken}
               onClick={runScan}
-              title={isSender ? 'Leest je inbox en koppelt antwoorden aan prospects'
-                : `Alleen ${campaign.sender_mailbox} kan deze inbox scannen`}>
+              title={`Leest de inbox van ${campaign.sender_mailbox} en koppelt antwoorden aan prospects`}>
               {scanning ? 'Scannen…' : 'Scan inbox'}
             </button>
           </div>
         </div>
 
-        {!isSender && (
-          <div style={{ fontSize: 12, color: '#b45309', lineHeight: 1.5 }}>
-            Je bent ingelogd als <strong>{myEmail || 'onbekend'}</strong>, maar de afzender van deze
-            campagne is <strong>{campaign.sender_mailbox}</strong>. De scan leest de inbox van wie is
-            ingelogd, dus dat zou de verkeerde mailbox zijn. Laat {campaign.sender_mailbox} de scan
-            doen, of pas de afzender van de campagne aan.
-          </div>
-        )}
+        <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
+          Scant de inbox van <strong>{campaign.sender_mailbox}</strong>
+          {isSender ? ' (dat ben jij)' : `, via gedeelde leesrechten op jouw login (${myEmail})`}.
+        </div>
 
-        {scanErr && <div style={{ fontSize: 12, color: '#dc2626' }}>Scan mislukt: {scanErr}</div>}
+        {scanErr === 'NO_ACCESS' ? (
+          <div style={{ fontSize: 12, color: '#b45309', lineHeight: 1.6 }}>
+            <strong>Geen leesrechten op {campaign.sender_mailbox}.</strong> Jouw login mag die mailbox
+            nog niet lezen. Twee dingen zijn nodig, eenmalig:
+            <ol style={{ margin: '6px 0 0 18px', padding: 0 }}>
+              <li>
+                Leesrechten in Exchange: <em>Exchange Admin Center → Mailboxes → {campaign.sender_mailbox} → Delegation → Read and manage</em>,
+                en voeg {myEmail || 'je eigen account'} toe. Kan tot ongeveer een half uur duren voordat het werkt.
+              </li>
+              <li>
+                Daarna hier op <em>Verbind Microsoft</em> klikken, zodat je token de nieuwe
+                rechten meekrijgt (de app vraagt sinds kort ook Mail.Read.Shared).
+              </li>
+            </ol>
+          </div>
+        ) : scanErr ? (
+          <div style={{ fontSize: 12, color: '#dc2626' }}>Scan mislukt: {scanErr}</div>
+        ) : null}
 
         {scanResult && (
           <div style={{ fontSize: 12, color: 'var(--text-2)', lineHeight: 1.6 }}>

@@ -203,6 +203,68 @@ export async function getInboxEmails(limit = 500) {
   return getFolderEmails('Inbox', limit);
 }
 
+// Zelfde als getFolderEmails, maar voor een ANDERE mailbox dan die van de
+// ingelogde gebruiker, en met expliciete fouten. Nodig voor de outreach-tab:
+// iedereen in het team moet Marco's inbox kunnen scannen, niet alleen Marco.
+//
+// Vereist:
+//   - delegated scope Mail.Read.Shared (staat in de scopes in src/lib/auth.jsx)
+//   - leesrechten op die mailbox (Exchange-delegatie of maprechten op Inbox)
+//
+// Waarom niet via graphGet: die geeft bij een 403 gewoon het foutobject terug,
+// waarna een lege lijst eruit rolt. Een rechtenprobleem ziet er dan uit als
+// "geen mail gevonden", en dat is precies het soort stille fout dat je hier niet
+// wil. Deze functie gooit dus met een leesbare melding.
+export async function getMailboxFolderEmails(mailbox, folderName = 'Inbox', limit = 500) {
+  const token = localStorage.getItem('graph_token');
+  if (!token) throw new Error('No Microsoft token. Please reconnect.');
+
+  const who = mailbox ? `/users/${encodeURIComponent(mailbox)}` : '/me';
+  const select = 'id,subject,bodyPreview,from,toRecipients,receivedDateTime,sentDateTime,isRead,hasAttachments,parentFolderId';
+  const pageSize = Math.min(limit, 1000);
+  let url = `${who}/mailFolders/${folderName}/messages?$top=${pageSize}&$orderby=receivedDateTime desc&$select=${select}`;
+
+  const all = [];
+  let safety = 0;
+  while (url && all.length < limit && safety < 10) {
+    const resp = await fetch(GRAPH_BASE + url, { headers: { Authorization: 'Bearer ' + token } });
+    if (resp.status === 401) {
+      localStorage.removeItem('graph_token');
+      throw new Error('Token expired');
+    }
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok) {
+      const code = data?.error?.code || `HTTP ${resp.status}`;
+      const msg = data?.error?.message || '';
+      if (resp.status === 403 || /ErrorAccessDenied|AccessDenied/i.test(code)) {
+        throw new Error(`GEEN_TOEGANG: ${code}${msg ? ` - ${msg}` : ''}`);
+      }
+      throw new Error(`${code}${msg ? ` - ${msg}` : ''}`);
+    }
+    if (!Array.isArray(data.value)) break;
+    all.push(...data.value);
+    const next = data['@odata.nextLink'];
+    if (!next) break;
+    url = next.replace(/^https:\/\/graph\.microsoft\.com\/v1\.0/, '');
+    safety++;
+  }
+
+  return all.slice(0, limit).map(m => ({
+    id: m.id,
+    subject: m.subject,
+    bodyPreview: m.bodyPreview,
+    from: m.from?.emailAddress?.name || m.from?.emailAddress?.address || '',
+    fromAddress: m.from?.emailAddress?.address || '',
+    to: (m.toRecipients || []).map(r => r.emailAddress?.address).join(', '),
+    toAddresses: (m.toRecipients || []).map(r => r.emailAddress?.address).filter(Boolean),
+    date: m.receivedDateTime || m.sentDateTime,
+    isRead: m.isRead,
+    hasAttachments: m.hasAttachments,
+    folder: folderName,
+    mailbox: mailbox || null,
+  }));
+}
+
 // Fetch Inbox + SentItems + Archive in parallel. Returns { inbox, sent, archived }.
 // If Archive folder doesn't exist (user never archived), silently returns [].
 export async function getAllMailFolders(limit = 500) {

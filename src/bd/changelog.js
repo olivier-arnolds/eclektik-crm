@@ -36,9 +36,12 @@ export const CHANGELOG = [
       'src/bd/outreach-match.js: tweetraps matching (afzenderadres zeker, domein alleen flaggen), bounce- en autoreply-herkenning en statusovergangen met een confidence-drempel van 70 procent. 24 tests.',
       'api/outreach-classify.js + api/_lib/outreach-classify-lib.js: classificeert antwoorden met Claude (interested/declined/ooo/referral/bounce), idempotent op het Graph-message-id. 17 tests op de parser.',
       'marketing-outreach.jsx: overzicht, filters, en de inboxscan met een prominente indicator hoe oud de laatste scan is.',
-      'Geen Azure-app nodig: de scan gebruikt het bestaande Graph-token van de ingelogde gebruiker. Daarom kan alleen de afzender zelf zijn inbox scannen, en dat blokkeert de UI expliciet voor iemand anders.',
+      'Geen Azure-app nodig: de scan gebruikt het bestaande Graph-token van de ingelogde gebruiker.',
+      'Het hele team kan scannen, niet alleen de afzender: de scan leest altijd de mailbox van de campagne-afzender, via /me als dat jezelf bent en anders via /users/{afzender} met de nieuwe delegated scope Mail.Read.Shared. Ontbreken de leesrechten, dan komt er geen lege lijst maar een uitleg met de twee stappen om het te regelen.',
     ],
     files: [
+      'src/lib/graph.js',
+      'src/lib/auth.jsx',
       'sql/schema_outreach_2026-09-09.sql (new)',
       'scripts/import-outreach-list.py (new)',
       'src/bd/outreach-match.js (new)',
