@@ -19,9 +19,36 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.87.2';
+export const CURRENT_VERSION = '1.88.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.88.0',
+    date: '2026-09-09T12:51:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Afbeelding bij een LinkedIn-post in de Content Calendar',
+    summary:
+      'Een LinkedIn-post kan nu een afbeelding meekrijgen. In de editor van een post staat een veld Afbeelding: uploaden, vervangen of verwijderen. De afbeelding wordt in de Storage-bucket content-images bewaard en bij publicatie door de cron als bijlage met de post meegestuurd via Unipile. Kopieer naar draft neemt de afbeelding mee. In het rapport en op de kalenderkaart zie je dat een post een afbeelding heeft.',
+    changes: [
+      'content_calendar_items.image_url (nieuwe nullable kolom) + Storage-bucket content-images (publiek leesbaar, uploaden alleen voor ingelogde teamleden). SQL in sql/schema_content_calendar_image_2026-09-09.sql, toegepast via Supabase MCP.',
+      'unipile-post.js: createLinkedInPost accepteert imageUrl, haalt de afbeelding op en stuurt hem als attachments-veld mee. Als de afbeelding niet op te halen is, wordt de post NIET zonder afbeelding geplaatst; de cron probeert het de volgende run opnieuw.',
+      'content-calendar-execute.js: geeft item.image_url door bij linkedin_post.',
+      'content-calendar-view.jsx: veld Afbeelding in de editor (alleen type linkedin_post), thumbnail in het rapport, icoon op de kalenderkaart, image_url mee bij kopieer naar draft.',
+      'Nieuwe tests api/_lib/unipile-post.test.js (ophalen, validatie, attachments-veld, geen post zonder afbeelding bij fout).',
+    ],
+    files: [
+      'api/_lib/unipile-post.js',
+      'api/_lib/unipile-post.test.js',
+      'api/content-calendar-execute.js',
+      'src/bd/content-calendar-view.jsx',
+      'sql/schema_content_calendar_image_2026-09-09.sql',
+      'src/bd/changelog.js',
+      'VERSION',
+      'package.json',
+    ],
+    gitTag: 'v1.88.0',
+  },
   {
     version: '1.87.2',
     date: '2026-09-09T08:20:00Z',

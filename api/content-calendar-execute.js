@@ -139,7 +139,8 @@ async function publishEmail(item) {
 async function publishLinkedInPost(item) {
   if (!item.body || !String(item.body).trim()) return { ok: false, reason: 'lege tekst' };
   const accountId = item.linkedin_account_id || CONTENT_LINKEDIN_ACCOUNT_ID;
-  const res = await createLinkedInPost({ accountId, text: item.body });
+  // image_url (optioneel) gaat als bijlage mee; zie unipile-post.js.
+  const res = await createLinkedInPost({ accountId, text: item.body, imageUrl: item.image_url || null });
   if (!res.ok) return { ok: false, reason: res.error || 'LinkedIn-post mislukt' };
   return { ok: true, external_message_id: res.postId || null };
 }

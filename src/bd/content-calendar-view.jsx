@@ -135,6 +135,7 @@ export default function ContentCalendarView({ contacts = [], accounts = [], allT
       cold_outreach: isEmail ? !!src.cold_outreach : false,
       source_note: src.source_note || null,
       linkedin_account_id: isLinkedIn ? (src.linkedin_account_id || null) : null,
+      image_url: src.type === 'linkedin_post' ? (src.image_url || null) : null,
       status: 'draft',
       origin_item_id: src.origin_item_id || src.id,
     };
@@ -418,6 +419,11 @@ function ContentReportModal({ item, contacts = [], onClose }) {
             <div style={{ color: 'var(--text-2)', whiteSpace: 'pre-wrap' }}>
               {(item.body || '(geen inhoud)').slice(0, 240)}{(item.body || '').length > 240 ? '…' : ''}
             </div>
+            {item.type === 'linkedin_post' && item.image_url && (
+              <a href={item.image_url} target="_blank" rel="noreferrer" title="Afbeelding bij de post (opent in nieuw tabblad)" style={{ alignSelf: 'flex-start' }}>
+                <img src={item.image_url} alt="Afbeelding bij de post" style={{ maxWidth: 160, maxHeight: 160, borderRadius: 6, border: '0.5px solid var(--sep)', display: 'block' }} />
+              </a>
+            )}
             {item.source_note && <div style={{ fontSize: 11, color: 'var(--text-3)', fontStyle: 'italic' }}>Bron: {item.source_note}</div>}
 
             <div style={{ borderTop: '0.5px solid var(--sep)', paddingTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -466,6 +472,7 @@ function ItemCard({ it, draggable = false, dragging = false, setDraggingId, onOp
         </button>
       </span>
       <span style={{ fontSize: 11, color: 'var(--text-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        {it.type === 'linkedin_post' && it.image_url && <span title="Met afbeelding" style={{ marginRight: 4 }}>🖼</span>}
         {it.subject || it.body?.slice(0, 60) || '(geen inhoud)'}
       </span>
     </div>
@@ -634,6 +641,36 @@ function ContentItemModal({ item, contacts = [], accounts = [], allTags = [], on
   const [showAudiencePicker, setShowAudiencePicker] = useState(false);
   const [audiencePickerMode, setAudiencePickerMode] = useState('build'); // 'build' | 'review'
   const [accountId, setAccountId] = useState(item.linkedin_account_id || '');
+  // Afbeelding bij een LinkedIn-post (alleen type linkedin_post). Upload gaat naar
+  // Storage-bucket 'content-images'; hier bewaren we alleen de publieke URL.
+  const isPost = item.type === 'linkedin_post';
+  const [imageUrl, setImageUrl] = useState(item.image_url || '');
+  const [imageUploading, setImageUploading] = useState(false);
+  const [imageErr, setImageErr] = useState(null);
+  const imageInputRef = useRef(null);
+
+  async function uploadImage(file) {
+    if (!file) return;
+    setImageErr(null);
+    if (!/^image\/(png|jpeg|webp|gif)$/.test(file.type)) { setImageErr('Alleen PNG, JPG, WebP of GIF.'); return; }
+    if (file.size > 8 * 1024 * 1024) { setImageErr('Afbeelding is groter dan 8 MB.'); return; }
+    setImageUploading(true);
+    try {
+      const ext = (file.name.split('.').pop() || 'png').toLowerCase().replace(/[^a-z0-9]/g, '') || 'png';
+      const path = `${item.id}/${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from('content-images').upload(path, file, { cacheControl: '3600', upsert: false, contentType: file.type });
+      if (upErr) throw new Error(upErr.message);
+      const pub = supabase.storage.from('content-images').getPublicUrl(path);
+      const url = pub?.data?.publicUrl;
+      if (!url) throw new Error('geen publieke URL teruggekregen');
+      setImageUrl(url);
+    } catch (e) {
+      setImageErr('Upload mislukt: ' + e.message);
+    } finally {
+      setImageUploading(false);
+      if (imageInputRef.current) imageInputRef.current.value = '';
+    }
+  }
   const [recipientId, setRecipientId] = useState(item.recipient_contact_id || '');
   const [recipientQuery, setRecipientQuery] = useState('');
   const [recipientConn, setRecipientConn] = useState(undefined); // undefined=nog niet geladen, null=niet gecheckt, else status
@@ -784,6 +821,7 @@ function ContentItemModal({ item, contacts = [], accounts = [], allTags = [], on
       audience_summary: isEmail && targetContactIds.length ? (audienceSummaryText || null) : null,
       linkedin_account_id: isLinkedIn ? (accountId || null) : null,
       recipient_contact_id: isDM ? (recipientId || null) : null,
+      image_url: isPost ? (imageUrl || null) : null,
       scheduled_at,
       status: nextStatus,
       updated_at: new Date().toISOString(),
@@ -791,7 +829,7 @@ function ContentItemModal({ item, contacts = [], accounts = [], allTags = [], on
     const { error } = await supabase.from('content_calendar_items').update(fields).eq('id', item.id);
     setSaving(false);
     if (error) { setErr(error.message); return; }
-    onSaved && onSaved({ subject: fields.subject, body, from_email: fields.from_email, from_name: fields.from_name, cold_outreach: fields.cold_outreach, target_tag: fields.target_tag, target_contact_ids: fields.target_contact_ids, audience_summary: fields.audience_summary, linkedin_account_id: fields.linkedin_account_id, recipient_contact_id: fields.recipient_contact_id, scheduled_at, status: nextStatus });
+    onSaved && onSaved({ subject: fields.subject, body, from_email: fields.from_email, from_name: fields.from_name, cold_outreach: fields.cold_outreach, target_tag: fields.target_tag, target_contact_ids: fields.target_contact_ids, audience_summary: fields.audience_summary, linkedin_account_id: fields.linkedin_account_id, recipient_contact_id: fields.recipient_contact_id, image_url: fields.image_url, scheduled_at, status: nextStatus });
     onClose();
   }
 
@@ -884,6 +922,41 @@ function ContentItemModal({ item, contacts = [], accounts = [], allTags = [], on
                 Wordt geplaatst via: <strong style={{ color: 'var(--text-2)' }}>{linkedinAccountLabel(accountId)}</strong>
               </span>
             </label>
+          )}
+
+          {isPost && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <span style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>
+                Afbeelding (optioneel)
+              </span>
+              {imageUrl ? (
+                <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                  <a href={imageUrl} target="_blank" rel="noreferrer" title="Open op volledige grootte">
+                    <img src={imageUrl} alt="Afbeelding bij de post" style={{ maxWidth: 220, maxHeight: 220, borderRadius: 8, border: '0.5px solid var(--sep)', display: 'block' }} />
+                  </a>
+                  {!published && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <button type="button" className="btn-ghost tiny" disabled={imageUploading} onClick={() => imageInputRef.current?.click()}>
+                        {imageUploading ? 'Uploaden…' : 'Vervangen'}
+                      </button>
+                      <button type="button" className="btn-ghost tiny" disabled={imageUploading} onClick={() => { setImageUrl(''); setImageErr(null); }}>
+                        Verwijderen
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : !published ? (
+                <button type="button" className="btn-ghost tiny" style={{ alignSelf: 'flex-start' }} disabled={imageUploading} onClick={() => imageInputRef.current?.click()}>
+                  {imageUploading ? 'Uploaden…' : '+ Afbeelding toevoegen'}
+                </button>
+              ) : <span style={{ fontSize: 12, color: 'var(--text-3)' }}>Geen afbeelding</span>}
+              <input ref={imageInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/gif" style={{ display: 'none' }}
+                onChange={e => uploadImage(e.target.files?.[0])} />
+              {imageErr && <span style={{ fontSize: 11, color: '#dc2626' }}>{imageErr}</span>}
+              <span style={{ fontSize: 11, color: 'var(--text-3)', lineHeight: 1.5 }}>
+                Wordt bij publicatie als bijlage met de LinkedIn-post meegestuurd. PNG, JPG, WebP of GIF, max 8 MB; vierkant (1:1) of 1.91:1 komt het best uit in de feed. Vergeet niet op te slaan na het uploaden.
+              </span>
+            </div>
           )}
 
           {isDM && (
