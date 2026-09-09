@@ -119,8 +119,11 @@ export default async function handler(req, res) {
     if (d) domainCounts[d] = (domainCounts[d] || 0) + 1;
   }
 
+  // Scantijd per campagne: een scan van een andere campagne mag hier niet als
+  // vers gelden, want die keek naar andere contacten.
   const { data: sync } = await supabase
-    .from('outreach_sync_state').select('last_synced_at').eq('id', 'inbox').maybeSingle();
+    .from('outreach_sync_state').select('last_synced_at')
+    .eq('id', `inbox:${campaign_id}`).maybeSingle();
 
   const askedLimit = Number.isFinite(Number(limit)) ? Math.min(MAX_BATCH, Number(limit)) : null;
 

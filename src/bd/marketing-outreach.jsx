@@ -41,6 +41,9 @@ const CONTACT_COLS =
 
 const AWAITING = '__awaiting__';
 
+// Sleutel voor de scantijd, per campagne. Zie de toelichting bij het inlezen.
+const syncKey = (campaignId) => `inbox:${campaignId}`;
+
 function hoursSince(iso) {
   if (!iso) return null;
   const t = new Date(iso).getTime();
@@ -107,8 +110,12 @@ export default function MarketingOutreach() {
       if (rErr) throw rErr;
       setRows(cts || []);
 
+      // Scantijd PER CAMPAGNE. Een gedeelde sleutel zou fataal zijn: een scan met
+      // campagne A geselecteerd matcht alleen tegen A's contacten, maar zou dan
+      // ook voor B als "recent gescand" gelden. Bericht 2 van B mag daar nooit op
+      // vertrouwen.
       const { data: st } = await supabase
-        .from('outreach_sync_state').select('*').eq('id', 'inbox').maybeSingle();
+        .from('outreach_sync_state').select('*').eq('id', syncKey(camp.id)).maybeSingle();
       setSync(st || null);
 
       // Vanaf wanneer we de inbox scannen: het eerste uitgaande bericht. Is er
@@ -230,7 +237,7 @@ export default function MarketingOutreach() {
 
       const nowIso = new Date().toISOString();
       await supabase.from('outreach_sync_state')
-        .upsert({ id: 'inbox', last_synced_at: nowIso, updated_at: nowIso });
+        .upsert({ id: syncKey(campaign.id), last_synced_at: nowIso, updated_at: nowIso });
 
       setScanResult({ scanned: stats.scanned, stats, applied, sinceISO, answeredFound });
       await load();

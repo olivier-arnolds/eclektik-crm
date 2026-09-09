@@ -19,9 +19,30 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.92.0';
+export const CURRENT_VERSION = '1.92.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.92.1',
+    date: '2026-09-09T16:15:51Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Outreach: scantijd per campagne, anders kon bericht 2 op een verkeerde scan vertrouwen',
+    summary:
+      'De inboxscan legde zijn tijdstip vast onder een sleutel die alle campagnes deelden. Een scan met de testcampagne geselecteerd matchte alleen tegen testcontacten, maar liet de echte campagne wel als recent gescand zien. Bericht 2 kon daardoor de verse-scan-controle passeren op basis van een scan die nooit naar de echte antwoorden had gekeken.',
+    changes: [
+      'De scantijd wordt nu per campagne opgeslagen (sleutel inbox:<campagne-id>), zowel bij het schrijven in de tab als bij het lezen in het verzend-endpoint.',
+      'Gevolg: een campagne die zelf nog niet gescand is, geldt als niet gescand en blokkeert bericht 2. Dat is de veilige stand.',
+    ],
+    files: [
+      'src/bd/marketing-outreach.jsx',
+      'api/outreach-send.js',
+      'VERSION',
+      'package.json',
+      'src/bd/changelog.js',
+    ],
+    gitTag: 'v1.92.1',
+  },
   {
     version: '1.92.0',
     date: '2026-09-09T16:05:12Z',
