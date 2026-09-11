@@ -19,9 +19,23 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.101.3';
+export const CURRENT_VERSION = '1.102.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.102.0',
+    date: '2026-09-11T16:15:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Zichtbaar hoeveel ruimte er nog is in de dag- en weekcap',
+    summary:
+      'Na een batch van 10 bij een dagcap van 30 was nergens te zien of er nog ruimte was. Dat staat nu in de verzendbalk, zonder dat je er een dry-run voor hoeft te doen.',
+    changes: [
+      'Twee tellers bij Verzenden: vandaag X van de dagcap met de resterende ruimte, en bij een weekcap hetzelfde voor de week. Rollende vensters, precies zoals het verzendendpoint telt.',
+      'Bij LinkedIn staat eronder hoeveel klikken er nog nodig zijn. Er loopt niets door op de achtergrond: een klik stuurt maximaal 10, met tientallen seconden ertussen, en de rest van de dagcap vraagt dus een volgende klik.',
+      'Is de cap bereikt, dan kleurt de teller oranje in plaats van dat de knop stil niets doet.',
+    ],
+  },
   {
     version: '1.101.3',
     date: '2026-09-11T15:55:00Z',

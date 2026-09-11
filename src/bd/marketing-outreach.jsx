@@ -75,7 +75,7 @@ export default function MarketingOutreach() {
   const [campaign, setCampaign] = useState(null);
   const [rows, setRows] = useState([]);
   const [sync, setSync] = useState(null);         // outreach_sync_state-rij
-  const [sentInfo, setSentInfo] = useState({ count: 0, firstAt: null });
+  const [sentInfo, setSentInfo] = useState({ count: 0, firstAt: null, last24h: 0, last7d: 0 });
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState(null);
 
@@ -136,7 +136,24 @@ export default function MarketingOutreach() {
       const { count } = await supabase
         .from('outreach_message').select('id', { count: 'exact', head: true })
         .eq('campaign_id', camp.id).eq('direction', 'outbound');
-      setSentInfo({ count: count || 0, firstAt: firstOut?.[0]?.sent_or_received_at || null });
+
+      // Verbruik van de caps, zodat je zonder dry-run ziet hoeveel ruimte er nog
+      // is. Rollende vensters, precies zoals het verzendendpoint ze telt.
+      const nu = Date.now();
+      const [{ count: c24 }, { count: c7 }] = await Promise.all([
+        supabase.from('outreach_message').select('id', { count: 'exact', head: true })
+          .eq('campaign_id', camp.id).eq('direction', 'outbound')
+          .gte('sent_or_received_at', new Date(nu - 86400000).toISOString()),
+        supabase.from('outreach_message').select('id', { count: 'exact', head: true })
+          .eq('campaign_id', camp.id).eq('direction', 'outbound')
+          .gte('sent_or_received_at', new Date(nu - 7 * 86400000).toISOString()),
+      ]);
+      setSentInfo({
+        count: count || 0,
+        firstAt: firstOut?.[0]?.sent_or_received_at || null,
+        last24h: c24 || 0,
+        last7d: c7 || 0,
+      });
 
       setErr(null);
     } catch (e) {
@@ -324,6 +341,12 @@ export default function MarketingOutreach() {
   // opvolgbericht en geen inbox om te scannen. De tab verzwijgt wat niet bestaat
   // in plaats van lege of misleidende vakjes te tonen.
   const isLinkedIn = campaign.channel === 'linkedin';
+  // Rollende vensters, net als aan de verzendkant: 'vandaag' is de afgelopen 24
+  // uur, niet de kalenderdag.
+  const dagRuimte = Math.max(0, (campaign.daily_cap || 0) - sentInfo.last24h);
+  const weekRuimte = campaign.weekly_cap
+    ? Math.max(0, campaign.weekly_cap - sentInfo.last7d)
+    : null;
 
   // Klikbaar: filtert de lijst op die status. Nog een keer klikken zet het filter uit.
   const kpi = (label, value, color, filterValue) => {
@@ -484,6 +507,27 @@ export default function MarketingOutreach() {
           <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
             {sentInfo.count} verstuurd tot nu toe
           </span>
+          {/* Ruimte in de caps, altijd zichtbaar. Zonder dit moest je een dry-run
+              doen om te weten of er vandaag nog iets kon, en dat is precies de
+              vraag die je stelt na een batch. */}
+          <span style={{
+            fontSize: 11, padding: '2px 8px', borderRadius: 999,
+            border: '0.5px solid var(--sep)',
+            color: dagRuimte > 0 ? 'var(--text-2)' : '#b45309',
+          }}>
+            vandaag {sentInfo.last24h} van {campaign.daily_cap}
+            {dagRuimte > 0 ? ` · nog ${dagRuimte}` : ' · dagcap bereikt'}
+          </span>
+          {campaign.weekly_cap ? (
+            <span style={{
+              fontSize: 11, padding: '2px 8px', borderRadius: 999,
+              border: '0.5px solid var(--sep)',
+              color: weekRuimte > 0 ? 'var(--text-2)' : '#b45309',
+            }}>
+              deze week {sentInfo.last7d} van {campaign.weekly_cap}
+              {weekRuimte > 0 ? ` · nog ${weekRuimte}` : ' · weekcap bereikt'}
+            </span>
+          ) : null}
           <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
             <label style={{ fontSize: 11, color: 'var(--text-3)', display: 'flex', alignItems: 'center', gap: 5 }}>
               batch
@@ -515,6 +559,14 @@ export default function MarketingOutreach() {
             )}
           </div>
         </div>
+
+        {campaign.status === 'active' && isLinkedIn && dagRuimte > 0 && (
+          <div style={{ fontSize: 12, color: 'var(--text-3)' }}>
+            Een klik verstuurt er maximaal {Math.min(10, dagRuimte)}, met tientallen seconden
+            ertussen. Er loopt niets door op de achtergrond: voor de resterende {dagRuimte} van
+            vandaag klik je nog {Math.ceil(dagRuimte / 10)} keer.
+          </div>
+        )}
 
         {campaign.status !== 'active' && (
           <div style={{ fontSize: 12, color: 'var(--text-3)' }}>
