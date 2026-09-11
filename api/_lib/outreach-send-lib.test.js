@@ -313,3 +313,37 @@ describe('statusAfterSend op het LinkedIn-kanaal', () => {
     expect(r.next_action_at).toBe(new Date('2026-09-21T09:00:00Z').toISOString());
   });
 });
+
+describe('spreiding over bedrijven bij LinkedIn', () => {
+  const bij = (bedrijf, n) => li({
+    id: `${bedrijf}${n}`, company: bedrijf,
+    linkedin_url: `https://linkedin.com/in/${bedrijf}${n}`, outreach_prio: n,
+  });
+
+  it('KRITIEK: niet meer dan het maximum van hetzelfde bedrijf in een batch', () => {
+    const rows = [bij('KPN', 1), bij('KPN', 2), bij('KPN', 3), bij('Rabobank', 4)];
+    const { batch, skipped } = selectSendable(rows, { ...liBase, maxPerCompanyPerWeek: 2 });
+    expect(batch.map(b => b.contact.id)).toEqual(['KPN1', 'KPN2', 'Rabobank4']);
+    expect(skipped['max per bedrijf deze week']).toBe(1);
+  });
+
+  it('telt mee wat er deze week al naar dat bedrijf ging', () => {
+    const { batch, skipped } = selectSendable([bij('KPN', 1)], {
+      ...liBase, maxPerCompanyPerWeek: 2, companyCounts: { kpn: 2 },
+    });
+    expect(batch).toHaveLength(0);
+    expect(skipped['max per bedrijf deze week']).toBe(1);
+  });
+
+  it('schrijfwijze maakt niet uit', () => {
+    const rows = [bij('KPN', 1), li({ id: 'x', company: 'K.P.N.', linkedin_url: 'https://linkedin.com/in/x' })];
+    const { batch } = selectSendable(rows, { ...liBase, maxPerCompanyPerWeek: 1 });
+    expect(batch).toHaveLength(1);
+  });
+
+  it('zonder bedrijfsnaam geldt de regel niet, en die mensen belanden niet in een emmer samen', () => {
+    const rows = [li({ id: 'a', company: null }), li({ id: 'b', company: '', linkedin_url: 'https://linkedin.com/in/b' })];
+    const { batch } = selectSendable(rows, { ...liBase, maxPerCompanyPerWeek: 1 });
+    expect(batch).toHaveLength(2);
+  });
+});

@@ -19,9 +19,23 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.95.1';
+export const CURRENT_VERSION = '1.96.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.96.0',
+    date: '2026-09-11T12:30:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'LinkedIn-outreach spreidt over bedrijven',
+    summary:
+      'Er gaan niet langer meerdere mensen van hetzelfde bedrijf achter elkaar een DM van Marco krijgen. De bestaande per-bedrijf-regel telt bij LinkedIn op de bedrijfsnaam in plaats van op het e-maildomein, dat daar niet bestaat.',
+    changes: [
+      'companyKey() normaliseert de bedrijfsnaam: leestekens en rechtsvorm eraf, zodat KPN, K.P.N. en KPN B.V. dezelfde emmer zijn. Verder gaan dan dat doen we bewust niet, want twee echt verschillende bedrijven samenvoegen laat iemand onterecht liggen.',
+      'Bij LinkedIn telt de regel over een rollend etmaal in plaats van een week. KPN heeft 13 mensen in de lijst; met 2 per week zouden er maar 6 voor het event bereikt worden, met 2 per dag is dat bedrijf in een week rond en krijgen er nooit drie op dezelfde dag een bericht.',
+      '4 nieuwe tests, waaronder de regel dat contacten zonder bedrijfsnaam elkaar niet blokkeren (leeg betekent onbekend, niet allemaal hetzelfde bedrijf).',
+    ],
+  },
   {
     version: '1.95.1',
     date: '2026-09-11T12:10:00Z',

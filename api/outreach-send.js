@@ -1,7 +1,7 @@
 import { requireUser } from './_lib/guard.js';
 import { createClient } from '@supabase/supabase-js';
 import {
-  selectSendable, statusAfterSend, outreachTextToHtml, STALE_HOURS,
+  selectSendable, statusAfterSend, outreachTextToHtml, companyKey, STALE_HOURS,
 } from './_lib/outreach-send-lib.js';
 import { senderNameFor } from '../src/lib/senders.js';
 import { sendLinkedInDM } from './_lib/unipile-dm.js';
@@ -128,7 +128,7 @@ export default async function handler(req, res) {
   // Kandidaten: alles wat aan de beurt is. Reserves doen niet mee.
   const { data: due, error: dErr } = await supabase
     .from('outreach_contact')
-    .select('id,email,email_domain,status,next_action_at,priority_tier,outreach_prio,unsubscribe_token,msg1_subject,msg1_body,msg2_subject,msg2_body,linkedin_url,linkedin_provider_id')
+    .select('id,email,email_domain,company,status,next_action_at,priority_tier,outreach_prio,unsubscribe_token,msg1_subject,msg1_body,msg2_subject,msg2_body,linkedin_url,linkedin_provider_id')
     .eq('campaign_id', campaign_id)
     .eq('is_reserve', false)
     .in('status', ['queued', 'msg1_sent'])
@@ -136,16 +136,39 @@ export default async function handler(req, res) {
     .limit(1000);
   if (dErr) return res.status(500).json({ error: 'kandidaten ophalen: ' + dErr.message });
 
-  // Per-bedrijf-regel: wat ging er de afgelopen 7 dagen naar welk domein.
-  const weekAgo = new Date(now.getTime() - 7 * 86400000).toISOString();
+  // Per-bedrijf-regel. Bij e-mail leiden we het bedrijf af uit het adresdomein en
+  // tellen we over 7 dagen. Bij LinkedIn bestaat er geen domein, dus tellen we op
+  // de bedrijfsnaam, en dan over een ROLLEND ETMAAL in plaats van een week.
+  //
+  // Waarom korter: het doel hier is spreiding, niet een weeklimiet. KPN heeft 13
+  // mensen in de lijst; met 2 per week zouden er maar 6 van hen voor het event
+  // bereikt worden. Met 2 per dag is KPN in een week rond en krijgen er nooit
+  // drie op dezelfde dag een bericht van Marco, wat het punt was.
+  const groupSince = isLinkedIn
+    ? dayAgo
+    : new Date(now.getTime() - 7 * 86400000).toISOString();
   const { data: recent } = await supabase
-    .from('outreach_message').select('to_address')
+    .from('outreach_message').select('to_address,contact_id')
     .eq('campaign_id', campaign_id).eq('direction', 'outbound')
-    .gte('sent_or_received_at', weekAgo);
+    .gte('sent_or_received_at', groupSince);
   const domainCounts = {};
-  for (const r of (recent || [])) {
-    const d = domainOf(r.to_address);
-    if (d) domainCounts[d] = (domainCounts[d] || 0) + 1;
+  const companyCounts = {};
+  if (isLinkedIn) {
+    const ids = [...new Set((recent || []).map(r => r.contact_id).filter(Boolean))];
+    if (ids.length) {
+      const { data: prev } = await supabase
+        .from('outreach_contact').select('id,company').in('id', ids);
+      const companyById = Object.fromEntries((prev || []).map(r => [r.id, r.company]));
+      for (const r of (recent || [])) {
+        const k = companyKey(companyById[r.contact_id]);
+        if (k) companyCounts[k] = (companyCounts[k] || 0) + 1;
+      }
+    }
+  } else {
+    for (const r of (recent || [])) {
+      const d = domainOf(r.to_address);
+      if (d) domainCounts[d] = (domainCounts[d] || 0) + 1;
+    }
   }
 
   // Scantijd per campagne: een scan van een andere campagne mag hier niet als
@@ -169,6 +192,7 @@ export default async function handler(req, res) {
     batchLimit: askedLimit,
     maxPerCompanyPerWeek: camp.max_per_company_per_week,
     domainCounts,
+    companyCounts,
     hardStopAt: camp.hard_stop_at,
     lastScanISO: sync?.last_synced_at || null,
     staleHours: STALE_HOURS,

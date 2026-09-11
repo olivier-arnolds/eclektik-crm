@@ -18,6 +18,22 @@ export const STALE_HOURS = 12;
 
 const TIER_RANK = { top: 0, good: 1, medium: 2 };
 
+// Bedrijfsnaam naar een sleutel om op te tellen. Leestekens en rechtsvorm eraf,
+// zodat 'KPN', 'K.P.N.' en 'KPN B.V.' dezelfde emmer zijn en de spreidingsregel
+// niet lekt op een schrijfwijze. Verder gaan (fuzzy matching) doen we bewust
+// niet: twee echt verschillende bedrijven op een hoop gooien is erger dan een
+// gemiste spreiding, want dan blijft er iemand onterecht liggen.
+const LEGAL_SUFFIX = /(bv|nv|sa|ag|plc|ltd|inc|gmbh|holding|holdings)$/;
+export function companyKey(name) {
+  let k = String(name || '').toLowerCase().replace(/[^a-z0-9]+/g, '');
+  for (;;) {
+    const stripped = k.replace(LEGAL_SUFFIX, '');
+    if (stripped === k || !stripped) break;
+    k = stripped;
+  }
+  return k || null;
+}
+
 export function bodyForStep(c, step) {
   return step === 1 ? (c?.msg1_body || null) : (c?.msg2_body || null);
 }
@@ -40,7 +56,8 @@ export function stepForStatus(status) {
  *                          dagcap gehouden, want anders krijgt "de batch was vol"
  *                          de misleidende reden "dagcap bereikt".
  *   maxPerCompanyPerWeek   int
- *   domainCounts           { [email_domain]: aantal in de afgelopen 7 dagen }
+ *   domainCounts           { [email_domain]: aantal in de afgelopen 7 dagen }  (e-mail)
+ *   companyCounts          { [companyKey]:   aantal in de afgelopen 7 dagen }  (LinkedIn)
  *   hardStopAt             ISO of null  na deze datum geen bericht 2 meer
  *   lastScanISO            ISO of null  laatste inboxscan
  *   staleHours             int
@@ -51,7 +68,7 @@ export function stepForStatus(status) {
 export function selectSendable(candidates, opts = {}) {
   const {
     now = new Date(), dailyCap = 0, sentToday = 0, batchLimit = null,
-    maxPerCompanyPerWeek = 2, domainCounts = {}, hardStopAt = null,
+    maxPerCompanyPerWeek = 2, domainCounts = {}, companyCounts = {}, hardStopAt = null,
     lastScanISO = null, staleHours = STALE_HOURS, onlyStep = null,
     channel = 'email',
   } = opts;
@@ -83,7 +100,10 @@ export function selectSendable(candidates, opts = {}) {
     return pa - pb;
   });
 
-  const domainUsed = { ...domainCounts };
+  // Dezelfde regel, andere sleutel per kanaal: bij e-mail het afzenderdomein, bij
+  // LinkedIn de bedrijfsnaam. Zonder dit zouden er drie mensen van hetzelfde
+  // bedrijf achter elkaar een DM van Marco krijgen.
+  const groupUsed = isLinkedIn ? { ...companyCounts } : { ...domainCounts };
   const batch = [];
 
   for (const c of ordered) {
@@ -117,11 +137,11 @@ export function selectSendable(candidates, opts = {}) {
       if (!c?.email) { bump('geen e-mailadres'); continue; }
     }
 
-    // De per-bedrijf-regel telt op e-maildomein. Bij LinkedIn is er geen domein
-    // om op te tellen, dus die rem doet daar niets en moet niet stilletjes
-    // iedereen zonder domein in een emmer gooien.
-    const dom = isLinkedIn ? null : (c.email_domain || null);
-    if (dom && (domainUsed[dom] || 0) >= maxPerCompanyPerWeek) {
+    // Een lege sleutel betekent 'onbekend', niet 'allemaal hetzelfde bedrijf':
+    // zonder deze uitzondering zouden alle rijen zonder bedrijfsnaam samen in
+    // een emmer vallen en elkaar blokkeren.
+    const groupKey = isLinkedIn ? companyKey(c.company) : (c.email_domain || null);
+    if (groupKey && (groupUsed[groupKey] || 0) >= maxPerCompanyPerWeek) {
       bump('max per bedrijf deze week'); continue;
     }
 
@@ -130,7 +150,7 @@ export function selectSendable(candidates, opts = {}) {
     if (remaining <= 0) { bump(limitReason); continue; }
 
     batch.push({ contact: c, step, subject, body });
-    if (dom) domainUsed[dom] = (domainUsed[dom] || 0) + 1;
+    if (groupKey) groupUsed[groupKey] = (groupUsed[groupKey] || 0) + 1;
     remaining--;
   }
 
