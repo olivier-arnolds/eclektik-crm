@@ -30,6 +30,31 @@ import { varsForContact } from '../lib/template-vars';
 
 const fmtDate = (iso) => (iso ? String(iso).slice(0, 10) : '');
 
+/**
+ * Verdeelt de selectie in wie de mail krijgt en wie niet, met de reden erbij.
+ * Puur, zodat de regels toetsbaar zijn: dit stuk ging al een keer mis doordat
+ * het op de persoon keek in plaats van op het adres.
+ *
+ * @param {Array} contacts           geselecteerde contacten
+ * @param {Set}   verzondenAdressen  adressen waar deze campagne al heen ging
+ */
+export function splitsOntvangers(contacts, verzondenAdressen) {
+  const reeds = verzondenAdressen || new Set();
+  const mee = [], afvallers = [];
+  for (const c of (contacts || [])) {
+    const email = String(c?.email || '').trim().toLowerCase();
+    // Inactief of former betekent meestal: deze persoon werkt hier niet meer.
+    // Dat is juist de situatie die je met dit scherm oplost, dus je stuurt naar
+    // de NIEUWE rol, niet de oude.
+    if (c?.isInactive || c?.isFormer) { afvallers.push([c, 'staat op inactief of former']); continue; }
+    if (c?.do_not_email) { afvallers.push([c, 'staat op do-not-email']); continue; }
+    if (!email) { afvallers.push([c, 'geen e-mailadres']); continue; }
+    if (reeds.has(email)) { afvallers.push([c, 'dit adres heeft de mail al gehad']); continue; }
+    mee.push(c);
+  }
+  return { mee, afvallers };
+}
+
 export default function AddToCampaignModal({ contacts, onClose, onDone }) {
   const [campaigns, setCampaigns] = useState([]);
   const [campaignId, setCampaignId] = useState('');
@@ -62,50 +87,38 @@ export default function AddToCampaignModal({ contacts, onClose, onDone }) {
 
   // Naar welke ADRESSEN is deze campagne al gegaan? Bewust niet op contact_id,
   // zie de toelichting bovenaan.
+  const laadVerzondenAdressen = async (id) => {
+    const { data, error } = await supabase
+      .from('campaign_sends')
+      .select('recipient_email')
+      .eq('campaign_id', id)
+      .limit(5000);
+    if (error) { setErr(error.message); return new Set(); }
+    return new Set((data || [])
+      .map(r => String(r.recipient_email || '').trim().toLowerCase())
+      .filter(Boolean));
+  };
+
   useEffect(() => {
     if (!campaignId) { setReeds(new Set()); setChecking(false); return; }
     let cancelled = false;
     setChecking(true);
     (async () => {
-      const { data, error } = await supabase
-        .from('campaign_sends')
-        .select('recipient_email')
-        .eq('campaign_id', campaignId)
-        .limit(5000);
+      const s = await laadVerzondenAdressen(campaignId);
+      if (!cancelled) setReeds(s);
       // setChecking hoort NIET achter de cancelled-check: blijft die vlag per
       // ongeluk aan, dan is de verstuurknop voorgoed uitgeschakeld zonder dat
       // er iets zichtbaar misgaat.
-      if (!cancelled) {
-        if (error) setErr(error.message);
-        setReeds(new Set((data || [])
-          .map(r => String(r.recipient_email || '').trim().toLowerCase())
-          .filter(Boolean)));
-      }
       setChecking(false);
     })();
     return () => { cancelled = true; };
   }, [campaignId]);
 
-  const { mee, afvallers } = useMemo(() => {
-    const mee = [], afvallers = [];
-    for (const c of contacts) {
-      const email = String(c.email || '').trim().toLowerCase();
-      // Inactief of former betekent meestal: deze persoon werkt hier niet meer.
-      // Dat is juist de situatie die je met dit scherm oplost, dus je voegt de
-      // NIEUWE rol toe, niet de oude.
-      if (c.isInactive || c.isFormer) { afvallers.push([c, 'staat op inactief of former']); continue; }
-      if (c.do_not_email) { afvallers.push([c, 'staat op do-not-email']); continue; }
-      if (!email) { afvallers.push([c, 'geen e-mailadres']); continue; }
-      if (reeds.has(email)) {
-        afvallers.push([c, 'dit adres heeft de mail al gehad']); continue;
-      }
-      mee.push(c);
-    }
-    return { mee, afvallers };
-  }, [contacts, reeds]);
+  const { mee, afvallers } = useMemo(
+    () => splitsOntvangers(contacts, reeds), [contacts, reeds]);
 
-  const versturen = async () => {
-    if (!campaign) return;
+  const versturen = async ({ negeer = negeerCooldown, lijst = mee } = {}) => {
+    if (!campaign || lijst.length === 0) return;
     setBusy(true); setErr(null);
     try {
       const resp = await apiFetch('/api/marketing-send', {
@@ -124,8 +137,8 @@ export default function AddToCampaignModal({ contacts, onClose, onDone }) {
           // Naverzending: de campagnerij mag niet overschreven worden, anders
           // springt recipient_count van 383 naar 1 en sent_at naar vandaag.
           append: true,
-          ignoreCooldown: negeerCooldown,
-          recipients: mee.map(c => ({
+          ignoreCooldown: negeer,
+          recipients: lijst.map(c => ({
             contact_id: c.id,
             email: String(c.email).trim(),
             vars: varsForContact({ ...c, company_name: c.company_name }),
@@ -140,6 +153,22 @@ export default function AddToCampaignModal({ contacts, onClose, onDone }) {
       setErr(e.message);
     }
     setBusy(false);
+  };
+
+  // Opnieuw proberen zonder afkoelperiode. Eerst de verzonden adressen opnieuw
+  // ophalen: bij een gedeeltelijke verzending mag wie zojuist wel een mail kreeg
+  // er geen tweede krijgen.
+  const tochVersturen = async () => {
+    if (!campaign) return;
+    setBusy(true);
+    const s = await laadVerzondenAdressen(campaign.id);
+    setReeds(s);
+    setNegeerCooldown(true);
+    const { mee: rest } = splitsOntvangers(contacts, s);
+    setBusy(false);
+    if (rest.length === 0) { setErr('Er is niemand meer over om naar te versturen.'); return; }
+    setResult(null);
+    await versturen({ negeer: true, lijst: rest });
   };
 
   const klaar = !!campaign && mee.length > 0 && !checking;
@@ -220,9 +249,15 @@ export default function AddToCampaignModal({ contacts, onClose, onDone }) {
               <div style={{ color: '#16a34a' }}>✓ {result.sent || 0} verstuurd onder {campaign?.name}.</div>
               {result.failed > 0 && <div style={{ color: '#dc2626' }}>{result.failed} mislukt.</div>}
               {result.cooled_down > 0 && (
-                <div style={{ color: '#b45309' }}>
-                  {result.cooled_down} overgeslagen wegens de afkoelperiode. Vink hierboven de
-                  afkoelperiode uit en probeer opnieuw als ze hem toch moeten krijgen.
+                <div style={{ color: '#b45309', marginTop: 6 }}>
+                  {result.cooled_down} overgeslagen wegens de afkoelperiode. Die gaat op de
+                  contactpersoon en niet op het adres, dus iemand die naar een nieuw adres is
+                  verhuisd telt als recent gemaild terwijl die de mail nooit kreeg.
+                  <div style={{ marginTop: 6 }}>
+                    <button className="btn-primary tiny" disabled={busy} onClick={tochVersturen}>
+                      {busy ? 'Bezig…' : 'Toch versturen'}
+                    </button>
+                  </div>
                 </div>
               )}
               {result.aborted && <div style={{ color: '#dc2626' }}>Afgebroken: {result.abortReason}</div>}

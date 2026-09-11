@@ -19,9 +19,23 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.101.1';
+export const CURRENT_VERSION = '1.101.2';
 
 export const CHANGELOG = [
+  {
+    version: '1.101.2',
+    date: '2026-09-11T15:35:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Afkoelperiode blokkeerde de naverzending zonder uitweg',
+    summary:
+      'Iemand die naar een nieuw adres is verhuisd telde als recent gemaild, want de afkoelperiode gaat op de contactpersoon en niet op het adres. De melding verwees naar een vinkje dat op dat moment niet meer op het scherm stond.',
+    changes: [
+      'Er staat nu een knop Toch versturen in het resultaat, die de afkoelperiode overslaat. Die haalt eerst opnieuw op wie de mail al gehad heeft, zodat bij een gedeeltelijke verzending niemand een tweede mail krijgt.',
+      'De melding legt nu ook uit waarom het gebeurt, in plaats van te verwijzen naar een vinkje dat er niet meer is.',
+      'De selectieregels staan nu als losse functie met 5 tests. Dit stukje ging al een keer mis door op de persoon te kijken in plaats van op het adres.',
+    ],
+  },
   {
     version: '1.101.1',
     date: '2026-09-11T15:05:00Z',
