@@ -45,6 +45,7 @@ export function stepForStatus(status) {
  *   lastScanISO            ISO of null  laatste inboxscan
  *   staleHours             int
  *   onlyStep               1 | 2 | null  optioneel beperken tot een stap
+ *   channel                'email' | 'linkedin'
  * @returns {{ batch: Array, skipped: object, remainingCap: number }}
  */
 export function selectSendable(candidates, opts = {}) {
@@ -52,7 +53,9 @@ export function selectSendable(candidates, opts = {}) {
     now = new Date(), dailyCap = 0, sentToday = 0, batchLimit = null,
     maxPerCompanyPerWeek = 2, domainCounts = {}, hardStopAt = null,
     lastScanISO = null, staleHours = STALE_HOURS, onlyStep = null,
+    channel = 'email',
   } = opts;
+  const isLinkedIn = channel === 'linkedin';
 
   const skipped = {};
   const bump = (reason) => { skipped[reason] = (skipped[reason] || 0) + 1; };
@@ -92,18 +95,32 @@ export function selectSendable(candidates, opts = {}) {
       bump('nog niet aan de beurt'); continue;
     }
 
+    // Via LinkedIn sturen we alleen bericht 1. Een ongevraagd tweede DM aan
+    // iemand die niet reageerde is precies het gedrag waar LinkedIn accounts op
+    // beperkt, en er staat ook geen tweede tekst in de lijst.
+    if (isLinkedIn && step === 2) { bump('geen opvolgbericht via LinkedIn'); continue; }
+
     // Bericht 2 heeft twee extra remmen.
     if (step === 2) {
       if (pastHardStop) { bump('harde stopdatum voorbij'); continue; }
       if (scanStale) { bump('inboxscan verouderd'); continue; }
     }
 
-    const subject = subjectForStep(c, step);
+    // Een DM heeft geen onderwerp, dus dat is daar geen eis.
+    const subject = isLinkedIn ? null : subjectForStep(c, step);
     const body = bodyForStep(c, step);
-    if (!subject || !body) { bump('tekst ontbreekt'); continue; }
-    if (!c?.email) { bump('geen e-mailadres'); continue; }
+    if (!body || (!isLinkedIn && !subject)) { bump('tekst ontbreekt'); continue; }
 
-    const dom = c.email_domain || null;
+    if (isLinkedIn) {
+      if (!c?.linkedin_url) { bump('geen LinkedIn-profiel'); continue; }
+    } else {
+      if (!c?.email) { bump('geen e-mailadres'); continue; }
+    }
+
+    // De per-bedrijf-regel telt op e-maildomein. Bij LinkedIn is er geen domein
+    // om op te tellen, dus die rem doet daar niets en moet niet stilletjes
+    // iedereen zonder domein in een emmer gooien.
+    const dom = isLinkedIn ? null : (c.email_domain || null);
     if (dom && (domainUsed[dom] || 0) >= maxPerCompanyPerWeek) {
       bump('max per bedrijf deze week'); continue;
     }
@@ -121,7 +138,10 @@ export function selectSendable(candidates, opts = {}) {
 }
 
 // Statusupdate na een geslaagde verzending (handover §4).
-export function statusAfterSend(step, { now = new Date(), delayMinDays = 5, delayMaxDays = 7 } = {}) {
+export function statusAfterSend(step, { now = new Date(), delayMinDays = 5, delayMaxDays = 7, channel = 'email' } = {}) {
+  // Via LinkedIn is bericht 1 ook het laatste bericht. Wel een vervolgdatum
+  // zetten zou de prospect over een week weer in de selectie laten opduiken.
+  if (channel === 'linkedin') return { status: 'msg1_sent', next_action_at: null };
   if (step === 1) {
     const span = Math.max(0, delayMaxDays - delayMinDays);
     const days = delayMinDays + Math.floor(Math.random() * (span + 1));

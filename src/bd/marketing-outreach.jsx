@@ -37,7 +37,7 @@ const STATUS_COLOR = {
 
 const CONTACT_COLS =
   'id,email,first_name,last_name,title,company,status,priority_tier,priority_label,outreach_prio,is_reserve,' +
-  'next_action_at,paused_reason,last_reply_summary,contact_id,company_id,last_inbound_at,answered_at';
+  'next_action_at,paused_reason,last_reply_summary,contact_id,company_id,last_inbound_at,answered_at,linkedin_url';
 
 const AWAITING = '__awaiting__';
 
@@ -276,9 +276,12 @@ export default function MarketingOutreach() {
 
   const doSend = async () => {
     const n = sendPlan?.would_send;
+    const dm = campaign.channel === 'linkedin';
+    const wat = dm ? 'LinkedIn-bericht(en)' : 'mail(s)';
+    const vanaf = dm ? `het LinkedIn-account van ${campaign.sender_mailbox}` : campaign.sender_mailbox;
     const msg = n
-      ? `${n} mail(s) versturen vanaf ${campaign.sender_mailbox}?`
-      : `Tot ${batchSize} mail(s) versturen vanaf ${campaign.sender_mailbox}?`;
+      ? `${n} ${wat} versturen vanaf ${vanaf}?`
+      : `Tot ${batchSize} ${wat} versturen vanaf ${vanaf}?`;
     if (!confirm(msg + '\n\nDit gaat naar echte prospects en is niet terug te draaien.')) return;
     await callSend({ dryRun: false });
   };
@@ -302,6 +305,11 @@ export default function MarketingOutreach() {
       </div>
     );
   }
+
+  // Het kanaal bepaalt een hoop: een DM heeft geen onderwerp, geen bounces, geen
+  // opvolgbericht en geen inbox om te scannen. De tab verzwijgt wat niet bestaat
+  // in plaats van lege of misleidende vakjes te tonen.
+  const isLinkedIn = campaign.channel === 'linkedin';
 
   // Klikbaar: filtert de lijst op die status. Nog een keer klikken zet het filter uit.
   const kpi = (label, value, color, filterValue) => {
@@ -338,8 +346,12 @@ export default function MarketingOutreach() {
         <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 999, border: '0.5px solid var(--sep)', color: 'var(--text-2)' }}>
           {campaign.status}
         </span>
+        <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 999,
+          border: '0.5px solid var(--sep)', color: isLinkedIn ? '#0a66c2' : 'var(--text-2)' }}>
+          {isLinkedIn ? 'LinkedIn-DM' : 'e-mail'}
+        </span>
         <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
-          afzender {campaign.sender_mailbox} · dagcap {campaign.daily_cap}
+          {isLinkedIn ? 'vanaf het LinkedIn-account van ' : 'afzender '}{campaign.sender_mailbox} · dagcap {campaign.daily_cap}
           {campaign.hard_stop_at ? ` · stop ${String(campaign.hard_stop_at).slice(0, 10)}` : ''}
         </span>
       </div>
@@ -349,92 +361,105 @@ export default function MarketingOutreach() {
         {kpi('Golf 1', wave.length, undefined, 'all')}
         {kpi('Klaar', counts.queued || 0, STATUS_COLOR.queued, 'queued')}
         {kpi('Bericht 1', counts.msg1_sent || 0, STATUS_COLOR.msg1_sent, 'msg1_sent')}
-        {kpi('Bericht 2', counts.msg2_sent || 0, STATUS_COLOR.msg2_sent, 'msg2_sent')}
+        {!isLinkedIn && kpi('Bericht 2', counts.msg2_sent || 0, STATUS_COLOR.msg2_sent, 'msg2_sent')}
         {kpi('Antwoord', counts.replied || 0, STATUS_COLOR.replied, 'replied')}
         {kpi('Onbeantwoord', counts[AWAITING] || 0, '#d97706', AWAITING)}
-        {kpi('Gebounced', counts.bounced || 0, STATUS_COLOR.bounced, 'bounced')}
+        {!isLinkedIn && kpi('Gebounced', counts.bounced || 0, STATUS_COLOR.bounced, 'bounced')}
         {kpi('Gepauzeerd', counts.paused || 0, STATUS_COLOR.paused, 'paused')}
         {kpi('Reserve', rows.length - wave.length, 'var(--text-3)')}
       </div>
 
-      {/* Inboxscan: de kern van de veiligheid */}
-      <div style={{
-        border: `1px solid ${stale ? 'rgba(217,119,6,0.6)' : 'rgba(22,163,74,0.5)'}`,
-        background: stale ? 'rgba(217,119,6,0.08)' : 'rgba(22,163,74,0.06)',
-        borderRadius: 8, padding: 12, display: 'flex', flexDirection: 'column', gap: 8,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 13, fontWeight: 600 }}>
-            Laatste inboxscan: {fmtAge(sync?.last_synced_at)}
-          </span>
-          {stale && (
-            <span style={{ fontSize: 11, color: '#b45309' }}>
-              ouder dan {STALE_HOURS} uur, dus opvolgmail wordt straks geblokkeerd
+      {/* Inboxscan: de kern van de veiligheid bij e-mail. Bij een DM bestaat die
+          inbox niet: antwoorden komen binnen op LinkedIn zelf en zijn live te
+          lezen in de Comms-lane, dus hier zou een scanknop niets doen. */}
+      {isLinkedIn ? (
+        <div style={{
+          border: '0.5px solid var(--sep)', borderRadius: 8, padding: 12,
+          fontSize: 12, color: 'var(--text-2)', lineHeight: 1.6,
+        }}>
+          <strong>Antwoorden lees je in de Comms-lane.</strong> Die haalt LinkedIn live op uit
+          het account van {campaign.sender_mailbox}. Er is hier geen inboxscan, want er gaat ook
+          geen opvolgbericht uit dat afgeremd moet worden.
+        </div>
+      ) : (
+        <div style={{
+          border: `1px solid ${stale ? 'rgba(217,119,6,0.6)' : 'rgba(22,163,74,0.5)'}`,
+          background: stale ? 'rgba(217,119,6,0.08)' : 'rgba(22,163,74,0.06)',
+          borderRadius: 8, padding: 12, display: 'flex', flexDirection: 'column', gap: 8,
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 13, fontWeight: 600 }}>
+              Laatste inboxscan: {fmtAge(sync?.last_synced_at)}
             </span>
+            {stale && (
+              <span style={{ fontSize: 11, color: '#b45309' }}>
+                ouder dan {STALE_HOURS} uur, dus opvolgmail wordt straks geblokkeerd
+              </span>
+            )}
+            <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
+              {!hasGraphToken && (
+                <button className="btn-primary tiny" onClick={reconnectMicrosoft}>Verbind Microsoft</button>
+              )}
+              <button className="btn-primary tiny" disabled={scanning || !hasGraphToken}
+                onClick={runScan}
+                title={`Leest de inbox van ${campaign.sender_mailbox} en koppelt antwoorden aan prospects`}>
+                {scanning ? 'Scannen…' : 'Scan inbox'}
+              </button>
+            </div>
+          </div>
+
+          <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
+            Scant de inbox van <strong>{campaign.sender_mailbox}</strong>
+            {isSender ? ' (dat ben jij)' : `, via gedeelde leesrechten op jouw login (${myEmail})`}.
+          </div>
+
+          {scanErr === 'NO_ACCESS' ? (
+            <div style={{ fontSize: 12, color: '#b45309', lineHeight: 1.6 }}>
+              <strong>Geen leesrechten op {campaign.sender_mailbox}.</strong> Jouw login mag die mailbox
+              nog niet lezen. Twee dingen zijn nodig, eenmalig:
+              <ol style={{ margin: '6px 0 0 18px', padding: 0 }}>
+                <li>
+                  Leesrechten in Exchange: <em>Exchange Admin Center → Mailboxes → {campaign.sender_mailbox} → Delegation → Read and manage</em>,
+                  en voeg {myEmail || 'je eigen account'} toe. Kan tot ongeveer een half uur duren voordat het werkt.
+                </li>
+                <li>
+                  Daarna hier op <em>Verbind Microsoft</em> klikken, zodat je token de nieuwe
+                  rechten meekrijgt (de app vraagt sinds kort ook Mail.Read.Shared).
+                </li>
+              </ol>
+            </div>
+          ) : scanErr ? (
+            <div style={{ fontSize: 12, color: '#dc2626' }}>Scan mislukt: {scanErr}</div>
+          ) : null}
+
+          {scanResult && (
+            <div style={{ fontSize: 12, color: 'var(--text-2)', lineHeight: 1.6 }}>
+              {scanResult.stats.scanned} berichten bekeken vanaf {String(scanResult.sinceISO).slice(0, 10)}.
+              {' '}Gekoppeld op afzender: <strong>{scanResult.stats.sender}</strong>,
+              {' '}bounces: <strong>{scanResult.stats.bounces}</strong>,
+              {' '}alleen geflagd op domein: <strong>{scanResult.stats.domainFlag}</strong>.
+              {' '}Genegeerd: {scanResult.stats.tooOld} te oud, {scanResult.stats.ownDomain} eigen domein,
+              {' '}{scanResult.stats.noMatch} geen match.
+              {scanResult.applied.processed > 0 && (
+                <> Verwerkt: {scanResult.applied.processed}, status gewijzigd bij {scanResult.applied.status_changed}.</>
+              )}
+              {scanResult.applied.skipped_known > 0 && <> {scanResult.applied.skipped_known} al eerder verwerkt.</>}
+              {scanResult.answeredFound > 0 && (
+                <> Bij {scanResult.answeredFound} prospect(s) bleek uit Sent Items dat er al geantwoord is.</>
+              )}
+              {scanResult.applied.errors > 0 && (
+                <span style={{ color: '#dc2626' }}> {scanResult.applied.errors} fout(en), die worden bij de volgende scan opnieuw geprobeerd.</span>
+              )}
+              {scanResult.stats.sender === 0 && scanResult.stats.bounces === 0 && (
+                <div style={{ color: 'var(--text-3)', marginTop: 4 }}>
+                  Geen antwoorden gevonden. Dat is te verwachten zolang er nog niets verstuurd is
+                  ({sentInfo.count} uitgaande berichten geregistreerd).
+                </div>
+              )}
+            </div>
           )}
-          <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
-            {!hasGraphToken && (
-              <button className="btn-primary tiny" onClick={reconnectMicrosoft}>Verbind Microsoft</button>
-            )}
-            <button className="btn-primary tiny" disabled={scanning || !hasGraphToken}
-              onClick={runScan}
-              title={`Leest de inbox van ${campaign.sender_mailbox} en koppelt antwoorden aan prospects`}>
-              {scanning ? 'Scannen…' : 'Scan inbox'}
-            </button>
-          </div>
         </div>
-
-        <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
-          Scant de inbox van <strong>{campaign.sender_mailbox}</strong>
-          {isSender ? ' (dat ben jij)' : `, via gedeelde leesrechten op jouw login (${myEmail})`}.
-        </div>
-
-        {scanErr === 'NO_ACCESS' ? (
-          <div style={{ fontSize: 12, color: '#b45309', lineHeight: 1.6 }}>
-            <strong>Geen leesrechten op {campaign.sender_mailbox}.</strong> Jouw login mag die mailbox
-            nog niet lezen. Twee dingen zijn nodig, eenmalig:
-            <ol style={{ margin: '6px 0 0 18px', padding: 0 }}>
-              <li>
-                Leesrechten in Exchange: <em>Exchange Admin Center → Mailboxes → {campaign.sender_mailbox} → Delegation → Read and manage</em>,
-                en voeg {myEmail || 'je eigen account'} toe. Kan tot ongeveer een half uur duren voordat het werkt.
-              </li>
-              <li>
-                Daarna hier op <em>Verbind Microsoft</em> klikken, zodat je token de nieuwe
-                rechten meekrijgt (de app vraagt sinds kort ook Mail.Read.Shared).
-              </li>
-            </ol>
-          </div>
-        ) : scanErr ? (
-          <div style={{ fontSize: 12, color: '#dc2626' }}>Scan mislukt: {scanErr}</div>
-        ) : null}
-
-        {scanResult && (
-          <div style={{ fontSize: 12, color: 'var(--text-2)', lineHeight: 1.6 }}>
-            {scanResult.stats.scanned} berichten bekeken vanaf {String(scanResult.sinceISO).slice(0, 10)}.
-            {' '}Gekoppeld op afzender: <strong>{scanResult.stats.sender}</strong>,
-            {' '}bounces: <strong>{scanResult.stats.bounces}</strong>,
-            {' '}alleen geflagd op domein: <strong>{scanResult.stats.domainFlag}</strong>.
-            {' '}Genegeerd: {scanResult.stats.tooOld} te oud, {scanResult.stats.ownDomain} eigen domein,
-            {' '}{scanResult.stats.noMatch} geen match.
-            {scanResult.applied.processed > 0 && (
-              <> Verwerkt: {scanResult.applied.processed}, status gewijzigd bij {scanResult.applied.status_changed}.</>
-            )}
-            {scanResult.applied.skipped_known > 0 && <> {scanResult.applied.skipped_known} al eerder verwerkt.</>}
-            {scanResult.answeredFound > 0 && (
-              <> Bij {scanResult.answeredFound} prospect(s) bleek uit Sent Items dat er al geantwoord is.</>
-            )}
-            {scanResult.applied.errors > 0 && (
-              <span style={{ color: '#dc2626' }}> {scanResult.applied.errors} fout(en), die worden bij de volgende scan opnieuw geprobeerd.</span>
-            )}
-            {scanResult.stats.sender === 0 && scanResult.stats.bounces === 0 && (
-              <div style={{ color: 'var(--text-3)', marginTop: 4 }}>
-                Geen antwoorden gevonden. Dat is te verwachten zolang er nog niets verstuurd is
-                ({sentInfo.count} uitgaande berichten geregistreerd).
-              </div>
-            )}
-          </div>
-        )}
-      </div>
+      )}
 
       {/* Verzenden */}
       <div style={{ border: '0.5px solid var(--sep)', borderRadius: 8, padding: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -446,8 +471,11 @@ export default function MarketingOutreach() {
           <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
             <label style={{ fontSize: 11, color: 'var(--text-3)', display: 'flex', alignItems: 'center', gap: 5 }}>
               batch
-              <input type="number" min={1} max={200} value={batchSize}
-                onChange={e => setBatchSize(Math.max(1, Math.min(200, Number(e.target.value) || 1)))}
+              <input type="number" min={1} max={isLinkedIn ? 10 : 200} value={batchSize}
+                onChange={e => setBatchSize(Math.max(1, Math.min(isLinkedIn ? 10 : 200, Number(e.target.value) || 1)))}
+                title={isLinkedIn
+                  ? 'Bij LinkedIn maximaal 10 per keer, met tientallen seconden ertussen'
+                  : undefined}
                 style={{ width: 58, padding: '4px 6px', borderRadius: 6, border: '0.5px solid var(--sep)', background: 'var(--bg-1)', fontSize: 12 }} />
             </label>
             <button className="btn-ghost tiny" disabled={sending} onClick={() => callSend({ dryRun: true })}>
@@ -506,7 +534,7 @@ export default function MarketingOutreach() {
             )}
             {sendResult.failures?.length > 0 && (
               <div style={{ color: 'var(--text-3)', marginTop: 4 }}>
-                Eerste fout: {sendResult.failures[0].email} ({sendResult.failures[0].status}) {sendResult.failures[0].error}
+                Eerste fout: {sendResult.failures[0].to || sendResult.failures[0].email} ({sendResult.failures[0].status}) {sendResult.failures[0].error}
               </div>
             )}
           </div>
@@ -620,9 +648,16 @@ export default function MarketingOutreach() {
       )}
 
       <div style={{ fontSize: 11, color: 'var(--text-3)', lineHeight: 1.6 }}>
-        Bericht 2 gaat alleen uit als de inboxscan jonger is dan {STALE_HOURS} uur, zodat een
-        opvolgmail nooit naar iemand gaat die inmiddels al geantwoord heeft. Bericht 1 heeft die
-        rem niet, want op een eerste contact kan nog geen antwoord zijn.
+        {isLinkedIn ? (
+          <>Via LinkedIn gaat er precies een bericht per persoon, met tientallen seconden ertussen
+          en maximaal 10 per keer. Een account dat in een paar minuten een reeks DM's afvuurt valt
+          op, en een beperking op dat account is niet terug te draaien. Antwoorden lees je in de
+          Comms-lane, die haalt LinkedIn live op.</>
+        ) : (
+          <>Bericht 2 gaat alleen uit als de inboxscan jonger is dan {STALE_HOURS} uur, zodat een
+          opvolgmail nooit naar iemand gaat die inmiddels al geantwoord heeft. Bericht 1 heeft die
+          rem niet, want op een eerste contact kan nog geen antwoord zijn.</>
+        )}
       </div>
     </div>
   );
@@ -695,6 +730,8 @@ function ContactMailsModal({ contact, campaign, onClose, onSent }) {
     setRBusy(false);
   };
 
+  const isLinkedIn = campaign?.channel === 'linkedin';
+
   const unsubUrl = detail?.unsubscribe_token
     ? `${window.location.origin}/api/outreach-unsubscribe?t=${detail.unsubscribe_token}`
     : null;
@@ -719,7 +756,12 @@ function ContactMailsModal({ contact, campaign, onClose, onSent }) {
               {[contact.first_name, contact.last_name].filter(Boolean).join(' ') || contact.email}
             </div>
             <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
-              {[contact.title, contact.company].filter(Boolean).join(' · ')} {contact.email ? `· ${contact.email}` : ''}
+              {[contact.title, contact.company].filter(Boolean).join(' · ')}
+              {contact.email ? ` · ${contact.email}` : ''}
+              {isLinkedIn && contact.linkedin_url ? (
+                <> · <a href={contact.linkedin_url} target="_blank" rel="noreferrer"
+                  style={{ color: '#0a66c2' }}>LinkedIn-profiel</a></>
+              ) : null}
             </div>
           </div>
           <span style={{ marginLeft: 'auto', fontSize: 11, color: STATUS_COLOR[contact.status] || 'var(--text-2)', fontWeight: 500 }}>
@@ -743,7 +785,7 @@ function ContactMailsModal({ contact, campaign, onClose, onSent }) {
               )}
 
               <div style={{ display: 'inline-flex', border: '0.5px solid var(--sep)', borderRadius: 6, overflow: 'hidden', alignSelf: 'flex-start' }}>
-                {[1, 2].map(n => {
+                {(isLinkedIn ? [1] : [1, 2]).map(n => {
                   const s = sentStep(n);
                   return (
                     <button key={n} type="button" className={tab === n ? 'btn-primary tiny' : 'btn-ghost tiny'}
@@ -762,7 +804,9 @@ function ContactMailsModal({ contact, campaign, onClose, onSent }) {
                       ? `Verstuurd op ${String(s.sent_or_received_at || '').slice(0, 16).replace('T', ' ')}`
                       : (tab === 2
                         ? 'Nog niet verstuurd. Gaat 5 tot 7 dagen na bericht 1, en alleen als er geen antwoord is.'
-                        : 'Nog niet verstuurd.')}
+                        : (isLinkedIn
+                          ? 'Nog niet verstuurd. Dit is het enige bericht dat via LinkedIn uitgaat.'
+                          : 'Nog niet verstuurd.'))}
                   </div>
                 );
               })()}
@@ -773,24 +817,50 @@ function ContactMailsModal({ contact, campaign, onClose, onSent }) {
                 </div>
               ) : (
                 <>
-                  <div style={{ border: '0.5px solid var(--sep)', borderRadius: 6, padding: '8px 10px' }}>
-                    <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>Onderwerp</div>
-                    <div style={{ fontSize: 13, fontWeight: 600 }}>{subject || '(geen onderwerp)'}</div>
-                    <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>
-                      Van {campaign?.sender_mailbox} · antwoorden gaan naar {campaign?.sender_mailbox}
-                    </div>
-                  </div>
-                  <iframe title={`preview-${tab}`} srcDoc={html} sandbox=""
-                    style={{ width: '100%', height: 380, border: '0.5px solid var(--sep)', borderRadius: 6, background: '#fff' }} />
-                  <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
-                    Dit is exact de HTML die verstuurd wordt, met dezelfde functie gerenderd als het
-                    verzend-endpoint gebruikt.
-                  </div>
+                  {isLinkedIn ? (
+                    <>
+                      <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
+                        Directbericht vanaf het LinkedIn-account van {campaign?.sender_mailbox}.
+                      </div>
+                      <div style={{
+                        border: '0.5px solid var(--sep)', borderRadius: 6, padding: '12px 14px',
+                        whiteSpace: 'pre-wrap', fontSize: 13, lineHeight: 1.6, color: 'var(--text-1)',
+                        background: 'var(--fill-1)', maxHeight: 380, overflow: 'auto',
+                      }}>
+                        {body}
+                      </div>
+                      <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
+                        Dit is exact de tekst die verstuurd wordt. Een DM is platte tekst, dus geen
+                        opmaak en geen afmeldlink.
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div style={{ border: '0.5px solid var(--sep)', borderRadius: 6, padding: '8px 10px' }}>
+                        <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>Onderwerp</div>
+                        <div style={{ fontSize: 13, fontWeight: 600 }}>{subject || '(geen onderwerp)'}</div>
+                        <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>
+                          Van {campaign?.sender_mailbox} · antwoorden gaan naar {campaign?.sender_mailbox}
+                        </div>
+                      </div>
+                      <iframe title={`preview-${tab}`} srcDoc={html} sandbox=""
+                        style={{ width: '100%', height: 380, border: '0.5px solid var(--sep)', borderRadius: 6, background: '#fff' }} />
+                      <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
+                        Dit is exact de HTML die verstuurd wordt, met dezelfde functie gerenderd als het
+                        verzend-endpoint gebruikt.
+                      </div>
+                    </>
+                  )}
                 </>
               )}
 
               <div style={{ borderTop: '0.5px solid var(--sep)', paddingTop: 10 }}>
-                {!composing ? (
+                {isLinkedIn ? (
+                  <div style={{ fontSize: 12, color: 'var(--text-3)', lineHeight: 1.6 }}>
+                    Antwoorden doe je op LinkedIn zelf, of via de Comms-lane. Vanuit hier kan het
+                    niet: die knop stuurt een e-mail en deze prospect heeft geen adres bij ons.
+                  </div>
+                ) : !composing ? (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                     <button className="btn-primary tiny" onClick={() => { setComposing(true); setRResult(null); }}>
                       Antwoord sturen

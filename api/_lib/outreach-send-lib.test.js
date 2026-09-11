@@ -243,3 +243,73 @@ describe('statusAfterSend', () => {
 describe('STALE_HOURS', () => {
   it('staat op 12 uur', () => expect(STALE_HOURS).toBe(12));
 });
+
+// ── LinkedIn-kanaal ──────────────────────────────────────────────────────────
+// Een DM heeft geen onderwerp, geen e-mailadres en geen domein, en er is geen
+// opvolgbericht. Zonder kanaalbesef valt elke LinkedIn-prospect af op regels die
+// voor e-mail zijn bedoeld.
+const li = (o = {}) => ({
+  id: o.id || 'li1', email: null, email_domain: null,
+  linkedin_url: o.linkedin_url || 'https://www.linkedin.com/in/nelleke',
+  status: 'queued', next_action_at: null, priority_tier: 'top', outreach_prio: 1,
+  msg1_subject: null, msg1_body: 'Hi Nelleke,\n\nOp 6 oktober...',
+  msg2_subject: null, msg2_body: null,
+  ...o,
+});
+
+const liBase = { ...base, channel: 'linkedin', maxPerCompanyPerWeek: 2 };
+
+describe('selectSendable op het LinkedIn-kanaal', () => {
+  it('kiest een prospect zonder onderwerp en zonder e-mailadres', () => {
+    const { batch } = selectSendable([li()], liBase);
+    expect(batch).toHaveLength(1);
+    expect(batch[0].step).toBe(1);
+    expect(batch[0].subject).toBeNull();
+    expect(batch[0].body).toContain('Hi Nelleke');
+  });
+
+  it('slaat een prospect zonder profiel-URL over', () => {
+    const { batch, skipped } = selectSendable([li({ linkedin_url: null })], liBase);
+    expect(batch).toHaveLength(0);
+    expect(skipped['geen LinkedIn-profiel']).toBe(1);
+  });
+
+  it('KRITIEK: de per-bedrijf-regel op e-maildomein blokkeert hier niets', () => {
+    // Drie mensen bij hetzelfde bedrijf, geen e-maildomein om op te tellen.
+    const rows = [li({ id: 'a' }), li({ id: 'b', linkedin_url: 'https://linkedin.com/in/b' }),
+                  li({ id: 'c', linkedin_url: 'https://linkedin.com/in/c' })];
+    const { batch } = selectSendable(rows, { ...liBase, maxPerCompanyPerWeek: 1 });
+    expect(batch).toHaveLength(3);
+  });
+
+  it('KRITIEK: er gaat nooit een tweede bericht uit', () => {
+    const { batch, skipped } = selectSendable([li({ status: 'msg1_sent' })], liBase);
+    expect(batch).toHaveLength(0);
+    expect(skipped['geen opvolgbericht via LinkedIn']).toBe(1);
+  });
+
+  it('de dagcap werkt hetzelfde als bij e-mail', () => {
+    const rows = [1, 2, 3, 4].map(n => li({ id: `r${n}`, linkedin_url: `https://linkedin.com/in/r${n}` }));
+    const { batch, skipped } = selectSendable(rows, { ...liBase, dailyCap: 20, sentToday: 18 });
+    expect(batch).toHaveLength(2);
+    expect(skipped['dagcap bereikt']).toBe(2);
+  });
+
+  it('een verouderde inboxscan remt bericht 1 niet (die rem geldt bericht 2)', () => {
+    const { batch } = selectSendable([li()], { ...liBase, lastScanISO: null });
+    expect(batch).toHaveLength(1);
+  });
+});
+
+describe('statusAfterSend op het LinkedIn-kanaal', () => {
+  it('KRITIEK: plant geen opvolging, want die bestaat niet', () => {
+    const r = statusAfterSend(1, { now: NOW, channel: 'linkedin' });
+    expect(r.status).toBe('msg1_sent');
+    expect(r.next_action_at).toBeNull();
+  });
+
+  it('e-mail blijft wel opvolgen', () => {
+    const r = statusAfterSend(1, { now: NOW, delayMinDays: 5, delayMaxDays: 5 });
+    expect(r.next_action_at).toBe(new Date('2026-09-21T09:00:00Z').toISOString());
+  });
+});

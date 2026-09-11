@@ -19,9 +19,26 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.94.0';
+export const CURRENT_VERSION = '1.95.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.95.0',
+    date: '2026-09-11T11:50:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Outreach verstuurt nu ook LinkedIn-berichten',
+    summary:
+      'De verzendkant kent het kanaal van de campagne: e-mail gaat via Resend, LinkedIn via een DM met Unipile vanaf het account van de afzender. De Outreach-tab past zich aan en laat weg wat bij een DM niet bestaat.',
+    changes: [
+      'api/outreach-send.js: vertakt op het kanaal, maar de claim-dan-verstuur-volgorde blijft ongewijzigd. Bij LinkedIn maximaal 10 per aanroep, 12 tot 25 seconden ertussen en een tijdsbudget van 4 minuten, zodat de functie netjes stopt in plaats van halverwege afgekapt te worden (een afgebroken run laat claims achter zonder verstuurd bericht).',
+      'Geen tweede bericht via LinkedIn: een ongevraagde herinnering aan iemand die niet reageerde is precies het gedrag waar accounts op beperkt worden, en er staat ook geen tweede tekst in de lijst.',
+      'De per-bedrijf-regel telt op e-maildomein en doet bij LinkedIn dus niets; de dagcap en de harde stop werken daar wel gewoon.',
+      'De Unipile provider_id wordt na de eerste verzending bewaard. Elke profielopvraag telt als een echte profielweergave, dus dat scheelt bij 150 mensen de helft van de acties op het account.',
+      'Outreach-tab: kanaallabel, geen inboxscan bij een DM (antwoorden lees je in de Comms-lane), geen bericht 2 en geen bounce-tegel, en de preview toont platte tekst in plaats van een e-mailvoorbeeld.',
+      '13 nieuwe tests op de selectieregels van het LinkedIn-kanaal.',
+    ],
+  },
   {
     version: '1.94.0',
     date: '2026-09-11T10:40:00Z',
