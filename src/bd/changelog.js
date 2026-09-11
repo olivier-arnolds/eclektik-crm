@@ -19,9 +19,23 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.96.0';
+export const CURRENT_VERSION = '1.96.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.96.1',
+    date: '2026-09-11T12:20:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Antwoord zonder classificatie raakte de prospect niet',
+    summary:
+      'Een binnengekomen antwoord waarvan de AI-classificatie niets bruikbaars opleverde werd wel vastgelegd, maar de prospect bleef onaangeraakt: geen antwoorddatum, niet zichtbaar als Onbeantwoord, en de opvolgmail stond nog gewoon ingepland. Dat trof twee out-of-office-antwoorden van 10 september.',
+    changes: [
+      'outreach-classify.js stopt niet meer bij een lege classificatie. De prospect krijgt nu de hold die er altijd voor bedoeld was: status ongemoeid, opvolging vervalt, gemarkeerd als handmatig te checken. Liever een opvolgmail te weinig dan een naar iemand die al geantwoord heeft.',
+      'De twee prospects van 10 september zijn hersteld (sql/data_fix_outreach_unclassified_2026-09-11.sql).',
+      '2 tests erbij op de hold-regel.',
+    ],
+  },
   {
     version: '1.96.0',
     date: '2026-09-11T12:30:00Z',

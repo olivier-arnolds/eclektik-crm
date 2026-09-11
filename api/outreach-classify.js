@@ -121,15 +121,25 @@ export default async function handler(req, res) {
 
     // Status alleen bijwerken bij een zekere match. Een domain_flag raakt nooit
     // een prospect aan; die staat in de lijst voor handwerk.
-    if (!c.contactId || !cls) continue;
+    //
+    // Een MISLUKTE classificatie (cls is null) stopt hier bewust NIET meer. Dat
+    // deed het wel, en dat was fout: het antwoord werd wel vastgelegd maar de
+    // prospect bleef onaangeraakt, dus zonder last_inbound_at, niet zichtbaar
+    // als Onbeantwoord, en met de opvolgmail nog gewoon ingepland. Zo verdween
+    // op 10 september een out-of-office van twee prospects uit beeld.
+    // statusAfterClassification geeft bij een lege classificatie een 'hold':
+    // status ongemoeid, geen vervolgactie, wel gemarkeerd voor handwerk. Dat is
+    // de veilige kant: liever een opvolgmail te weinig dan een naar iemand die
+    // al geantwoord heeft.
+    if (!c.contactId) continue;
 
     const { data: cur } = await supabase
       .from('outreach_contact').select('status').eq('id', c.contactId).single();
     const next = statusAfterClassification({
-      classification: cls.classification,
-      confidence: cls.confidence,
+      classification: cls?.classification ?? null,
+      confidence: cls?.confidence ?? 0,
       currentStatus: cur?.status || 'msg1_sent',
-      oooUntilISO: cls.ooo_until,
+      oooUntilISO: cls?.ooo_until ?? null,
     });
 
     const upd = {
@@ -142,8 +152,8 @@ export default async function handler(req, res) {
       last_reply_summary: (c.bodyPreview || '').replace(/\s+/g, ' ').trim().slice(0, 500) || null,
       updated_at: new Date().toISOString(),
     };
-    if (cls.classification === 'bounce') upd.paused_reason = 'mail bouncede';
-    if (next.needs_review) upd.paused_reason = `check handmatig: ${cls.classification || 'onbekend'} (${Math.round((cls.confidence || 0) * 100)}%)`;
+    if (cls?.classification === 'bounce') upd.paused_reason = 'mail bouncede';
+    if (next.needs_review) upd.paused_reason = `check handmatig: ${cls?.classification || 'onbekend'} (${Math.round((cls?.confidence || 0) * 100)}%)`;
 
     const { error: updErr } = await supabase.from('outreach_contact').update(upd).eq('id', c.contactId);
     if (updErr) {
@@ -153,7 +163,7 @@ export default async function handler(req, res) {
       stats.status_changed++;
       details.push({
         messageId: c.messageId, contactId: c.contactId,
-        classification: cls.classification, confidence: cls.confidence,
+        classification: cls?.classification ?? null, confidence: cls?.confidence ?? 0,
         status: next.status, needs_review: next.needs_review,
       });
     }

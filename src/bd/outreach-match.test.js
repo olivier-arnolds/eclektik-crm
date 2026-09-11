@@ -203,3 +203,21 @@ describe("needsOurReply - de weergave 'Onbeantwoord'", () => {
     expect(needsOurReply({ last_inbound_at: '2026-09-17T10:00:00Z', answered_at: 'kaput' })).toBe(true);
   });
 });
+
+describe('statusAfterClassification bij een mislukte classificatie', () => {
+  // Dit dekt de fout van 10 september: twee out-of-office-antwoorden kwamen wel
+  // binnen, maar de classificatie leverde niets bruikbaars op. De prospect bleef
+  // daardoor onaangeraakt en de opvolgmail stond nog gewoon ingepland.
+  it('KRITIEK: zonder classificatie blijft de status staan maar vervalt de opvolging', () => {
+    const r = statusAfterClassification({ classification: null, confidence: 0, currentStatus: 'msg1_sent' });
+    expect(r.status).toBe('msg1_sent');
+    expect(r.next_action_at).toBeNull();
+    expect(r.needs_review).toBe(true);
+  });
+
+  it('een leeg antwoord van het model telt als onbekend, niet als geldig label', () => {
+    const r = statusAfterClassification({ classification: '', confidence: 0.99, currentStatus: 'msg1_sent' });
+    expect(r.next_action_at).toBeNull();
+    expect(r.needs_review).toBe(true);
+  });
+});
