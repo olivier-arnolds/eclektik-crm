@@ -19,9 +19,25 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.102.0';
+export const CURRENT_VERSION = '1.103.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.103.0',
+    date: '2026-09-11T16:45:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Automatisch versturen: de dagcap wordt over de dag uitgesmeerd',
+    summary:
+      'Zet je automatisch versturen aan, dan gaan er elke 20 minuten een paar berichten uit tot de dagcap vol is, op werkdagen tussen 09:00 en 19:00. Geen klikken meer en niet zelf bijhouden wanneer er weer ruimte is.',
+    changes: [
+      'Eén klik kan de dagcap niet halen: bij LinkedIn zit er 12 tot 25 seconden tussen twee berichten, dus 30 stuks is negen minuten en een functie mag er vijf draaien. Vandaar een cron in plaats van een grotere batch.',
+      'De portiegrootte is de resterende dagruimte gedeeld door het aantal resterende momenten, met een bovengrens van 4 per keer. Zo loopt het gelijk op met de dag en haalt het zichzelf in na een gemiste run, zonder aan het eind alles ineens te dumpen.',
+      'De verzendlogica is uit het endpoint gehaald naar api/_lib/outreach-runner.js, zodat de knop en de cron letterlijk dezelfde code draaien. Daar zit de claim-dan-verstuur-volgorde die een dubbel bericht onmogelijk maakt, en die hoort maar op een plek te staan.',
+      'Staat standaard uit en is per campagne aan te zetten. Campagne op paused blijft de killswitch, ook voor de cron. 9 tests op de doseerlogica.',
+      'Het cron-rooster IS het verzendvenster: buiten werkdagen en kantooruren draait hij niet, want berichten om drie uur s nachts vallen op.',
+    ],
+  },
   {
     version: '1.102.0',
     date: '2026-09-11T16:15:00Z',

@@ -317,6 +317,17 @@ export default function MarketingOutreach() {
     await callSend({ dryRun: false });
   };
 
+  // Automatisch versturen aan of uit. Los van de status: 'active' blijft de
+  // killswitch, dit bepaalt alleen of de cron de dagcap over de dag uitsmeert.
+  const setAutoSend = async (value) => {
+    setBusyStatus(true);
+    const { error } = await supabase.from('outreach_campaign')
+      .update({ auto_send: value, updated_at: new Date().toISOString() }).eq('id', campaign.id);
+    setBusyStatus(false);
+    if (error) { setSendErr('Automatisch versturen wijzigen mislukt: ' + error.message); return; }
+    await load();
+  };
+
   const setCampaignStatus = async (status) => {
     setBusyStatus(true);
     const { error } = await supabase.from('outreach_campaign')
@@ -560,11 +571,27 @@ export default function MarketingOutreach() {
           </div>
         </div>
 
-        {campaign.status === 'active' && isLinkedIn && dagRuimte > 0 && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
+          border: '0.5px solid var(--sep)', borderRadius: 6, padding: '8px 10px',
+          background: campaign.auto_send ? 'rgba(22,163,74,0.06)' : 'transparent',
+        }}>
+          <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 500, cursor: 'pointer' }}>
+            <input type="checkbox" checked={!!campaign.auto_send} disabled={busyStatus}
+              onChange={e => setAutoSend(e.target.checked)} />
+            Automatisch versturen
+          </label>
+          <span style={{ fontSize: 11, color: 'var(--text-3)', flex: '1 1 320px' }}>
+            {campaign.auto_send
+              ? `Aan: elke 20 minuten gaan er een paar uit op werkdagen tussen 09:00 en 19:00, tot de dagcap van ${campaign.daily_cap}. Je hoeft niets te klikken. Pauzeer de campagne om het onmiddellijk te stoppen.`
+              : `Uit: er gaat alleen iets uit als je op Verstuur batch klikt, maximaal ${isLinkedIn ? 10 : 200} per keer. De rest van de dagcap vraagt dus een volgende klik.`}
+          </span>
+        </div>
+
+        {campaign.status === 'active' && !campaign.auto_send && isLinkedIn && dagRuimte > 0 && (
           <div style={{ fontSize: 12, color: 'var(--text-3)' }}>
-            Een klik verstuurt er maximaal {Math.min(10, dagRuimte)}, met tientallen seconden
-            ertussen. Er loopt niets door op de achtergrond: voor de resterende {dagRuimte} van
-            vandaag klik je nog {Math.ceil(dagRuimte / 10)} keer.
+            Voor de resterende {dagRuimte} van vandaag klik je nog {Math.ceil(dagRuimte / 10)} keer,
+            of je zet hierboven automatisch versturen aan.
           </div>
         )}
 
