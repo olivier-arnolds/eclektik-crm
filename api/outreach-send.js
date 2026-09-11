@@ -125,6 +125,15 @@ export default async function handler(req, res) {
     .eq('campaign_id', campaign_id).eq('direction', 'outbound')
     .gte('sent_or_received_at', dayAgo);
 
+  // Weekcap over een rollende week, met dezelfde redenering als de dagcap:
+  // strenger dan een kalenderweek, en het voorkomt 150 op zondagavond gevolgd
+  // door 150 op maandagochtend.
+  const weekAgoIso = new Date(now.getTime() - 7 * 86400000).toISOString();
+  const { count: sentThisWeek } = await supabase
+    .from('outreach_message').select('id', { count: 'exact', head: true })
+    .eq('campaign_id', campaign_id).eq('direction', 'outbound')
+    .gte('sent_or_received_at', weekAgoIso);
+
   // Kandidaten: alles wat aan de beurt is. Reserves doen niet mee.
   const { data: due, error: dErr } = await supabase
     .from('outreach_contact')
@@ -189,6 +198,8 @@ export default async function handler(req, res) {
     channel: camp.channel || 'email',
     dailyCap: camp.daily_cap,
     sentToday: sentToday || 0,
+    weeklyCap: camp.weekly_cap ?? null,
+    sentThisWeek: sentThisWeek || 0,
     batchLimit: askedLimit,
     maxPerCompanyPerWeek: camp.max_per_company_per_week,
     domainCounts,
@@ -204,6 +215,8 @@ export default async function handler(req, res) {
     channel: camp.channel || 'email',
     sent_last_24h: sentToday || 0,
     daily_cap: camp.daily_cap,
+    sent_last_7d: sentThisWeek || 0,
+    weekly_cap: camp.weekly_cap ?? null,
     would_send: batch.length,
     batch_limit: askedLimit,
     by_step: { 1: batch.filter(b => b.step === 1).length, 2: batch.filter(b => b.step === 2).length },

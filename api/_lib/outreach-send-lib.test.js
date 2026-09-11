@@ -347,3 +347,44 @@ describe('spreiding over bedrijven bij LinkedIn', () => {
     expect(batch).toHaveLength(2);
   });
 });
+
+describe('weekcap', () => {
+  // LinkedIn rekent per week, niet per dag: voor een premium account ligt de
+  // grens op 150 berichten aan eerstegraads connecties. Een dagcap alleen is
+  // daar geen bescherming tegen, want 30 per dag is 210 in zeven dagen.
+  const rijen = (n) => Array.from({ length: n }, (_, i) =>
+    li({ id: `w${i}`, linkedin_url: `https://linkedin.com/in/w${i}`, company: `Bedrijf${i}`, outreach_prio: i }));
+
+  it('KRITIEK: de weekcap remt ook als de dagcap nog ruimte heeft', () => {
+    const { batch, skipped } = selectSendable(rijen(10), {
+      ...liBase, dailyCap: 30, sentToday: 0, weeklyCap: 150, sentThisWeek: 146, batchLimit: 10,
+    });
+    expect(batch).toHaveLength(4);
+    expect(skipped['weekcap bereikt']).toBe(6);
+  });
+
+  it('zonder weekcap verandert er niets', () => {
+    const { batch } = selectSendable(rijen(10), {
+      ...liBase, dailyCap: 30, sentToday: 0, batchLimit: 10,
+    });
+    expect(batch).toHaveLength(10);
+  });
+
+  it('de strengste van de drie bindt, en de reden klopt', () => {
+    const r1 = selectSendable(rijen(10), { ...liBase, dailyCap: 30, sentToday: 28, weeklyCap: 150, sentThisWeek: 0, batchLimit: 10 });
+    expect(r1.batch).toHaveLength(2);
+    expect(r1.skipped['dagcap bereikt']).toBe(8);
+
+    const r2 = selectSendable(rijen(10), { ...liBase, dailyCap: 30, sentToday: 0, weeklyCap: 150, sentThisWeek: 0, batchLimit: 3 });
+    expect(r2.batch).toHaveLength(3);
+    expect(r2.skipped['batchlimiet bereikt']).toBe(7);
+  });
+
+  it('een volle week laat niets meer door', () => {
+    const { batch, skipped } = selectSendable(rijen(5), {
+      ...liBase, dailyCap: 30, sentToday: 0, weeklyCap: 150, sentThisWeek: 150, batchLimit: 10,
+    });
+    expect(batch).toHaveLength(0);
+    expect(skipped['weekcap bereikt']).toBe(5);
+  });
+});

@@ -357,6 +357,7 @@ export default function MarketingOutreach() {
         </span>
         <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
           {isLinkedIn ? 'vanaf het LinkedIn-account van ' : 'afzender '}{campaign.sender_mailbox} · dagcap {campaign.daily_cap}
+          {campaign.weekly_cap ? ` · weekcap ${campaign.weekly_cap}` : ''}
           {campaign.hard_stop_at ? ` · stop ${String(campaign.hard_stop_at).slice(0, 10)}` : ''}
         </span>
       </div>
@@ -520,6 +521,9 @@ export default function MarketingOutreach() {
               {' '}(bericht 1: {sendPlan.by_step?.['1'] ?? 0}, bericht 2: {sendPlan.by_step?.['2'] ?? 0}).
               {sendPlan.batch_limit ? ` Batch staat op ${sendPlan.batch_limit}.` : ''}
               {' '}Laatste 24 uur al verstuurd: {sendPlan.sent_last_24h} van dagcap {sendPlan.daily_cap}.
+              {sendPlan.weekly_cap
+                ? ` Deze week: ${sendPlan.sent_last_7d} van weekcap ${sendPlan.weekly_cap}.`
+                : ''}
             </div>
             {sendPlan.skipped && Object.keys(sendPlan.skipped).length > 0 && (
               <div style={{ color: 'var(--text-3)' }}>

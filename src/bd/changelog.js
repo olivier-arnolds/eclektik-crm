@@ -19,9 +19,24 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.99.0';
+export const CURRENT_VERSION = '1.100.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.100.0',
+    date: '2026-09-11T14:10:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Weekcap op outreach, LinkedIn naar 30 per dag',
+    summary:
+      'LinkedIn rekent per week: voor een premium account ligt de grens rond 150 berichten aan eerstegraads connecties. De LinkedIn-campagne staat nu op 30 per dag met 150 per week als harde grens.',
+    changes: [
+      'Een dagcap alleen is hier geen bescherming. 30 per dag lijkt binnen 150 te blijven, maar dat geldt alleen bij vijf verzenddagen; zeven dagen achter elkaar is 210. Daarom een echte weekcap in plaats van vertrouwen op niet-versturen in het weekend.',
+      'Rollende week, net als de dagcap een rollend etmaal is. Een kalenderweek zou 150 op zondagavond gevolgd door 150 op maandagochtend toestaan.',
+      'De dry-run en de kopregel tonen de weekstand, en de reden voor overslaan maakt nu onderscheid tussen dagcap, weekcap en batchlimiet.',
+      'NULL = geen weeklimiet, dus de e-mailcampagnes veranderen niet. 4 tests erbij.',
+    ],
+  },
   {
     version: '1.99.0',
     date: '2026-09-11T13:55:00Z',

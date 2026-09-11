@@ -52,6 +52,8 @@ export function stepForStatus(status) {
  *   now                    Date
  *   dailyCap               int  campagne-dagcap
  *   sentToday              int  al vandaag verstuurd (outbound van vandaag)
+ *   weeklyCap              int of null: bovengrens over een rollende week
+ *   sentThisWeek           int  al verstuurd in de afgelopen 7 dagen
  *   batchLimit             int of null: bovengrens voor DEZE aanroep. Los van de
  *                          dagcap gehouden, want anders krijgt "de batch was vol"
  *                          de misleidende reden "dagcap bereikt".
@@ -68,6 +70,7 @@ export function stepForStatus(status) {
 export function selectSendable(candidates, opts = {}) {
   const {
     now = new Date(), dailyCap = 0, sentToday = 0, batchLimit = null,
+    weeklyCap = null, sentThisWeek = 0,
     maxPerCompanyPerWeek = 2, domainCounts = {}, companyCounts = {}, hardStopAt = null,
     lastScanISO = null, staleHours = STALE_HOURS, onlyStep = null,
     channel = 'email',
@@ -77,15 +80,29 @@ export function selectSendable(candidates, opts = {}) {
   const skipped = {};
   const bump = (reason) => { skipped[reason] = (skipped[reason] || 0) + 1; };
 
-  // Twee onafhankelijke bovengrenzen. We onthouden welke van de twee bindt, zodat
-  // de reden die de gebruiker ziet klopt.
+  // Drie onafhankelijke bovengrenzen. We onthouden welke ervan bindt, zodat de
+  // reden die de gebruiker ziet klopt: "dagcap bereikt" terwijl alleen de batch
+  // vol was leest onlogisch en kost tijd bij het uitzoeken.
+  //
+  // De weekcap is er voor LinkedIn: dat platform rekent per week, en een dagcap
+  // alleen beschermt daar niet tegen. 30 per dag lijkt binnen een weeklimiet van
+  // 150 te blijven, maar dat geldt alleen als je vijf dagen stuurt; zeven dagen
+  // achter elkaar is 210.
   const capRoom = Math.max(0, Number(dailyCap) - Number(sentToday));
+  const weekRoom = weeklyCap === null || weeklyCap === undefined
+    ? Number.POSITIVE_INFINITY
+    : Math.max(0, Number(weeklyCap) - Number(sentThisWeek));
   const batchRoom = batchLimit === null || batchLimit === undefined
     ? Number.POSITIVE_INFINITY
     : Math.max(0, Number(batchLimit));
-  const capIsBinding = capRoom <= batchRoom;
-  const limitReason = capIsBinding ? 'dagcap bereikt' : 'batchlimiet bereikt';
-  let remaining = Math.min(capRoom, batchRoom);
+  // Volgorde bepaalt wie bij gelijkspel de reden levert: dag voor week voor batch.
+  const grenzen = [
+    [capRoom, 'dagcap bereikt'],
+    [weekRoom, 'weekcap bereikt'],
+    [batchRoom, 'batchlimiet bereikt'],
+  ];
+  let remaining = Math.min(capRoom, weekRoom, batchRoom);
+  const limitReason = (grenzen.find(([r]) => r === remaining) || grenzen[0])[1];
 
   const scanAgeH = lastScanISO ? (now.getTime() - new Date(lastScanISO).getTime()) / 3600000 : null;
   const scanStale = scanAgeH === null || !Number.isFinite(scanAgeH) || scanAgeH > staleHours;
