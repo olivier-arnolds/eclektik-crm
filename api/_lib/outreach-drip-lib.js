@@ -16,27 +16,59 @@
 //
 // Alles hier is puur, zodat de verdeling te toetsen is zonder Supabase of Unipile.
 
-// De cron staat in vercel.json op */20 tussen 07:00 en 16:59 UTC, op werkdagen.
-// Dat is 09:00 tot 18:59 in Amsterdam in de zomer, 08:00 tot 17:59 in de winter.
-// Deze constanten moeten in de pas lopen met die regel.
+// Het verzendvenster staat in AMSTERDAMSE tijd, niet in UTC. Vercel-cron kent
+// alleen UTC, dus een vast rooster zou met de zomertijd een uur verschuiven en
+// dan sturen we in de winter ineens vanaf acht uur 's ochtends. De cron draait
+// daarom ruimer (*/20 tussen 06:00 en 16:59 UTC op werkdagen) en de echte grens
+// staat hier, in lokale tijd.
+export const DRIP_TZ = 'Europe/Amsterdam';
+export const DRIP_START_HOUR = 9;
+export const DRIP_END_HOUR = 17;     // exclusief: 16:40 is het laatste moment
 export const DRIP_EVERY_MIN = 20;
-export const DRIP_LAST_HOUR_UTC = 16;
 // Bovengrens per run. Vier berichten met de pauze ertussen is circa anderhalve
 // minuut, ruim binnen de functietijd, en het blijft er menselijk uitzien.
 export const DRIP_MAX_PER_RUN = 4;
 
 /**
- * Hoeveel cron-momenten zijn er vandaag nog, dit moment meegerekend.
- * Buiten de venstertijden is dat er nog 1, zodat een late run niet door nul deelt.
+ * Uur, minuut en weekdag in de tijdzone van het venster. Via Intl, zodat de
+ * zomertijd vanzelf goed gaat en we geen offsets hoeven bij te houden.
  */
-export function slotsRemaining(now, { lastHourUtc = DRIP_LAST_HOUR_UTC, everyMin = DRIP_EVERY_MIN } = {}) {
+export function localParts(now, tz = DRIP_TZ) {
   const d = now instanceof Date ? now : new Date(now);
-  if (!Number.isFinite(d.getTime())) return 1;
-  const minutenNu = d.getUTCHours() * 60 + d.getUTCMinutes();
-  const minutenLaatste = lastHourUtc * 60 + 59;
-  const over = minutenLaatste - minutenNu;
+  if (!Number.isFinite(d.getTime())) return null;
+  const fmt = new Intl.DateTimeFormat('en-GB', {
+    timeZone: tz, hour: '2-digit', minute: '2-digit', weekday: 'short', hour12: false,
+  });
+  const delen = Object.fromEntries(fmt.formatToParts(d).map(p => [p.type, p.value]));
+  const dagen = { Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6, Sun: 0 };
+  return {
+    hour: Number(delen.hour) % 24,
+    minute: Number(delen.minute),
+    weekday: dagen[delen.weekday] ?? null,
+  };
+}
+
+/**
+ * Mag er op dit moment verstuurd worden? Werkdag, en binnen het venster.
+ * De cron draait ruimer dan het venster, dus deze controle doet het echte werk.
+ */
+export function inSendWindow(now, { startHour = DRIP_START_HOUR, endHour = DRIP_END_HOUR, tz = DRIP_TZ } = {}) {
+  const p = localParts(now, tz);
+  if (!p) return false;
+  if (p.weekday === 0 || p.weekday === 6) return false;
+  return p.hour >= startHour && p.hour < endHour;
+}
+
+/**
+ * Hoeveel cron-momenten zijn er vandaag nog, dit moment meegerekend.
+ * Nooit nul, want er wordt door gedeeld.
+ */
+export function slotsRemaining(now, { endHour = DRIP_END_HOUR, everyMin = DRIP_EVERY_MIN, tz = DRIP_TZ } = {}) {
+  const p = localParts(now, tz);
+  if (!p) return 1;
+  const over = (endHour * 60) - (p.hour * 60 + p.minute);
   if (over <= 0) return 1;
-  return Math.floor(over / everyMin) + 1;
+  return Math.max(1, Math.ceil(over / everyMin));
 }
 
 /**

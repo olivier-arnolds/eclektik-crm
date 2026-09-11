@@ -1,7 +1,9 @@
 import { requireCron } from './_lib/guard.js';
 import { createClient } from '@supabase/supabase-js';
 import { runOutreachBatch } from './_lib/outreach-runner.js';
-import { planDrip, slotsRemaining, DRIP_MAX_PER_RUN } from './_lib/outreach-drip-lib.js';
+import {
+  planDrip, slotsRemaining, inSendWindow, DRIP_MAX_PER_RUN, DRIP_START_HOUR, DRIP_END_HOUR,
+} from './_lib/outreach-drip-lib.js';
 
 // GET /api/outreach-drip - cron. Smeert de dagcap uit over de dag.
 //
@@ -22,9 +24,13 @@ import { planDrip, slotsRemaining, DRIP_MAX_PER_RUN } from './_lib/outreach-drip
 //   cron voegt daar alleen een portiegrootte aan toe.
 //
 // WANNEER
-//   vercel.json zet hem op */20 tussen 07:00 en 16:59 UTC op werkdagen. Buiten
-//   die momenten draait hij dus niet, en dat is meteen het verzendvenster: geen
-//   berichten 's nachts of in het weekend, want dat valt op.
+//   Werkdagen tussen 09:00 en 17:00 AMSTERDAMSE tijd. Geen berichten 's avonds of
+//   in het weekend, want dat valt op.
+//
+//   Vercel-cron kent alleen UTC, dus het rooster in vercel.json is bewust ruimer
+//   (*/20 tussen 06:00 en 16:59 UTC) en inSendWindow() trimt het naar het echte
+//   venster. Een vast UTC-rooster zou met de zomertijd een uur verschuiven en in
+//   de winter vanaf acht uur 's ochtends gaan sturen.
 
 export const config = { maxDuration: 300 };
 
@@ -43,6 +49,14 @@ export default async function handler(req, res) {
   if (error) return res.status(500).json({ error: 'campagnes ophalen: ' + error.message });
 
   const now = new Date();
+
+  // De cron draait ruimer dan het venster; hier valt alles buiten 09:00-17:00 af.
+  if (!inSendWindow(now)) {
+    return res.status(200).json({
+      ok: true, skipped: `buiten het verzendvenster (${DRIP_START_HOUR}:00-${DRIP_END_HOUR}:00 Amsterdam, werkdagen)`,
+    });
+  }
+
   const slotsLeft = slotsRemaining(now);
   const runs = [];
 

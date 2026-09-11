@@ -39,7 +39,7 @@
     },
     {
       "path": "/api/outreach-drip",
-      "schedule": "*/20 7-16 * * 1-5"
+      "schedule": "*/20 6-16 * * 1-5"
     }
   ]
 }

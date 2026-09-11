@@ -19,9 +19,23 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.103.0';
+export const CURRENT_VERSION = '1.103.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.103.1',
+    date: '2026-09-11T17:05:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Verzendvenster op 09:00 tot 17:00 Amsterdamse tijd',
+    summary:
+      'Het venster stond op een vast UTC-rooster en liep daarmee tot 19:00 in de zomer. Nu staat de grens in lokale tijd, dus hij klopt ook na de overgang naar de wintertijd.',
+    changes: [
+      'Vercel-cron kent alleen UTC. Een vast rooster zou met de zomertijd een uur verschuiven en in de winter vanaf acht uur s ochtends gaan sturen. De cron draait daarom ruimer en de echte grens zit in de code, via de tijdzone Europe/Amsterdam.',
+      'Weekend wordt ook in lokale tijd gecontroleerd, niet alleen door het cron-rooster.',
+      'Tests prikken bewust op beide kanten van de zomertijd, in september en in december.',
+    ],
+  },
   {
     version: '1.103.0',
     date: '2026-09-11T16:45:00Z',

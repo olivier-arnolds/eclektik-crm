@@ -583,7 +583,7 @@ export default function MarketingOutreach() {
           </label>
           <span style={{ fontSize: 11, color: 'var(--text-3)', flex: '1 1 320px' }}>
             {campaign.auto_send
-              ? `Aan: elke 20 minuten gaan er een paar uit op werkdagen tussen 09:00 en 19:00, tot de dagcap van ${campaign.daily_cap}. Je hoeft niets te klikken. Pauzeer de campagne om het onmiddellijk te stoppen.`
+              ? `Aan: elke 20 minuten gaan er een paar uit op werkdagen tussen 09:00 en 17:00, tot de dagcap van ${campaign.daily_cap}. Je hoeft niets te klikken. Pauzeer de campagne om het onmiddellijk te stoppen.`
               : `Uit: er gaat alleen iets uit als je op Verstuur batch klikt, maximaal ${isLinkedIn ? 10 : 200} per keer. De rest van de dagcap vraagt dus een volgende klik.`}
           </span>
         </div>
