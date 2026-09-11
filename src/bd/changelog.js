@@ -19,9 +19,23 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.96.1';
+export const CURRENT_VERSION = '1.97.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.97.0',
+    date: '2026-09-11T12:45:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Stop outreach vanuit de contactpopup',
+    summary:
+      'Blijkt uit een antwoord dat iemand er niet meer werkt, dan zet je die persoon nu met een knop stil, met de reden erbij. Omkeerbaar, want een vergissing moet je kunnen terugdraaien.',
+    changes: [
+      'Stoppen zet de prospect op gepauzeerd met de ingevulde reden en haalt de vervolgactie weg. Bewust geen nieuwe status: gepauzeerd is precies wat de verzendselectie al overslaat en staat al in de filters.',
+      'Hervatten zet terug op de stap waar iemand stond, afgeleid uit wat er echt verstuurd is. Zonder die afleiding zou iemand die al een bericht kreeg terugvallen op klaar-om-te-sturen en het nog een keer krijgen.',
+      'De popup houdt de status nu zelf bij, anders bleef er na het stoppen gewoon Bericht 1 verstuurd staan tot je de lijst herlaadde.',
+    ],
+  },
   {
     version: '1.96.1',
     date: '2026-09-11T12:20:00Z',

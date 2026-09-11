@@ -681,6 +681,16 @@ function ContactMailsModal({ contact, campaign, onClose, onSent }) {
   const [rBusy, setRBusy] = useState(false);
   const [rResult, setRResult] = useState(null);
 
+  // Outreach stoppen: nodig zodra uit een antwoord blijkt dat iemand hier niet
+  // meer werkt, of om een andere reden niet meer benaderd moet worden.
+  const [stopping, setStopping] = useState(false);
+  const [stopReason, setStopReason] = useState('niet meer werkzaam bij dit bedrijf');
+  const [stopBusy, setStopBusy] = useState(false);
+  // Eigen kopie van de status. De prop komt uit de lijstregel en die wordt pas
+  // ververst als de popup dicht is, dus zonder dit blijft er na het stoppen
+  // gewoon 'Bericht 1 verstuurd' staan.
+  const [status, setStatus] = useState(contact.status);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -698,6 +708,7 @@ function ContactMailsModal({ contact, campaign, onClose, onSent }) {
         if (e2) throw e2;
         if (!cancelled) {
           setDetail(d);
+          if (d?.status) setStatus(d.status);
           setHistory(h || []);
           const lastIn = [...(h || [])].reverse().find(x => x.direction === 'inbound');
           const base = lastIn?.subject || d?.msg1_subject || '';
@@ -732,6 +743,48 @@ function ContactMailsModal({ contact, campaign, onClose, onSent }) {
 
   const isLinkedIn = campaign?.channel === 'linkedin';
 
+  // Stoppen is bewust 'paused' en geen aparte status: paused is precies wat de
+  // verzendselectie overslaat, en het staat al in de statuslijst en de filters.
+  // De reden komt in paused_reason, zodat later te zien is waarom iemand eruit
+  // ligt. next_action_at op null, anders duikt de prospect bij de volgende ronde
+  // gewoon weer op.
+  const stopOutreach = async () => {
+    setStopBusy(true); setRResult(null);
+    const { error } = await supabase.from('outreach_contact').update({
+      status: 'paused',
+      next_action_at: null,
+      paused_reason: (stopReason || '').trim() || 'handmatig gestopt',
+      updated_at: new Date().toISOString(),
+    }).eq('id', contact.id);
+    setStopBusy(false);
+    if (error) { setRResult({ ok: false, msg: 'Stoppen mislukt: ' + error.message }); return; }
+    setStopping(false);
+    setStatus('paused');
+    setRResult({ ok: true, msg: 'Outreach gestopt. Deze persoon krijgt niets meer.' });
+    if (onSent) await onSent();
+  };
+
+  // Hervatten zet de prospect terug op de stap waar hij stond, afgeleid uit wat
+  // er daadwerkelijk verstuurd is. Zonder die afleiding zou iemand die al een
+  // bericht kreeg terugvallen op 'klaar om te sturen' en het opnieuw krijgen.
+  const resumeOutreach = async () => {
+    setStopBusy(true); setRResult(null);
+    const sentSteps = history.filter(h => h.direction === 'outbound' && h.sequence_step);
+    const maxStep = sentSteps.reduce((m, h) => Math.max(m, h.sequence_step), 0);
+    const nextStatus = maxStep >= 2 ? 'msg2_sent' : (maxStep === 1 ? 'msg1_sent' : 'queued');
+    const { error } = await supabase.from('outreach_contact').update({
+      status: nextStatus,
+      next_action_at: nextStatus === 'queued' ? new Date().toISOString() : null,
+      paused_reason: null,
+      updated_at: new Date().toISOString(),
+    }).eq('id', contact.id);
+    setStopBusy(false);
+    if (error) { setRResult({ ok: false, msg: 'Hervatten mislukt: ' + error.message }); return; }
+    setStatus(nextStatus);
+    setRResult({ ok: true, msg: `Hervat op status ${STATUS_LABEL[nextStatus] || nextStatus}.` });
+    if (onSent) await onSent();
+  };
+
   const unsubUrl = detail?.unsubscribe_token
     ? `${window.location.origin}/api/outreach-unsubscribe?t=${detail.unsubscribe_token}`
     : null;
@@ -764,8 +817,8 @@ function ContactMailsModal({ contact, campaign, onClose, onSent }) {
               ) : null}
             </div>
           </div>
-          <span style={{ marginLeft: 'auto', fontSize: 11, color: STATUS_COLOR[contact.status] || 'var(--text-2)', fontWeight: 500 }}>
-            {STATUS_LABEL[contact.status] || contact.status}
+          <span style={{ marginLeft: 'auto', fontSize: 11, color: STATUS_COLOR[status] || 'var(--text-2)', fontWeight: 500 }}>
+            {STATUS_LABEL[status] || status}
           </span>
           <button className="btn-ghost tiny" onClick={onClose}>✕</button>
         </div>
@@ -853,6 +906,41 @@ function ContactMailsModal({ contact, campaign, onClose, onSent }) {
                   )}
                 </>
               )}
+
+              {/* Stoppen. Staat los van antwoorden, want het is de tegenovergestelde
+                  actie: dit is de uitweg als uit een antwoord blijkt dat iemand
+                  hier niet meer werkt of gewoon niets meer moet krijgen. */}
+              <div style={{ borderTop: '0.5px solid var(--sep)', paddingTop: 10 }}>
+                {status === 'paused' ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: 12, color: 'var(--text-2)' }}>
+                      Gestopt{detail?.paused_reason ? `: ${detail.paused_reason}` : ''}.
+                    </span>
+                    <button className="btn-ghost tiny" disabled={stopBusy} onClick={resumeOutreach}>
+                      {stopBusy ? 'Bezig…' : 'Hervat outreach'}
+                    </button>
+                  </div>
+                ) : !stopping ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                    <button className="btn-ghost tiny" onClick={() => { setStopping(true); setRResult(null); }}>
+                      Stop outreach
+                    </button>
+                    <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
+                      Deze persoon krijgt niets meer. Later weer aan te zetten.
+                    </span>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <input value={stopReason} onChange={e => setStopReason(e.target.value)}
+                      placeholder="Reden, bijvoorbeeld: niet meer werkzaam bij dit bedrijf"
+                      style={{ flex: '1 1 320px', padding: '7px 10px', borderRadius: 6, border: '0.5px solid var(--sep)', background: 'var(--bg-1)', fontSize: 13 }} />
+                    <button className="btn-primary tiny" disabled={stopBusy} onClick={stopOutreach}>
+                      {stopBusy ? 'Bezig…' : 'Bevestig stoppen'}
+                    </button>
+                    <button className="btn-ghost tiny" disabled={stopBusy} onClick={() => setStopping(false)}>Annuleren</button>
+                  </div>
+                )}
+              </div>
 
               <div style={{ borderTop: '0.5px solid var(--sep)', paddingTop: 10 }}>
                 {isLinkedIn ? (
