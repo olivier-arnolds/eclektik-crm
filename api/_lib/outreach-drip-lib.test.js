@@ -33,6 +33,14 @@ describe('inSendWindow', () => {
   it('in het weekend gaat er niets uit', () => {
     expect(inSendWindow(new Date(Date.UTC(2026, 8, 12, 10, 0)))).toBe(false); // zaterdag
     expect(inSendWindow(new Date(Date.UTC(2026, 8, 13, 10, 0)))).toBe(false); // zondag
+    expect(inSendWindow(new Date(Date.UTC(2026, 8, 11, 13, 40)))).toBe(true); // vrijdag
+  });
+
+  it('KRITIEK: een onbepaalbare weekdag houdt tegen in plaats van door te laten', () => {
+    // Faalt de weekdagbepaling ooit (andere locale, rare tijdzone), dan mag dat
+    // geen berichtenreeks op zondagochtend opleveren.
+    expect(inSendWindow(new Date('kapot'))).toBe(false);
+    expect(inSendWindow(new Date(Date.UTC(2026, 8, 12, 10, 0)), { tz: 'Onzin/Tijdzone' })).toBe(false);
   });
 });
 

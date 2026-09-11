@@ -36,14 +36,25 @@ export const DRIP_MAX_PER_RUN = 4;
 export function localParts(now, tz = DRIP_TZ) {
   const d = now instanceof Date ? now : new Date(now);
   if (!Number.isFinite(d.getTime())) return null;
-  const fmt = new Intl.DateTimeFormat('en-GB', {
-    timeZone: tz, hour: '2-digit', minute: '2-digit', weekday: 'short', hour12: false,
-  });
-  const delen = Object.fromEntries(fmt.formatToParts(d).map(p => [p.type, p.value]));
+  let delen;
+  try {
+    // Een onbekende tijdzone gooit hier. Niets teruggeven is dan beter dan de
+    // fout laten doorslaan: de aanroeper houdt de verzending tegen, en dat is
+    // de veilige kant.
+    const fmt = new Intl.DateTimeFormat('en-GB', {
+      timeZone: tz, hour: '2-digit', minute: '2-digit', weekday: 'short', hour12: false,
+    });
+    delen = Object.fromEntries(fmt.formatToParts(d).map(p => [p.type, p.value]));
+  } catch {
+    return null;
+  }
   const dagen = { Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6, Sun: 0 };
+  const hour = Number(delen.hour);
+  const minute = Number(delen.minute);
+  if (!Number.isFinite(hour) || !Number.isFinite(minute)) return null;
   return {
-    hour: Number(delen.hour) % 24,
-    minute: Number(delen.minute),
+    hour: hour % 24,
+    minute,
     weekday: dagen[delen.weekday] ?? null,
   };
 }
@@ -55,7 +66,11 @@ export function localParts(now, tz = DRIP_TZ) {
 export function inSendWindow(now, { startHour = DRIP_START_HOUR, endHour = DRIP_END_HOUR, tz = DRIP_TZ } = {}) {
   const p = localParts(now, tz);
   if (!p) return false;
-  if (p.weekday === 0 || p.weekday === 6) return false;
+  // Alleen maandag tot en met vrijdag, en bij twijfel NIET. Een weekdag die we
+  // niet konden bepalen moet de verzending tegenhouden, niet doorlaten: een
+  // gemiste run haal je de volgende dag in, een berichtenreeks op zondagochtend
+  // vanaf iemands eigen account niet.
+  if (!(p.weekday >= 1 && p.weekday <= 5)) return false;
   return p.hour >= startHour && p.hour < endHour;
 }
 

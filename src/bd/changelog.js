@@ -19,9 +19,23 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.103.1';
+export const CURRENT_VERSION = '1.103.2';
 
 export const CHANGELOG = [
+  {
+    version: '1.103.2',
+    date: '2026-09-11T17:50:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Weekendcheck valt nu dicht in plaats van open',
+    summary:
+      'De weekendcontrole liet door als de weekdag niet te bepalen was, en een onbekende tijdzone liet de hele cron klappen. Allebei omgedraaid naar de veilige kant.',
+    changes: [
+      'Alleen maandag tot en met vrijdag laat door; alles wat daar niet aantoonbaar aan voldoet houdt tegen. Een gemiste run haal je de volgende dag in, een berichtenreeks op zondagochtend vanaf iemands eigen account niet.',
+      'Een onbekende tijdzone gooide een fout die de cron zou laten falen. Nu wordt die opgevangen en houdt de verzending stil.',
+      'Twee tests erbij die dit vastleggen.',
+    ],
+  },
   {
     version: '1.103.1',
     date: '2026-09-11T17:05:00Z',
