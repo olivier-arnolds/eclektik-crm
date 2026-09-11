@@ -1561,12 +1561,10 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
       </div>
       {showAddToCampaign && (
         <AddToCampaignModal
-          // Bedrijfsnaam en -id komen uit het account, niet uit het contact zelf.
-          // De modal heeft ze nodig om een bestaande tekst van hetzelfde bedrijf
-          // te kunnen overnemen en om de koppeling naar het account te leggen.
+          // Bedrijfsnaam komt uit het account, niet uit het contact zelf. De
+          // modal heeft hem nodig voor de {{company_name}} in de campagnetekst.
           contacts={filtered.filter(c => selected.has(c.id)).map(c => ({
             ...c,
-            company_id: c.accountId || null,
             company_name: accountMetaById.get(c.accountId)?.name || '',
           }))}
           onClose={() => setShowAddToCampaign(false)}

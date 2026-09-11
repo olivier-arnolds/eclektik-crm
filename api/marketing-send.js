@@ -51,8 +51,15 @@ export default async function handler(req, res) {
   const {
     campaign_id, name, subject, preheader, html_body,
     from_name, from_email, reply_to, audience_filter, recipients,
-    sent_by, append_signature,
+    sent_by, append_signature, append,
   } = req.body || {};
+
+  // append = naverzending op een BESTAANDE campagne (iemand die de mail alsnog
+  // moet krijgen, bv. een vervanger na een bounce). Dan mag de campagnerij niet
+  // overschreven worden: recipient_count zou van 383 naar 1 springen en sent_at
+  // naar vandaag, waarmee de rapportage van die campagne kapot is. We tellen
+  // alleen op bij het aantal ontvangers en laten status en datum met rust.
+  const isAppend = !!append && !!campaign_id;
 
   if (!subject || !html_body || !Array.isArray(recipients) || recipients.length === 0) {
     return res.status(400).json({ error: 'subject, html_body and recipients[] are required' });
@@ -82,7 +89,7 @@ export default async function handler(req, res) {
     }).select('id').single();
     if (error) return res.status(500).json({ error: 'campaign insert: ' + error.message });
     cid = data.id;
-  } else {
+  } else if (!isAppend) {
     await supabase.from('campaigns').update({ status: 'sending', recipient_count: recipients.length }).eq('id', cid);
   }
 
@@ -174,10 +181,20 @@ export default async function handler(req, res) {
   }
 
   const finalStatus = aborted ? 'failed' : 'sent';
-  await supabase.from('campaigns').update({
-    status: finalStatus,
-    sent_at: new Date().toISOString(),
-  }).eq('id', cid);
+  if (isAppend) {
+    // Alleen het aantal ontvangers ophogen. Status en sent_at blijven van de
+    // oorspronkelijke verzending, want dat is wat die campagne wás.
+    const { data: cur } = await supabase
+      .from('campaigns').select('recipient_count').eq('id', cid).maybeSingle();
+    await supabase.from('campaigns')
+      .update({ recipient_count: (cur?.recipient_count || 0) + succeeded })
+      .eq('id', cid);
+  } else {
+    await supabase.from('campaigns').update({
+      status: finalStatus,
+      sent_at: new Date().toISOString(),
+    }).eq('id', cid);
+  }
 
   return res.status(200).json({
     campaign_id: cid,

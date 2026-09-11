@@ -19,9 +19,24 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.100.0';
+export const CURRENT_VERSION = '1.101.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.101.0',
+    date: '2026-09-11T14:40:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Add to campaign stuurt de mail van een bestaande campagne',
+    summary:
+      'Iemand die de campagnemail alsnog moet krijgen, bijvoorbeeld een vervanger na een bounce, voeg je nu toe vanuit de contactentab. De mail komt uit de campagne zelf, dus die persoon krijgt letterlijk dezelfde uiting als de rest.',
+    changes: [
+      'Verstuurt via marketing-send met het id van de BESTAANDE campagne, dus de verzending landt als campaign_sends-rij onder diezelfde campagne en de statistieken, de webhook en de bounceafhandeling blijven kloppen.',
+      'Nieuwe append-stand op marketing-send. Zonder die stand zou een naverzending recipient_count van 383 naar 1 zetten en sent_at naar vandaag, en daarmee de rapportage van die campagne wissen. Nu telt hij alleen op bij het aantal ontvangers.',
+      'Wie al een verzending onder deze campagne heeft, valt er automatisch uit, op contact en op adres. Dezelfde uiting mag nooit twee keer bij iemand aankomen.',
+      'De afkoelperiode van 5 dagen is met een vinkje te negeren, want voor een vervanger die deze mail nog nooit gehad heeft is die periode meestal niet bedoeld.',
+    ],
+  },
   {
     version: '1.100.0',
     date: '2026-09-11T14:10:00Z',
