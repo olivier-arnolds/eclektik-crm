@@ -19,9 +19,24 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.95.0';
+export const CURRENT_VERSION = '1.95.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.95.1',
+    date: '2026-09-11T12:10:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'LinkedIn-lijst geimporteerd: 154 contacten klaar',
+    summary:
+      'De netwerkanalyse van Marco staat in de campagne "Amsterdam 2026 LinkedIn" (draft, dagcap 20). Wie ook in de e-mailcampagne staat krijgt gewoon een DM: een persoonlijk bericht aan een bestaande connectie staat los van een koude mail.',
+    changes: [
+      'Het importscript gebruikt geen PostgREST-upsert meer. Het conflictdoel was een partiele index op een expressie en daar kan ON CONFLICT niet naar verwijzen (42P10). Nu bepaalt het script zelf wat nieuw is; de index blijft het vangnet tegen dubbelen.',
+      '--pause-email-duplicates is vervallen (dat raakte de lopende e-mailcampagne aan). Daarvoor in de plaats --skip-email-duplicates, dat alleen de LinkedIn-campagne pauzeert en standaard uit staat.',
+      '--overwrite raakt bij bestaande rijen alleen de tekst en de volgorde aan, nooit de status: dat zou een al verstuurd bericht weer op klaar-om-te-sturen zetten.',
+      'Geimporteerd: 154 contacten, 27 tier A, 43 tier B, 84 tier C, allemaal met tekst en profiel-URL, geen dubbelen.',
+    ],
+  },
   {
     version: '1.95.0',
     date: '2026-09-11T11:50:00Z',

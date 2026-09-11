@@ -12,12 +12,12 @@ WAAROM EEN APART SCRIPT EN GEEN VLAG OP HET BESTAANDE
   eigen kruisregel tegen de lopende e-mailcampagne. Dat allemaal in het bestaande
   script proppen maakt juist dat script gevaarlijk, en dat stuurt echte mail.
 
-DE KRUISREGEL (het belangrijkste hier)
-  27 van deze profielen staan ook in de e-mailcampagne "Amsterdam 2026", waarvan
-  een deel al gemaild is. Wie al een mail heeft gehad krijgt niet ook nog een DM
-  over hetzelfde event: die komt binnen als 'paused' met de reden erbij. Wie nog
-  in de wachtrij staat komt wel in aanmerking voor een DM, maar dan moet de mail
-  eruit. Dat gebeurt alleen met --pause-email-duplicates, nooit stilzwijgend.
+OVERLAP MET DE E-MAILCAMPAGNE
+  27 van deze profielen staan ook in "Amsterdam 2026". Dat is bewust geen reden
+  om over te slaan: dit is een persoonlijk bericht van Marco aan een bestaande
+  connectie, en dat staat los van een koude mail. Ze worden wel apart gerapporteerd
+  zodat je ziet wie er twee keer benaderd wordt. Wil je ze toch overslaan, gebruik
+  dan --skip-email-duplicates.
 
 GEBRUIK
   # 1) Dry-run (standaard, schrijft niets):
@@ -26,8 +26,8 @@ GEBRUIK
   # 2) Echt importeren:
   python3 scripts/import-linkedin-outreach.py --file "..." --apply
 
-  # 3) Ook de dubbelen uit de e-mailwachtrij halen (DM wint van mail):
-  python3 scripts/import-linkedin-outreach.py --file "..." --apply --pause-email-duplicates
+  # 3) Wie al via e-mail benaderd is toch overslaan:
+  python3 scripts/import-linkedin-outreach.py --file "..." --apply --skip-email-duplicates
 
   # 4) Teksten van bestaande rijen verversen (wist campagnevoortgang niet, maar
   #    overschrijft wel de berichttekst):
@@ -75,7 +75,7 @@ MARCO_UNIPILE = "KYq2oN8JSPiAQSrcIfT5Ew"   # zie CLAUDE.md §5; ook de default v
 TIER_MAP = {"A": "top", "B": "good", "C": "medium"}
 
 # Statussen in de e-mailcampagne die betekenen: deze persoon is al benaderd.
-# 'queued' en 'paused' staan hier bewust NIET tussen: daar is nog niets verstuurd.
+# Alleen voor de rapportage, en voor --skip-email-duplicates.
 EMAIL_ALREADY_TOUCHED = {"msg1_sent", "msg2_sent", "replied", "ooo", "referred", "bounced", "opted_out"}
 
 
@@ -112,9 +112,9 @@ def main():
                          "die in korte tijd veel DM's sturen.")
     ap.add_argument("--apply", action="store_true", help="schrijf naar de database")
     ap.add_argument("--overwrite", action="store_true", help="werk ook BESTAANDE rijen bij")
-    ap.add_argument("--pause-email-duplicates", action="store_true",
-                    help="zet dubbelen die nog in de e-mailwachtrij staan daar op paused, "
-                         "zodat ze alleen een DM krijgen")
+    ap.add_argument("--skip-email-duplicates", action="store_true",
+                    help="zet wie al via e-mail benaderd is op paused in DEZE campagne, "
+                         "zodat die persoon geen DM krijgt")
     args = ap.parse_args()
 
     load_env_local()
@@ -234,13 +234,13 @@ def main():
         if not body:
             status, reason = "paused", "geen berichttekst in het bestand"
         elif dup and dup.get("status") in EMAIL_ALREADY_TOUCHED:
-            status = "paused"
-            reason = f"al benaderd via e-mail ({CAMPAIGN_EMAIL}, status {dup['status']})"
             already_mailed.append((g(r, "name"), company_name, dup["status"]))
+            if args.skip_email_duplicates:
+                status = "paused"
+                reason = f"al benaderd via e-mail ({CAMPAIGN_EMAIL}, status {dup['status']})"
         elif dup and dup.get("status") == "queued" and not dup.get("is_reserve"):
-            # Staat nog in de e-mailwachtrij en gaat dus echt nog de deur uit. De DM
-            # mag, maar dan moet de mail eruit. Rijen die daar al op 'paused' staan
-            # zijn geen conflict: die krijgen sowieso geen mail meer.
+            # Staat nog in de e-mailwachtrij. Krijgt dus straks een mail EN een DM;
+            # alleen melden, want dat is een bewuste keuze.
             still_queued_in_email.append((g(r, "name"), company_name, dup["id"], dup.get("status")))
 
         stats[status] += 1
@@ -294,15 +294,16 @@ def main():
         for k, v in sorted(pause_reasons.items(), key=lambda x: -x[1]):
             print(f"    {v:5d}  {k}")
     if already_mailed:
-        print(f"\n  {len(already_mailed)} kregen al een mail, die krijgen GEEN DM:")
+        verb = "krijgen GEEN DM (--skip-email-duplicates)" if args.skip_email_duplicates \
+            else "krijgen OOK een DM"
+        print(f"\n  {len(already_mailed)} kregen al een mail en {verb}:")
         for nm, comp, st in already_mailed:
             print(f"    - {nm} ({comp}) [{st}]")
     if still_queued_in_email:
-        print(f"\n  !! {len(still_queued_in_email)} staan nog in de e-mailwachtrij "
-              f"EN krijgen een DM:")
+        print(f"\n  {len(still_queued_in_email)} staan nog in de e-mailwachtrij en krijgen "
+              f"straks dus een mail EN een DM:")
         for nm, comp, _id, st in still_queued_in_email:
             print(f"    - {nm} ({comp}) [{st}]")
-        print("     -> zonder --pause-email-duplicates krijgen zij straks beide.")
 
     if not args.apply:
         print("\nDry-run klaar. Voeg --apply toe om echt te importeren.")
@@ -328,33 +329,56 @@ def main():
         print(f"\nCampagne aangemaakt: {args.campaign_name} ({campaign_id}), "
               f"status draft, dagcap {args.daily_cap}")
 
-    # 6. Upsert. Conflictdoel is de partiele index op (campaign_id, lower(linkedin_url)).
+    # 6. Wegschrijven. GEEN PostgREST-upsert: het conflictdoel is een partiele index
+    #    op een expressie (lower(linkedin_url) where channel='linkedin') en daar kan
+    #    ON CONFLICT niet naar verwijzen. Dus zelf bepalen wat nieuw is. De index
+    #    blijft het vangnet: een dubbele insert wordt hoe dan ook geweigerd.
     for o in out:
         o["campaign_id"] = campaign_id
+
+    bestaand = {}
+    for row in supa.select_all("outreach_contact", "id,linkedin_url,campaign_id,status"):
+        if row.get("campaign_id") != campaign_id:
+            continue
+        slug = li_slug(row.get("linkedin_url"))
+        if slug:
+            bestaand[slug] = row
+
+    nieuw = [o for o in out if li_slug(o["linkedin_url"]) not in bestaand]
+    al_aanwezig = len(out) - len(nieuw)
+    print(f"\n  {len(nieuw)} nieuw, {al_aanwezig} stonden er al")
+
     written = 0
-    for i in range(0, len(out), BATCH):
-        chunk = out[i:i + BATCH]
-        res = supa.insert("outreach_contact", chunk,
-                          on_conflict="campaign_id,linkedin_url", overwrite=args.overwrite)
+    for i in range(0, len(nieuw), BATCH):
+        chunk = nieuw[i:i + BATCH]
+        res = supa.insert("outreach_contact", chunk)
         written += len(res)
         print(f"  batch {i // BATCH + 1}: {len(res)} van {len(chunk)} weggeschreven")
-    print(f"\n{written} rijen weggeschreven"
-          f"{' (bestaande bijgewerkt)' if args.overwrite else ' (bestaande overgeslagen)'}.")
 
-    # 7. Optioneel: de dubbelen uit de e-mailwachtrij halen.
-    if still_queued_in_email and args.pause_email_duplicates:
-        for nm, comp, oid, _st in still_queued_in_email:
-            supa._req("PATCH", f"/outreach_contact?id=eq.{oid}", {
-                "status": "paused",
-                "next_action_at": None,
-                "paused_reason": f"krijgt een persoonlijke DM via {args.campaign_name}",
+    # Alleen met --overwrite raken we bestaande rijen aan, en dan nog uitsluitend de
+    # teksten en de sortering. Status en voortgang blijven met rust: die overschrijven
+    # zou een al verstuurd bericht weer op 'klaar om te sturen' zetten.
+    bijgewerkt = 0
+    if args.overwrite and al_aanwezig:
+        for o in out:
+            row = bestaand.get(li_slug(o["linkedin_url"]))
+            if not row:
+                continue
+            supa._req("PATCH", f"/outreach_contact?id=eq.{row['id']}", {
+                "msg1_body": o["msg1_body"],
+                "priority_tier": o["priority_tier"],
+                "priority_label": o["priority_label"],
+                "outreach_prio": o["outreach_prio"],
+                "title": o["title"],
+                "company": o["company"],
+                "hook_note": o["hook_note"],
                 "updated_at": datetime.now(timezone.utc).isoformat(),
             })
-        print(f"{len(still_queued_in_email)} rijen in '{CAMPAIGN_EMAIL}' op paused gezet "
-              f"(zij krijgen een DM).")
-    elif still_queued_in_email:
-        print(f"LET OP: {len(still_queued_in_email)} mensen staan nu in beide campagnes. "
-              f"Draai opnieuw met --pause-email-duplicates of pauzeer ze met de hand.")
+            bijgewerkt += 1
+        print(f"  {bijgewerkt} bestaande rijen bijgewerkt (alleen tekst en volgorde)")
+
+    print(f"\n{written} rijen toegevoegd"
+          f"{f', {bijgewerkt} bijgewerkt' if bijgewerkt else ''}.")
 
     print("\nControleer met: select channel, status, count(*) from outreach_contact "
           "group by 1,2 order by 1,2;")
