@@ -843,6 +843,41 @@ function ContactMailsModal({ contact, campaign, onClose, onSent }) {
                 </div>
               )}
 
+              {/* Stoppen. Bewust bovenaan, boven de berichten: het is de uitweg
+                  als uit een antwoord blijkt dat iemand hier niet meer werkt, en
+                  daar ga je niet eerst een mailvoorbeeld voor doorscrollen. */}
+              <div>
+                {status === 'paused' ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: 12, color: 'var(--text-2)' }}>
+                      Gestopt{detail?.paused_reason ? `: ${detail.paused_reason}` : ''}.
+                    </span>
+                    <button className="btn-ghost tiny" disabled={stopBusy} onClick={resumeOutreach}>
+                      {stopBusy ? 'Bezig…' : 'Hervat outreach'}
+                    </button>
+                  </div>
+                ) : !stopping ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                    <button className="btn-ghost tiny" onClick={() => { setStopping(true); setRResult(null); }}>
+                      Stop outreach
+                    </button>
+                    <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
+                      Deze persoon krijgt niets meer. Later weer aan te zetten.
+                    </span>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <input value={stopReason} onChange={e => setStopReason(e.target.value)}
+                      placeholder="Reden, bijvoorbeeld: niet meer werkzaam bij dit bedrijf"
+                      style={{ flex: '1 1 320px', padding: '7px 10px', borderRadius: 6, border: '0.5px solid var(--sep)', background: 'var(--bg-1)', fontSize: 13 }} />
+                    <button className="btn-primary tiny" disabled={stopBusy} onClick={stopOutreach}>
+                      {stopBusy ? 'Bezig…' : 'Bevestig stoppen'}
+                    </button>
+                    <button className="btn-ghost tiny" disabled={stopBusy} onClick={() => setStopping(false)}>Annuleren</button>
+                  </div>
+                )}
+              </div>
+
               <div style={{ display: 'inline-flex', border: '0.5px solid var(--sep)', borderRadius: 6, overflow: 'hidden', alignSelf: 'flex-start' }}>
                 {(isLinkedIn ? [1] : [1, 2]).map(n => {
                   const s = sentStep(n);
@@ -912,41 +947,6 @@ function ContactMailsModal({ contact, campaign, onClose, onSent }) {
                   )}
                 </>
               )}
-
-              {/* Stoppen. Staat los van antwoorden, want het is de tegenovergestelde
-                  actie: dit is de uitweg als uit een antwoord blijkt dat iemand
-                  hier niet meer werkt of gewoon niets meer moet krijgen. */}
-              <div style={{ borderTop: '0.5px solid var(--sep)', paddingTop: 10 }}>
-                {status === 'paused' ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: 12, color: 'var(--text-2)' }}>
-                      Gestopt{detail?.paused_reason ? `: ${detail.paused_reason}` : ''}.
-                    </span>
-                    <button className="btn-ghost tiny" disabled={stopBusy} onClick={resumeOutreach}>
-                      {stopBusy ? 'Bezig…' : 'Hervat outreach'}
-                    </button>
-                  </div>
-                ) : !stopping ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                    <button className="btn-ghost tiny" onClick={() => { setStopping(true); setRResult(null); }}>
-                      Stop outreach
-                    </button>
-                    <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
-                      Deze persoon krijgt niets meer. Later weer aan te zetten.
-                    </span>
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <input value={stopReason} onChange={e => setStopReason(e.target.value)}
-                      placeholder="Reden, bijvoorbeeld: niet meer werkzaam bij dit bedrijf"
-                      style={{ flex: '1 1 320px', padding: '7px 10px', borderRadius: 6, border: '0.5px solid var(--sep)', background: 'var(--bg-1)', fontSize: 13 }} />
-                    <button className="btn-primary tiny" disabled={stopBusy} onClick={stopOutreach}>
-                      {stopBusy ? 'Bezig…' : 'Bevestig stoppen'}
-                    </button>
-                    <button className="btn-ghost tiny" disabled={stopBusy} onClick={() => setStopping(false)}>Annuleren</button>
-                  </div>
-                )}
-              </div>
 
               <div style={{ borderTop: '0.5px solid var(--sep)', paddingTop: 10 }}>
                 {isLinkedIn ? (

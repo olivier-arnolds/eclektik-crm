@@ -62,21 +62,42 @@ export default async function handler(req, res) {
   }
 
   // Al verwerkte berichten overslaan (idempotentie).
+  //
+  // Op TWEE sleutels, en dat is wezenlijk: Graph geeft een bericht een nieuw id
+  // zodra het naar een andere map verplaatst wordt. Sinds de scan de hele
+  // mailbox leest, komt een antwoord dat inmiddels gearchiveerd is dus terug met
+  // een ander provider_message_id en werd het een tweede keer weggeschreven.
+  // internetMessageId ligt vast bij het opstellen van de mail en verandert nooit.
   const ids = candidates.map(c => c?.messageId).filter(Boolean);
-  const { data: known, error: knownErr } = await supabase
-    .from('outreach_message')
-    .select('provider_message_id')
-    .eq('direction', 'inbound')
-    .in('provider_message_id', ids);
-  if (knownErr) return res.status(500).json({ error: 'bestaande berichten ophalen: ' + knownErr.message });
-  const seen = new Set((known || []).map(r => r.provider_message_id));
+  const internetIds = candidates.map(c => c?.internetMessageId).filter(Boolean);
+  const knownRows = [];
+  for (const [kolom, waarden] of [['provider_message_id', ids], ['internet_message_id', internetIds]]) {
+    if (!waarden.length) continue;
+    const { data, error } = await supabase
+      .from('outreach_message')
+      .select('provider_message_id,internet_message_id')
+      .eq('direction', 'inbound')
+      .in(kolom, waarden);
+    if (error) return res.status(500).json({ error: 'bestaande berichten ophalen: ' + error.message });
+    knownRows.push(...(data || []));
+  }
+  const seen = new Set();
+  for (const r of knownRows) {
+    if (r.provider_message_id) seen.add(r.provider_message_id);
+    if (r.internet_message_id) seen.add(r.internet_message_id);
+  }
 
   const stats = { processed: 0, skipped_known: 0, bounces: 0, flagged: 0, classified: 0, status_changed: 0, errors: 0 };
   const details = [];
 
   for (const c of candidates) {
     if (!c?.messageId) { stats.errors++; continue; }
-    if (seen.has(c.messageId)) { stats.skipped_known++; continue; }
+    if (seen.has(c.messageId) || (c.internetMessageId && seen.has(c.internetMessageId))) {
+      stats.skipped_known++; continue;
+    }
+    // Binnen deze aanroep ook onthouden: dezelfde mail kan in twee mappen liggen.
+    seen.add(c.messageId);
+    if (c.internetMessageId) seen.add(c.internetMessageId);
 
     let cls = null;
     try {
@@ -102,6 +123,7 @@ export default async function handler(req, res) {
       contact_id: c.contactId || null,
       direction: 'inbound',
       provider_message_id: c.messageId,
+      internet_message_id: c.internetMessageId || null,
       from_address: c.fromAddress || null,
       subject: c.subject || null,
       body_preview: c.bodyPreview || null,

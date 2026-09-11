@@ -19,9 +19,24 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.98.0';
+export const CURRENT_VERSION = '1.98.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.98.1',
+    date: '2026-09-11T13:20:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Stopknop bovenaan, en geen dubbele antwoorden meer',
+    summary:
+      'De stopknop stond onder het mailvoorbeeld en was daardoor niet te vinden; die staat nu direct onder de naam. En elk antwoord kwam sinds de mailboxbrede scan dubbel in de historie te staan.',
+    changes: [
+      'Stop outreach staat nu boven de berichten in plaats van eronder. Het is de uitweg als blijkt dat iemand er niet meer werkt, en daar scrol je niet eerst een mailvoorbeeld voor door.',
+      'Graph geeft een bericht een NIEUW id zodra het naar een andere map verhuist. De dubbelcheck stond alleen op dat id, dus een gearchiveerd antwoord werd bij de volgende scan opnieuw vastgelegd. Nu ontdubbelen we ook op internetMessageId, dat vastligt bij het opstellen van de mail en nooit verandert.',
+      'Binnen een scan wordt een bericht ook maar een keer geteld, want dezelfde mail kan in twee mappen liggen.',
+      'De 5 dubbele regels van vandaag zijn opgeruimd (sql/data_fix_outreach_dubbele_inbound_2026-09-11.sql).',
+    ],
+  },
   {
     version: '1.98.0',
     date: '2026-09-11T13:00:00Z',

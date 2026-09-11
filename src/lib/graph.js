@@ -184,7 +184,7 @@ export async function getMailboxMessagesSince(mailbox, sinceISO, limit = 800) {
   if (!token) throw new Error('No Microsoft token. Please reconnect.');
 
   const who = mailbox ? `/users/${encodeURIComponent(mailbox)}` : '/me';
-  const select = 'id,subject,bodyPreview,from,toRecipients,receivedDateTime,sentDateTime,isRead,hasAttachments,parentFolderId';
+  const select = 'id,internetMessageId,subject,bodyPreview,from,toRecipients,receivedDateTime,sentDateTime,isRead,hasAttachments,parentFolderId';
   const since = sinceISO ? new Date(sinceISO) : null;
   const filter = since && Number.isFinite(since.getTime())
     ? `&$filter=receivedDateTime ge ${since.toISOString()}`
@@ -218,6 +218,10 @@ export async function getMailboxMessagesSince(mailbox, sinceISO, limit = 800) {
 
   return all.slice(0, limit).map(m => ({
     id: m.id,
+    // Stabiel over mappen heen, in tegenstelling tot id: Graph geeft een bericht
+    // een NIEUW id zodra het verplaatst wordt. Zonder dit levert een scan na het
+    // archiveren van een antwoord een tweede regel voor hetzelfde bericht op.
+    internetMessageId: m.internetMessageId || null,
     subject: m.subject,
     bodyPreview: m.bodyPreview,
     from: m.from?.emailAddress?.name || m.from?.emailAddress?.address || '',
@@ -238,7 +242,7 @@ export async function getMailboxMessagesSince(mailbox, sinceISO, limit = 800) {
 //   DeletedItems, Drafts, etc.
 // Paginates via @odata.nextLink to go beyond Graph's 1000-per-request cap.
 export async function getFolderEmails(folderName, limit = 500) {
-  const select = 'id,subject,bodyPreview,from,toRecipients,receivedDateTime,sentDateTime,isRead,hasAttachments,parentFolderId';
+  const select = 'id,internetMessageId,subject,bodyPreview,from,toRecipients,receivedDateTime,sentDateTime,isRead,hasAttachments,parentFolderId';
   const pageSize = Math.min(limit, 1000);
   let url = `/me/mailFolders/${folderName}/messages?$top=${pageSize}&$orderby=receivedDateTime desc&$select=${select}`;
   let all = [];
@@ -255,6 +259,10 @@ export async function getFolderEmails(folderName, limit = 500) {
   }
   return all.slice(0, limit).map(m => ({
     id: m.id,
+    // Stabiel over mappen heen, in tegenstelling tot id: Graph geeft een bericht
+    // een NIEUW id zodra het verplaatst wordt. Zonder dit levert een scan na het
+    // archiveren van een antwoord een tweede regel voor hetzelfde bericht op.
+    internetMessageId: m.internetMessageId || null,
     subject: m.subject,
     bodyPreview: m.bodyPreview,
     from: m.from?.emailAddress?.name || m.from?.emailAddress?.address || '',
@@ -289,7 +297,7 @@ export async function getMailboxFolderEmails(mailbox, folderName = 'Inbox', limi
   if (!token) throw new Error('No Microsoft token. Please reconnect.');
 
   const who = mailbox ? `/users/${encodeURIComponent(mailbox)}` : '/me';
-  const select = 'id,subject,bodyPreview,from,toRecipients,receivedDateTime,sentDateTime,isRead,hasAttachments,parentFolderId';
+  const select = 'id,internetMessageId,subject,bodyPreview,from,toRecipients,receivedDateTime,sentDateTime,isRead,hasAttachments,parentFolderId';
   const pageSize = Math.min(limit, 1000);
   let url = `${who}/mailFolders/${folderName}/messages?$top=${pageSize}&$orderby=receivedDateTime desc&$select=${select}`;
 
@@ -320,6 +328,10 @@ export async function getMailboxFolderEmails(mailbox, folderName = 'Inbox', limi
 
   return all.slice(0, limit).map(m => ({
     id: m.id,
+    // Stabiel over mappen heen, in tegenstelling tot id: Graph geeft een bericht
+    // een NIEUW id zodra het verplaatst wordt. Zonder dit levert een scan na het
+    // archiveren van een antwoord een tweede regel voor hetzelfde bericht op.
+    internetMessageId: m.internetMessageId || null,
     subject: m.subject,
     bodyPreview: m.bodyPreview,
     from: m.from?.emailAddress?.name || m.from?.emailAddress?.address || '',

@@ -187,6 +187,10 @@ export function scanInbox(messages, contacts, { sinceISO = null, ignoreDomains =
 
     candidates.push({
       ...m,
+      // Naast het Graph-id ook het stabiele internet-id: dat overleeft een
+      // verplaatsing naar een andere map en is dus de betrouwbare sleutel om
+      // te zien of we dit bericht al verwerkt hebben.
+      internetMessageId: msg?.internetMessageId || null,
       fromAddress: normEmail(msg?.fromAddress),
       subject: msg?.subject || null,
       bodyPreview: msg?.bodyPreview || null,
