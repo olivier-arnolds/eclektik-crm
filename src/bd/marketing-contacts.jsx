@@ -4,6 +4,7 @@ import BulkTagModal from './marketing-bulk-tag-modal';
 import ContactDetailModal from './contact-detail-modal';
 import DoubleCheckLinkedInModal from './marketing-doublecheck-modal';
 import EmailSuggestModal from './marketing-email-suggest-modal';
+import AddToCampaignModal from './marketing-add-to-campaign-modal';
 import { useAuth } from '../lib/auth';
 import { supabase } from '../supabase';
 import { apiFetch } from '../lib/apiFetch';
@@ -642,6 +643,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
   // Sorteer-modus: 'account' (default = company A-Z dan naam) of 'updated' (recent geüpdate eerst)
   const [sortMode, setSortMode] = useState('account');
   const [showBulkTag, setShowBulkTag] = useState(false);
+  const [showAddToCampaign, setShowAddToCampaign] = useState(false);
   // Optimistic-removed (contact_id:tag_id) pairs — see removeTagFromContact
   const [hiddenPairs, setHiddenPairs] = useState(new Set());
   const isHidden = (contactId, tagId) => hiddenPairs.has(`${contactId}:${tagId}`);
@@ -1234,6 +1236,10 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
             <button className="btn-primary tiny" onClick={() => setShowBulkTag(true)}>
               Tag selected
             </button>
+            <button className="btn-ghost tiny" onClick={() => setShowAddToCampaign(true)}
+              title="Zet deze mensen alsnog in een lopende outreachcampagne">
+              Add to campaign
+            </button>
             <button className="btn-ghost tiny" onClick={enrichSelected} disabled={enriching}>
               {enriching ? `Enriching ${enrichProgress.done}/${enrichProgress.total}…` : 'Enrich via LinkedIn'}
             </button>
@@ -1553,6 +1559,21 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
           )}
         </div>
       </div>
+      {showAddToCampaign && (
+        <AddToCampaignModal
+          // Bedrijfsnaam en -id komen uit het account, niet uit het contact zelf.
+          // De modal heeft ze nodig om een bestaande tekst van hetzelfde bedrijf
+          // te kunnen overnemen en om de koppeling naar het account te leggen.
+          contacts={filtered.filter(c => selected.has(c.id)).map(c => ({
+            ...c,
+            company_id: c.accountId || null,
+            company_name: accountMetaById.get(c.accountId)?.name || '',
+          }))}
+          onClose={() => setShowAddToCampaign(false)}
+          onDone={refetch}
+        />
+      )}
+
       {showBulkTag && (
         <BulkTagModal
           contactIds={selected}

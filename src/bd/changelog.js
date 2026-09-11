@@ -19,9 +19,25 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.98.1';
+export const CURRENT_VERSION = '1.99.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.99.0',
+    date: '2026-09-11T13:55:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Add to campaign: iemand alsnog in een lopende outreachcampagne zetten',
+    summary:
+      'Na een bounce blijkt vaak dat iemand ergens weg is. Is die persoon bij het nieuwe bedrijf juist interessant, dan zet je hem nu vanuit de contactentab alsnog in de campagne, met een knop in de selectiebalk.',
+    changes: [
+      'Werkt voor een of meer geselecteerde contacten, en voor beide kanalen: e-mail en LinkedIn-DM.',
+      'De tekst is het lastige deel, want elke outreachtekst is met de hand per bedrijf geschreven. Staat er al iemand van hetzelfde bedrijf in de campagne, dan wordt die tekst als startpunt overgenomen met de aanhef vervangen door {{voornaam}}. Anders begin je leeg. Je leest en bewerkt altijd zelf voordat er iets wordt weggeschreven.',
+      'De samenvoeging van {{voornaam}} en {{bedrijf}} gebeurt bij het opslaan, niet bij het versturen. De verzendkant stuurt de tekst zoals hij in de rij staat, dus wat je in de outreachtab ziet is exact wat de prospect leest.',
+      'Overgeslagen met reden: al in de campagne, geen adres (of geen profiel bij LinkedIn), do-not-email, en inactief of former. Dat laatste omdat de oude rol juist het probleem is dat je aan het oplossen bent.',
+      'Handmatig toegevoegde mensen krijgen tier top. Zonder tier zouden ze achter de hele lijst aansluiten en de campagne waarschijnlijk niet meer halen.',
+    ],
+  },
   {
     version: '1.98.1',
     date: '2026-09-11T13:20:00Z',
