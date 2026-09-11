@@ -19,9 +19,23 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.101.0';
+export const CURRENT_VERSION = '1.101.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.101.1',
+    date: '2026-09-11T15:05:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Add to campaign keek naar de persoon in plaats van naar het adres',
+    summary:
+      'De check of iemand de mail al gehad had, matchte op contactpersoon. Juist in het geval waar dit scherm voor bestaat is dat dezelfde persoon met een nieuw adres, dus viel die ten onrechte af en bleef de verstuurknop uit.',
+    changes: [
+      'De dubbelcheck kijkt nu alleen naar het e-mailadres. Het adres bepaalt of een mail is aangekomen, de persoon niet: op het oude adres bouncede hij, het nieuwe heeft hem nooit gehad.',
+      'De verstuurknop bleef uit omdat er na die check niemand overbleef. Onderin staat nu waarom hij uit staat.',
+      'De laadvlag van de controle kon blijven hangen als het scherm tussentijds van campagne wisselde, wat de knop voorgoed uitschakelde zonder zichtbare fout.',
+    ],
+  },
   {
     version: '1.101.0',
     date: '2026-09-11T14:40:00Z',

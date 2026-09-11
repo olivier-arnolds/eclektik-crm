@@ -20,10 +20,13 @@ import { varsForContact } from '../lib/template-vars';
 //   blijven kloppen. De tekst komt uit de campagne zelf, dus deze persoon krijgt
 //   letterlijk dezelfde mail als de rest.
 //
-// DE VEILIGHEID
-//   Wie al een campaign_sends-rij heeft voor deze campagne valt eruit. Dezelfde
-//   uiting mag nooit twee keer bij dezelfde persoon aankomen, en dat is precies
-//   het risico dat je loopt als je dit met de hand in de composer zou doen.
+// DE VEILIGHEID, EN WAAROM OP ADRES EN NIET OP PERSOON
+//   Dezelfde uiting mag nooit twee keer bij iemand aankomen, dus we kijken wat er
+//   al onder deze campagne verstuurd is. Maar dat moet op E-MAILADRES, niet op
+//   contact-id: precies in het geval waar dit scherm voor bestaat is het dezelfde
+//   contactpersoon met een NIEUW adres. Op contact-id matchen zou die persoon
+//   uitsluiten terwijl de mail nooit is aangekomen, want hij bouncede op het oude
+//   adres. Het adres bepaalt of een mail is aangekomen, de persoon niet.
 
 const fmtDate = (iso) => (iso ? String(iso).slice(0, 10) : '');
 
@@ -57,25 +60,27 @@ export default function AddToCampaignModal({ contacts, onClose, onDone }) {
     return () => { cancelled = true; };
   }, []);
 
-  // Wie kreeg deze campagne al? Op contact_id en op adres, want een contact kan
-  // sinds de verzending een ander e-mailadres hebben gekregen.
+  // Naar welke ADRESSEN is deze campagne al gegaan? Bewust niet op contact_id,
+  // zie de toelichting bovenaan.
   useEffect(() => {
-    if (!campaignId) { setReeds(new Set()); return; }
+    if (!campaignId) { setReeds(new Set()); setChecking(false); return; }
     let cancelled = false;
     setChecking(true);
     (async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('campaign_sends')
-        .select('contact_id,recipient_email')
+        .select('recipient_email')
         .eq('campaign_id', campaignId)
         .limit(5000);
-      if (cancelled) return;
-      const s = new Set();
-      for (const r of (data || [])) {
-        if (r.contact_id) s.add(`c:${r.contact_id}`);
-        if (r.recipient_email) s.add(`e:${String(r.recipient_email).toLowerCase()}`);
+      // setChecking hoort NIET achter de cancelled-check: blijft die vlag per
+      // ongeluk aan, dan is de verstuurknop voorgoed uitgeschakeld zonder dat
+      // er iets zichtbaar misgaat.
+      if (!cancelled) {
+        if (error) setErr(error.message);
+        setReeds(new Set((data || [])
+          .map(r => String(r.recipient_email || '').trim().toLowerCase())
+          .filter(Boolean)));
       }
-      setReeds(s);
       setChecking(false);
     })();
     return () => { cancelled = true; };
@@ -91,8 +96,8 @@ export default function AddToCampaignModal({ contacts, onClose, onDone }) {
       if (c.isInactive || c.isFormer) { afvallers.push([c, 'staat op inactief of former']); continue; }
       if (c.do_not_email) { afvallers.push([c, 'staat op do-not-email']); continue; }
       if (!email) { afvallers.push([c, 'geen e-mailadres']); continue; }
-      if (reeds.has(`c:${c.id}`) || reeds.has(`e:${email}`)) {
-        afvallers.push([c, 'heeft deze mail al gehad']); continue;
+      if (reeds.has(email)) {
+        afvallers.push([c, 'dit adres heeft de mail al gehad']); continue;
       }
       mee.push(c);
     }
@@ -227,7 +232,9 @@ export default function AddToCampaignModal({ contacts, onClose, onDone }) {
 
         <div style={{ padding: '12px 18px', borderTop: '0.5px solid var(--sep)', display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
-            Wie deze mail al gehad heeft, valt er automatisch uit.
+            {checking ? 'Controleren…' : (mee.length === 0
+              ? 'Niemand om naar te versturen, zie de reden hierboven.'
+              : 'Een adres dat deze mail al gehad heeft, valt er automatisch uit.')}
           </span>
           <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
             <button className="btn-ghost tiny" onClick={onClose}>{result ? 'Sluiten' : 'Annuleren'}</button>
