@@ -41,6 +41,15 @@ const CONTACT_COLS =
 
 const AWAITING = '__awaiting__';
 
+// Stoppen is een ingreep, hervatten draait die terug. Dezelfde kleuren als de
+// statussen elders in deze tab, zodat de knop meteen leest als wat hij doet.
+const STOP_STIJL = {
+  color: '#dc2626', borderColor: 'rgba(220,38,38,0.45)', background: 'rgba(220,38,38,0.08)',
+};
+const HERVAT_STIJL = {
+  color: '#16a34a', borderColor: 'rgba(22,163,74,0.45)', background: 'rgba(22,163,74,0.08)',
+};
+
 // Sleutel voor de scantijd, per campagne. Zie de toelichting bij het inlezen.
 const syncKey = (campaignId) => `inbox:${campaignId}`;
 
@@ -694,7 +703,10 @@ function ContactMailsModal({ contact, campaign, onClose, onSent }) {
   // Outreach stoppen: nodig zodra uit een antwoord blijkt dat iemand hier niet
   // meer werkt, of om een andere reden niet meer benaderd moet worden.
   const [stopping, setStopping] = useState(false);
-  const [stopReason, setStopReason] = useState('niet meer werkzaam bij dit bedrijf');
+  // Bewust leeg. Een voorgevulde reden ('niet meer werkzaam bij dit bedrijf')
+  // werd gewoon meegeschreven als je hem liet staan, en legde dan een aanname
+  // vast die vaak niet klopt. Een reden invullen mag, hoeft niet.
+  const [stopReason, setStopReason] = useState('');
   const [stopBusy, setStopBusy] = useState(false);
   // Eigen kopie van de status. De prop komt uit de lijstregel en die wordt pas
   // ververst als de popup dicht is, dus zonder dit blijft er na het stoppen
@@ -763,7 +775,7 @@ function ContactMailsModal({ contact, campaign, onClose, onSent }) {
     const { error } = await supabase.from('outreach_contact').update({
       status: 'paused',
       next_action_at: null,
-      paused_reason: (stopReason || '').trim() || 'handmatig gestopt',
+      paused_reason: (stopReason || '').trim() || null,
       updated_at: new Date().toISOString(),
     }).eq('id', contact.id);
     setStopBusy(false);
@@ -853,16 +865,15 @@ function ContactMailsModal({ contact, campaign, onClose, onSent }) {
               <div>
                 {status === 'paused' ? (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                    <span style={{ fontSize: 12, color: 'var(--text-2)' }}>
-                      Gestopt{detail?.paused_reason ? `: ${detail.paused_reason}` : ''}.
-                    </span>
-                    <button className="btn-ghost tiny" disabled={stopBusy} onClick={resumeOutreach}>
+                    <button className="btn-ghost tiny" style={HERVAT_STIJL}
+                      disabled={stopBusy} onClick={resumeOutreach}>
                       {stopBusy ? 'Bezig…' : 'Hervat outreach'}
                     </button>
                   </div>
                 ) : !stopping ? (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                    <button className="btn-ghost tiny" onClick={() => { setStopping(true); setRResult(null); }}>
+                    <button className="btn-ghost tiny" style={STOP_STIJL}
+                      onClick={() => { setStopping(true); setRResult(null); }}>
                       Stop outreach
                     </button>
                     <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
@@ -872,9 +883,10 @@ function ContactMailsModal({ contact, campaign, onClose, onSent }) {
                 ) : (
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                     <input value={stopReason} onChange={e => setStopReason(e.target.value)}
-                      placeholder="Reden, bijvoorbeeld: niet meer werkzaam bij dit bedrijf"
+                      placeholder="Reden (optioneel)"
                       style={{ flex: '1 1 320px', padding: '7px 10px', borderRadius: 6, border: '0.5px solid var(--sep)', background: 'var(--bg-1)', fontSize: 13 }} />
-                    <button className="btn-primary tiny" disabled={stopBusy} onClick={stopOutreach}>
+                    <button className="btn-primary tiny" style={STOP_STIJL}
+                      disabled={stopBusy} onClick={stopOutreach}>
                       {stopBusy ? 'Bezig…' : 'Bevestig stoppen'}
                     </button>
                     <button className="btn-ghost tiny" disabled={stopBusy} onClick={() => setStopping(false)}>Annuleren</button>

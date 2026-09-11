@@ -19,9 +19,24 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.101.2';
+export const CURRENT_VERSION = '1.101.3';
 
 export const CHANGELOG = [
+  {
+    version: '1.101.3',
+    date: '2026-09-11T15:55:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Stop outreach vult geen reden meer in, en de knoppen hebben kleur',
+    summary:
+      'Het redenveld stond voorgevuld met \'niet meer werkzaam bij dit bedrijf\'. Liet je dat staan, dan werd die aanname vastgelegd bij een prospect waar het vaak niet over ging.',
+    changes: [
+      'Het redenveld is leeg en optioneel. Vul je niets in, dan wordt er ook niets vastgelegd.',
+      'De regel Gestopt: <reden> onder de naam is weg; de statusbadge rechtsboven zegt al dat iemand gepauzeerd is.',
+      'Stop outreach is rood en Hervat outreach groen, dezelfde kleuren als de statussen elders in de tab, zodat een knop leest als wat hij doet.',
+      'De ene prospect waar die aanname al was weggeschreven is opgeschoond; de status blijft gepauzeerd.',
+    ],
+  },
   {
     version: '1.101.2',
     date: '2026-09-11T15:35:00Z',
