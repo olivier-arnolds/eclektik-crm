@@ -19,9 +19,23 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.97.0';
+export const CURRENT_VERSION = '1.98.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.98.0',
+    date: '2026-09-11T13:00:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'De scan leest de hele mailbox, niet alleen de Inbox',
+    summary:
+      'Antwoorden die Marco al had gelezen en opgeruimd waren onzichtbaar voor de scan. Daardoor bleef een prospect op bericht 1 verstuurd staan met de opvolgmail nog ingepland, terwijl er allang een out-of-office was binnengekomen.',
+    changes: [
+      'Nieuwe getMailboxMessagesSince() leest over alle mappen heen, inclusief Archief en Verwijderde items. Een antwoord dat iemand heeft weggegooid is nog steeds een antwoord.',
+      'Het datumfilter doet Graph nu zelf, dus we halen niet eerst honderden oude berichten op om ze daarna weg te gooien.',
+      'Zo kwam het aan het licht: de drie antwoorden van 10 september werden die middag nog gevonden, alles van 11 september niet meer. De scan van 12:20 vond nul kandidaten terwijl er die ochtend een out-of-office binnen was gekomen.',
+    ],
+  },
   {
     version: '1.97.0',
     date: '2026-09-11T12:45:00Z',

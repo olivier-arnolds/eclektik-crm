@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../supabase';
 import { apiFetch } from '../lib/apiFetch';
 import { useAuth } from '../lib/auth';
-import { getFolderEmails, getMailboxFolderEmails } from '../lib/graph';
+import { getFolderEmails, getMailboxFolderEmails, getMailboxMessagesSince } from '../lib/graph';
 import { scanInbox, needsOurReply } from './outreach-match';
 import { outreachTextToHtml, subjectForStep } from '../lib/outreach-html';
 
@@ -183,13 +183,18 @@ export default function MarketingOutreach() {
     setScanning(true); setScanErr(null); setScanResult(null);
     try {
       // We scannen ALTIJD de mailbox van de campagne-afzender, ongeacht wie is
-      // ingelogd. Ben je dat zelf, dan gaat het via /me (bewezen pad). Ben je
-      // iemand anders, dan via /users/{afzender}: dat vraagt Mail.Read.Shared
-      // plus leesrechten op die mailbox.
-      const messages = isSender
-        ? await getFolderEmails('Inbox', 500)
-        : await getMailboxFolderEmails(campaign.sender_mailbox, 'Inbox', 500);
+      // ingelogd. Ben je dat zelf, dan gaat het via /me. Ben je iemand anders,
+      // dan via /users/{afzender}: dat vraagt Mail.Read.Shared plus leesrechten
+      // op die mailbox.
+      //
+      // Over ALLE MAPPEN, niet alleen de Inbox. Dat laatste deed het eerst, en
+      // dat ging stil mis: Marco ruimt zijn inbox op, dus een antwoord dat hij
+      // al gelezen en gearchiveerd had was voor de scan onvindbaar. De prospect
+      // bleef dan op 'bericht 1 verstuurd' staan met de opvolgmail nog ingepland.
       const sinceISO = sentInfo.firstAt || campaign.created_at;
+      const messages = await getMailboxMessagesSince(
+        isSender ? null : campaign.sender_mailbox, sinceISO, 800,
+      );
       const { candidates, stats } = scanInbox(messages, rows, { sinceISO });
 
       const applied = { processed: 0, skipped_known: 0, bounces: 0, flagged: 0, classified: 0, status_changed: 0, errors: 0 };
@@ -409,8 +414,9 @@ export default function MarketingOutreach() {
           </div>
 
           <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
-            Scant de inbox van <strong>{campaign.sender_mailbox}</strong>
+            Scant de mailbox van <strong>{campaign.sender_mailbox}</strong>
             {isSender ? ' (dat ben jij)' : `, via gedeelde leesrechten op jouw login (${myEmail})`}.
+            {' '}Alle mappen, dus ook wat al opgeruimd of gearchiveerd is.
           </div>
 
           {scanErr === 'NO_ACCESS' ? (
@@ -434,7 +440,7 @@ export default function MarketingOutreach() {
 
           {scanResult && (
             <div style={{ fontSize: 12, color: 'var(--text-2)', lineHeight: 1.6 }}>
-              {scanResult.stats.scanned} berichten bekeken vanaf {String(scanResult.sinceISO).slice(0, 10)}.
+              {scanResult.stats.scanned} berichten bekeken vanaf {String(scanResult.sinceISO).slice(0, 10)} (alle mappen).
               {' '}Gekoppeld op afzender: <strong>{scanResult.stats.sender}</strong>,
               {' '}bounces: <strong>{scanResult.stats.bounces}</strong>,
               {' '}alleen geflagd op domein: <strong>{scanResult.stats.domainFlag}</strong>.

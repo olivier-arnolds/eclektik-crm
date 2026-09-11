@@ -162,6 +162,75 @@ export async function replyToEmail(messageId, body, isHtml = true) {
   } catch (e) { return { error: e.message }; }
 }
 
+// Leest de HELE mailbox vanaf een datum, dus over alle mappen heen, niet alleen
+// de Inbox.
+//
+// WAAROM DIT BESTAAT (hard-won, 11 september 2026)
+//   De outreach-scan las alleen de map Inbox. Marco ruimt zijn inbox op: een
+//   out-of-office die hij gelezen en gearchiveerd heeft is dan weg uit Inbox en
+//   daarmee onzichtbaar voor de scan. Het gevolg was stil en vervelend: de
+//   prospect bleef op 'bericht 1 verstuurd' staan en de opvolgmail bleef
+//   ingepland, terwijl er allang een antwoord was. Antwoorden van 10 september
+//   werden nog gevonden omdat de scan die middag draaide, die van 11 september
+//   niet meer.
+//
+//   /messages gaat over alle mappen, inclusief Archief en Verwijderde items. Een
+//   antwoord dat iemand heeft weggegooid is nog steeds een antwoord.
+//
+// Het datumfilter doet Graph zelf, zodat we niet eerst honderden oude berichten
+// hoeven op te halen om ze daarna weg te gooien.
+export async function getMailboxMessagesSince(mailbox, sinceISO, limit = 800) {
+  const token = localStorage.getItem('graph_token');
+  if (!token) throw new Error('No Microsoft token. Please reconnect.');
+
+  const who = mailbox ? `/users/${encodeURIComponent(mailbox)}` : '/me';
+  const select = 'id,subject,bodyPreview,from,toRecipients,receivedDateTime,sentDateTime,isRead,hasAttachments,parentFolderId';
+  const since = sinceISO ? new Date(sinceISO) : null;
+  const filter = since && Number.isFinite(since.getTime())
+    ? `&$filter=receivedDateTime ge ${since.toISOString()}`
+    : '';
+  let url = `${who}/messages?$top=${Math.min(limit, 1000)}&$orderby=receivedDateTime desc${filter}&$select=${select}`;
+
+  const all = [];
+  let safety = 0;
+  while (url && all.length < limit && safety < 10) {
+    const resp = await fetch(GRAPH_BASE + url, { headers: { Authorization: 'Bearer ' + token } });
+    if (resp.status === 401) {
+      localStorage.removeItem('graph_token');
+      throw new Error('Token expired');
+    }
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok) {
+      const code = data?.error?.code || `HTTP ${resp.status}`;
+      const msg = data?.error?.message || '';
+      if (resp.status === 403 || /ErrorAccessDenied|AccessDenied/i.test(code)) {
+        throw new Error(`GEEN_TOEGANG: ${code}${msg ? ` - ${msg}` : ''}`);
+      }
+      throw new Error(`${code}${msg ? ` - ${msg}` : ''}`);
+    }
+    if (!Array.isArray(data.value)) break;
+    all.push(...data.value);
+    const next = data['@odata.nextLink'];
+    if (!next) break;
+    url = next.replace(/^https:\/\/graph\.microsoft\.com\/v1\.0/, '');
+    safety++;
+  }
+
+  return all.slice(0, limit).map(m => ({
+    id: m.id,
+    subject: m.subject,
+    bodyPreview: m.bodyPreview,
+    from: m.from?.emailAddress?.name || m.from?.emailAddress?.address || '',
+    fromAddress: m.from?.emailAddress?.address || '',
+    to: (m.toRecipients || []).map(r => r.emailAddress?.address).join(', '),
+    toAddresses: (m.toRecipients || []).map(r => r.emailAddress?.address).filter(Boolean),
+    date: m.receivedDateTime || m.sentDateTime,
+    isRead: m.isRead,
+    hasAttachments: m.hasAttachments,
+    folder: null,
+  }));
+}
+
 // Well-known folder names in Graph:
 //   Inbox       — incoming
 //   SentItems   — sent
