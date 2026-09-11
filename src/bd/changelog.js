@@ -19,9 +19,25 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.93.0';
+export const CURRENT_VERSION = '1.94.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.94.0',
+    date: '2026-09-11T10:40:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Outreach kan nu ook via LinkedIn (fundament)',
+    summary:
+      'De outreach-module kent nu een kanaal: e-mail via Resend of een LinkedIn-DM via Unipile. Dit is de basis voor de 154 persoonlijke berichten uit Marco\'s netwerkanalyse voor het event van 6 oktober. De verzendkant en de tab volgen; hiermee staan het schema en de import klaar.',
+    changes: [
+      'Schema: channel op campagne, prospect en bericht; email mag leeg zijn bij een LinkedIn-prospect; uniek profiel per LinkedIn-campagne (sql/schema_outreach_linkedin_2026-09-11.sql).',
+      'Bewust dezelfde tabellen als e-mail, zodat de statemachine, de dagcap, de harde stop en de claim-dan-verstuur-idempotentie niet gedupliceerd hoeven te worden. Alleen de verzendweg verschilt.',
+      'scripts/import-linkedin-outreach.py: importeert de netwerkanalyse, leidt tier A/B/C af, zet de volgorde op tier en bewaart de berichttekst per persoon. Dry-run is de standaard.',
+      'Kruisregel tegen dubbel benaderen: wie al een mail kreeg uit Amsterdam 2026 krijgt geen DM, en wie nog in de e-mailwachtrij staat wordt gemeld in plaats van stilzwijgend dubbel benaderd.',
+      'Dagcap staat standaard op 20 per dag, een zesde van de e-mailcap. LinkedIn beperkt accounts die in korte tijd veel DM\'s sturen en dat account is niet vervangbaar.',
+    ],
+  },
   {
     version: '1.93.0',
     date: '2026-09-09T16:57:47Z',
