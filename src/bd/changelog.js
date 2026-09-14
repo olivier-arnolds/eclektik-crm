@@ -19,9 +19,24 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.103.2';
+export const CURRENT_VERSION = '1.104.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.104.0',
+    date: '2026-09-14T09:20:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'De verstuurde tekst staat nu bij de campagne',
+    summary:
+      'Klik je een campagne open, dan zie je boven de ontvangerslijst de mail zoals hij eruitzag, met onderwerp, afzender en de tekst zelf.',
+    changes: [
+      'De opgeslagen tekst is het sjabloon met {{first_name}} erin, terwijl de ontvanger de ingevulde versie kreeg. Daarom kies je een ontvanger en wordt de tekst voor die persoon ingevuld, met dezelfde functie als het verzendendpoint gebruikt.',
+      'Voor die invulling worden nu ook de functie en de bedrijfsnaam van het contact opgehaald, anders zou de preview gaten laten zien waar de ontvanger gewoon zijn bedrijfsnaam las.',
+      'Er staat expliciet bij dat de handtekening en de afmeldlink pas bij het versturen worden toegevoegd en dus niet in deze opgeslagen tekst zitten. Dat is niet te reconstrueren uit wat we bewaren.',
+      'Het blok is in te klappen, want meestal kom je voor de cijfers.',
+    ],
+  },
   {
     version: '1.103.2',
     date: '2026-09-11T17:50:00Z',
