@@ -19,9 +19,23 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.104.0';
+export const CURRENT_VERSION = '1.105.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.105.0',
+    date: '2026-09-14T11:30:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Knop Bekijk tekst in de Outreach-tab',
+    summary:
+      'De berichttekst zat alleen achter een klik op een rij in de lijst. Er staat nu een knop in de verzendbalk die de popup opent, met een keuzelijst om door de prospects te bladeren.',
+    changes: [
+      'Anders dan bij een campagne heeft elke outreach-prospect zijn eigen tekst, dus een keuzelijst is hier geen luxe maar de kern: zonder die lijst zie je de tekst van een willekeurige persoon.',
+      'De keuzelijst zit in de bestaande popup, dus je kunt ook vanuit een aangeklikte rij doorbladeren zonder te sluiten. De lijst volgt je filters, dus filter je op Onbeantwoord, dan blader je alleen daar doorheen.',
+      'De volgorde en het bedrijf staan in de keuzelijst, zodat je ziet wie er als eerste aan de beurt is.',
+    ],
+  },
   {
     version: '1.104.0',
     date: '2026-09-14T09:20:00Z',

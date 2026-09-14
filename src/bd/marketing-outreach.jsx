@@ -549,6 +549,11 @@ export default function MarketingOutreach() {
                   : undefined}
                 style={{ width: 58, padding: '4px 6px', borderRadius: 6, border: '0.5px solid var(--sep)', background: 'var(--bg-1)', fontSize: 12 }} />
             </label>
+            <button className="btn-ghost tiny" disabled={filtered.length === 0}
+              onClick={() => setOpenContact(filtered[0])}
+              title="Bekijk het bericht zoals het bij een prospect aankomt">
+              Bekijk tekst
+            </button>
             <button className="btn-ghost tiny" disabled={sending} onClick={() => callSend({ dryRun: true })}>
               {sending ? 'Bezig…' : 'Bekijk wat er uitgaat'}
             </button>
@@ -741,7 +746,7 @@ export default function MarketingOutreach() {
       </div>
 
       {openContact && (
-        <ContactMailsModal contact={openContact} campaign={campaign}
+        <ContactMailsModal contact={openContact} campaign={campaign} rows={filtered}
           onClose={() => setOpenContact(null)} onSent={load} />
       )}
 
@@ -765,7 +770,12 @@ export default function MarketingOutreach() {
 // verstuurd of ontvangen is. De teksten worden hier pas opgehaald (ze zitten
 // bewust niet in het lijstoverzicht) en gerenderd met exact dezelfde functie
 // als het verzend-endpoint gebruikt, zodat de preview niet liegt.
-function ContactMailsModal({ contact, campaign, onClose, onSent }) {
+function ContactMailsModal({ contact, campaign, rows = [], onClose, onSent }) {
+  // De prop is alleen het startpunt. Met de keuzelijst blader je door de lijst
+  // zonder de popup te sluiten, en dat is ook wat de knop 'Bekijk tekst'
+  // gebruikt: die opent hier gewoon de eerste persoon.
+  const [current, setCurrent] = useState(contact);
+  useEffect(() => { setCurrent(contact); }, [contact]);
   const [detail, setDetail] = useState(null);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -799,17 +809,17 @@ function ContactMailsModal({ contact, campaign, onClose, onSent }) {
         const { data: d, error: e1 } = await supabase
           .from('outreach_contact')
           .select('msg1_subject,msg1_body,msg2_subject,msg2_body,unsubscribe_token,paused_reason,last_reply_summary,status')
-          .eq('id', contact.id).single();
+          .eq('id', current.id).single();
         if (e1) throw e1;
         const { data: h, error: e2 } = await supabase
           .from('outreach_message')
           .select('direction,sequence_step,subject,body_preview,sent_or_received_at,classification,classification_confidence,match_method,provider_message_id')
-          .eq('contact_id', contact.id)
+          .eq('contact_id', current.id)
           .order('sent_or_received_at', { ascending: true, nullsFirst: false });
         if (e2) throw e2;
         if (!cancelled) {
           setDetail(d);
-          if (d?.status) setStatus(d.status);
+          setStatus(d?.status || current.status);
           setHistory(h || []);
           const lastIn = [...(h || [])].reverse().find(x => x.direction === 'inbound');
           const base = lastIn?.subject || d?.msg1_subject || '';
@@ -821,7 +831,7 @@ function ContactMailsModal({ contact, campaign, onClose, onSent }) {
       if (!cancelled) setLoading(false);
     })();
     return () => { cancelled = true; };
-  }, [contact.id]);
+  }, [current.id]);
 
   const sendReply = async () => {
     setRBusy(true); setRResult(null);
@@ -829,7 +839,7 @@ function ContactMailsModal({ contact, campaign, onClose, onSent }) {
       const resp = await apiFetch('/api/outreach-reply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contact_id: contact.id, subject: rSubject, body: rBody }),
+        body: JSON.stringify({ contact_id: current.id, subject: rSubject, body: rBody }),
       });
       const data = await resp.json();
       if (!resp.ok) throw new Error(data?.error || `HTTP ${resp.status}`);
@@ -856,7 +866,7 @@ function ContactMailsModal({ contact, campaign, onClose, onSent }) {
       next_action_at: null,
       paused_reason: (stopReason || '').trim() || null,
       updated_at: new Date().toISOString(),
-    }).eq('id', contact.id);
+    }).eq('id', current.id);
     setStopBusy(false);
     if (error) { setRResult({ ok: false, msg: 'Stoppen mislukt: ' + error.message }); return; }
     setStopping(false);
@@ -878,7 +888,7 @@ function ContactMailsModal({ contact, campaign, onClose, onSent }) {
       next_action_at: nextStatus === 'queued' ? new Date().toISOString() : null,
       paused_reason: null,
       updated_at: new Date().toISOString(),
-    }).eq('id', contact.id);
+    }).eq('id', current.id);
     setStopBusy(false);
     if (error) { setRResult({ ok: false, msg: 'Hervatten mislukt: ' + error.message }); return; }
     setStatus(nextStatus);
@@ -907,13 +917,13 @@ function ContactMailsModal({ contact, campaign, onClose, onSent }) {
         <div style={{ padding: '14px 18px', borderBottom: '0.5px solid var(--sep)', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           <div style={{ minWidth: 0 }}>
             <div style={{ fontSize: 14, fontWeight: 600 }}>
-              {[contact.first_name, contact.last_name].filter(Boolean).join(' ') || contact.email}
+              {[current.first_name, current.last_name].filter(Boolean).join(' ') || current.email}
             </div>
             <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
-              {[contact.title, contact.company].filter(Boolean).join(' · ')}
-              {contact.email ? ` · ${contact.email}` : ''}
-              {isLinkedIn && contact.linkedin_url ? (
-                <> · <a href={contact.linkedin_url} target="_blank" rel="noreferrer"
+              {[current.title, current.company].filter(Boolean).join(' · ')}
+              {current.email ? ` · ${current.email}` : ''}
+              {isLinkedIn && current.linkedin_url ? (
+                <> · <a href={current.linkedin_url} target="_blank" rel="noreferrer"
                   style={{ color: '#0a66c2' }}>LinkedIn-profiel</a></>
               ) : null}
             </div>
@@ -923,6 +933,26 @@ function ContactMailsModal({ contact, campaign, onClose, onSent }) {
           </span>
           <button className="btn-ghost tiny" onClick={onClose}>✕</button>
         </div>
+
+        {rows.length > 1 && (
+          <div style={{ padding: '10px 18px', borderBottom: '0.5px solid var(--sep)', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 11, color: 'var(--text-3)' }}>Bekijk de tekst van</span>
+            <select value={current.id} onChange={e => {
+              const r = rows.find(x => String(x.id) === e.target.value);
+              if (r) { setCurrent(r); setComposing(false); setRResult(null); setStopping(false); }
+            }}
+              style={{ flex: 1, padding: '5px 8px', borderRadius: 6, border: '0.5px solid var(--sep)', background: 'var(--bg-1)', fontSize: 12 }}>
+              {rows.map(r => {
+                const naam = [r.first_name, r.last_name].filter(Boolean).join(' ') || r.email || r.linkedin_url;
+                return (
+                  <option key={r.id} value={r.id}>
+                    {r.outreach_prio ? `${r.outreach_prio}. ` : ''}{naam}{r.company ? ` — ${r.company}` : ''}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+        )}
 
         <div style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 12 }}>
           {loading && <div style={{ color: 'var(--text-3)', fontSize: 12 }}>Laden…</div>}
@@ -1068,7 +1098,7 @@ function ContactMailsModal({ contact, campaign, onClose, onSent }) {
                     <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
                       <button className="btn-primary tiny" disabled={rBusy || !rSubject.trim() || !rBody.trim()}
                         onClick={sendReply}>
-                        {rBusy ? 'Versturen…' : `Verstuur naar ${contact.email}`}
+                        {rBusy ? 'Versturen…' : `Verstuur naar ${current.email}`}
                       </button>
                       <button className="btn-ghost tiny" disabled={rBusy} onClick={() => setComposing(false)}>Annuleren</button>
                       <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
