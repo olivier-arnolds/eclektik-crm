@@ -19,9 +19,25 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.105.0';
+export const CURRENT_VERSION = '1.106.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.106.0',
+    date: '2026-09-17T09:40:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Naam en e-mailadres aanpassen in de outreach-popup',
+    summary:
+      'Na een bounce klopt vaak de schrijfwijze niet of is het adres veranderd. Dat zet je nu recht met de knop Bewerk in de contactpopup, zonder de hele lijst opnieuw te importeren.',
+    changes: [
+      'Het e-maildomein wordt automatisch meegeschreven. Dat is afgeleide data die elders echt gebruikt wordt, voor het koppelen van antwoorden en voor de regel van maximaal zoveel per bedrijf per week; blijft het oude domein staan, dan wijst het naar het vorige bedrijf.',
+      'Een adres dat al in deze campagne voorkomt wordt geweigerd met een leesbare melding in plaats van een databasefout. Dezelfde uiting mag niet twee keer bij iemand aankomen.',
+      'Bij een e-mailcampagne is een leeg adres niet toegestaan, bij een LinkedIn-campagne wel.',
+      'De wijziging raakt alleen deze campagne, niet het contact in het CRM. Dat staat er ook bij.',
+      'Wissel je van persoon in de keuzelijst terwijl je aan het bewerken bent, dan klapt het formulier dicht: anders sla je de naam van de vorige persoon op bij deze.',
+    ],
+  },
   {
     version: '1.105.0',
     date: '2026-09-14T11:30:00Z',

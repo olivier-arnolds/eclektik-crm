@@ -46,6 +46,10 @@ const AWAITING = '__awaiting__';
 const STOP_STIJL = {
   color: '#dc2626', borderColor: 'rgba(220,38,38,0.45)', background: 'rgba(220,38,38,0.08)',
 };
+const INPUT_STIJL = {
+  flex: '1 1 130px', minWidth: 0, padding: '5px 8px', borderRadius: 6,
+  border: '0.5px solid var(--sep)', background: 'var(--bg-1)', fontSize: 13,
+};
 const HERVAT_STIJL = {
   color: '#16a34a', borderColor: 'rgba(22,163,74,0.45)', background: 'rgba(22,163,74,0.08)',
 };
@@ -775,7 +779,18 @@ function ContactMailsModal({ contact, campaign, rows = [], onClose, onSent }) {
   // zonder de popup te sluiten, en dat is ook wat de knop 'Bekijk tekst'
   // gebruikt: die opent hier gewoon de eerste persoon.
   const [current, setCurrent] = useState(contact);
-  useEffect(() => { setCurrent(contact); }, [contact]);
+
+  // Naam en adres corrigeren. Nodig na een bounce: vaak klopt de schrijfwijze
+  // niet of is het adres veranderd, en dan wil je dat hier kunnen rechtzetten
+  // zonder de hele lijst opnieuw te importeren.
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState({ first_name: '', last_name: '', email: '' });
+  const [saveBusy, setSaveBusy] = useState(false);
+  const [saveErr, setSaveErr] = useState(null);
+
+  // Een openstaand bewerkformulier hoort bij de persoon die je bekeek. Laat je
+  // dat staan bij het wisselen, dan sla je zo diens naam op bij iemand anders.
+  useEffect(() => { setCurrent(contact); setEditing(false); setSaveErr(null); }, [contact]);
   const [detail, setDetail] = useState(null);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -906,6 +921,48 @@ function ContactMailsModal({ contact, campaign, rows = [], onClose, onSent }) {
   const body = tab === 1 ? detail?.msg1_body : detail?.msg2_body;
   const html = body ? outreachTextToHtml(body, { unsubscribeUrl: unsubUrl }) : null;
 
+  const startEdit = () => {
+    setForm({
+      first_name: current.first_name || '',
+      last_name: current.last_name || '',
+      email: current.email || '',
+    });
+    setSaveErr(null);
+    setEditing(true);
+  };
+
+  const saveEdit = async () => {
+    const email = form.email.trim().toLowerCase();
+    // Bij een e-mailcampagne is het adres de enige manier om iemand te bereiken,
+    // en de database weigert daar een lege waarde. Vang dat hier af met een
+    // leesbare melding in plaats van een constraint-fout.
+    if (!isLinkedIn && !email) { setSaveErr('Een e-mailcampagne heeft een adres nodig.'); return; }
+    if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { setSaveErr('Dat ziet er niet uit als een e-mailadres.'); return; }
+
+    setSaveBusy(true); setSaveErr(null);
+    const patch = {
+      first_name: form.first_name.trim() || null,
+      last_name: form.last_name.trim() || null,
+      email: email || null,
+      // Het domein is afgeleid en wordt elders gebruikt: voor het koppelen van
+      // antwoorden en voor de regel van maximaal zoveel per bedrijf per week.
+      // Laat je dit staan, dan wijst het naar het oude bedrijf.
+      email_domain: email.includes('@') ? email.split('@')[1] : null,
+      updated_at: new Date().toISOString(),
+    };
+    const { error } = await supabase.from('outreach_contact').update(patch).eq('id', current.id);
+    setSaveBusy(false);
+    if (error) {
+      setSaveErr(/duplicate|unique/i.test(error.message)
+        ? 'Dat adres staat al in deze campagne.'
+        : error.message);
+      return;
+    }
+    setCurrent(c => ({ ...c, ...patch }));
+    setEditing(false);
+    if (onSent) await onSent();
+  };
+
   const sentStep = (n) => history.find(h => h.direction === 'outbound' && h.sequence_step === n);
 
   return (
@@ -915,18 +972,46 @@ function ContactMailsModal({ contact, campaign, rows = [], onClose, onSent }) {
         style={{ background: 'var(--bg-1)', border: '0.5px solid var(--sep)', borderRadius: 12, width: 'min(860px, 96vw)', maxHeight: '92vh', overflow: 'auto', boxShadow: '0 12px 40px rgba(0,0,0,0.25)' }}>
 
         <div style={{ padding: '14px 18px', borderBottom: '0.5px solid var(--sep)', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-          <div style={{ minWidth: 0 }}>
-            <div style={{ fontSize: 14, fontWeight: 600 }}>
-              {[current.first_name, current.last_name].filter(Boolean).join(' ') || current.email}
-            </div>
-            <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
-              {[current.title, current.company].filter(Boolean).join(' · ')}
-              {current.email ? ` · ${current.email}` : ''}
-              {isLinkedIn && current.linkedin_url ? (
-                <> · <a href={current.linkedin_url} target="_blank" rel="noreferrer"
-                  style={{ color: '#0a66c2' }}>LinkedIn-profiel</a></>
-              ) : null}
-            </div>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            {editing ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  <input value={form.first_name} onChange={e => setForm(f => ({ ...f, first_name: e.target.value }))}
+                    placeholder="Voornaam" style={INPUT_STIJL} />
+                  <input value={form.last_name} onChange={e => setForm(f => ({ ...f, last_name: e.target.value }))}
+                    placeholder="Achternaam" style={INPUT_STIJL} />
+                  <input value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                    placeholder={isLinkedIn ? 'E-mailadres (optioneel)' : 'E-mailadres'}
+                    style={{ ...INPUT_STIJL, flex: '2 1 240px' }} />
+                </div>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <button className="btn-primary tiny" disabled={saveBusy} onClick={saveEdit}>
+                    {saveBusy ? 'Opslaan…' : 'Opslaan'}
+                  </button>
+                  <button className="btn-ghost tiny" disabled={saveBusy} onClick={() => setEditing(false)}>Annuleren</button>
+                  <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
+                    Past alleen deze campagne aan, niet het contact in het CRM.
+                  </span>
+                </div>
+                {saveErr && <div style={{ fontSize: 12, color: '#dc2626' }}>{saveErr}</div>}
+              </div>
+            ) : (
+              <>
+                <div style={{ fontSize: 14, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {[current.first_name, current.last_name].filter(Boolean).join(' ') || current.email || '(naamloos)'}
+                  <button className="btn-ghost tiny" onClick={startEdit}
+                    title="Naam en e-mailadres aanpassen">Bewerk</button>
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
+                  {[current.title, current.company].filter(Boolean).join(' · ')}
+                  {current.email ? ` · ${current.email}` : ''}
+                  {isLinkedIn && current.linkedin_url ? (
+                    <> · <a href={current.linkedin_url} target="_blank" rel="noreferrer"
+                      style={{ color: '#0a66c2' }}>LinkedIn-profiel</a></>
+                  ) : null}
+                </div>
+              </>
+            )}
           </div>
           <span style={{ marginLeft: 'auto', fontSize: 11, color: STATUS_COLOR[status] || 'var(--text-2)', fontWeight: 500 }}>
             {STATUS_LABEL[status] || status}
@@ -939,7 +1024,10 @@ function ContactMailsModal({ contact, campaign, rows = [], onClose, onSent }) {
             <span style={{ fontSize: 11, color: 'var(--text-3)' }}>Bekijk de tekst van</span>
             <select value={current.id} onChange={e => {
               const r = rows.find(x => String(x.id) === e.target.value);
-              if (r) { setCurrent(r); setComposing(false); setRResult(null); setStopping(false); }
+              if (r) {
+                setCurrent(r); setComposing(false); setRResult(null);
+                setStopping(false); setEditing(false); setSaveErr(null);
+              }
             }}
               style={{ flex: 1, padding: '5px 8px', borderRadius: 6, border: '0.5px solid var(--sep)', background: 'var(--bg-1)', fontSize: 12 }}>
               {rows.map(r => {
