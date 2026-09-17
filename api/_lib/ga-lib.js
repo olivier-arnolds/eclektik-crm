@@ -3,17 +3,65 @@
 // GA-antwoorden kan toetsen zonder een echte Google-verbinding.
 
 /**
- * De privésleutel uit een serviceaccount-JSON bevat echte regeleinden. Plak je
- * hem in een omgevingsvariabele, dan worden die vaak \n-tekens, en soms staan er
- * ook nog aanhalingstekens omheen. Beide vormen moeten werken, anders krijg je
- * een onbegrijpelijke handtekeningfout terwijl de sleutel gewoon goed is.
+ * De privesleutel uit een serviceaccount-JSON leesbaar maken voor Node.
+ *
+ * Hier gaat het in de praktijk vaker mis dan in de rest van de koppeling samen,
+ * en de foutmelding van OpenSSL ("DECODER routines::unsupported") wijst nergens
+ * naar. Vandaar dat dit alle vormen aanpakt waarin de sleutel binnenkomt:
+ *
+ *   1. het hele JSON-bestand in plaats van alleen de sleutel
+ *   2. \n-tekens in plaats van echte regeleinden (zo staat het in de JSON)
+ *   3. aanhalingstekens eromheen, meegekopieerd uit de JSON
+ *   4. alles op een regel met spaties, wat sommige invoervelden ervan maken
  */
 export function normalizePrivateKey(raw) {
   let k = String(raw || '').trim();
+  if (!k) return '';
+
+  // 1. Per ongeluk het hele JSON-bestand geplakt: haal de sleutel eruit.
+  if (k.startsWith('{')) {
+    try {
+      const obj = JSON.parse(k);
+      if (obj && typeof obj.private_key === 'string') k = obj.private_key;
+    } catch { /* geen geldige JSON: verderop faalt het met een duidelijke melding */ }
+  }
+
+  // 2 en 3.
   if ((k.startsWith('"') && k.endsWith('"')) || (k.startsWith("'") && k.endsWith("'"))) {
     k = k.slice(1, -1);
   }
-  return k.replace(/\\n/g, '\n').trim();
+  k = k.replace(/\\n/g, '\n').trim();
+
+  // 4. Geen enkel regeleinde maar wel de markeringen: de regeleinden zijn spaties
+  // geworden. De base64-inhoud bevat zelf nooit spaties, dus dit is veilig terug
+  // te draaien.
+  if (!k.includes('\n') && /-----BEGIN [A-Z ]*PRIVATE KEY-----/.test(k)) {
+    k = k
+      .replace(/-----BEGIN ([A-Z ]*)PRIVATE KEY-----/, (_m, x) => `-----BEGIN ${x}PRIVATE KEY-----\n`)
+      .replace(/-----END ([A-Z ]*)PRIVATE KEY-----/, (_m, x) => `\n-----END ${x}PRIVATE KEY-----`)
+      .replace(/ +/g, '\n')
+      .replace(/\n(BEGIN|END|PRIVATE|KEY)/g, ' $1')
+      .replace(/\n+/g, '\n');
+  }
+
+  return k.trim();
+}
+
+/**
+ * Beschrijft wat er mis is met een sleutel, ZONDER de sleutel zelf te tonen.
+ * Alleen vorm en lengte, want dat is genoeg om de oorzaak aan te wijzen en het
+ * verraadt niets. Geeft null als de sleutel er goed uitziet.
+ */
+export function describeKeyProblem(key) {
+  const k = String(key || '');
+  if (!k) return 'de variabele is leeg';
+  if (k.startsWith('{')) return 'dit lijkt het hele JSON-bestand; zet alleen de waarde van private_key erin';
+  if (!/-----BEGIN [A-Z ]*PRIVATE KEY-----/.test(k)) return 'de regel -----BEGIN PRIVATE KEY----- ontbreekt';
+  if (!/-----END [A-Z ]*PRIVATE KEY-----/.test(k)) return 'de regel -----END PRIVATE KEY----- ontbreekt';
+  const regels = k.split('\n').length;
+  if (regels < 3) return `alles staat op ${regels} regel(s); er horen regeleinden in te zitten`;
+  if (k.length < 800) return `de sleutel is maar ${k.length} tekens, dat is te kort voor een volledige sleutel`;
+  return null;
 }
 
 /**

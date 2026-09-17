@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  normalizePrivateKey, dateRanges, pctChange, reportToRows, totalOf, normalizeDateSeries,
+  normalizePrivateKey, describeKeyProblem, dateRanges, pctChange, reportToRows, totalOf, normalizeDateSeries,
 } from './ga-lib.js';
 
 describe('normalizePrivateKey', () => {
@@ -91,5 +91,38 @@ describe('normalizeDateSeries', () => {
   it('zet YYYYMMDD om en sorteert oplopend', () => {
     const r = normalizeDateSeries([{ date: '20260917', n: 1 }, { date: '20260915', n: 2 }]);
     expect(r.map(x => x.date)).toEqual(['2026-09-15', '2026-09-17']);
+  });
+});
+
+describe('normalizePrivateKey, de manieren waarop het in de praktijk misgaat', () => {
+  const echt = '-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBg\nkqhkiG9w0BAQEF\n-----END PRIVATE KEY-----';
+
+  it('het hele JSON-bestand geplakt in plaats van alleen de sleutel', () => {
+    const json = JSON.stringify({ type: 'service_account', private_key: echt, client_email: 'x@y.z' });
+    expect(normalizePrivateKey(json)).toBe(echt);
+  });
+
+  it('alles op een regel met spaties in plaats van regeleinden', () => {
+    const plat = '-----BEGIN PRIVATE KEY----- MIIEvQIBADANBg kqhkiG9w0BAQEF -----END PRIVATE KEY-----';
+    expect(normalizePrivateKey(plat)).toBe(echt);
+  });
+
+  it('laat een al goede sleutel met rust', () => {
+    expect(normalizePrivateKey(echt)).toBe(echt);
+  });
+});
+
+describe('describeKeyProblem', () => {
+  it('wijst de oorzaak aan zonder de sleutel te tonen', () => {
+    expect(describeKeyProblem('')).toMatch(/leeg/);
+    expect(describeKeyProblem('{"private_key":"x"}')).toMatch(/hele JSON-bestand/);
+    expect(describeKeyProblem('zomaar wat tekst')).toMatch(/BEGIN/);
+    expect(describeKeyProblem('-----BEGIN PRIVATE KEY-----\nabc')).toMatch(/END/);
+    expect(describeKeyProblem('-----BEGIN PRIVATE KEY-----abc-----END PRIVATE KEY-----')).toMatch(/regel/);
+  });
+
+  it('zwijgt over een sleutel die er goed uitziet', () => {
+    const goed = '-----BEGIN PRIVATE KEY-----\n' + 'A'.repeat(1600) + '\n-----END PRIVATE KEY-----';
+    expect(describeKeyProblem(goed)).toBeNull();
   });
 });

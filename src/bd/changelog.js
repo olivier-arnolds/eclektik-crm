@@ -19,9 +19,23 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.107.0';
+export const CURRENT_VERSION = '1.107.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.107.1',
+    date: '2026-09-17T15:55:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Analytics: de privesleutel in meer vormen accepteren',
+    summary:
+      'De sleutel wordt nu ook herkend als het hele JSON-bestand is geplakt of als de regeleinden onderweg spaties zijn geworden. Lukt het alsnog niet, dan zegt de melding wat er mis is in plaats van een onleesbare OpenSSL-fout.',
+    changes: [
+      'Vier vormen worden opgevangen: het volledige JSON-bestand, \\n in plaats van echte regeleinden, aanhalingstekens eromheen, en alles op een regel met spaties.',
+      'De foutmelding beschrijft de vorm van de waarde (ontbreekt de BEGIN-regel, staat alles op een regel, is hij te kort) en nooit de inhoud. Zo is het op te lossen zonder dat de sleutel ergens in beeld komt.',
+      '5 tests erbij op precies die vormen.',
+    ],
+  },
   {
     version: '1.107.0',
     date: '2026-09-17T15:30:00Z',

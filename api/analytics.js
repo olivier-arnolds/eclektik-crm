@@ -1,7 +1,8 @@
 import { requireUser } from './_lib/guard.js';
 import crypto from 'crypto';
 import {
-  normalizePrivateKey, dateRanges, pctChange, reportToRows, totalOf, normalizeDateSeries,
+  normalizePrivateKey, describeKeyProblem, dateRanges, pctChange,
+  reportToRows, totalOf, normalizeDateSeries,
 } from './_lib/ga-lib.js';
 
 // GET /api/analytics?days=28 - leest Google Analytics 4 voor het dashboard onder
@@ -51,7 +52,13 @@ async function getAccessToken() {
   try {
     signature = b64url(crypto.createSign('RSA-SHA256').update(`${header}.${claims}`).sign(privateKey));
   } catch (e) {
-    throw new Error('privesleutel niet bruikbaar: ' + e.message);
+    // De melding van OpenSSL ('DECODER routines::unsupported') zegt niets over
+    // de oorzaak. describeKeyProblem kijkt naar de VORM van de waarde, nooit
+    // naar de inhoud, en wijst zo het probleem aan zonder de sleutel te tonen.
+    const probleem = describeKeyProblem(privateKey);
+    throw new Error(probleem
+      ? `GA_PRIVATE_KEY klopt niet: ${probleem}.`
+      : `GA_PRIVATE_KEY wordt niet geaccepteerd (${e.message}). De vorm ziet er goed uit, dus controleer of dit de volledige, onveranderde waarde van private_key is.`);
   }
 
   const resp = await fetch(TOKEN_URL, {
