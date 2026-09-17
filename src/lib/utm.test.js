@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { slugify, addUtmToUrl, addUtmToHtml, addUtmToPlainText } from './utm.js';
+import { slugify, addUtmToUrl, addUtmToHtml, addUtmToPlainText, UTM_BRONNEN } from './utm.js';
 
 const O = { source: 'eclektik', medium: 'email', campaign: 'glint-okt' };
 
@@ -79,5 +79,34 @@ describe('addUtmToPlainText', () => {
     expect(r).toContain('https://eclectik.co/events?utm_source=eclektik');
     // De punt aan het eind hoort niet bij de URL.
     expect(r.endsWith('.')).toBe(true);
+  });
+});
+
+describe('UTM_BRONNEN', () => {
+  it('KRITIEK: de mediums zijn termen die Google kent', () => {
+    // Een zelfbedacht medium als 'dm' valt in GA in Niet toegewezen, en dan is
+    // het kanaaloverzicht stuk. Dat het om een DM gaat staat in utm_content.
+    expect(UTM_BRONNEN.campagne.medium).toBe('email');
+    expect(UTM_BRONNEN.outreachEmail.medium).toBe('email');
+    expect(UTM_BRONNEN.outreachLinkedIn.medium).toBe('social');
+    expect(UTM_BRONNEN.outreachLinkedIn.content).toBe('dm');
+  });
+
+  it('de bronnen zijn uit elkaar te houden in een rapport', () => {
+    const bronnen = Object.values(UTM_BRONNEN).map(b => b.source);
+    expect(new Set(bronnen).size).toBe(bronnen.length);
+  });
+});
+
+describe('een echt outreach-bericht taggen', () => {
+  it('de link in een LinkedIn-DM krijgt de tags, de tekst blijft heel', () => {
+    const bericht = 'Hi Nelleke,\n\nOp 6 oktober verkennen we dit.\n\n'
+      + 'https://www.eclectik.co/events/amsterdam-2026\n\nGroet, Marco';
+    const r = addUtmToPlainText(bericht, { ...UTM_BRONNEN.outreachLinkedIn, campaign: 'amsterdam-2026-linkedin' });
+    expect(r).toContain('utm_source=linkedin');
+    expect(r).toContain('utm_medium=social');
+    expect(r).toContain('utm_content=dm');
+    expect(r).toContain('Hi Nelleke,');
+    expect(r).toContain('Groet, Marco');
   });
 });

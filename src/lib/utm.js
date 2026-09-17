@@ -19,6 +19,20 @@
 
 export const EIGEN_DOMEINEN = ['eclectik.co', 'eclectik-insights.co'];
 
+// Vaste herkomstlabels per verzendweg. Op een plek, want deze waarden komen
+// letterlijk in de rapporten terecht en een tikfout levert stilletjes een tweede
+// bron op die maanden later niemand meer thuis kan brengen.
+//
+// De mediums zijn met opzet de termen die Google kent: 'email' belandt in het
+// kanaal E-mail, 'social' in Organic Social. Een zelfbedacht medium als 'dm'
+// zou in Niet toegewezen vallen, en dan is het kanaaloverzicht stuk. Dat een DM
+// geen gewone post is leggen we vast in utm_content, dat GA met rust laat.
+export const UTM_BRONNEN = {
+  campagne: { source: 'campagne', medium: 'email' },
+  outreachEmail: { source: 'outreach', medium: 'email' },
+  outreachLinkedIn: { source: 'linkedin', medium: 'social', content: 'dm' },
+};
+
 /**
  * Naam naar een waarde die leesbaar blijft in een rapport: kleine letters,
  * streepjes, geen accenten. GA toont de waarde letterlijk, dus 'Glint Uitnodiging
@@ -42,7 +56,7 @@ function isEigenDomein(host, domeinen) {
  * Tags toevoegen aan een enkele URL. Geeft de URL onveranderd terug als hij niet
  * in aanmerking komt.
  */
-export function addUtmToUrl(url, { source, medium, campaign, domains = EIGEN_DOMEINEN } = {}) {
+export function addUtmToUrl(url, { source, medium, campaign, content, domains = EIGEN_DOMEINEN } = {}) {
   const raw = String(url || '').trim();
   if (!raw) return url;
   // Geen http(s): mailto, tel, ankers, en de merge-tags van Resend ({{{...}}}).
@@ -57,6 +71,7 @@ export function addUtmToUrl(url, { source, medium, campaign, domains = EIGEN_DOM
   if (source) u.searchParams.set('utm_source', source);
   if (medium) u.searchParams.set('utm_medium', medium);
   if (campaign) u.searchParams.set('utm_campaign', campaign);
+  if (content) u.searchParams.set('utm_content', content);
   return u.toString();
 }
 

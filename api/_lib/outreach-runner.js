@@ -3,6 +3,7 @@ import {
   selectSendable, statusAfterSend, outreachTextToHtml, companyKey, STALE_HOURS,
 } from './outreach-send-lib.js';
 import { senderNameFor } from '../../src/lib/senders.js';
+import { addUtmToPlainText, slugify, UTM_BRONNEN } from '../../src/lib/utm.js';
 import { sendLinkedInDM } from './unipile-dm.js';
 
 // Kern van job A: kiest wie er nu een bericht krijgt en verstuurt het.
@@ -233,6 +234,19 @@ export async function runOutreachBatch({ campaign_id, limit, onlyStep = null, dr
     ? `${senderName} <${camp.sender_mailbox}>`
     : camp.sender_mailbox;
   const linkedinAccount = camp.linkedin_account_id || DEFAULT_LINKEDIN_ACCOUNT;
+
+  // Links in de berichttekst taggen, zodat in Analytics zichtbaar wordt dat het
+  // bezoek uit deze outreach kwam. De teksten zijn platte tekst met kale URL's,
+  // dus dit gebeurt VOOR het omzetten naar HTML; daarna maakt linkifyBareUrls er
+  // een klikbare link van, inclusief de tags.
+  //
+  // Bij het versturen en niet bij het importeren, want anders zou een campagne
+  // die je hernoemt met de oude tags blijven rondlopen, en zouden de al
+  // opgeslagen teksten aangepast moeten worden.
+  const utmOpts = {
+    ...(isLinkedIn ? UTM_BRONNEN.outreachLinkedIn : UTM_BRONNEN.outreachEmail),
+    campaign: slugify(camp.name),
+  };
   const stats = { sent: 0, claimed_elsewhere: 0, failed: 0, out_of_time: 0 };
   const failures = [];
   const startedAt = Date.now();
@@ -272,7 +286,7 @@ export async function runOutreachBatch({ campaign_id, limit, onlyStep = null, dr
         accountId: linkedinAccount,
         linkedinUrl: c.linkedin_url,
         providerId: c.linkedin_provider_id || null,
-        text: item.body,                 // een DM is platte tekst, geen HTML
+        text: addUtmToPlainText(item.body, utmOpts),   // een DM is platte tekst, geen HTML
       });
       ok = dm.ok;
       providerMessageId = dm.messageId || null;
@@ -287,7 +301,7 @@ export async function runOutreachBatch({ campaign_id, limit, onlyStep = null, dr
         to: c.email,
         reply_to: camp.sender_mailbox,
         subject: item.subject,
-        html: outreachTextToHtml(item.body, { unsubscribeUrl }),
+        html: outreachTextToHtml(addUtmToPlainText(item.body, utmOpts), { unsubscribeUrl }),
         headers: {
           'List-Unsubscribe': `<${unsubscribeUrl}>`,
           'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',

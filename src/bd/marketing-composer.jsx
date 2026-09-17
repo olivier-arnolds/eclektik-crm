@@ -3,7 +3,7 @@ import { useAuth } from '../lib/auth';
 import { renderTemplate, varsForContact, KNOWN_VARS } from '../lib/template-vars';
 import { apiFetch } from '../lib/apiFetch';
 import { SENDERS, senderNameFor, hasSignature } from '../lib/senders';
-import { addUtmToHtml, slugify } from '../lib/utm';
+import { addUtmToHtml, slugify, UTM_BRONNEN } from '../lib/utm';
 
 // Composer for a Marketing campaign.
 // Props:
@@ -88,7 +88,7 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
   // want een naam is optioneel en een rapport met lege campagnenamen is nutteloos.
   const utmCampaign = useMemo(() => slugify(name || subject), [name, subject]);
   const utmOpts = useMemo(
-    () => ({ source: 'eclektik', medium: 'email', campaign: utmCampaign }),
+    () => ({ ...UTM_BRONNEN.campagne, campaign: utmCampaign }),
     [utmCampaign],
   );
 

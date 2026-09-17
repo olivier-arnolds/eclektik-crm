@@ -19,9 +19,24 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.108.0';
+export const CURRENT_VERSION = '1.109.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.109.0',
+    date: '2026-09-17T16:35:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Ook outreach tagt zijn links, per kanaal apart',
+    summary:
+      'De LinkedIn-DM\'s en de outreach-mails krijgen nu ook utm-tags mee. Daarmee is in de Analytics-tab te zien welk kanaal het bezoek aan de eventpagina bracht.',
+    changes: [
+      'Drie herkomsten die uit elkaar te houden zijn: campagne (composer), outreach (e-mail) en linkedin (DM). Ze staan op een plek in de code, want deze waarden komen letterlijk in de rapporten en een tikfout levert stilletjes een tweede bron op.',
+      'De mediums zijn met opzet termen die Google kent: email en social. Een zelfbedacht medium als dm zou in Niet toegewezen vallen en dan is het kanaaloverzicht stuk. Dat het om een DM gaat staat in utm_content, dat GA met rust laat.',
+      'Taggen gebeurt bij het versturen, niet bij het importeren. Anders zou een hernoemde campagne met de oude tags blijven rondlopen.',
+      'Raakt precies waar het nog uitmaakt: alle 154 LinkedIn-berichten linken naar de eventpagina en daarvan staan er nog ruim honderd in de wachtrij, en bij e-mail zit de link in bericht 2 dat nog grotendeels moet.',
+    ],
+  },
   {
     version: '1.108.0',
     date: '2026-09-17T16:00:00Z',
