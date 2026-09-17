@@ -19,9 +19,25 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.106.0';
+export const CURRENT_VERSION = '1.107.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.107.0',
+    date: '2026-09-17T15:30:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Analytics-tab onder Marketing',
+    summary:
+      'Een dashboard met de belangrijkste cijfers uit Google Analytics 4: sessies, bezoekers, waar het verkeer vandaan komt, welke campagnes het brachten en de best bezochte pagina\'s, telkens met de vorige periode ernaast.',
+    changes: [
+      'Zonder nieuwe dependency. De googleapis-bibliotheek kan dit ook maar sleept tientallen megabytes mee voor twee HTTP-aanroepen; een serviceaccount-token is een zelf ondertekende JWT en dat is met Node\'s eigen crypto een handvol regels.',
+      'Ook geen grafiekbibliotheek: een lijn over de tijd en een balkje per rij zijn met gewone SVG een paar regels.',
+      'Bewust geen kopie van GA. Dit beantwoordt de vraag die je in het CRM stelt: komt er bezoek, waar komt het vandaan, en welke uiting bracht het.',
+      'Een 403 van Google wordt vertaald naar de echte oorzaak. Dat is bijna nooit de sleutel maar de toegang: het serviceaccount moet als Viewer op de property staan.',
+      'Vereist GA_PROPERTY_ID, GA_CLIENT_EMAIL en GA_PRIVATE_KEY in de Vercel-omgeving. Ontbreken die, dan legt de tab uit wat er nog moet gebeuren in plaats van een foutmelding te tonen.',
+    ],
+  },
   {
     version: '1.106.0',
     date: '2026-09-17T09:40:00Z',

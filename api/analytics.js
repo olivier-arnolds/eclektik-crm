@@ -1,0 +1,187 @@
+import { requireUser } from './_lib/guard.js';
+import crypto from 'crypto';
+import {
+  normalizePrivateKey, dateRanges, pctChange, reportToRows, totalOf, normalizeDateSeries,
+} from './_lib/ga-lib.js';
+
+// GET /api/analytics?days=28 - leest Google Analytics 4 voor het dashboard onder
+// Marketing.
+//
+// GEEN NIEUWE DEPENDENCY
+//   De googleapis-bibliotheek kan dit ook, maar die sleept tientallen megabytes
+//   mee voor precies twee HTTP-aanroepen. Een serviceaccount-token is een zelf
+//   ondertekende JWT die je inwisselt voor een access token, en dat is met
+//   Node's eigen crypto een handvol regels. Deze repo heeft zes dependencies en
+//   dat is een van de redenen dat hij snel bouwt.
+//
+// WAT ER NODIG IS (Vercel-env)
+//   GA_PROPERTY_ID   het nummer uit GA4, Beheer > Property-instellingen
+//   GA_CLIENT_EMAIL  client_email uit de serviceaccount-JSON
+//   GA_PRIVATE_KEY   private_key uit diezelfde JSON
+//   Plus: dat serviceaccount-adres als Viewer toevoegen op de property zelf.
+//   Zonder die laatste stap bestaat de sleutel wel maar mag hij nergens bij, en
+//   dat geeft een 403 die niets met de sleutel te maken heeft.
+
+const TOKEN_URL = 'https://oauth2.googleapis.com/token';
+const GA_BASE = 'https://analyticsdata.googleapis.com/v1beta';
+const SCOPE = 'https://www.googleapis.com/auth/analytics.readonly';
+
+// Een access token is een uur geldig. Binnen een warme functie hergebruiken we
+// het, anders doen we bij elke pagina-verversing een overbodige tokenaanvraag.
+let tokenCache = { token: null, expiresAt: 0 };
+
+const b64url = (buf) => Buffer.from(buf).toString('base64')
+  .replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+
+async function getAccessToken() {
+  const nu = Math.floor(Date.now() / 1000);
+  // Een minuut marge: een token dat tijdens de aanroep verloopt geeft een 401
+  // die eruitziet als een rechtenprobleem.
+  if (tokenCache.token && tokenCache.expiresAt > nu + 60) return tokenCache.token;
+
+  const clientEmail = process.env.GA_CLIENT_EMAIL;
+  const privateKey = normalizePrivateKey(process.env.GA_PRIVATE_KEY);
+  if (!clientEmail || !privateKey) throw new Error('GA_CLIENT_EMAIL of GA_PRIVATE_KEY ontbreekt');
+
+  const header = b64url(JSON.stringify({ alg: 'RS256', typ: 'JWT' }));
+  const claims = b64url(JSON.stringify({
+    iss: clientEmail, scope: SCOPE, aud: TOKEN_URL, iat: nu, exp: nu + 3600,
+  }));
+  let signature;
+  try {
+    signature = b64url(crypto.createSign('RSA-SHA256').update(`${header}.${claims}`).sign(privateKey));
+  } catch (e) {
+    throw new Error('privesleutel niet bruikbaar: ' + e.message);
+  }
+
+  const resp = await fetch(TOKEN_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      grant_type: 'urn:ietf:params:oauth:grant-type:jwt-bearer',
+      assertion: `${header}.${claims}.${signature}`,
+    }).toString(),
+  });
+  const data = await resp.json().catch(() => ({}));
+  if (!resp.ok || !data.access_token) {
+    throw new Error(`token ophalen faalde (${resp.status}): ${data.error_description || data.error || 'onbekend'}`);
+  }
+  tokenCache = { token: data.access_token, expiresAt: nu + (Number(data.expires_in) || 3600) };
+  return tokenCache.token;
+}
+
+async function batchRunReports(propertyId, token, requests) {
+  const resp = await fetch(`${GA_BASE}/properties/${propertyId}:batchRunReports`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ requests }),
+  });
+  const data = await resp.json().catch(() => ({}));
+  if (!resp.ok) {
+    const melding = data?.error?.message || `HTTP ${resp.status}`;
+    // De meest voorkomende fout hier is niet de sleutel maar de toegang, en die
+    // melding van Google zegt dat niet met zoveel woorden.
+    if (resp.status === 403) {
+      throw new Error(`geen toegang tot property ${propertyId}. Staat ${process.env.GA_CLIENT_EMAIL} als Viewer op deze property in GA4? (${melding})`);
+    }
+    throw new Error(melding);
+  }
+  return data.reports || [];
+}
+
+export default async function handler(req, res) {
+  const authedUser = await requireUser(req, res);
+  if (!authedUser) return;
+
+  const propertyId = String(process.env.GA_PROPERTY_ID || '').replace(/[^0-9]/g, '');
+  if (!propertyId) {
+    return res.status(503).json({
+      error: 'GA_PROPERTY_ID ontbreekt. Zet het propertynummer uit GA4 in de Vercel-omgeving.',
+      setup: true,
+    });
+  }
+
+  const { days, current, previous } = dateRanges(req.query?.days);
+
+  try {
+    const token = await getAccessToken();
+
+    // Vijf rapporten in een aanroep; dat is het maximum van batchRunReports.
+    const [totaalNu, totaalEerder, reeks, kanalen, paginas] = await batchRunReports(propertyId, token, [
+      {
+        dateRanges: [current],
+        metrics: [{ name: 'sessions' }, { name: 'totalUsers' }, { name: 'screenPageViews' }, { name: 'engagementRate' }],
+      },
+      {
+        dateRanges: [previous],
+        metrics: [{ name: 'sessions' }, { name: 'totalUsers' }, { name: 'screenPageViews' }, { name: 'engagementRate' }],
+      },
+      {
+        dateRanges: [current],
+        dimensions: [{ name: 'date' }],
+        metrics: [{ name: 'sessions' }, { name: 'totalUsers' }],
+        limit: 400,
+      },
+      {
+        dateRanges: [current],
+        dimensions: [{ name: 'sessionDefaultChannelGroup' }],
+        metrics: [{ name: 'sessions' }],
+        orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
+        limit: 12,
+      },
+      {
+        dateRanges: [current],
+        dimensions: [{ name: 'pagePath' }],
+        metrics: [{ name: 'screenPageViews' }],
+        orderBys: [{ metric: { metricName: 'screenPageViews' }, desc: true }],
+        limit: 15,
+      },
+    ]);
+
+    // Campagnes apart, want vijf is de bovengrens per aanroep. Dit is voor ons de
+    // interessantste: welke uiting bracht bezoek op.
+    const [campagnes] = await batchRunReports(propertyId, token, [
+      {
+        dateRanges: [current],
+        dimensions: [{ name: 'sessionSource' }, { name: 'sessionMedium' }, { name: 'sessionCampaignName' }],
+        metrics: [{ name: 'sessions' }],
+        orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
+        limit: 15,
+      },
+    ]);
+
+    const m = (rapport, i) => totalOf(rapport, i);
+    const totals = {
+      sessions: m(totaalNu, 0),
+      users: m(totaalNu, 1),
+      pageviews: m(totaalNu, 2),
+      engagement: Math.round((m(totaalNu, 3) || 0) * 100),
+    };
+    const eerder = {
+      sessions: m(totaalEerder, 0),
+      users: m(totaalEerder, 1),
+      pageviews: m(totaalEerder, 2),
+      engagement: Math.round((m(totaalEerder, 3) || 0) * 100),
+    };
+
+    return res.status(200).json({
+      ok: true,
+      range: { days, ...current, previous },
+      totals,
+      previous_totals: eerder,
+      change: {
+        sessions: pctChange(totals.sessions, eerder.sessions),
+        users: pctChange(totals.users, eerder.users),
+        pageviews: pctChange(totals.pageviews, eerder.pageviews),
+        engagement: pctChange(totals.engagement, eerder.engagement),
+      },
+      series: normalizeDateSeries(reportToRows(reeks, ['date'], ['sessions', 'users'])),
+      channels: reportToRows(kanalen, ['channel'], ['sessions']),
+      pages: reportToRows(paginas, ['path'], ['views']),
+      campaigns: reportToRows(campagnes, ['source', 'medium', 'campaign'], ['sessions']),
+    });
+  } catch (e) {
+    console.error('[analytics]', e.message);
+    return res.status(502).json({ error: e.message });
+  }
+}
