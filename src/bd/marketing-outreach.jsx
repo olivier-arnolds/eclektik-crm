@@ -3,7 +3,7 @@ import { supabase } from '../supabase';
 import { apiFetch } from '../lib/apiFetch';
 import { useAuth } from '../lib/auth';
 import { getFolderEmails, getMailboxFolderEmails, getMailboxMessagesSince } from '../lib/graph';
-import { scanInbox, needsOurReply } from './outreach-match';
+import { scanInbox, needsOurReply, matchRegistrations } from './outreach-match';
 import { outreachTextToHtml, subjectForStep } from '../lib/outreach-html';
 
 // Outreach-tab onder Marketing. Ontwerp: docs/outreach-handover.md addendum §9.
@@ -40,6 +40,7 @@ const CONTACT_COLS =
   'next_action_at,paused_reason,last_reply_summary,contact_id,company_id,last_inbound_at,answered_at,linkedin_url';
 
 const AWAITING = '__awaiting__';
+const REGISTERED = '__registered__';
 
 // Stoppen is een ingreep, hervatten draait die terug. Dezelfde kleuren als de
 // statussen elders in deze tab, zodat de knop meteen leest als wat hij doet.
@@ -95,6 +96,9 @@ export default function MarketingOutreach() {
   const [busyStatus, setBusyStatus] = useState(false);
 
   const [openContact, setOpenContact] = useState(null);
+  // Aanmeldingen voor het event, per prospect. Komt uit marketing_lead_activity,
+  // want de website schrijft elke inschrijving daarheen.
+  const [aanmeldingen, setAanmeldingen] = useState(new Map());
 
   const [statusFilter, setStatusFilter] = useState('all');
   const [prioFilter, setPrioFilter] = useState('all');
@@ -159,6 +163,37 @@ export default function MarketingOutreach() {
         last7d: c7 || 0,
       });
 
+      // Aanmeldingen erbij. Losse query en client-side koppelen, want er is geen
+      // sleutelrelatie tussen een outreach-prospect en een inschrijving: iemand
+      // meldt zich aan met het adres dat hij zelf kiest.
+      try {
+        const { data: acts } = await supabase
+          .from('marketing_lead_activity')
+          .select('marketing_lead_id, occurred_at, payload')
+          .eq('event', 'event_registered')
+          .order('occurred_at', { ascending: false })
+          .limit(1000);
+        const leadIds = [...new Set((acts || []).map(a => a.marketing_lead_id).filter(Boolean))];
+        let leads = [];
+        if (leadIds.length) {
+          const { data } = await supabase
+            .from('marketing_leads').select('id, email, full_name').in('id', leadIds);
+          leads = data || [];
+        }
+        const leadById = Object.fromEntries(leads.map(l => [l.id, l]));
+        const regs = (acts || []).map(a => ({
+          email: leadById[a.marketing_lead_id]?.email || null,
+          full_name: leadById[a.marketing_lead_id]?.full_name || null,
+          occurred_at: a.occurred_at,
+          event: a.payload?.eventSlug || null,
+        }));
+        setAanmeldingen(matchRegistrations(cts || [], regs));
+      } catch {
+        // Geen aanmeldingen kunnen ophalen is niet fataal: de rest van de tab
+        // werkt gewoon, er ontbreekt alleen een label.
+        setAanmeldingen(new Map());
+      }
+
       setErr(null);
     } catch (e) {
       setErr(e.message);
@@ -173,8 +208,9 @@ export default function MarketingOutreach() {
     const c = {};
     for (const r of wave) c[r.status] = (c[r.status] || 0) + 1;
     c[AWAITING] = wave.filter(needsOurReply).length;
+    c[REGISTERED] = wave.filter(r => aanmeldingen.has(r.id)).length;
     return c;
-  }, [wave]);
+  }, [wave, aanmeldingen]);
 
   // Prioriteit-opties uit de data zelf, met het aantal in golf 1 erbij.
   const prioOptions = useMemo(() => {
@@ -192,13 +228,14 @@ export default function MarketingOutreach() {
     return rows.filter(r => {
       if (!showReserve && r.is_reserve) return false;
       if (statusFilter === AWAITING) { if (!needsOurReply(r)) return false; }
+      else if (statusFilter === REGISTERED) { if (!aanmeldingen.has(r.id)) return false; }
       else if (statusFilter !== 'all' && r.status !== statusFilter) return false;
       if (prioFilter !== 'all' && (r.priority_label || '') !== prioFilter) return false;
       if (!needle) return true;
       return [r.email, r.company, r.first_name, r.last_name, r.title]
         .some(v => String(v || '').toLowerCase().includes(needle));
     });
-  }, [rows, showReserve, statusFilter, prioFilter, q]);
+  }, [rows, showReserve, statusFilter, prioFilter, q, aanmeldingen]);
 
   // Bepaalt welk Graph-pad we gebruiken: eigen mailbox of gedeelde leesrechten.
   const myEmail = String(session?.user?.email || '').toLowerCase();
@@ -417,6 +454,7 @@ export default function MarketingOutreach() {
         {!isLinkedIn && kpi('Bericht 2', counts.msg2_sent || 0, STATUS_COLOR.msg2_sent, 'msg2_sent')}
         {kpi('Antwoord', counts.replied || 0, STATUS_COLOR.replied, 'replied')}
         {kpi('Onbeantwoord', counts[AWAITING] || 0, '#d97706', AWAITING)}
+        {kpi('Aangemeld', counts[REGISTERED] || 0, '#16a34a', REGISTERED)}
         {!isLinkedIn && kpi('Gebounced', counts.bounced || 0, STATUS_COLOR.bounced, 'bounced')}
         {kpi('Gepauzeerd', counts.paused || 0, STATUS_COLOR.paused, 'paused')}
         {kpi('Reserve', rows.length - wave.length, 'var(--text-3)')}
@@ -658,6 +696,7 @@ export default function MarketingOutreach() {
           style={{ padding: '6px 8px', borderRadius: 6, border: '0.5px solid var(--sep)', background: 'var(--bg-1)', fontSize: 12 }}>
           <option value="all">Alle statussen</option>
           <option value={AWAITING}>Onbeantwoord{counts[AWAITING] ? ` (${counts[AWAITING]})` : ''}</option>
+          <option value={REGISTERED}>Aangemeld{counts[REGISTERED] ? ` (${counts[REGISTERED]})` : ''}</option>
           {Object.keys(STATUS_LABEL).map(s => (
             <option key={s} value={s}>{STATUS_LABEL[s]}{counts[s] ? ` (${counts[s]})` : ''}</option>
           ))}
@@ -721,6 +760,15 @@ export default function MarketingOutreach() {
                     <span style={{ color: STATUS_COLOR[r.status] || 'var(--text-2)', fontWeight: 500 }}>
                       {STATUS_LABEL[r.status] || r.status}
                     </span>
+                    {aanmeldingen.has(r.id) && (
+                      <span title={`Aangemeld op ${String(aanmeldingen.get(r.id).at || '').slice(0, 10)}`
+                        + (aanmeldingen.get(r.id).method === 'naam'
+                          ? ' (gekoppeld op naam, het adres wijkt af)'
+                          : ' (gekoppeld op e-mailadres)')}
+                        style={{ marginLeft: 6, fontSize: 9, padding: '1px 4px', borderRadius: 3, background: 'rgba(22,163,74,0.15)', border: '0.5px solid rgba(22,163,74,0.5)', color: '#15803d' }}>
+                        aangemeld{aanmeldingen.get(r.id).method === 'naam' ? '?' : ''}
+                      </span>
+                    )}
                     {needsOurReply(r) && (
                       <span title="Antwoord binnen, wij hebben nog niet gereageerd"
                         style={{ marginLeft: 6, fontSize: 9, padding: '1px 4px', borderRadius: 3, background: 'rgba(217,119,6,0.15)', border: '0.5px solid rgba(217,119,6,0.5)', color: '#b45309' }}>
@@ -751,6 +799,7 @@ export default function MarketingOutreach() {
 
       {openContact && (
         <ContactMailsModal contact={openContact} campaign={campaign} rows={filtered}
+          registratie={aanmeldingen.get(openContact.id) || null}
           onClose={() => setOpenContact(null)} onSent={load} />
       )}
 
@@ -774,7 +823,7 @@ export default function MarketingOutreach() {
 // verstuurd of ontvangen is. De teksten worden hier pas opgehaald (ze zitten
 // bewust niet in het lijstoverzicht) en gerenderd met exact dezelfde functie
 // als het verzend-endpoint gebruikt, zodat de preview niet liegt.
-function ContactMailsModal({ contact, campaign, rows = [], onClose, onSent }) {
+function ContactMailsModal({ contact, campaign, rows = [], registratie = null, onClose, onSent }) {
   // De prop is alleen het startpunt. Met de keuzelijst blader je door de lijst
   // zonder de popup te sluiten, en dat is ook wat de knop 'Bekijk tekst'
   // gebruikt: die opent hier gewoon de eerste persoon.
@@ -1048,6 +1097,23 @@ function ContactMailsModal({ contact, campaign, rows = [], onClose, onSent }) {
 
           {!loading && !err && (
             <>
+              {registratie && (
+                <div style={{
+                  fontSize: 12, lineHeight: 1.6, borderRadius: 6, padding: '8px 10px',
+                  background: 'rgba(22,163,74,0.08)', border: '0.5px solid rgba(22,163,74,0.4)', color: '#15803d',
+                }}>
+                  <strong>Heeft zich aangemeld</strong>
+                  {registratie.at ? ` op ${String(registratie.at).slice(0, 10)}` : ''}
+                  {registratie.event ? ` voor ${registratie.event}` : ''}.
+                  {registratie.method === 'naam' && (
+                    <div style={{ color: 'var(--text-3)', marginTop: 2 }}>
+                      Gekoppeld op naam, niet op adres: deze persoon meldde zich aan met een ander
+                      e-mailadres dan waarop wij hem benaderden. Vaak betekent dat een nieuwe baan.
+                    </div>
+                  )}
+                </div>
+              )}
+
               {(detail?.paused_reason || detail?.last_reply_summary) && (
                 <div style={{ fontSize: 12, color: 'var(--text-2)', background: 'var(--fill-1)', borderRadius: 6, padding: '8px 10px' }}>
                   {detail.last_reply_summary

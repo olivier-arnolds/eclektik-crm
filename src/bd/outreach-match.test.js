@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   domainOf, isBounceMessage, looksLikeAutoReply, buildIndex, findContactEmailIn,
   matchMessage, scanInbox, statusAfterClassification,
-  MATCH_SENDER, MATCH_DOMAIN, MATCH_NONE, CONFIDENCE_FLOOR, needsOurReply,
+  MATCH_SENDER, MATCH_DOMAIN, MATCH_NONE, CONFIDENCE_FLOOR, needsOurReply, matchRegistrations,
 } from './outreach-match';
 
 // Drie contacten, twee bij hetzelfde domein (de ING-situatie).
@@ -219,5 +219,41 @@ describe('statusAfterClassification bij een mislukte classificatie', () => {
     const r = statusAfterClassification({ classification: '', confidence: 0.99, currentStatus: 'msg1_sent' });
     expect(r.next_action_at).toBeNull();
     expect(r.needs_review).toBe(true);
+  });
+});
+
+describe('matchRegistrations', () => {
+  const regs = [
+    { email: 'bart@vanleeuwen.nl', full_name: 'Bart Looije', occurred_at: '2026-09-17T14:52:00Z', event: 'amsterdam-2026' },
+    { email: 'info@peopleimpactcollective.nl', full_name: 'Esther van Lunteren', occurred_at: '2026-09-13T07:57:00Z', event: 'amsterdam-2026' },
+  ];
+
+  it('koppelt op e-mailadres, dat is de zekere manier', () => {
+    const m = matchRegistrations([{ id: 'a', email: 'Bart@VanLeeuwen.nl' }], regs);
+    expect(m.get('a').method).toBe('email');
+  });
+
+  it('KRITIEK: koppelt ook op naam, want LinkedIn-prospects hebben geen adres', () => {
+    const m = matchRegistrations([{ id: 'b', email: null, first_name: 'Bart', last_name: 'Looije' }], regs);
+    expect(m.get('b')).toEqual({ method: 'naam', at: '2026-09-17T14:52:00Z', event: 'amsterdam-2026' });
+  });
+
+  it('KRITIEK: vindt iemand die zich met een ander adres aanmeldde', () => {
+    // Wij benaderden haar bij Qbuzz, zij meldde zich aan met haar eigen bedrijf.
+    // Op adres zou dit gemist worden en dat is precies het geval dat je wil zien.
+    const m = matchRegistrations(
+      [{ id: 'c', email: 'esther.vanlunteren@qbuzz.nl', first_name: 'Esther', last_name: 'van Lunteren' }], regs);
+    expect(m.get('c').method).toBe('naam');
+  });
+
+  it('e-mail wint van naam als allebei kunnen', () => {
+    const m = matchRegistrations(
+      [{ id: 'd', email: 'bart@vanleeuwen.nl', first_name: 'Bart', last_name: 'Looije' }], regs);
+    expect(m.get('d').method).toBe('email');
+  });
+
+  it('koppelt niemand zonder treffer, en gaat om met leeg', () => {
+    expect(matchRegistrations([{ id: 'e', email: 'x@y.nl', first_name: 'Iemand', last_name: 'Anders' }], regs).size).toBe(0);
+    expect(matchRegistrations(null, null).size).toBe(0);
   });
 });

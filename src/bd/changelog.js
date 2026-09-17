@@ -19,9 +19,24 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.110.0';
+export const CURRENT_VERSION = '1.111.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.111.0',
+    date: '2026-09-17T17:45:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Outreach toont wie zich al aangemeld heeft',
+    summary:
+      'Bij elke prospect staat nu of die zich voor het event heeft ingeschreven, met een tegel en een filter erbij. Dat is preciezer dan wat Analytics kan tonen, want daar zie je alleen aantallen per bron.',
+    changes: [
+      'Gekoppeld op e-mailadres waar dat kan, en anders op naam. Die tweede is hier onmisbaar: LinkedIn-prospects hebben bij ons geen adres, en wie van baan wisselt meldt zich aan met een ander adres dan waarop wij hem benaderden.',
+      'Een naamkoppeling toont een vraagteken en legt in de popup uit dat het adres afwijkt, vaak omdat iemand een nieuwe baan heeft. Een aanwijzing dus, geen bewijs.',
+      'Zo kwam Esther van Lunteren boven water: benaderd bij Qbuzz, aangemeld met haar eigen bedrijf.',
+      'Lukt het ophalen van de aanmeldingen niet, dan werkt de rest van de tab gewoon door en ontbreekt alleen het label.',
+    ],
+  },
   {
     version: '1.110.0',
     date: '2026-09-17T17:00:00Z',

@@ -251,3 +251,47 @@ export function needsOurReply(r) {
   if (outAt === null || !Number.isFinite(outAt)) return true;
   return outAt < inAt;
 }
+
+/**
+ * Koppelt aanmeldingen voor een event aan de prospects in een campagne.
+ *
+ * TWEE MANIEREN, EN HET VERSCHIL DOET ERTOE
+ *   Op e-mailadres is zeker. Op naam is waarschijnlijk, en juist die tweede is
+ *   hier onmisbaar: LinkedIn-prospects hebben bij ons geen adres, en iemand die
+ *   van baan wisselt meldt zich aan met een ander adres dan waarop wij hem
+ *   benaderden. Precies zo vonden we Esther van Lunteren terug, die wij bij haar
+ *   oude werkgever benaderden en zich met haar eigen bedrijf aanmeldde.
+ *
+ *   De manier wordt meegegeven zodat de app kan tonen hoe zeker de koppeling is.
+ *   Een naamkoppeling is een aanwijzing, geen bewijs.
+ *
+ * @param {Array} contacts      outreach_contact-rijen
+ * @param {Array} registrations [{ email, full_name, occurred_at, event }]
+ * @returns {Map} contactId -> { method: 'email'|'naam', at, event }
+ */
+export function matchRegistrations(contacts, registrations) {
+  const normNaam = (v) => String(v || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+  const byEmail = new Map();
+  const byNaam = new Map();
+  for (const r of (registrations || [])) {
+    const e = normEmail(r?.email);
+    if (e && !byEmail.has(e)) byEmail.set(e, r);
+    const n = normNaam(r?.full_name);
+    if (n && !byNaam.has(n)) byNaam.set(n, r);
+  }
+
+  const uit = new Map();
+  for (const c of (contacts || [])) {
+    const e = normEmail(c?.email);
+    const treffer = (e && byEmail.get(e)) || null;
+    if (treffer) {
+      uit.set(c.id, { method: 'email', at: treffer.occurred_at, event: treffer.event });
+      continue;
+    }
+    const n = normNaam([c?.first_name, c?.last_name].filter(Boolean).join(' '));
+    const opNaam = n ? byNaam.get(n) : null;
+    if (opNaam) uit.set(c.id, { method: 'naam', at: opNaam.occurred_at, event: opNaam.event });
+  }
+  return uit;
+}
