@@ -19,9 +19,25 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.107.1';
+export const CURRENT_VERSION = '1.108.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.108.0',
+    date: '2026-09-17T16:00:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'De composer tagt links automatisch voor Analytics',
+    summary:
+      'Links naar onze eigen site krijgen nu utm-tags mee, zodat in de Analytics-tab zichtbaar wordt welke mail het bezoek bracht. Zonder die tags ziet Google verkeer uit een mail als direct verkeer.',
+    changes: [
+      'Alleen eigen domeinen worden getagd. Een link naar LinkedIn of een nieuwsartikel taggen heeft geen zin en vervuilt andermans statistieken.',
+      'Een link die al een utm_source heeft blijft ongemoeid: dan heeft iemand bewust iets ingesteld.',
+      'Afmeldlinks, mailto-links, ankers en de merge-tag van Resend worden overgeslagen.',
+      'De tags worden toegevoegd voordat de preview wordt opgebouwd, niet pas bij het versturen. Zo tonen preview, test-mail en echte verzending dezelfde links, en staat de getagde versie ook in de opgeslagen campagne.',
+      'De campagnenaam wordt de utm_campaign-waarde, teruggevallen op het onderwerp. Uit te zetten met een vinkje. 12 tests.',
+    ],
+  },
   {
     version: '1.107.1',
     date: '2026-09-17T15:55:00Z',

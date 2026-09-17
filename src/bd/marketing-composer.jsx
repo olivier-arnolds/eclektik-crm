@@ -3,6 +3,7 @@ import { useAuth } from '../lib/auth';
 import { renderTemplate, varsForContact, KNOWN_VARS } from '../lib/template-vars';
 import { apiFetch } from '../lib/apiFetch';
 import { SENDERS, senderNameFor, hasSignature } from '../lib/senders';
+import { addUtmToHtml, slugify } from '../lib/utm';
 
 // Composer for a Marketing campaign.
 // Props:
@@ -25,6 +26,10 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
   // Handtekening meesturen? Standaard aan als de afzender een persoon met
   // handtekening is (Marco/Olivier/Yarmilla), uit bij Marketing@.
   const [sigOn, setSigOn] = useState(() => hasSignature(defaultFromEmail));
+  // Links taggen voor Analytics. Standaard aan: zonder tags ziet Google verkeer
+  // uit een mail als 'direct' en weet je achteraf niet meer welke uiting het
+  // bezoek bracht. Uit te zetten voor het geval je links al met de hand tagt.
+  const [utmOn, setUtmOn] = useState(true);
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState(null);
   // 'broadcast' = newsletter via Resend Broadcasts (marketingplan); 'transactional' = 1-op-1 via /emails.
@@ -79,10 +84,21 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
   // De HTML die daadwerkelijk verstuurd wordt: in text-modus zetten we de platte
   // tekst om naar nette HTML; in html-modus is het de ruwe HTML. Merge-vars zoals
   // {{first_name}} blijven in beide gevallen intact.
-  const effectiveHtml = useMemo(
-    () => (bodyMode === 'text' ? plainTextToHtml(textBody) : htmlBody),
-    [bodyMode, textBody, htmlBody]
+  // De campagnenaam wordt de utm_campaign-waarde. Valt terug op het onderwerp,
+  // want een naam is optioneel en een rapport met lege campagnenamen is nutteloos.
+  const utmCampaign = useMemo(() => slugify(name || subject), [name, subject]);
+  const utmOpts = useMemo(
+    () => ({ source: 'eclektik', medium: 'email', campaign: utmCampaign }),
+    [utmCampaign],
   );
+
+  const effectiveHtml = useMemo(() => {
+    const basis = bodyMode === 'text' ? plainTextToHtml(textBody) : htmlBody;
+    // Bewust hier en niet pas bij het versturen: zo tonen de preview en de
+    // test-mail dezelfde links als de echte verzending, en staat de getagde
+    // versie ook in de campagne zelf (waar je hem later terugleest).
+    return utmOn && utmCampaign ? addUtmToHtml(basis, utmOpts) : basis;
+  }, [bodyMode, textBody, htmlBody, utmOn, utmCampaign, utmOpts]);
   const hasBody = bodyMode === 'text' ? !!textBody.trim() : !!htmlBody.trim();
 
   // Merge-var op de cursor invoegen in het actieve tekstvak. Voorkomt typefouten
@@ -312,6 +328,18 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
           <input value={replyTo} onChange={e => setReplyTo(e.target.value)} placeholder={sentBy} style={inputStyle} />
         </div>
       </div>
+
+      <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, cursor: 'pointer' }}>
+        <input type="checkbox" checked={utmOn} onChange={e => setUtmOn(e.target.checked)} />
+        <span>
+          Links taggen voor Analytics
+          <span style={{ color: 'var(--text-3)', marginLeft: 6 }}>
+            {utmCampaign
+              ? `— eigen links krijgen utm_campaign=${utmCampaign}, zodat je in de Analytics-tab ziet wat deze mail opleverde`
+              : '— vul eerst een naam of onderwerp in, dat wordt de campagnenaam in Analytics'}
+          </span>
+        </span>
+      </label>
 
       <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, cursor: hasSignature(fromEmail) ? 'pointer' : 'default' }}>
         <input type="checkbox" checked={sigOn && hasSignature(fromEmail)} disabled={!hasSignature(fromEmail)}
