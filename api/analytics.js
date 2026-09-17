@@ -27,6 +27,11 @@ const TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const GA_BASE = 'https://analyticsdata.googleapis.com/v1beta';
 const SCOPE = 'https://www.googleapis.com/auth/analytics.readonly';
 
+// De gebeurtenis die de website afvuurt bij een geslaagde inschrijving. Zie
+// client/src/lib/tracking.ts in de website-repo (trackEventRegistration). Wijzigt
+// die naam daar, dan moet hij hier mee.
+const REGISTRATIE_EVENT = 'event_registration';
+
 // Een access token is een uur geldig. Binnen een warme functie hergebruiken we
 // het, anders doen we bij elke pagina-verversing een overbodige tokenaanvraag.
 let tokenCache = { token: null, expiresAt: 0 };
@@ -145,9 +150,19 @@ export default async function handler(req, res) {
       },
     ]);
 
-    // Campagnes apart, want vijf is de bovengrens per aanroep. Dit is voor ons de
-    // interessantste: welke uiting bracht bezoek op.
-    const [campagnes] = await batchRunReports(propertyId, token, [
+    // Tweede aanroep, want vijf rapporten is de bovengrens per keer. Hier zit het
+    // deel waar het echt om gaat: niet hoeveel bezoek, maar hoeveel aanmeldingen,
+    // en waar die vandaan kwamen.
+    //
+    // We filteren op de gebeurtenis die de website zelf al afvuurt bij een
+    // geslaagde inschrijving (trackEventRegistration in client/src/lib/tracking.ts).
+    // Bewust via eventCount met een filter en niet via keyEvents: dan hoeft
+    // niemand die gebeurtenis in GA4 eerst als sleutelgebeurtenis te markeren, en
+    // werkt dit ook als die instelling ooit wordt teruggedraaid.
+    const registratieFilter = {
+      filter: { fieldName: 'eventName', stringFilter: { value: REGISTRATIE_EVENT } },
+    };
+    const [campagnes, regNu, regEerder] = await batchRunReports(propertyId, token, [
       {
         dateRanges: [current],
         dimensions: [{ name: 'sessionSource' }, { name: 'sessionMedium' }, { name: 'sessionCampaignName' }],
@@ -155,9 +170,24 @@ export default async function handler(req, res) {
         orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
         limit: 15,
       },
+      {
+        dateRanges: [current],
+        dimensions: [{ name: 'sessionSource' }, { name: 'sessionMedium' }, { name: 'sessionCampaignName' }],
+        metrics: [{ name: 'eventCount' }],
+        dimensionFilter: registratieFilter,
+        orderBys: [{ metric: { metricName: 'eventCount' }, desc: true }],
+        limit: 15,
+      },
+      {
+        dateRanges: [previous],
+        metrics: [{ name: 'eventCount' }],
+        dimensionFilter: registratieFilter,
+      },
     ]);
 
     const m = (rapport, i) => totalOf(rapport, i);
+    const registratiesNu = totalOf(regNu, 0);
+    const registratiesEerder = totalOf(regEerder, 0);
     const totals = {
       sessions: m(totaalNu, 0),
       users: m(totaalNu, 1),
@@ -181,6 +211,12 @@ export default async function handler(req, res) {
         users: pctChange(totals.users, eerder.users),
         pageviews: pctChange(totals.pageviews, eerder.pageviews),
         engagement: pctChange(totals.engagement, eerder.engagement),
+      },
+      registrations: {
+        total: registratiesNu,
+        previous: registratiesEerder,
+        change: pctChange(registratiesNu, registratiesEerder),
+        by_campaign: reportToRows(regNu, ['source', 'medium', 'campaign'], ['registrations']),
       },
       series: normalizeDateSeries(reportToRows(reeks, ['date'], ['sessions', 'users'])),
       channels: reportToRows(kanalen, ['channel'], ['sessions']),

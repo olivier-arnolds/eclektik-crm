@@ -19,9 +19,24 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.109.0';
+export const CURRENT_VERSION = '1.110.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.110.0',
+    date: '2026-09-17T17:00:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Aanmeldingen in het Analytics-dashboard, toegerekend aan de bron',
+    summary:
+      'Niet alleen hoeveel bezoek er kwam, maar hoeveel aanmeldingen het opleverde en waar die vandaan kwamen. De website vuurde die gebeurtenis al af; het dashboard vroeg er alleen niet naar.',
+    changes: [
+      'Er hoefde niets aan de website te veranderen. Die stuurt bij een geslaagde inschrijving al event_registration mee, uit trackEventRegistration in de website-repo.',
+      'Uitgelezen via eventCount met een filter op de gebeurtenisnaam, en niet via keyEvents. Zo hoeft niemand die gebeurtenis in GA4 eerst als sleutelgebeurtenis te markeren, en blijft het werken als die instelling ooit terugdraait.',
+      'Nieuwe tegel Aanmeldingen met de vorige periode ernaast, en een kader dat ze toerekent aan bron, medium en campagne.',
+      'Samen met de tagging van de outreach betekent dit dat je straks kunt zien of een LinkedIn-DM of een mail de aanmelding bracht.',
+    ],
+  },
   {
     version: '1.109.0',
     date: '2026-09-17T16:35:00Z',

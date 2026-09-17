@@ -180,6 +180,9 @@ export default function MarketingAnalytics() {
             <Tegel label="Bezoekers" value={data.totals.users} pct={data.change.users} />
             <Tegel label="Paginaweergaven" value={data.totals.pageviews} pct={data.change.pageviews} />
             <Tegel label="Betrokkenheid" value={data.totals.engagement} pct={data.change.engagement} suffix="%" />
+            {data.registrations && (
+              <Tegel label="Aanmeldingen" value={data.registrations.total} pct={data.registrations.change} />
+            )}
           </div>
 
           <Kader titel="Sessies per dag">
@@ -190,6 +193,18 @@ export default function MarketingAnalytics() {
             <Kader titel="Waar komt het vandaan" toelichting="Kanaal volgens Google">
               <Balken rows={data.channels} labelKey="channel" valueKey="sessions"
                 leeg="Geen verkeer in deze periode." />
+            </Kader>
+
+            <Kader titel="Aanmeldingen per bron"
+              toelichting="Inschrijvingen voor een event, toegerekend aan waar de bezoeker vandaan kwam">
+              <Balken
+                rows={(data.registrations?.by_campaign || []).map(c => ({
+                  ...c,
+                  label: [c.source, c.medium].filter(Boolean).join(' / ')
+                    + (c.campaign && c.campaign !== '(not set)' ? ` · ${c.campaign}` : ''),
+                }))}
+                labelKey="label" valueKey="registrations"
+                leeg="Nog geen aanmeldingen in deze periode." />
             </Kader>
 
             <Kader titel="Campagnes"
