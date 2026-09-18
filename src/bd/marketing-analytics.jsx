@@ -200,38 +200,6 @@ export default function MarketingAnalytics() {
             )}
           </div>
 
-          {data.scorecard?.steps?.[0] && (
-            <Kader titel="Scorecard"
-              toelichting={`Van starten tot doorklikken, in bezoekers${
-                data.scorecard.answered ? ` · ${nf.format(data.scorecard.answered)} vragen beantwoord` : ''}`}>
-              {data.scorecard.steps.every(s => s.users === 0) ? (
-                <div style={{ fontSize: 12, color: 'var(--text-3)' }}>
-                  Niemand heeft de scorecard in deze periode gestart.
-                </div>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {data.scorecard.steps.map(s => (
-                    <div key={s.key} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, flexWrap: 'wrap' }}>
-                      <div style={{ width: 150 }}>{s.label}</div>
-                      <div style={{ flex: 1, minWidth: 120, background: 'var(--fill-1)', borderRadius: 3, height: 18 }}>
-                        <div style={{
-                          width: `${Math.max(2, s.pctVanStart ?? 0)}%`,
-                          background: '#2563eb', opacity: 0.75, height: '100%', borderRadius: 3,
-                        }} />
-                      </div>
-                      <div style={{ width: 96, textAlign: 'right', fontFamily: 'var(--font-mono)', color: 'var(--text-2)' }}>
-                        {nf.format(s.users)}{s.pctVanStart !== null ? ` · ${s.pctVanStart}%` : ''}
-                      </div>
-                      <div style={{ width: 90, fontSize: 11, color: s.uitval ? '#b45309' : 'var(--text-3)' }}>
-                        {s.uitval !== null ? `${s.uitval}% valt af` : ''}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </Kader>
-          )}
-
           <Kader titel="Sessies per dag">
             <Lijn series={data.series} />
           </Kader>
@@ -253,6 +221,41 @@ export default function MarketingAnalytics() {
                 labelKey="label" valueKey="registrations"
                 leeg="Nog geen aanmeldingen in deze periode." />
             </Kader>
+
+{data.scorecard?.steps?.[0] && (
+            <Kader titel="Scorecard"
+              toelichting={`Van starten tot doorklikken, in bezoekers${
+                data.scorecard.answered ? ` · ${nf.format(data.scorecard.answered)} vragen beantwoord` : ''}`}>
+              {data.scorecard.steps.every(s => s.users === 0) ? (
+                <div style={{ fontSize: 12, color: 'var(--text-3)' }}>
+                  Niemand heeft de scorecard in deze periode gestart.
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {data.scorecard.steps.map(s => (
+                    <div key={s.key}>
+                      <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, fontSize: 12 }}>
+                        <span>{s.label}</span>
+                        {s.uitval !== null && (
+                          <span style={{ fontSize: 11, color: '#b45309' }}>{s.uitval}% valt af</span>
+                        )}
+                        <span style={{ marginLeft: 'auto', fontFamily: 'var(--font-mono)', color: 'var(--text-2)' }}>
+                          {nf.format(s.users)}{s.pctVanStart !== null ? ` · ${s.pctVanStart}%` : ''}
+                        </span>
+                      </div>
+                      <div style={{ background: 'var(--fill-1)', borderRadius: 3, height: 10, marginTop: 3 }}>
+                        <div style={{
+                          width: `${Math.max(2, s.pctVanStart ?? 0)}%`,
+                          background: '#2563eb', opacity: 0.75, height: '100%', borderRadius: 3,
+                        }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Kader>
+
+            )}
 
             <Kader titel="Campagnes"
               toelichting="Bron, medium en campagne uit de UTM-tags van je links">

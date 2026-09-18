@@ -19,9 +19,22 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.113.0';
+export const CURRENT_VERSION = '1.113.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.113.1',
+    date: '2026-09-18T10:45:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Scorecard-trechter compacter en op zijn plek',
+    summary:
+      'De trechter stond over de volle breedte bovenaan. Hij staat nu in het raster onder Waar komt het vandaan, en de regels zijn zo opgemaakt dat ze in een halve kolom passen.',
+    changes: [
+      'De opzet met vier kolommen naast elkaar werd in een halve kolom onleesbaar. Nu staan label en aantal op een regel met de balk eronder.',
+      'Derde positie in het raster, zodat hij op een breed scherm precies onder Waar komt het vandaan valt.',
+    ],
+  },
   {
     version: '1.113.0',
     date: '2026-09-18T10:30:00Z',
