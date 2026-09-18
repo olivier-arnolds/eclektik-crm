@@ -189,3 +189,19 @@ export function buildFunnel(rows, stappen = SCORECARD_STAPPEN) {
     return { key, label, users, count, pctVanStart, uitval };
   });
 }
+
+/**
+ * Seconden naar iets leesbaars: '1m 23s', '45s', '2u 05m'.
+ *
+ * GA4 levert duur als kommagetal in seconden. Dat rauw tonen ('83.4') vraagt van
+ * de lezer een rekensom die de app net zo goed kan doen.
+ */
+export function formatDuration(seconden) {
+  const s = Math.max(0, Math.round(Number(seconden) || 0));
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60);
+  const rest = s % 60;
+  if (m < 60) return `${m}m ${String(rest).padStart(2, '0')}s`;
+  const u = Math.floor(m / 60);
+  return `${u}u ${String(m % 60).padStart(2, '0')}m`;
+}

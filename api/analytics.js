@@ -2,7 +2,7 @@ import { requireUser } from './_lib/guard.js';
 import crypto from 'crypto';
 import {
   normalizePrivateKey, describeKeyProblem, dateRanges, pctChange,
-  reportToRows, totalOf, normalizeDateSeries, buildFunnel, SCORECARD_EVENTS,
+  reportToRows, totalOf, normalizeDateSeries, buildFunnel, SCORECARD_EVENTS, formatDuration,
 } from './_lib/ga-lib.js';
 
 // GET /api/analytics?days=28 - leest Google Analytics 4 voor het dashboard onder
@@ -122,11 +122,13 @@ export default async function handler(req, res) {
     const [totaalNu, totaalEerder, reeks, kanalen, paginas] = await batchRunReports(propertyId, token, [
       {
         dateRanges: [current],
-        metrics: [{ name: 'sessions' }, { name: 'totalUsers' }, { name: 'screenPageViews' }, { name: 'engagementRate' }],
+        metrics: [{ name: 'sessions' }, { name: 'totalUsers' }, { name: 'screenPageViews' },
+          { name: 'engagementRate' }, { name: 'averageSessionDuration' }],
       },
       {
         dateRanges: [previous],
-        metrics: [{ name: 'sessions' }, { name: 'totalUsers' }, { name: 'screenPageViews' }, { name: 'engagementRate' }],
+        metrics: [{ name: 'sessions' }, { name: 'totalUsers' }, { name: 'screenPageViews' },
+          { name: 'engagementRate' }, { name: 'averageSessionDuration' }],
       },
       {
         dateRanges: [current],
@@ -144,7 +146,7 @@ export default async function handler(req, res) {
       {
         dateRanges: [current],
         dimensions: [{ name: 'pagePath' }],
-        metrics: [{ name: 'screenPageViews' }],
+        metrics: [{ name: 'screenPageViews' }, { name: 'userEngagementDuration' }, { name: 'activeUsers' }],
         orderBys: [{ metric: { metricName: 'screenPageViews' }, desc: true }],
         limit: 15,
       },
@@ -205,12 +207,14 @@ export default async function handler(req, res) {
       users: m(totaalNu, 1),
       pageviews: m(totaalNu, 2),
       engagement: Math.round((m(totaalNu, 3) || 0) * 100),
+      session_seconds: m(totaalNu, 4),
     };
     const eerder = {
       sessions: m(totaalEerder, 0),
       users: m(totaalEerder, 1),
       pageviews: m(totaalEerder, 2),
       engagement: Math.round((m(totaalEerder, 3) || 0) * 100),
+      session_seconds: m(totaalEerder, 4),
     };
 
     return res.status(200).json({
@@ -223,7 +227,9 @@ export default async function handler(req, res) {
         users: pctChange(totals.users, eerder.users),
         pageviews: pctChange(totals.pageviews, eerder.pageviews),
         engagement: pctChange(totals.engagement, eerder.engagement),
+        session_seconds: pctChange(totals.session_seconds, eerder.session_seconds),
       },
+      session_duration: formatDuration(totals.session_seconds),
       registrations: {
         total: registratiesNu,
         previous: registratiesEerder,
@@ -240,7 +246,14 @@ export default async function handler(req, res) {
       })(),
       series: normalizeDateSeries(reportToRows(reeks, ['date'], ['sessions', 'users'])),
       channels: reportToRows(kanalen, ['channel'], ['sessions']),
-      pages: reportToRows(paginas, ['path'], ['views']),
+      // Gemiddelde betrokken tijd per pagina, zoals GA4 het zelf rekent: totale
+      // betrokken tijd gedeeld door de actieve bezoekers op die pagina.
+      pages: reportToRows(paginas, ['path'], ['views', 'engagement_seconds', 'users'])
+        .map(p => ({
+          ...p,
+          avg_seconds: p.users > 0 ? p.engagement_seconds / p.users : 0,
+          avg_time: formatDuration(p.users > 0 ? p.engagement_seconds / p.users : 0),
+        })),
       campaigns: reportToRows(campagnes, ['source', 'medium', 'campaign'], ['sessions']),
     });
   } catch (e) {

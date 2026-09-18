@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   normalizePrivateKey, describeKeyProblem, dateRanges, pctChange, reportToRows, totalOf,
-  normalizeDateSeries, buildFunnel,
+  normalizeDateSeries, buildFunnel, formatDuration,
 } from './ga-lib.js';
 
 describe('normalizePrivateKey', () => {
@@ -167,5 +167,20 @@ describe('buildFunnel', () => {
     const f = buildFunnel([{ event: 'sc_start', users: 10, count: 10 }]);
     expect(f[1].users).toBe(0);
     expect(f[2].uitval).toBeNull();
+  });
+});
+
+describe('formatDuration', () => {
+  it('maakt van seconden iets leesbaars', () => {
+    expect(formatDuration(45)).toBe('45s');
+    expect(formatDuration(83.4)).toBe('1m 23s');
+    expect(formatDuration(600)).toBe('10m 00s');
+    expect(formatDuration(3725)).toBe('1u 02m');
+  });
+
+  it('gaat om met nul en onzin', () => {
+    expect(formatDuration(0)).toBe('0s');
+    expect(formatDuration(null)).toBe('0s');
+    expect(formatDuration(-5)).toBe('0s');
   });
 });

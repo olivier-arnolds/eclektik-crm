@@ -19,9 +19,23 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.112.0';
+export const CURRENT_VERSION = '1.113.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.113.0',
+    date: '2026-09-18T10:30:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Sessieduur en tijd per pagina',
+    summary:
+      'Een tegel met de gemiddelde sessieduur, en bij elke pagina hoe lang bezoekers er gemiddeld zijn. Dat zegt meer over een pagina dan het aantal weergaven.',
+    changes: [
+      'Tijd per pagina wordt gerekend zoals GA4 het zelf doet: betrokken tijd gedeeld door de actieve bezoekers op die pagina.',
+      'Duur wordt getoond als 1m 23s in plaats van het kommagetal in seconden dat GA teruggeeft.',
+      'Er staat expliciet bij dat GA4 alleen tijd telt als het tabblad op de voorgrond staat. Iemand die leest en wegklikt zonder te scrollen kan op nul uitkomen, dus een lage tijd is een aanwijzing en geen oordeel.',
+    ],
+  },
   {
     version: '1.112.0',
     date: '2026-09-18T10:20:00Z',

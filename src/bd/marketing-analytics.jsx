@@ -28,6 +28,17 @@ function Delta({ pct }) {
   );
 }
 
+function TegelTekst({ label, waarde, pct, toelichting }) {
+  return (
+    <div style={{ flex: '1 1 150px', border: '0.5px solid var(--sep)', borderRadius: 8, padding: '10px 12px' }}>
+      <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>{label}</div>
+      <div style={{ fontSize: 22, fontWeight: 600, lineHeight: 1.2 }}>{waarde}</div>
+      <Delta pct={pct} />
+      {toelichting && <div style={{ fontSize: 10, color: 'var(--text-3)' }}>{toelichting}</div>}
+    </div>
+  );
+}
+
 function Tegel({ label, value, pct, suffix }) {
   return (
     <div style={{ flex: '1 1 150px', border: '0.5px solid var(--sep)', borderRadius: 8, padding: '10px 12px' }}>
@@ -180,6 +191,10 @@ export default function MarketingAnalytics() {
             <Tegel label="Bezoekers" value={data.totals.users} pct={data.change.users} />
             <Tegel label="Paginaweergaven" value={data.totals.pageviews} pct={data.change.pageviews} />
             <Tegel label="Betrokkenheid" value={data.totals.engagement} pct={data.change.engagement} suffix="%" />
+            {data.session_duration && (
+              <TegelTekst label="Sessieduur" waarde={data.session_duration}
+                pct={data.change.session_seconds} toelichting="gemiddeld per sessie" />
+            )}
             {data.registrations && (
               <Tegel label="Aanmeldingen" value={data.registrations.total} pct={data.registrations.change} />
             )}
@@ -255,10 +270,38 @@ export default function MarketingAnalytics() {
           <Kader titel="Best bezochte pagina's">
             {/* GA levert de startpagina als kaal '/'. Dat leest als een gat in de
                 data terwijl het gewoon de homepage is. */}
-            <Balken
-              rows={data.pages.map(p => ({ ...p, path: p.path === '/' ? '/ (homepage)' : p.path }))}
-              labelKey="path" valueKey="views" leeg="Geen paginaweergaven." />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+              {data.pages.length === 0 && (
+                <div style={{ fontSize: 12, color: 'var(--text-3)' }}>Geen paginaweergaven.</div>
+              )}
+              {data.pages.map((p, i) => {
+                const max = Math.max(1, ...data.pages.map(x => x.views || 0));
+                const naam = p.path === '/' ? '/ (homepage)' : p.path;
+                return (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
+                    <div style={{ width: '38%', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                      title={naam}>{naam}</div>
+                    <div style={{ flex: 1, background: 'var(--fill-1)', borderRadius: 3, height: 14 }}>
+                      <div style={{ width: `${Math.max(2, ((p.views || 0) / max) * 100)}%`, background: '#2563eb', opacity: 0.75, height: '100%', borderRadius: 3 }} />
+                    </div>
+                    <div style={{ width: 56, textAlign: 'right', color: 'var(--text-2)', fontFamily: 'var(--font-mono)' }}>
+                      {nf.format(p.views || 0)}
+                    </div>
+                    <div style={{ width: 64, textAlign: 'right', color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}
+                      title="gemiddelde betrokken tijd per bezoeker op deze pagina">
+                      {p.avg_time}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </Kader>
+
+          <div style={{ fontSize: 11, color: 'var(--text-3)', lineHeight: 1.6 }}>
+            Tijd telt in GA4 alleen als het tabblad op de voorgrond staat. Een bezoeker die leest
+            en wegklikt zonder te scrollen of te klikken kan dus op nul seconden uitkomen. Lees een
+            lage tijd daarom als een aanwijzing, niet als een oordeel.
+          </div>
 
           <div style={{ fontSize: 11, color: 'var(--text-3)', lineHeight: 1.6 }}>
             Staat er bij Campagnes weinig, dan dragen de links in je mails en posts waarschijnlijk
