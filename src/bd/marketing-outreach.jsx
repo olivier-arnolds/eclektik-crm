@@ -41,6 +41,8 @@ const CONTACT_COLS =
 
 const AWAITING = '__awaiting__';
 const REGISTERED = '__registered__';
+const OPENED = '__opened__';
+const CLICKED = '__clicked__';
 
 // Stoppen is een ingreep, hervatten draait die terug. Dezelfde kleuren als de
 // statussen elders in deze tab, zodat de knop meteen leest als wat hij doet.
@@ -99,6 +101,9 @@ export default function MarketingOutreach() {
   // Aanmeldingen voor het event, per prospect. Komt uit marketing_lead_activity,
   // want de website schrijft elke inschrijving daarheen.
   const [aanmeldingen, setAanmeldingen] = useState(new Map());
+  // Opens en kliks per prospect. Staan per BERICHT in de database (een prospect
+  // kan er twee hebben), dus hier opgeteld tot een beeld per persoon.
+  const [betrokkenheid, setBetrokkenheid] = useState(new Map());
 
   const [statusFilter, setStatusFilter] = useState('all');
   const [prioFilter, setPrioFilter] = useState('all');
@@ -163,6 +168,27 @@ export default function MarketingOutreach() {
         last7d: c7 || 0,
       });
 
+      // Opens en kliks per prospect.
+      try {
+        const { data: msgs } = await supabase
+          .from('outreach_message')
+          .select('contact_id, open_count, click_count, delivered_at')
+          .eq('campaign_id', camp.id).eq('direction', 'outbound')
+          .limit(5000);
+        const m = new Map();
+        for (const r of (msgs || [])) {
+          if (!r.contact_id) continue;
+          const v = m.get(r.contact_id) || { opens: 0, clicks: 0, delivered: 0 };
+          v.opens += r.open_count || 0;
+          v.clicks += r.click_count || 0;
+          if (r.delivered_at) v.delivered += 1;
+          m.set(r.contact_id, v);
+        }
+        setBetrokkenheid(m);
+      } catch {
+        setBetrokkenheid(new Map());
+      }
+
       // Aanmeldingen erbij. Losse query en client-side koppelen, want er is geen
       // sleutelrelatie tussen een outreach-prospect en een inschrijving: iemand
       // meldt zich aan met het adres dat hij zelf kiest.
@@ -209,8 +235,10 @@ export default function MarketingOutreach() {
     for (const r of wave) c[r.status] = (c[r.status] || 0) + 1;
     c[AWAITING] = wave.filter(needsOurReply).length;
     c[REGISTERED] = wave.filter(r => aanmeldingen.has(r.id)).length;
+    c[OPENED] = wave.filter(r => (betrokkenheid.get(r.id)?.opens || 0) > 0).length;
+    c[CLICKED] = wave.filter(r => (betrokkenheid.get(r.id)?.clicks || 0) > 0).length;
     return c;
-  }, [wave, aanmeldingen]);
+  }, [wave, aanmeldingen, betrokkenheid]);
 
   // Prioriteit-opties uit de data zelf, met het aantal in golf 1 erbij.
   const prioOptions = useMemo(() => {
@@ -229,13 +257,15 @@ export default function MarketingOutreach() {
       if (!showReserve && r.is_reserve) return false;
       if (statusFilter === AWAITING) { if (!needsOurReply(r)) return false; }
       else if (statusFilter === REGISTERED) { if (!aanmeldingen.has(r.id)) return false; }
+      else if (statusFilter === OPENED) { if (!((betrokkenheid.get(r.id)?.opens || 0) > 0)) return false; }
+      else if (statusFilter === CLICKED) { if (!((betrokkenheid.get(r.id)?.clicks || 0) > 0)) return false; }
       else if (statusFilter !== 'all' && r.status !== statusFilter) return false;
       if (prioFilter !== 'all' && (r.priority_label || '') !== prioFilter) return false;
       if (!needle) return true;
       return [r.email, r.company, r.first_name, r.last_name, r.title]
         .some(v => String(v || '').toLowerCase().includes(needle));
     });
-  }, [rows, showReserve, statusFilter, prioFilter, q, aanmeldingen]);
+  }, [rows, showReserve, statusFilter, prioFilter, q, aanmeldingen, betrokkenheid]);
 
   // Bepaalt welk Graph-pad we gebruiken: eigen mailbox of gedeelde leesrechten.
   const myEmail = String(session?.user?.email || '').toLowerCase();
@@ -454,6 +484,8 @@ export default function MarketingOutreach() {
         {!isLinkedIn && kpi('Bericht 2', counts.msg2_sent || 0, STATUS_COLOR.msg2_sent, 'msg2_sent')}
         {kpi('Antwoord', counts.replied || 0, STATUS_COLOR.replied, 'replied')}
         {kpi('Onbeantwoord', counts[AWAITING] || 0, '#d97706', AWAITING)}
+        {!isLinkedIn && kpi('Geopend', counts[OPENED] || 0, '#0891b2', OPENED)}
+        {!isLinkedIn && kpi('Geklikt', counts[CLICKED] || 0, '#7c3aed', CLICKED)}
         {kpi('Aangemeld', counts[REGISTERED] || 0, '#16a34a', REGISTERED)}
         {!isLinkedIn && kpi('Gebounced', counts.bounced || 0, STATUS_COLOR.bounced, 'bounced')}
         {kpi('Gepauzeerd', counts.paused || 0, STATUS_COLOR.paused, 'paused')}
@@ -697,6 +729,8 @@ export default function MarketingOutreach() {
           <option value="all">Alle statussen</option>
           <option value={AWAITING}>Onbeantwoord{counts[AWAITING] ? ` (${counts[AWAITING]})` : ''}</option>
           <option value={REGISTERED}>Aangemeld{counts[REGISTERED] ? ` (${counts[REGISTERED]})` : ''}</option>
+          <option value={OPENED}>Geopend{counts[OPENED] ? ` (${counts[OPENED]})` : ''}</option>
+          <option value={CLICKED}>Geklikt{counts[CLICKED] ? ` (${counts[CLICKED]})` : ''}</option>
           {Object.keys(STATUS_LABEL).map(s => (
             <option key={s} value={s}>{STATUS_LABEL[s]}{counts[s] ? ` (${counts[s]})` : ''}</option>
           ))}
@@ -760,6 +794,17 @@ export default function MarketingOutreach() {
                     <span style={{ color: STATUS_COLOR[r.status] || 'var(--text-2)', fontWeight: 500 }}>
                       {STATUS_LABEL[r.status] || r.status}
                     </span>
+                    {(betrokkenheid.get(r.id)?.clicks || 0) > 0 ? (
+                      <span title={`${betrokkenheid.get(r.id).clicks}x geklikt`}
+                        style={{ marginLeft: 6, fontSize: 9, padding: '1px 4px', borderRadius: 3, background: 'rgba(124,58,237,0.15)', border: '0.5px solid rgba(124,58,237,0.5)', color: '#6d28d9' }}>
+                        geklikt
+                      </span>
+                    ) : (betrokkenheid.get(r.id)?.opens || 0) > 0 ? (
+                      <span title={`${betrokkenheid.get(r.id).opens}x geopend`}
+                        style={{ marginLeft: 6, fontSize: 9, padding: '1px 4px', borderRadius: 3, background: 'rgba(8,145,178,0.12)', border: '0.5px solid rgba(8,145,178,0.4)', color: '#0e7490' }}>
+                        geopend
+                      </span>
+                    ) : null}
                     {aanmeldingen.has(r.id) && (
                       <span title={`Aangemeld op ${String(aanmeldingen.get(r.id).at || '').slice(0, 10)}`
                         + (aanmeldingen.get(r.id).method === 'naam'
@@ -804,6 +849,13 @@ export default function MarketingOutreach() {
       )}
 
       <div style={{ fontSize: 11, color: 'var(--text-3)', lineHeight: 1.6 }}>
+        {!isLinkedIn && (
+          <div style={{ marginBottom: 6 }}>
+            Een open wordt gemeten met een onzichtbaar plaatje. Mailprogramma's die plaatjes
+            blokkeren tellen niet mee, en Apple laadt ze juist vooraf voor iedereen. Lees het
+            aantal opens dus als een richting. Een klik is wel hard.
+          </div>
+        )}
         {isLinkedIn ? (
           <>Via LinkedIn gaat er precies een bericht per persoon, met tientallen seconden ertussen
           en maximaal 10 per keer. Een account dat in een paar minuten een reeks DM's afvuurt valt
@@ -877,7 +929,7 @@ function ContactMailsModal({ contact, campaign, rows = [], registratie = null, o
         if (e1) throw e1;
         const { data: h, error: e2 } = await supabase
           .from('outreach_message')
-          .select('direction,sequence_step,subject,body_preview,sent_or_received_at,classification,classification_confidence,match_method,provider_message_id')
+          .select('direction,sequence_step,subject,body_preview,sent_or_received_at,classification,classification_confidence,match_method,provider_message_id,open_count,click_count,delivered_at')
           .eq('contact_id', current.id)
           .order('sent_or_received_at', { ascending: true, nullsFirst: false });
         if (e2) throw e2;
@@ -1289,6 +1341,13 @@ function ContactMailsModal({ contact, campaign, rows = [], registratie = null, o
                             ? `${h.classification} (${Math.round((h.classification_confidence || 0) * 100)}%)`
                             : (h.subject || h.body_preview || '')}
                         </span>
+                        {h.direction === 'outbound' && (h.open_count || h.click_count) ? (
+                          <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-3)', whiteSpace: 'nowrap' }}>
+                            {h.open_count ? `${h.open_count}x geopend` : ''}
+                            {h.open_count && h.click_count ? ' · ' : ''}
+                            {h.click_count ? `${h.click_count}x geklikt` : ''}
+                          </span>
+                        ) : null}
                       </div>
                     ))}
                   </div>

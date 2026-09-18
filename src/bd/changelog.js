@@ -19,9 +19,24 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.114.0';
+export const CURRENT_VERSION = '1.115.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.115.0',
+    date: '2026-09-18T11:50:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Opens en kliks zichtbaar in de Outreach-tab',
+    summary:
+      'De webhook legde ze al vast sinds september, maar er keek niemand naar. Nu staan ze als tegel, als filter en als label bij de prospect, en in de popup per bericht.',
+    changes: [
+      'De cijfers waren er al: 634 verstuurd, 605 afgeleverd, 274 geopend en 47 geklikt. Er was alleen geen scherm dat ze toonde.',
+      'Geklikt weegt zwaarder dan geopend, dus bij een prospect die allebei deed toont de lijst de klik.',
+      'Alleen bij e-mail. Een LinkedIn-DM kent geen opens of kliks.',
+      'Met de kanttekening erbij dat een open met een onzichtbaar plaatje wordt gemeten: mailprogramma\'s die plaatjes blokkeren tellen niet mee en Apple laadt ze juist vooraf voor iedereen. Een klik is wel hard.',
+    ],
+  },
   {
     version: '1.114.0',
     date: '2026-09-18T11:30:00Z',
