@@ -19,9 +19,23 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.113.1';
+export const CURRENT_VERSION = '1.114.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.114.0',
+    date: '2026-09-18T11:30:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Per-bedrijf-regel uitzetten kan nu ook echt',
+    summary:
+      'Die regel op 0 zetten blokkeerde iedereen in plaats van de regel op te heffen. Nu betekent 0 of leeg: geen limiet.',
+    changes: [
+      'De vergelijking was 0 >= 0 en dus waar voor iedereen. Dat is precies wat je intikt als je de regel wilt uitzetten, en een campagne die stil niets meer verstuurt is een dure manier om daarachter te komen.',
+      'De e-mailcampagne Amsterdam 2026 staat nu zonder bedrijfslimiet, zodat meerdere mensen bij hetzelfde bedrijf op dezelfde dag benaderd kunnen worden.',
+      'Nieuw importscript voor de aanvullende contactenlijst, dat alleen director- en head-niveau meeneemt en rolaccounts zoals careers@ eruit filtert.',
+    ],
+  },
   {
     version: '1.113.1',
     date: '2026-09-18T10:45:00Z',

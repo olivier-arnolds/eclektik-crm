@@ -77,6 +77,12 @@ export function selectSendable(candidates, opts = {}) {
   } = opts;
   const isLinkedIn = channel === 'linkedin';
 
+  // 0 of leeg betekent GEEN limiet, niet 'niemand mag'. Zonder deze omzetting
+  // zou `0 >= 0` iedereen blokkeren, en dat is precies wat iemand intikt die de
+  // regel wil uitzetten. Een stille campagne die niets meer verstuurt is een
+  // dure manier om daarachter te komen.
+  const bedrijfsLimiet = Number(maxPerCompanyPerWeek) > 0 ? Number(maxPerCompanyPerWeek) : null;
+
   const skipped = {};
   const bump = (reason) => { skipped[reason] = (skipped[reason] || 0) + 1; };
 
@@ -158,7 +164,7 @@ export function selectSendable(candidates, opts = {}) {
     // zonder deze uitzondering zouden alle rijen zonder bedrijfsnaam samen in
     // een emmer vallen en elkaar blokkeren.
     const groupKey = isLinkedIn ? companyKey(c.company) : (c.email_domain || null);
-    if (groupKey && (groupUsed[groupKey] || 0) >= maxPerCompanyPerWeek) {
+    if (bedrijfsLimiet !== null && groupKey && (groupUsed[groupKey] || 0) >= bedrijfsLimiet) {
       bump('max per bedrijf deze week'); continue;
     }
 

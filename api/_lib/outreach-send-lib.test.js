@@ -388,3 +388,26 @@ describe('weekcap', () => {
     expect(skipped['weekcap bereikt']).toBe(5);
   });
 });
+
+describe('de per-bedrijf-regel uitzetten', () => {
+  const zelfdeBedrijf = (n) => Array.from({ length: n }, (_, i) =>
+    c({ id: `x${i}`, email: `p${i}@ing.com`, email_domain: 'ing.com', outreach_prio: i }));
+
+  it('KRITIEK: 0 betekent geen limiet, niet dat niemand mag', () => {
+    // `0 >= 0` zou iedereen blokkeren. Dat is precies wat iemand intikt die de
+    // regel wil uitzetten, en een campagne die stil niets meer verstuurt is een
+    // dure manier om daarachter te komen.
+    const { batch } = selectSendable(zelfdeBedrijf(5), { ...base, maxPerCompanyPerWeek: 0 });
+    expect(batch).toHaveLength(5);
+  });
+
+  it('leeg betekent ook geen limiet', () => {
+    expect(selectSendable(zelfdeBedrijf(5), { ...base, maxPerCompanyPerWeek: null }).batch).toHaveLength(5);
+  });
+
+  it('een echte limiet werkt gewoon', () => {
+    const { batch, skipped } = selectSendable(zelfdeBedrijf(5), { ...base, maxPerCompanyPerWeek: 2 });
+    expect(batch).toHaveLength(2);
+    expect(skipped['max per bedrijf deze week']).toBe(3);
+  });
+});
