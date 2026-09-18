@@ -758,7 +758,9 @@ export default function MarketingOutreach() {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
             <thead style={{ position: 'sticky', top: 0, background: 'var(--fill-1)', zIndex: 1 }}>
               <tr>
-                {['#', 'Naam', 'Bedrijf', 'Prioriteit', 'Status', 'Volgende actie', 'Toelichting'].map(h => (
+                {['#', 'Naam', 'Bedrijf', 'Prioriteit', 'Status',
+                  ...(isLinkedIn ? [] : ['Geopend', 'Geklikt']),
+                  'Volgende actie', 'Toelichting'].map(h => (
                   <th key={h} style={{ textAlign: 'left', padding: '7px 10px', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)', borderBottom: '0.5px solid var(--sep)' }}>{h}</th>
                 ))}
               </tr>
@@ -794,17 +796,6 @@ export default function MarketingOutreach() {
                     <span style={{ color: STATUS_COLOR[r.status] || 'var(--text-2)', fontWeight: 500 }}>
                       {STATUS_LABEL[r.status] || r.status}
                     </span>
-                    {(betrokkenheid.get(r.id)?.clicks || 0) > 0 ? (
-                      <span title={`${betrokkenheid.get(r.id).clicks}x geklikt`}
-                        style={{ marginLeft: 6, fontSize: 9, padding: '1px 4px', borderRadius: 3, background: 'rgba(124,58,237,0.15)', border: '0.5px solid rgba(124,58,237,0.5)', color: '#6d28d9' }}>
-                        geklikt
-                      </span>
-                    ) : (betrokkenheid.get(r.id)?.opens || 0) > 0 ? (
-                      <span title={`${betrokkenheid.get(r.id).opens}x geopend`}
-                        style={{ marginLeft: 6, fontSize: 9, padding: '1px 4px', borderRadius: 3, background: 'rgba(8,145,178,0.12)', border: '0.5px solid rgba(8,145,178,0.4)', color: '#0e7490' }}>
-                        geopend
-                      </span>
-                    ) : null}
                     {aanmeldingen.has(r.id) && (
                       <span title={`Aangemeld op ${String(aanmeldingen.get(r.id).at || '').slice(0, 10)}`
                         + (aanmeldingen.get(r.id).method === 'naam'
@@ -821,6 +812,18 @@ export default function MarketingOutreach() {
                       </span>
                     )}
                   </td>
+                  {!isLinkedIn && (
+                    <>
+                      <td style={{ padding: '6px 10px', whiteSpace: 'nowrap', fontFamily: 'var(--font-mono)',
+                        color: (betrokkenheid.get(r.id)?.opens || 0) > 0 ? '#0e7490' : 'var(--text-3)' }}>
+                        {(betrokkenheid.get(r.id)?.opens || 0) > 0 ? `${betrokkenheid.get(r.id).opens}x` : '—'}
+                      </td>
+                      <td style={{ padding: '6px 10px', whiteSpace: 'nowrap', fontFamily: 'var(--font-mono)',
+                        color: (betrokkenheid.get(r.id)?.clicks || 0) > 0 ? '#6d28d9' : 'var(--text-3)' }}>
+                        {(betrokkenheid.get(r.id)?.clicks || 0) > 0 ? `${betrokkenheid.get(r.id).clicks}x` : '—'}
+                      </td>
+                    </>
+                  )}
                   <td style={{ padding: '6px 10px', color: 'var(--text-3)', whiteSpace: 'nowrap' }}>
                     {r.next_action_at ? String(r.next_action_at).slice(0, 10) : '-'}
                   </td>
@@ -830,7 +833,7 @@ export default function MarketingOutreach() {
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={7} style={{ padding: 16, textAlign: 'center', color: 'var(--text-3)' }}>Niets gevonden.</td></tr>
+                <tr><td colSpan={isLinkedIn ? 7 : 9} style={{ padding: 16, textAlign: 'center', color: 'var(--text-3)' }}>Niets gevonden.</td></tr>
               )}
             </tbody>
           </table>

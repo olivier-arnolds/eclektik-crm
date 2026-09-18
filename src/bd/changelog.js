@@ -19,9 +19,22 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.115.0';
+export const CURRENT_VERSION = '1.116.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.116.0',
+    date: '2026-09-18T15:10:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Opens en kliks als kolom per prospect',
+    summary:
+      'Zoals op de campagnepagina: twee kolommen met het aantal opens en kliks per persoon, in plaats van een labeltje dat alleen zei dat het gebeurd was.',
+    changes: [
+      'Het labeltje is vervallen; de kolommen zeggen hetzelfde maar met het aantal erbij.',
+      'Alleen bij een e-mailcampagne. Bij LinkedIn vallen de kolommen weg, want een DM kent geen opens of kliks.',
+    ],
+  },
   {
     version: '1.115.0',
     date: '2026-09-18T11:50:00Z',
