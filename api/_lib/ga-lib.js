@@ -148,3 +148,44 @@ export function normalizeDateSeries(rows, veld = 'date') {
     })
     .sort((a, b) => String(a[veld]).localeCompare(String(b[veld])));
 }
+
+// De scorecard op de website vuurt vijf gebeurtenissen af. Vier daarvan vormen
+// een trechter; sc_q_answered hoort er bewust NIET bij, want die gaat per vraag
+// af en zou het beeld vertekenen (een bezoeker die tien vragen beantwoordt telt
+// dan als tien). Die tonen we apart als losse teller.
+export const SCORECARD_STAPPEN = [
+  { key: 'sc_start', label: 'Gestart' },
+  { key: 'sc_completed', label: 'Afgerond' },
+  { key: 'sc_email_submitted', label: 'Adres achtergelaten' },
+  { key: 'sc_cta_clicked', label: 'Doorgeklikt' },
+];
+export const SCORECARD_EVENTS = [...SCORECARD_STAPPEN.map(s => s.key), 'sc_q_answered'];
+
+/**
+ * Bouwt een trechter uit tellingen per gebeurtenis.
+ *
+ * Rekent in BEZOEKERS en niet in gebeurtenissen. Iemand die de scorecard twee
+ * keer start is een bezoeker en twee gebeurtenissen; in een trechter wil je het
+ * eerste weten, anders lijkt de uitval kleiner dan hij is.
+ *
+ * @param {Array} rows   [{ event, users, count }]
+ * @param {Array} stappen  [{ key, label }] in volgorde
+ * @returns {Array} per stap het aantal, het aandeel van stap 1, en de uitval
+ *                  ten opzichte van de vorige stap
+ */
+export function buildFunnel(rows, stappen = SCORECARD_STAPPEN) {
+  const perEvent = Object.fromEntries((rows || []).map(r => [r.event, r]));
+  const eerste = Number(perEvent[stappen[0]?.key]?.users) || 0;
+
+  let vorige = null;
+  return stappen.map(({ key, label }) => {
+    const users = Number(perEvent[key]?.users) || 0;
+    const count = Number(perEvent[key]?.count) || 0;
+    const pctVanStart = eerste > 0 ? Math.round((users / eerste) * 100) : null;
+    // Uitval alleen tonen als de vorige stap er was; anders suggereer je een
+    // daling van 100% terwijl er simpelweg niets te vergelijken valt.
+    const uitval = vorige === null || vorige === 0 ? null : Math.round(((vorige - users) / vorige) * 100);
+    vorige = users;
+    return { key, label, users, count, pctVanStart, uitval };
+  });
+}

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
-  normalizePrivateKey, describeKeyProblem, dateRanges, pctChange, reportToRows, totalOf, normalizeDateSeries,
+  normalizePrivateKey, describeKeyProblem, dateRanges, pctChange, reportToRows, totalOf,
+  normalizeDateSeries, buildFunnel,
 } from './ga-lib.js';
 
 describe('normalizePrivateKey', () => {
@@ -124,5 +125,47 @@ describe('describeKeyProblem', () => {
   it('zwijgt over een sleutel die er goed uitziet', () => {
     const goed = '-----BEGIN PRIVATE KEY-----\n' + 'A'.repeat(1600) + '\n-----END PRIVATE KEY-----';
     expect(describeKeyProblem(goed)).toBeNull();
+  });
+});
+
+describe('buildFunnel', () => {
+  const rows = [
+    { event: 'sc_start', users: 100, count: 120 },
+    { event: 'sc_completed', users: 40, count: 42 },
+    { event: 'sc_email_submitted', users: 12, count: 12 },
+    { event: 'sc_cta_clicked', users: 5, count: 6 },
+  ];
+
+  it('rekent het aandeel van de eerste stap en de uitval per stap', () => {
+    const f = buildFunnel(rows);
+    expect(f.map(s => s.users)).toEqual([100, 40, 12, 5]);
+    expect(f.map(s => s.pctVanStart)).toEqual([100, 40, 12, 5]);
+    expect(f[1].uitval).toBe(60);
+    expect(f[2].uitval).toBe(70);
+  });
+
+  it('KRITIEK: rekent in bezoekers, niet in gebeurtenissen', () => {
+    // Wie twee keer start is een bezoeker en twee gebeurtenissen. Op
+    // gebeurtenissen rekenen laat de uitval kleiner lijken dan hij is.
+    const f = buildFunnel(rows);
+    expect(f[0].users).toBe(100);
+    expect(f[0].count).toBe(120);
+  });
+
+  it('de eerste stap heeft geen uitval, want er is niets ervoor', () => {
+    expect(buildFunnel(rows)[0].uitval).toBeNull();
+  });
+
+  it('zonder verkeer geen percentages in plaats van nullen of oneindig', () => {
+    const f = buildFunnel([]);
+    expect(f.every(s => s.users === 0)).toBe(true);
+    expect(f.every(s => s.pctVanStart === null)).toBe(true);
+    expect(f.every(s => s.uitval === null)).toBe(true);
+  });
+
+  it('een ontbrekende tussenstap maakt de rest niet stuk', () => {
+    const f = buildFunnel([{ event: 'sc_start', users: 10, count: 10 }]);
+    expect(f[1].users).toBe(0);
+    expect(f[2].uitval).toBeNull();
   });
 });

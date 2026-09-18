@@ -185,6 +185,38 @@ export default function MarketingAnalytics() {
             )}
           </div>
 
+          {data.scorecard?.steps?.[0] && (
+            <Kader titel="Scorecard"
+              toelichting={`Van starten tot doorklikken, in bezoekers${
+                data.scorecard.answered ? ` · ${nf.format(data.scorecard.answered)} vragen beantwoord` : ''}`}>
+              {data.scorecard.steps.every(s => s.users === 0) ? (
+                <div style={{ fontSize: 12, color: 'var(--text-3)' }}>
+                  Niemand heeft de scorecard in deze periode gestart.
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {data.scorecard.steps.map(s => (
+                    <div key={s.key} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, flexWrap: 'wrap' }}>
+                      <div style={{ width: 150 }}>{s.label}</div>
+                      <div style={{ flex: 1, minWidth: 120, background: 'var(--fill-1)', borderRadius: 3, height: 18 }}>
+                        <div style={{
+                          width: `${Math.max(2, s.pctVanStart ?? 0)}%`,
+                          background: '#2563eb', opacity: 0.75, height: '100%', borderRadius: 3,
+                        }} />
+                      </div>
+                      <div style={{ width: 96, textAlign: 'right', fontFamily: 'var(--font-mono)', color: 'var(--text-2)' }}>
+                        {nf.format(s.users)}{s.pctVanStart !== null ? ` · ${s.pctVanStart}%` : ''}
+                      </div>
+                      <div style={{ width: 90, fontSize: 11, color: s.uitval ? '#b45309' : 'var(--text-3)' }}>
+                        {s.uitval !== null ? `${s.uitval}% valt af` : ''}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </Kader>
+          )}
+
           <Kader titel="Sessies per dag">
             <Lijn series={data.series} />
           </Kader>
@@ -221,7 +253,11 @@ export default function MarketingAnalytics() {
           </div>
 
           <Kader titel="Best bezochte pagina's">
-            <Balken rows={data.pages} labelKey="path" valueKey="views" leeg="Geen paginaweergaven." />
+            {/* GA levert de startpagina als kaal '/'. Dat leest als een gat in de
+                data terwijl het gewoon de homepage is. */}
+            <Balken
+              rows={data.pages.map(p => ({ ...p, path: p.path === '/' ? '/ (homepage)' : p.path }))}
+              labelKey="path" valueKey="views" leeg="Geen paginaweergaven." />
           </Kader>
 
           <div style={{ fontSize: 11, color: 'var(--text-3)', lineHeight: 1.6 }}>

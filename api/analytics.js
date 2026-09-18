@@ -2,7 +2,7 @@ import { requireUser } from './_lib/guard.js';
 import crypto from 'crypto';
 import {
   normalizePrivateKey, describeKeyProblem, dateRanges, pctChange,
-  reportToRows, totalOf, normalizeDateSeries,
+  reportToRows, totalOf, normalizeDateSeries, buildFunnel, SCORECARD_EVENTS,
 } from './_lib/ga-lib.js';
 
 // GET /api/analytics?days=28 - leest Google Analytics 4 voor het dashboard onder
@@ -162,7 +162,7 @@ export default async function handler(req, res) {
     const registratieFilter = {
       filter: { fieldName: 'eventName', stringFilter: { value: REGISTRATIE_EVENT } },
     };
-    const [campagnes, regNu, regEerder] = await batchRunReports(propertyId, token, [
+    const [campagnes, regNu, regEerder, scorecard] = await batchRunReports(propertyId, token, [
       {
         dateRanges: [current],
         dimensions: [{ name: 'sessionSource' }, { name: 'sessionMedium' }, { name: 'sessionCampaignName' }],
@@ -182,6 +182,18 @@ export default async function handler(req, res) {
         dateRanges: [previous],
         metrics: [{ name: 'eventCount' }],
         dimensionFilter: registratieFilter,
+      },
+      // De scorecard-trechter. In BEZOEKERS en niet in gebeurtenissen: wie twee
+      // keer begint is een bezoeker en twee gebeurtenissen, en op gebeurtenissen
+      // rekenen laat de uitval kleiner lijken dan hij is.
+      {
+        dateRanges: [current],
+        dimensions: [{ name: 'eventName' }],
+        metrics: [{ name: 'totalUsers' }, { name: 'eventCount' }],
+        dimensionFilter: {
+          filter: { fieldName: 'eventName', inListFilter: { values: SCORECARD_EVENTS } },
+        },
+        limit: 10,
       },
     ]);
 
@@ -218,6 +230,14 @@ export default async function handler(req, res) {
         change: pctChange(registratiesNu, registratiesEerder),
         by_campaign: reportToRows(regNu, ['source', 'medium', 'campaign'], ['registrations']),
       },
+      scorecard: (() => {
+        const rijen = reportToRows(scorecard, ['event'], ['users', 'count']);
+        const vragen = rijen.find(r => r.event === 'sc_q_answered');
+        return {
+          steps: buildFunnel(rijen),
+          answered: vragen ? vragen.count : 0,
+        };
+      })(),
       series: normalizeDateSeries(reportToRows(reeks, ['date'], ['sessions', 'users'])),
       channels: reportToRows(kanalen, ['channel'], ['sessions']),
       pages: reportToRows(paginas, ['path'], ['views']),

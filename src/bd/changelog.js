@@ -19,9 +19,25 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.111.0';
+export const CURRENT_VERSION = '1.112.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.112.0',
+    date: '2026-09-18T10:20:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Scorecard-trechter in het Analytics-dashboard',
+    summary:
+      'De scorecard op de website vuurt al vijf gebeurtenissen af, maar niemand keek ernaar. Nu zie je van starten tot doorklikken waar bezoekers afhaken.',
+    changes: [
+      'Gerekend in bezoekers en niet in gebeurtenissen. Wie twee keer begint is een bezoeker en twee gebeurtenissen; op gebeurtenissen rekenen laat de uitval kleiner lijken dan hij is.',
+      'sc_q_answered zit bewust niet in de trechter, want die gaat per vraag af. Iemand die tien vragen beantwoordt zou anders als tien tellen. Het staat apart als losse teller.',
+      'Zonder verkeer tonen we niets in plaats van nullen en oneindige percentages.',
+      'De startpagina heet nu "/ (homepage)" in plaats van een kale schuine streep, want dat las als een gat in de data.',
+      '5 tests op de trechterberekening.',
+    ],
+  },
   {
     version: '1.111.0',
     date: '2026-09-17T17:45:00Z',
