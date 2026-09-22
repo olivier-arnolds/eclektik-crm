@@ -41,6 +41,7 @@ WAT HET DOET
 import argparse
 import json
 import os
+import re
 import sys
 import urllib.error
 import urllib.parse
@@ -82,9 +83,45 @@ def load_env_local():
                 os.environ[k] = v
 
 
+# Excel schrijft regeleindes en tabs in een cel weg als XML-escapes. Gaat een
+# lijst door Excel en daarna door een export, dan komen die als LETTERLIJKE tekst
+# mee: 'Jansen_x000D_' in plaats van 'Jansen'. Dat is niet te zien in een
+# spreadsheet en wel in elke mail die je daarna stuurt.
+#
+# _x000A_ is een echte nieuwe regel en die houden we dus, want de berichtteksten
+# in deze lijsten bestaan uit alinea's. _x000D_ is het bijbehorende
+# carriage return en dat is hier altijd rommel.
+EXCEL_ESCAPES = [("_x000A_", "\n"), ("_x000D_", ""), ("_x0009_", " ")]
+OVERIGE_ESCAPE = re.compile(r"_x[0-9A-Fa-f]{4}_")
+
+# Wordt opgehoogd zodat de import kan melden dat er rommel in het bestand zat.
+opgeschoond = {"cellen": 0}
+
+
 def s(v):
-    """Cel naar getrimde string, of '' als leeg."""
-    return "" if v is None else str(v).strip()
+    """Cel naar getrimde string, of '' als leeg, met Excel-rommel eruit.
+
+    Vouwt bewust GEEN witruimte samen: deze functie wordt ook op de berichtteksten
+    losgelaten en die bestaan uit alinea's met lege regels ertussen.
+    """
+    if v is None:
+        return ""
+    ruw = str(v)
+    schoon = ruw
+    for zoek, verv in EXCEL_ESCAPES:
+        schoon = schoon.replace(zoek, verv)
+    schoon = OVERIGE_ESCAPE.sub("", schoon)
+    # Regeleindes gelijktrekken; \r alleen levert in een mail een rare vertoning op.
+    schoon = schoon.replace("\r\n", "\n").replace("\r", "\n")
+    schoon = schoon.strip()
+    if schoon != ruw.strip():
+        opgeschoond["cellen"] += 1
+    return schoon
+
+
+def naam(v):
+    """Zoals s(), maar voor namen en bedrijfsnamen: ook dubbele spaties eruit."""
+    return re.sub(r"\s+", " ", s(v)).strip()
 
 
 def email_domain(email):
@@ -355,6 +392,8 @@ def main():
     ready = [o for o in wave if o["status"] == "queued"]
     print(f"\n{'=' * 62}\nRAPPORT ({'DRY-RUN, er wordt niets geschreven' if not args.apply else 'APPLY'})\n{'=' * 62}")
     print(f"  rijen in bestand      : {len(rows)}")
+    if opgeschoond["cellen"]:
+        print(f"  Excel-rommel opgeruimd: {opgeschoond['cellen']} cellen (_x000D_ e.d.)")
     print(f"  zonder e-mail overgeslagen: {skipped_no_email}")
     print(f"  te importeren         : {len(out)}")
     print(f"  waarvan reserve       : {stats['reserve']}")

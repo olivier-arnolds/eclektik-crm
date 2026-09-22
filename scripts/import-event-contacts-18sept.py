@@ -21,6 +21,8 @@ _spec = importlib.util.spec_from_file_location(
     os.path.join(os.path.dirname(os.path.abspath(__file__)), "import-outreach-list.py"))
 _base = importlib.util.module_from_spec(_spec); _spec.loader.exec_module(_base)
 Supa, load_env_local, s, norm_name = _base.Supa, _base.load_env_local, _base.s, _base.norm_name
+# naam() vouwt ook dubbele spaties samen; s() haalt de Excel-escapes al weg.
+naam, opgeschoond = _base.naam, _base.opgeschoond
 
 CAMPAGNE = "Amsterdam 2026"
 # Alleen dit niveau: de bestaande teksten spreken over sturen en meten op
@@ -41,6 +43,12 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--file", required=True)
     ap.add_argument("--apply", action="store_true")
+    ap.add_argument("--all-levels", action="store_true",
+                    help="geen niveaufilter. Voor een lijst die vooraf al op functietitel "
+                         "geselecteerd is; de Seniorities-labels van de verrijkingstool zijn "
+                         "onbetrouwbaar (een CHRO komt er soms uit als Manager of leeg).")
+    ap.add_argument("--managers", action="store_true",
+                    help="importeer juist de managers, met een eigen tekst en zonder opvolgbericht")
     args = ap.parse_args()
 
     load_env_local()
@@ -76,14 +84,28 @@ def main():
         tekst = tpl[veld] or ""
         return re.sub(r"^Hi [^,\n]+,", f"Hi {voornaam}," if voornaam else "Hi there,", tekst)
 
+    MANAGER_SUBJECT = "AI lands on your team before it reaches the boardroom."
+    MANAGER_BODY = """AI decisions are usually made a few floors up. You are the one who sees what they do to the work: a changed schedule, another screen to check, a process that suddenly assumes something it did not before.
+
+That view is missing in most boardrooms, and it is what we are putting on the table on 6 October. Where AI lands as help and where as extra pressure, per employee group. What you can measure without waiting for the annual survey. And how to tell a working pilot from an expensive one. You fill in a one-page worksheet for your own team and take it home.
+
+An intimate afternoon with peers, opened by Prof. Marc van Veldhoven (Tilburg University). Zoom office, Zuidas, 12:15 to 16:30, invite-only.
+
+Programme and registration: https://www.eclectik.co/events/amsterdam-2026
+
+Marco"""
+
     nu = datetime.now(timezone.utc).isoformat()
     mee, afval = [], {}
     def weg(reden): afval[reden] = afval.get(reden, 0) + 1
 
     for r in rows:
-        email, voor, achter = low(r["Email"]), s(r["First Name"]), s(r["Last Name"])
+        email, voor, achter = low(r["Email"]), naam(r["First Name"]), naam(r["Last Name"])
         niveaus = {x.strip().lower() for x in s(r["Seniorities"]).split(",") if x.strip()}
-        if not niveaus & NIVEAUS: weg("niet op director- of head-niveau"); continue
+        is_senior = bool(niveaus & NIVEAUS)
+        if not args.all_levels:
+            if args.managers and is_senior: weg("al meegenomen als director of head"); continue
+            if not args.managers and not is_senior: weg("niet op director- of head-niveau"); continue
         if not email or "@" not in email: weg("geen e-mailadres"); continue
         if low(r["Email Validation Status"]) != "valid": weg("niet gevalideerd"); continue
         if ROLACCOUNT.match(voor) or ROLACCOUNT.match(achter): weg("rolaccount, geen persoon"); continue
@@ -97,22 +119,30 @@ def main():
         mee.append({
             "campaign_id": campaign_id, "channel": "email",
             "first_name": voor or None, "last_name": achter or None,
-            "title": s(r["Job Title"]) or None,
+            "title": naam(r["Job Title"]) or None,
             "email": email, "email_domain": domein(email),
-            "company": s(r["Company Name"]) or None,
+            "company": naam(r["Company Name"]) or None,
             "website": s(r["Company Website"]) or None,
             "location": s(r["City"]) or None,
             "linkedin_url": s(r["LinkedIn URL"]) or None,
-            "priority_tier": "good",
-            "priority_label": "Aanvulling 18 sept (director/head)",
+            "priority_tier": "medium" if args.managers else "good",
+            "priority_label": ("Aanvulling 18 sept (manager)" if args.managers
+                               else "Aanvulling 18 sept (director/head)"),
             "outreach_prio": None, "is_reserve": False,
             "source": "event_contacts_18sept2026.csv",
-            "msg1_subject": tpl["msg1_subject"], "msg1_body": persoonlijk("msg1_body", voor),
-            "msg2_subject": tpl["msg2_subject"], "msg2_body": persoonlijk("msg2_body", voor),
+            "msg1_subject": MANAGER_SUBJECT if args.managers else tpl["msg1_subject"],
+            "msg1_body": (f"Hi {voor or 'there'},\n\n{MANAGER_BODY}" if args.managers
+                          else persoonlijk("msg1_body", voor)),
+            # Managers krijgen bewust GEEN opvolgbericht. De selectie slaat stap 2
+            # dan vanzelf over, dus er kan ook niet per ongeluk een tweede mail uit.
+            "msg2_subject": None if args.managers else tpl["msg2_subject"],
+            "msg2_body": None if args.managers else persoonlijk("msg2_body", voor),
             "status": "queued", "next_action_at": nu,
         })
 
     print(f"\nrijen in bestand : {len(rows)}")
+    if opgeschoond["cellen"]:
+        print(f"  Excel-rommel opgeruimd: {opgeschoond['cellen']} cellen (_x000D_ e.d.)")
     for k, v in sorted(afval.items(), key=lambda x: -x[1]): print(f"  {v:5d}  {k}")
     print(f"  {len(mee):5d}  TOEVOEGEN")
     if not args.apply:

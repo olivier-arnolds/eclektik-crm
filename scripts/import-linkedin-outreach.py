@@ -62,7 +62,11 @@ _spec.loader.exec_module(_base)
 
 Supa = _base.Supa
 load_env_local = _base.load_env_local
+# s() haalt onderweg Excel-rommel weg (_x000D_ en verwanten); naam() vouwt
+# daarnaast dubbele spaties samen. Zie de toelichting in het zusterscript.
 s = _base.s
+naam = _base.naam
+opgeschoond = _base.opgeschoond
 norm_name = _base.norm_name
 find_col = _base.find_col
 
@@ -213,7 +217,7 @@ def main():
     already_mailed, still_queued_in_email = [], []
 
     for prio, (_, slug, r) in enumerate(parsed, start=1):
-        first, last = split_name(g(r, "name"))
+        first, last = split_name(naam(g(r, "name")))
         tier_letter = g(r, "tier").upper()
         body = g(r, "message")
         company_name = g(r, "company")
@@ -280,6 +284,8 @@ def main():
     mode = "DRY-RUN, er wordt niets geschreven" if not args.apply else "APPLY"
     print(f"\n{'=' * 62}\nRAPPORT ({mode})\n{'=' * 62}")
     print(f"  rijen in bestand      : {len(rows)}")
+    if opgeschoond["cellen"]:
+        print(f"  Excel-rommel opgeruimd: {opgeschoond['cellen']} cellen (_x000D_ e.d.)")
     print(f"  te importeren         : {len(out)}")
     print(f"  status queued/paused  : {stats['queued']} / {stats['paused']}")
     tiers = {}
