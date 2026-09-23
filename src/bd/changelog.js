@@ -19,9 +19,23 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.119.0';
+export const CURRENT_VERSION = '1.120.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.120.0',
+    date: '2026-09-23T12:40:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Geen opvolgmail meer naar wie al geantwoord heeft',
+    summary:
+      'Kwam een antwoord binnen dat niet te beoordelen was, dan kreeg die persoon bij de eerstvolgende ronde alsnog de opvolgmail. Veertien mensen overkwam dat, van wie drie hadden geschreven dat ze er niet meer werken.',
+    changes: [
+      'Een binnengekomen antwoord zonder vervolgdatum blokkeert de opvolgmail nu, tot iemand ernaar gekeken heeft.',
+      'Een herkend afwezigheidsbericht blijft gewoon hervatten zodra de terugkeerdatum voorbij is.',
+      'Automatisch versturen staat uit voor de e-mailcampagne tot de wachtrij nagelopen is.',
+    ],
+  },
   {
     version: '1.119.0',
     date: '2026-09-23T14:05:00Z',

@@ -200,6 +200,40 @@ describe('selectSendable - overige uitsluitingen', () => {
     expect(r.skipped['status komt niet in aanmerking']).toBe(3);
   });
 
+  // Op 21 september kreeg Mariëlle Schuurmans (RWE) bericht 2 tweeënhalf uur
+  // nadat ze had gemeld dat ze afwezig was. Niet omdat de regels ontbraken maar
+  // omdat 'hold' (antwoord kwam binnen, classificatie kwam er niet uit) een LEGE
+  // next_action_at zet, en leeg werd hier gelezen als 'geen wachttijd', dus als
+  // 'ga je gang'. Veertien mensen kregen zo een opvolgmail na hun antwoord, van
+  // wie drie hadden geschreven dat ze er niet meer werken.
+  it('KRITIEK: stuurt NIET na een antwoord dat nog beoordeeld moet worden', () => {
+    const r = selectSendable([c({
+      status: 'msg1_sent',
+      last_inbound_at: '2026-09-16T08:00:00Z',
+      next_action_at: null,
+    })], base);
+    expect(r.batch).toHaveLength(0);
+    expect(r.skipped['antwoord binnen, wacht op beoordeling']).toBe(1);
+  });
+
+  it('hervat WEL na een afwezigheidsbericht zodra de terugkeerdatum voorbij is', () => {
+    // Het verschil met de hold hierboven: bij een herkende ooo staat er wel een
+    // datum. Die mag na afloop gewoon doorlopen, anders blijft iedereen die ooit
+    // op vakantie was voorgoed liggen.
+    const r = selectSendable([c({
+      status: 'msg1_sent',
+      last_inbound_at: '2026-09-10T08:00:00Z',
+      next_action_at: '2026-09-15T09:00:00Z',
+    })], base);
+    expect(r.batch).toHaveLength(1);
+    expect(r.batch[0].step).toBe(2);
+  });
+
+  it('bericht 1 blijft ongemoeid: daar kan nog geen antwoord op zijn', () => {
+    const r = selectSendable([c({ status: 'queued', last_inbound_at: null })], base);
+    expect(r.batch).toHaveLength(1);
+  });
+
   it('respecteert next_action_at in de toekomst', () => {
     const r = selectSendable([c({ next_action_at: '2026-09-20T09:00:00Z' })], base);
     expect(r.skipped['nog niet aan de beurt']).toBe(1);

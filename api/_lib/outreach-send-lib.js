@@ -138,6 +138,23 @@ export function selectSendable(candidates, opts = {}) {
       bump('nog niet aan de beurt'); continue;
     }
 
+    // Er kwam een antwoord binnen en er staat geen vervolgdatum: dat is de
+    // 'hold' uit statusAfterClassification, wat betekent dat de classificatie er
+    // niet uit kwam en een mens moet kijken.
+    //
+    // Zonder deze regel leest de controle hierboven een lege next_action_at als
+    // "geen wachttijd", dus als "ga je gang", en dat is het tegenovergestelde
+    // van wat een hold bedoelt. Op 21 september kreeg iemand daardoor de
+    // opvolgmail tweeënhalf uur nadat ze had gemeld afwezig te zijn; in totaal
+    // ging het om veertien mensen, van wie drie hadden geschreven dat ze er niet
+    // meer werken.
+    //
+    // Een HERKENDE afwezigheid raakt dit niet: die zet wel een datum
+    // (de terugkeerdag), en die loopt gewoon af.
+    if (c?.last_inbound_at && !c?.next_action_at) {
+      bump('antwoord binnen, wacht op beoordeling'); continue;
+    }
+
     // Via LinkedIn sturen we alleen bericht 1. Een ongevraagd tweede DM aan
     // iemand die niet reageerde is precies het gedrag waar LinkedIn accounts op
     // beperkt, en er staat ook geen tweede tekst in de lijst.

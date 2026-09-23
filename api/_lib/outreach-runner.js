@@ -139,7 +139,14 @@ export async function runOutreachBatch({ campaign_id, limit, onlyStep = null, dr
   // Kandidaten: alles wat aan de beurt is. Reserves doen niet mee.
   const { data: due, error: dErr } = await supabase
     .from('outreach_contact')
-    .select('id,email,email_domain,company,status,next_action_at,priority_tier,outreach_prio,unsubscribe_token,msg1_subject,msg1_body,msg2_subject,msg2_body,linkedin_url,linkedin_provider_id')
+    // last_inbound_at hoort hier bij de selectie: selectSendable gebruikt het om
+    // iemand die geantwoord heeft maar nog niet beoordeeld is over te slaan. Laat
+    // je die kolom weg, dan valt die rem stil weg en merk je dat pas als er een
+    // opvolgmail uitgaat naar iemand die net 'ik werk hier niet meer' schreef.
+    //
+    // De .or() hieronder laat een lege next_action_at bewust door: dat is de
+    // goedkope voorselectie. Welke daarvan echt mogen, beslist selectSendable.
+    .select('id,email,email_domain,company,status,next_action_at,last_inbound_at,priority_tier,outreach_prio,unsubscribe_token,msg1_subject,msg1_body,msg2_subject,msg2_body,linkedin_url,linkedin_provider_id')
     .eq('campaign_id', campaign_id)
     .eq('is_reserve', false)
     .in('status', ['queued', 'msg1_sent'])
