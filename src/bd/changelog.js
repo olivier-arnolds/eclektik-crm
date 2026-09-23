@@ -19,9 +19,22 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.122.0';
+export const CURRENT_VERSION = '1.123.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.123.0',
+    date: '2026-09-23T16:50:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Vandaag als periode in de Analytics-tab',
+    summary:
+      'Naast 7, 28 en 90 dagen kun je nu ook alleen vandaag bekijken.',
+    changes: [
+      'De vergelijking loopt dan tegen gisteren.',
+      'Er staat een regel bij dat de dag nog loopt: een halve dag tegen een hele dag gisteren valt bijna altijd negatief uit, dus kijk naar de aantallen zelf.',
+    ],
+  },
   {
     version: '1.122.0',
     date: '2026-09-23T16:20:00Z',

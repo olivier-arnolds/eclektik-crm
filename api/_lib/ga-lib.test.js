@@ -34,6 +34,14 @@ describe('dateRanges', () => {
     expect(r.previous).toEqual({ startDate: '2026-09-04', endDate: '2026-09-10' });
   });
 
+  it("'Vandaag' is alleen vandaag, en vergelijkt met gisteren", () => {
+    // De knop Vandaag in de Analytics-tab stuurt days=1. Eén dag mag geen
+    // randgeval worden dat stilletjes twee dagen oplevert.
+    const r = dateRanges(1, NU);
+    expect(r.current).toEqual({ startDate: '2026-09-17', endDate: '2026-09-17' });
+    expect(r.previous).toEqual({ startDate: '2026-09-16', endDate: '2026-09-16' });
+  });
+
   it('begrenst rare invoer', () => {
     expect(dateRanges(0, NU).days).toBe(1);
     expect(dateRanges(9999, NU).days).toBe(365);

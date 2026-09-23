@@ -11,6 +11,7 @@ import { apiFetch } from '../lib/apiFetch';
 // komt er bezoek, waar komt het vandaan, en welke uiting bracht het.
 
 const RANGES = [
+  { days: 1, label: 'Vandaag' },
   { days: 7, label: '7 dagen' },
   { days: 28, label: '28 dagen' },
   { days: 90, label: '90 dagen' },
@@ -163,10 +164,20 @@ export default function MarketingAnalytics() {
         </button>
         {data?.range && (
           <span style={{ fontSize: 11, color: 'var(--text-3)', marginLeft: 'auto' }}>
-            {data.range.startDate} tot {data.range.endDate}
+            {data.range.startDate === data.range.endDate
+              ? data.range.startDate
+              : `${data.range.startDate} tot ${data.range.endDate}`}
           </span>
         )}
       </div>
+
+      {days === 1 && !setup && !err && (
+        <div style={{ fontSize: 11, color: 'var(--text-3)', lineHeight: 1.6 }}>
+          Vandaag loopt nog, en Google verwerkt bezoeken met enige vertraging. De
+          vergelijking hiernaast zet een halve dag af tegen een hele dag gisteren en
+          valt daardoor bijna altijd negatief uit; kijk naar de aantallen zelf.
+        </div>
+      )}
 
       {setup && (
         <div style={{ border: '0.5px solid rgba(217,119,6,0.5)', background: 'rgba(217,119,6,0.08)', borderRadius: 8, padding: 12, fontSize: 12, lineHeight: 1.7 }}>
