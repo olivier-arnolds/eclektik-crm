@@ -700,3 +700,71 @@ export async function sendEmail({ to, subject, body, cc, isHtml = true }) {
   try { const data = await resp.json(); msg = data?.error?.message || msg; } catch {}
   throw new Error(msg);
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Volledige tekst van EEN bericht.
+//
+// De lijstopvraag hierboven levert bewust alleen bodyPreview: die haalt honderden
+// berichten op en de volledige body van alles erbij is zonde van de bandbreedte.
+// Maar bodyPreview is per definitie de eerste 255 tekens, en dat bleek te weinig.
+// Van de 78 antwoorden op de Amsterdam-campagne stonden er 49 op exact 255, dus
+// afgekapt, en diezelfde tekst ging naar de classificatie die bepaalt of iemand
+// nog een opvolgmail krijgt.
+//
+// Vandaar deze tweede stap: zodra de scan een bericht als antwoord van een
+// prospect herkend heeft (een handvol per ronde), halen we dat ene bericht apart
+// op met de hele tekst.
+//
+// TWEE DETAILS DIE ERTOE DOEN
+//   uniqueBody geeft alleen het NIEUWE deel van het antwoord, zonder de
+//   geciteerde keten eronder. Graph levert dat veld alleen bij het opvragen van
+//   een enkel bericht, niet in een lijst, en alleen als je het expliciet
+//   opvraagt. Zonder dit leest de classificatie ons eigen uitgaande bericht mee.
+//
+//   De Prefer-header vraagt om platte tekst in plaats van HTML. Komt die niet
+//   aan, dan vangt schoon() in mail-body.js de HTML alsnog af.
+export async function getMessageBody(mailbox, messageId) {
+  const token = localStorage.getItem('graph_token');
+  if (!token) throw new Error('No Microsoft token. Please reconnect.');
+  if (!messageId) return null;
+
+  const who = mailbox ? `/users/${encodeURIComponent(mailbox)}` : '/me';
+  const url = `${who}/messages/${encodeURIComponent(messageId)}?$select=uniqueBody,body`;
+  const resp = await fetch(GRAPH_BASE + url, {
+    headers: {
+      Authorization: 'Bearer ' + token,
+      Prefer: 'outlook.body-content-type="text"',
+    },
+  });
+  if (resp.status === 401) {
+    localStorage.removeItem('graph_token');
+    throw new Error('Token expired');
+  }
+  // Een bericht dat inmiddels verwijderd is, of waarvan het id veranderde door
+  // een verplaatsing, geeft 404. Dat is geen reden om de hele scan te laten
+  // klappen: de afgekorte tekst die we al hadden blijft dan gewoon staan.
+  if (resp.status === 404) return null;
+  if (!resp.ok) {
+    const data = await resp.json().catch(() => ({}));
+    throw new Error(data?.error?.message || `HTTP ${resp.status}`);
+  }
+  return resp.json();
+}
+
+// Zoekt een bericht op internetMessageId. Nodig voor het opnieuw ophalen van
+// oude antwoorden: Graph geeft een bericht een NIEUW id zodra het naar een
+// andere map verhuist, dus het opgeslagen provider_message_id kan verlopen zijn.
+// Het internetMessageId verandert nooit.
+export async function findMessageByInternetId(mailbox, internetMessageId) {
+  const token = localStorage.getItem('graph_token');
+  if (!token) throw new Error('No Microsoft token. Please reconnect.');
+  if (!internetMessageId) return null;
+
+  const who = mailbox ? `/users/${encodeURIComponent(mailbox)}` : '/me';
+  const filter = encodeURIComponent(`internetMessageId eq '${internetMessageId.replace(/'/g, "''")}'`);
+  const url = `${who}/messages?$filter=${filter}&$top=1&$select=id`;
+  const resp = await fetch(GRAPH_BASE + url, { headers: { Authorization: 'Bearer ' + token } });
+  if (!resp.ok) return null;
+  const data = await resp.json().catch(() => ({}));
+  return data?.value?.[0]?.id || null;
+}
