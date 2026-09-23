@@ -19,9 +19,24 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.118.0';
+export const CURRENT_VERSION = '1.119.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.119.0',
+    date: '2026-09-23T14:05:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Antwoorden in outreach werden na 255 tekens afgekapt',
+    summary:
+      'Microsoft leverde alleen de eerste 255 tekens van een antwoord. Dat stond niet alleen halverwege afgebroken in de tab, het ging ook zo naar de beoordeling die bepaalt of iemand nog een opvolgmail krijgt.',
+    changes: [
+      'De scan haalt voortaan per antwoord de volledige tekst op, zonder de geciteerde keten eronder.',
+      'De beoordeling leest die volledige tekst, en de samenvatting in de lijst ook.',
+      'Nieuwe knop "Afgekapte antwoorden herstellen" voor de 49 antwoorden die al binnen waren.',
+      'Die herstelactie verandert geen statussen. Een deel is met de hand afgehandeld en dat werk mag niet overschreven worden; wijkt de nieuwe beoordeling af, dan komt de prospect in de lijst voor handwerk.',
+    ],
+  },
   {
     version: '1.118.0',
     date: '2026-09-23T09:30:00Z',
