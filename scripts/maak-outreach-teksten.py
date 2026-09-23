@@ -27,6 +27,14 @@ import openpyxl
 from openpyxl.styles import Alignment, Font, PatternFill
 from openpyxl.utils import get_column_letter
 
+# Landingspagina met UTM-tags, zodat de Analytics-tab kan zien welk bericht het
+# bezoek bracht. De bron- en mediumwaarden volgen src/lib/utm.js: 'outreach' en
+# 'email' zijn de termen die Google kent, dus die belanden in het kanaal E-mail
+# in plaats van in Niet toegewezen. utm_content draagt de persona, zodat je na
+# afloop ziet welke invalshoek werkte.
+LANDING = ('https://www.eclectik.co/glint'
+           '?utm_source=outreach&utm_medium=email&utm_campaign=glint-prio-a&utm_content={persona}')
+
 PERSONA = [
     ('analytics', re.compile(r'analytics|people data|people, data|insights|data science', re.I)),
     ('listening', re.compile(r'listening|employee experience|people experience|engagement|culture', re.I)),
@@ -45,7 +53,7 @@ We do that reading alongside teams running Viva Glint. Construct mapping, so you
 
 The same question is now arriving about AI. Most reporting still shows licence activity, which tells you how often a tool was opened rather than how deeply it sits in the work. Only the second one survives a CFO asking what it returned.
 
-We did not sell you the licence and we do not resell it, so when your data does not support the conclusion someone wants, that is the read you get.
+We did not sell you the licence and we do not resell it, so when your data does not support the conclusion someone wants, that is the read you get. How we work through a cycle is set out at {link}.
 
 Where did your last cycle stall?
 
@@ -59,7 +67,7 @@ Plans get announced, dashboards get shared, and the organisation waits. Behaviou
 
 We design that spread using your own listening data. Which few move the many, which habits actually have to shift, and what makes a new behaviour visible enough to repeat. Applied behavioural science on your findings, rather than a change programme bolted on beside them.
 
-At Warburtons that approach held three years without a single declining question, out of twenty-nine asked annually.
+At Warburtons that approach held three years without a single declining question, out of twenty-nine asked annually. The case is at {link}.
 
 Would thirty minutes before your next cycle opens be useful?
 
@@ -71,7 +79,7 @@ Platform activation happens once or twice a year, which is exactly why nobody ha
 
 Wrong population selected. Demographics that do not reconcile next cycle. Broken links, language mismatches, reminder flows firing at the wrong people. None of it is difficult. It is just easy to miss when the launch date is fixed and the setup is a once-a-year job.
 
-We run one structured validation pass before you press send, on the licence you already own, and stay through to the action review instead of handing over at the point it matters. Hours rather than headcount, scaled around your survey window.
+We run one structured validation pass before you press send, on the licence you already own, and stay through to the action review instead of handing over at the point it matters. Hours rather than headcount, scaled around your survey window. The detail is at {link}.
 
 Tell us where you are in your next cycle and we will say honestly whether we can help before it launches or whether it is better to start with the one after.
 
@@ -85,7 +93,7 @@ We work alongside teams already running Viva Glint. A Customer Success lead who 
 
 The same question is now arriving about AI. Most reporting shows licence activity, which says how often a tool was opened rather than how deeply it sits in the work. Only the second one answers what your board is actually asking.
 
-We do not sell the platform and we do not resell the licence, which is why we will tell you when something is premature.
+We do not sell the platform and we do not resell the licence, which is why we will tell you when something is premature. What the two roles cover is at {link}.
 
 Would a thirty minute read of where your programme stands be worth having?
 
@@ -97,7 +105,7 @@ Results land, managers receive a dashboard, and most of them are left to it. Kno
 
 We work alongside HR teams running Viva Glint, on the licence they already own. In practice that means manager briefings people actually open, action plans that have owners and dates, and follow-through still visible when the next survey opens.
 
-You do not need a failing programme to bring us in. Plenty of teams run a good cycle and are simply a person short for the next one, because someone left or the survey landed in a bad month.
+You do not need a failing programme to bring us in. Plenty of teams run a good cycle and are simply a person short for the next one, because someone left or the survey landed in a bad month. There is more at {link}.
 
 Where did your last cycle stall?
 
@@ -137,7 +145,7 @@ def main():
         pz = persona(r[K['Functie']])
         onderwerp, body = TEKST[pz]
         rijen.append([pz, naam, r[K['Functie']], r[K['Bedrijf']], r[K['E-mail']],
-                      onderwerp, body.format(vn=vn)])
+                      onderwerp, body.format(vn=vn, link=LANDING.format(persona=pz))])
 
     uit = openpyxl.Workbook()
     ws2 = uit.active
@@ -165,6 +173,9 @@ def main():
     # Controle op de harde regels uit CLAUDE.md 2b.
     fout = [r[1] for r in rijen if '—' in r[6] or re.search(r'^\s*[-*•#]', r[6], re.M)]
     print(f'  regelcontrole (em-dash, bullets, koppen): {"FOUT bij " + ", ".join(fout) if fout else "schoon"}')
+    zonder = [r[1] for r in rijen if 'eclectik.co/glint' not in r[6]]
+    print(f'  link naar de landingspagina: '
+          f'{"ONTBREEKT bij " + ", ".join(zonder) if zonder else "in alle berichten"}')
 
 
 if __name__ == '__main__':
