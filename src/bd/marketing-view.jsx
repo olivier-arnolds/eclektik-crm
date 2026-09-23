@@ -4,6 +4,7 @@ import { apiFetch } from '../lib/apiFetch';
 import MarketingContacts from './marketing-contacts';
 import MarketingCampaigns from './marketing-campaigns';
 import MarketingAnalytics from './marketing-analytics';
+import MarketingAds from './marketing-ads';
 import TagManager from './marketing-tag-manager';
 import MarketingComposer from './marketing-composer';
 import MarketingLeads from './marketing-leads';
@@ -82,6 +83,11 @@ export default function MarketingView({ contacts, accounts, deals, allTags, refe
               onClick={() => setTab('analytics')}>
               Analytics
             </button>
+            <button
+              className={tab === 'ads' ? 'btn-primary tiny' : 'btn-ghost tiny'}
+              onClick={() => setTab('ads')}>
+              Advertenties
+            </button>
             {syncMsg && (
               <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-3)' }}>{syncMsg}</span>
             )}
@@ -115,6 +121,7 @@ export default function MarketingView({ contacts, accounts, deals, allTags, refe
           {tab === 'leads' && <MarketingLeads />}
           {tab === 'outreach' && <MarketingOutreach />}
           {tab === 'analytics' && <MarketingAnalytics />}
+          {tab === 'ads' && <MarketingAds />}
 
           {showTagManager && (
             <TagManager

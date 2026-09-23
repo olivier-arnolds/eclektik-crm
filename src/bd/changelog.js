@@ -19,9 +19,38 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.116.0';
+export const CURRENT_VERSION = '1.118.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.118.0',
+    date: '2026-09-23T09:30:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'LinkedIn-advertenties onder Marketing',
+    summary:
+      'Een tab waar je de export uit Campaign Manager in sleept en ziet wat de advertenties opleveren, met de advertentietekst erbij zodat je ziet welke boodschap werkt.',
+    changes: [
+      'Besteding, vertoningen, kliks, CTR en kosten per klik over 7, 28 of 90 dagen, of alles.',
+      'Verloop over tijd en een tabel per advertentie, gesorteerd op besteding.',
+      'Meerdere bestanden tegelijk mag. Voor opslaan zie je eerst wat er gaat gebeuren.',
+      'Hetzelfde bestand twee keer uploaden telt niets dubbel: regels met dezelfde datum en advertentie worden overschreven.',
+      'Een leeg rapport krijgt een andere melding dan een onleesbaar bestand. Leeg is normaal zodra een campagne in die periode niets uitleverde.',
+    ],
+  },
+  {
+    version: '1.117.0',
+    date: '2026-09-22T12:32:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Excel-restanten uit namen bij het importeren',
+    summary:
+      'Bij 74 contacten stond _x000D_ achter de achternaam. Zo schrijft Excel een regeleinde weg; je ziet het niet in een spreadsheet en wel in elke mail die je daarna stuurt.',
+    changes: [
+      'De importscripts halen die codes er voortaan uit en melden hoeveel cellen zijn opgeschoond.',
+      'De bestaande contacten zijn rechtgezet.',
+    ],
+  },
   {
     version: '1.116.0',
     date: '2026-09-18T15:10:00Z',
