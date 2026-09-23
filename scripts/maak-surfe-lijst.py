@@ -98,10 +98,19 @@ def main():
 
     rijen, twijfel = [], []
 
-    # 1. De contacten in het CRM zonder e-mailadres bij een Glint-account.
+    # 1. De contacten in het CRM zonder e-mailadres die bij deze markt horen.
+    #
+    # Niet alleen op accounttype selecteren: de vervangers die de collega
+    # aandroeg hangen soms aan een account dat als 'Prospect' staat (zoals
+    # AllianceBernstein). Die vielen daardoor uit de lijst en kwamen zonder CRM
+    # ID terug, waardoor hun adres met de hand teruggezocht moest worden. De
+    # herkomst is hier het betere signaal.
     glint_ids = {b['id'] for b in bedrijven if b.get('type') == 'Expected Glint Customers'}
+    HERKOMST = {'glint marktanalyse sept2026'}
     for c in contacten:
-        if c.get('company_id') not in glint_ids:
+        bij_markt = (c.get('company_id') in glint_ids
+                     or (c.get('source') or '').lower() in HERKOMST)
+        if not bij_markt:
             continue
         if (c.get('email') or '').strip():
             continue

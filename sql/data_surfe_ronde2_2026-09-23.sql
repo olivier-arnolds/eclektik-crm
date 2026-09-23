@@ -1,0 +1,23 @@
+-- Terugschrijven van de tweede Surfe-ronde (Glint, Prioriteit A), 23-09-2026.
+-- 56 gevalideerde adressen en 11 functietitels. Backup: _dq_backup_contacts_surfe2_20260923.
+--
+-- DEZE RONDE WAS VEEL VEILIGER DAN DE VORIGE
+--   Het invoerbestand droeg de CRM-ID mee, dus de koppeling terug is exact in
+--   plaats van op naam. Bij ronde 1 moest ik op naam plus bedrijf matchen en dat
+--   is precies waar een naamgenoot je de das omdoet.
+--
+-- WAT BEWUST NIET IS WEGGESCHREVEN
+--   Camila Panella (nu Rackson Restaurants) en Henry Chacon (nu Beam Benefits):
+--   het adres klopt, maar het hoort bij een ander bedrijf. Zoiets op het oude
+--   account zetten maakt de rij stilzwijgend onjuist.
+--   Anntonisha Williams: Surfe geeft een bestuursfunctie bij een credit union.
+--   Sharon Anderson: wij hebben haar als Director of People bij Sainsbury's,
+--   Surfe zegt 'Supermarket Assistant', en het adres eindigt op een 1. Dat wijst
+--   op een naamgenoot; een fout adres is hier erger dan geen adres.
+--   Twee CATCH_ALL-adressen (Hope Greene, Justin Gregaydis): het domein
+--   accepteert alles, dus 'geldig' zegt daar niets.
+--
+-- DRIE TITELWIJZIGINGEN OVERGESLAGEN
+--   Bij Amalie Holm Sindberg en Lorna Deegan zou de titel korter en minder
+--   senior worden (VP eraf, Director eraf). Een verrijking hoort geen informatie
+--   weg te halen. Bij Heather Milbrandt veranderde er niets.
