@@ -42,59 +42,192 @@ function Tegel({ label, waarde, toelichting }) {
   );
 }
 
-// Twee lijnen in een vaste viewBox: besteding en kliks delen de x-as maar hebben
-// een eigen schaal, want euro's en kliks liggen een orde uit elkaar.
-function Verloop({ dagen }) {
-  const vorm = useMemo(() => {
-    const w = 1000, h = 200, pad = 32;
-    if (!dagen.length) return null;
-    const maxSpend = Math.max(0.01, ...dagen.map(d => d.spend));
-    const maxImpr = Math.max(1, ...dagen.map(d => d.impressions));
-    const stap = dagen.length > 1 ? (w - pad * 2) / (dagen.length - 1) : 0;
-    const pad_ = (veld, max) => dagen
-      .map((d, i) => `${pad + i * stap},${h - pad - ((d[veld] || 0) / max) * (h - pad * 2)}`)
-      .join(' ');
-    return {
-      w, h, pad, maxSpend, maxImpr,
-      besteding: pad_('spend', maxSpend),
-      vertoningen: pad_('impressions', maxImpr),
-      punten: dagen.map((d, i) => ({
-        x: pad + i * stap,
-        y: h - pad - ((d.spend || 0) / maxSpend) * (h - pad * 2),
-        d,
-      })),
-    };
-  }, [dagen]);
+// Kleuren per advertentie. Vaste volgorde, nooit doorgedraaid: kleur volgt de
+// ADVERTENTIE, niet haar plek in de ranglijst. Filter je op campagne, dan houdt
+// wie overblijft dezelfde kleur; anders lijkt het alsof er iets veranderd is aan
+// de cijfers terwijl je alleen iets hebt weggeklikt.
+//
+// Deze zes halen in licht en donker alle controles, ook op kleurenblindheid
+// (gevalideerd met de dataviz-validator, slechtste paar dE 8.4 bij protanopie).
+// Een zevende advertentie krijgt bewust geen verzonnen kleur maar valt in grijs;
+// dan is de legenda nog leesbaar en de tabel eronder geeft de details.
+const SERIEKLEUREN = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300'];
+const REST = '#8b8b86';
 
-  if (!vorm) return null;
-  if (dagen.length === 1) {
-    return (
-      <div style={{ ...VAK, fontSize: 12, color: 'var(--text-3)' }}>
-        Er is maar één dag aan gegevens, dus er valt nog geen verloop te tekenen.
-        Exporteer in Campaign Manager een ruimere periode met uitsplitsing per dag.
-      </div>
-    );
+const MATEN = [
+  { sleutel: 'spend', label: 'Besteed', opmaak: (v) => ef.format(v) },
+  { sleutel: 'impressions', label: 'Vertoningen', opmaak: (v) => nf.format(Math.round(v)), geheel: true },
+  { sleutel: 'clicks', label: 'Kliks', opmaak: (v) => nf.format(Math.round(v)), geheel: true },
+  { sleutel: 'ctr', label: 'CTR', opmaak: (v) => `${df.format(v)}%` },
+];
+
+// Welke waarden krijgen een lijn met een label. Bij een maat die alleen hele
+// getallen kent heeft een middenlijn op 2,5 kliks geen betekenis, dus die valt
+// weg zodra het maximum klein is. Halve kliks op een as laten staan is precies
+// het soort detail dat een grafiek ongeloofwaardig maakt.
+function asWaarden(maxY, geheel) {
+  if (!geheel) return [0, 0.5, 1].map((f) => maxY * f);
+  // Bij hele getallen moet de waarde zelf rond zijn, niet alleen het label.
+  // Rond je pas bij het opmaken af, dan staat er "3" op de hoogte van 2,5 en
+  // wijst de as iets anders aan dan waar de lijn ligt.
+  if (maxY <= 4) {
+    return Array.from({ length: Math.round(maxY) + 1 }, (_, i) => i);
   }
+  return [...new Set([0, Math.round(maxY / 2), Math.round(maxY)])];
+}
+
+// Een lijn per advertentie, EEN maat tegelijk.
+//
+// Eerst stonden besteding en vertoningen samen in dit vak, elk op hun eigen
+// schaal. Dat leest makkelijk verkeerd: twee lijnen die elkaar kruisen zeggen
+// dan niets, want ze staan niet in dezelfde eenheid. Een maat kiezen en de
+// advertenties ertegen afzetten beantwoordt bovendien de vraag die je hier
+// stelt, namelijk welke boodschap het beter doet.
+function Verloop({ rijen, kleurVan }) {
+  const [maat, setMaat] = useState('impressions');
+  // De grafiek wordt in ECHTE pixels getekend, niet in een vaste viewBox die
+  // meeschaalt. Met een vaste viewBox krimpt bij een smal venster alles mee,
+  // ook de aslabels, en die zijn dan niet meer te lezen; bovendien houd je lege
+  // banden boven en onder omdat de verhouding niet klopt. Daarom meten we de
+  // breedte en rekenen we daarmee.
+  const vak = useRef(null);
+  const [breedte, setBreedte] = useState(880);
+  useEffect(() => {
+    const el = vak.current;
+    if (!el || typeof ResizeObserver === 'undefined') return undefined;
+    const ro = new ResizeObserver(([e]) => {
+      const b = e?.contentRect?.width;
+      if (b && Math.abs(b - breedte) > 2) setBreedte(b);
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [breedte]);
+
+  const m = MATEN.find((x) => x.sleutel === maat) || MATEN[0];
+
+  const vorm = useMemo(() => {
+    const h = 220, onder = 22, boven = 10, rechts = 10;
+    const datums = [...new Set(rijen.map((r) => r.stat_date))].sort();
+    if (!datums.length) return null;
+
+    const perAd = new Map();
+    for (const r of rijen) {
+      if (!perAd.has(r.ad_id)) {
+        perAd.set(r.ad_id, { ad_id: r.ad_id, naam: r.ad_headline || r.ad_name || r.ad_id, punten: [] });
+      }
+      perAd.get(r.ad_id).punten.push(r);
+    }
+
+    // Per dag optellen binnen een advertentie: bij meerdere advertentiesets kan
+    // dezelfde advertentie twee regels op een dag hebben.
+    const reeksen = [...perAd.values()].map((a) => {
+      const perDatum = new Map();
+      for (const p of a.punten) perDatum.set(p.stat_date, [...(perDatum.get(p.stat_date) || []), p]);
+      return {
+        ...a,
+        waarden: [...perDatum.entries()]
+          .map(([d, ps]) => ({ datum: d, ...totalen(ps) }))
+          .sort((x, y) => x.datum.localeCompare(y.datum)),
+      };
+    }).sort((a, b) => String(a.ad_id).localeCompare(String(b.ad_id)));
+
+    const maxRuw = Math.max(...reeksen.flatMap((r) => r.waarden.map((v) => v[maat] || 0)), 0);
+    const maxY = maxRuw > 0 ? maxRuw : 1;
+    // Ruimte links precies zo breed als het langste aslabel nodig heeft, anders
+    // loopt "€ 21,70" over de lijnen of houd je een onnodig gat.
+    const links = Math.min(90, Math.max(34, m.opmaak(maxY).length * 7 + 12));
+    const w = Math.max(240, breedte);
+
+    const x = (d) => (datums.length === 1
+      ? links + (w - links - rechts) / 2
+      : links + (datums.indexOf(d) / (datums.length - 1)) * (w - links - rechts));
+    const y = (v) => h - onder - ((v || 0) / maxY) * (h - boven - onder);
+
+    return { w, h, links, rechts, onder, datums, reeksen, maxY, x, y };
+  }, [rijen, maat, breedte, m]);
+
+  const knop = (actief) => (actief ? 'btn-primary tiny' : 'btn-ghost tiny');
+
   return (
-    <div style={VAK}>
-      <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 6 }}>
-        <span style={{ color: '#2563eb' }}>■</span> besteding{'  '}
-        <span style={{ color: '#16a34a' }}>■</span> vertoningen
-      </div>
-      <svg viewBox={`0 0 ${vorm.w} ${vorm.h}`} preserveAspectRatio="none"
-        style={{ width: '100%', height: 200 }}>
-        <polyline points={vorm.vertoningen} fill="none" stroke="#16a34a" strokeWidth="2" />
-        <polyline points={vorm.besteding} fill="none" stroke="#2563eb" strokeWidth="2" />
-        {vorm.punten.map((p) => (
-          <circle key={p.d.datum} cx={p.x} cy={p.y} r="3" fill="#2563eb">
-            <title>{`${p.d.datum}: ${ef.format(p.d.spend)}, ${nf.format(p.d.impressions)} vertoningen, ${nf.format(p.d.clicks)} kliks`}</title>
-          </circle>
+    <div style={VAK} ref={vak}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
+        {MATEN.map((x) => (
+          <button key={x.sleutel} className={knop(maat === x.sleutel)}
+            onClick={() => setMaat(x.sleutel)}>{x.label}</button>
         ))}
-      </svg>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--text-3)' }}>
-        <span>{dagen[0].datum}</span>
-        <span>{dagen[dagen.length - 1].datum}</span>
       </div>
+
+      {/* Legenda. Verplicht bij meer dan een reeks: identiteit mag nooit alleen
+          aan kleur hangen, en de kop van de advertentie zegt meer dan het
+          volgnummer waar LinkedIn hem onder wegschrijft. */}
+      {vorm && (
+        <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: 8 }}>
+          {vorm.reeksen.map((r) => (
+            <span key={r.ad_id} style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11 }}>
+              <span style={{
+                width: 10, height: 10, borderRadius: 2, background: kleurVan(r.ad_id), flex: 'none',
+              }} />
+              <span style={{ color: 'var(--text-2, var(--text-3))' }}>
+                {r.naam.length > 46 ? `${r.naam.slice(0, 46)}\u2026` : r.naam}
+              </span>
+            </span>
+          ))}
+        </div>
+      )}
+
+      {!vorm ? null : vorm.datums.length === 1 ? (
+        <div style={{ fontSize: 12, color: 'var(--text-3)' }}>
+          Er is maar een dag aan gegevens, dus er valt nog geen verloop te tekenen.
+          Exporteer in Campaign Manager een ruimere periode met de uitsplitsing op dag.
+        </div>
+      ) : (
+        <>
+          <svg width={vorm.w} height={vorm.h} viewBox={`0 0 ${vorm.w} ${vorm.h}`}
+            style={{ display: 'block', maxWidth: '100%' }}
+            role="img" aria-label={`${m.label} per advertentie, ${vorm.datums[0]} tot ${vorm.datums[vorm.datums.length - 1]}`}>
+            {/* Raster en aslabels terughoudend: de lijnen zijn het onderwerp. */}
+            {asWaarden(vorm.maxY, m.geheel).map((waarde) => {
+              const yy = vorm.y(waarde);
+              return (
+                <g key={waarde}>
+                  <line x1={vorm.links} x2={vorm.w - vorm.rechts} y1={yy} y2={yy}
+                    stroke="var(--sep)" strokeWidth="1" />
+                  <text x={vorm.links - 8} y={yy + 4} textAnchor="end"
+                    fontSize="11" fill="var(--text-3)">{m.opmaak(waarde)}</text>
+                </g>
+              );
+            })}
+
+            {vorm.reeksen.map((r) => (
+              <g key={r.ad_id}>
+                <polyline
+                  points={r.waarden.map((v) => `${vorm.x(v.datum)},${vorm.y(v[maat])}`).join(' ')}
+                  fill="none" stroke={kleurVan(r.ad_id)} strokeWidth="2"
+                  strokeLinejoin="round" strokeLinecap="round" />
+                {r.waarden.map((v) => (
+                  <g key={v.datum}>
+                    {/* Ring in de achtergrondkleur, zodat twee punten die elkaar
+                        raken los van elkaar te zien blijven. */}
+                    <circle cx={vorm.x(v.datum)} cy={vorm.y(v[maat])} r="4"
+                      fill={kleurVan(r.ad_id)} stroke="var(--bg, #fff)" strokeWidth="2" />
+                    {/* Ruimer trefvlak dan de stip zelf, anders is aanwijzen priegelen. */}
+                    <circle cx={vorm.x(v.datum)} cy={vorm.y(v[maat])} r="13" fill="transparent">
+                      <title>{`${v.datum} - ${r.naam}\n${m.label}: ${m.opmaak(v[maat])}`}</title>
+                    </circle>
+                  </g>
+                ))}
+              </g>
+            ))}
+          </svg>
+          <div style={{
+            display: 'flex', justifyContent: 'space-between', fontSize: 10,
+            color: 'var(--text-3)', paddingLeft: vorm.links, paddingRight: vorm.rechts,
+          }}>
+            <span>{vorm.datums[0]}</span>
+            <span>{vorm.datums[vorm.datums.length - 1]}</span>
+          </div>
+        </>
+      )}
     </div>
   );
 }
@@ -194,6 +327,16 @@ export default function MarketingAds() {
   const dagen = useMemo(() => perDag(zichtbaar), [zichtbaar]);
   const campagnes = useMemo(
     () => [...new Set(rijen.map(r => r.campaign_name).filter(Boolean))].sort(), [rijen]);
+
+  // Kleur per advertentie, bepaald op ALLE rijen en niet op wat er nu zichtbaar
+  // is. Zou hij van de zichtbare selectie afhangen, dan verschiet de grafiek
+  // zodra je op campagne filtert of een andere periode kiest, en dat leest als
+  // een verandering in de cijfers.
+  const kleurVan = useMemo(() => {
+    const ids = [...new Set(rijen.map(r => r.ad_id))].sort((a, b) => String(a).localeCompare(String(b)));
+    const kaart = new Map(ids.map((id, i) => [id, SERIEKLEUREN[i] || REST]));
+    return (id) => kaart.get(id) || REST;
+  }, [rijen]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -302,7 +445,7 @@ export default function MarketingAds() {
             <Tegel label="Kosten per 1.000" waarde={ef.format(t.cpm)} toelichting="vertoningen" />
           </div>
 
-          <Verloop dagen={dagen} />
+          <Verloop rijen={zichtbaar} kleurVan={kleurVan} />
 
           {/* Per advertentie, met de tekst erbij. Dat is de hele reden voor deze
               tabel: je wilt niet weten dat advertentie 1 beter loopt, je wilt
@@ -327,7 +470,13 @@ export default function MarketingAds() {
                 {advertenties.map(a => (
                   <tr key={a.ad_id} style={{ borderTop: '0.5px solid var(--sep)' }}>
                     <td style={{ padding: '6px' }}>
-                      <div style={{ fontWeight: 500 }}>{a.ad_headline || a.ad_name}</div>
+                      <div style={{ fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{
+                          width: 8, height: 8, borderRadius: 2, flex: 'none',
+                          background: kleurVan(a.ad_id),
+                        }} />
+                        {a.ad_headline || a.ad_name}
+                      </div>
                       {a.ad_intro && (
                         <div style={{ fontSize: 11, color: 'var(--text-3)', maxWidth: 520 }}>
                           {a.ad_intro.length > 140 ? `${a.ad_intro.slice(0, 140)}…` : a.ad_intro}

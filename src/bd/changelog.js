@@ -19,9 +19,23 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.121.0';
+export const CURRENT_VERSION = '1.122.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.122.0',
+    date: '2026-09-23T16:20:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Grafiek toont nu de advertenties los van elkaar',
+    summary:
+      'Een lijn per advertentie in plaats van een optelling, met een knop om te kiezen wat je op de as zet: besteed, vertoningen, kliks of CTR.',
+    changes: [
+      'Besteding en vertoningen stonden eerst samen in een grafiek met twee verschillende schalen. Zo zeggen twee lijnen die elkaar kruisen niets, want ze staan niet in dezelfde eenheid.',
+      'Legenda met de kop van de advertentie, en dezelfde kleur in de tabel eronder.',
+      'Kleur hoort bij de advertentie, niet bij haar plek in de ranglijst: filteren verft de grafiek niet opnieuw.',
+    ],
+  },
   {
     version: '1.121.0',
     date: '2026-09-23T15:10:00Z',
