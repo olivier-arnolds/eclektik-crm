@@ -86,10 +86,15 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument('--excel', default=os.path.expanduser(
         '~/Downloads/glint-prospects-totaaloverzicht-2026-09-22 (1).xlsx'))
+    p.add_argument('--bedrijven', default=None,
+                   help='Alleen deze bedrijven, komma-gescheiden. Gebruik dit na het '
+                        'corrigeren van een bedrijfsdomein: de rest opnieuw aanbieden '
+                        'kost krediet en levert dezelfde lege uitkomst op.')
     p.add_argument('--out', default=os.path.expanduser(
         f'~/Downloads/surfe-glint-ronde2-{date.today():%Y-%m-%d}.csv'))
     args = p.parse_args()
     url, key = env()
+    alleen = {b.strip().lower() for b in args.bedrijven.split(',')} if args.bedrijven else None
 
     bedrijven = haal(url, key, 'companies', 'id,name,website,type')
     dom_van = {b['name']: domein(b.get('website')) for b in bedrijven}
@@ -130,6 +135,9 @@ def main():
     kop = [c.value for c in ws[1]]
     K = {k: i for i, k in enumerate(kop)}
     bekend = {sleutel(r['Full Name']) for r in rijen}
+    # Wie inmiddels een adres in het CRM heeft, hoeft niet opnieuw. De Excel is
+    # een momentopname en weet niets van wat we sindsdien hebben ingevuld.
+    heeft_adres = {sleutel(c.get('full_name')) for c in contacten if (c.get('email') or '').strip()}
     for rij in ws.iter_rows(min_row=2):
         kleuren = {c.fill.fgColor.rgb for c in rij if c.fill and c.fill.fgColor}
         if ROOD in kleuren:
@@ -140,7 +148,7 @@ def main():
         if adres and geldig:
             continue
         naam = v[K['Naam']] or ''
-        if sleutel(naam) in bekend:
+        if sleutel(naam) in bekend or sleutel(naam) in heeft_adres:
             continue
         deel = naam.split(' ', 1)
         bedrijf = v[K['Bedrijf']] or ''
@@ -159,6 +167,9 @@ def main():
     for r in rijen:
         if not r['Company Domain'] and '@' in (r['Email'] or ''):
             r['Company Domain'] = r['Email'].split('@')[-1].strip().lower()
+
+    if alleen:
+        rijen = [r for r in rijen if r['Company Name'].lower() in alleen]
 
     for r in rijen:
         if r['Company Domain'] and not domein_past(r['Company Name'], r['Company Domain']):
