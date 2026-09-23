@@ -19,9 +19,23 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.120.0';
+export const CURRENT_VERSION = '1.121.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.121.0',
+    date: '2026-09-23T15:10:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Advertentietab leest nu ook de Engelse export',
+    summary:
+      'Campaign Manager wisselt zelf van taal. De Engelse export werd geweigerd als onleesbaar; nu leest de tab de taal per bestand af, inclusief de punten en komma\'s in bedragen.',
+    changes: [
+      'Nederlandse en Engelse exports worden allebei herkend, per bestand.',
+      'Bedragen en datums worden per taal gelezen. 1.234 is 1234 in het Nederlands en 1,234 in het Engels; dat valt niet te raden uit de waarde zelf.',
+      'Een export die de hele periode optelt tot één regel per advertentie wordt geweigerd met uitleg, in plaats van die bedragen op de eerste dag te boeken.',
+    ],
+  },
   {
     version: '1.120.0',
     date: '2026-09-23T12:40:00Z',

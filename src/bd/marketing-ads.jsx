@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '../supabase';
 import {
-  leesBestand, totalen, perAdvertentie, perDag, LEEG, ONLEESBAAR,
+  leesBestand, totalen, perAdvertentie, perDag, LEEG, ONLEESBAAR, AGGREGAAT,
 } from '../lib/linkedin-ads-parse';
 
 // Advertenties-tab onder Marketing. Toont wat LinkedIn-advertenties opleveren.
@@ -134,7 +134,7 @@ export default function MarketingAds() {
     for (const f of bestanden) {
       try {
         const r = await leesBestand(f);
-        if (r.fout === ONLEESBAAR || r.fout === LEEG) problemen.push({ soort: r.fout, tekst: r.melding });
+        if (r.fout) problemen.push({ soort: r.fout, tekst: r.melding });
         else alle.push(...r.rijen.map(x => ({ ...x, source_file: f.name })));
       } catch (e) {
         problemen.push({ soort: ONLEESBAAR, tekst: `${f.name} kon niet gelezen worden: ${e.message}` });
@@ -217,22 +217,30 @@ export default function MarketingAds() {
           <button className="btn-ghost tiny" onClick={() => invoer.current?.click()}>kies bestanden</button>
         </div>
         <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>
-          Meerdere bestanden mag. Kies in Campaign Manager de hele looptijd met uitsplitsing
-          per dag, dan zit de historie in één bestand.
+          Meerdere bestanden mag, Nederlands of Engels. Kies in Campaign Manager de hele
+          looptijd met de uitsplitsing op dag: zonder die uitsplitsing telt de export de
+          hele periode op tot één regel, en dan zijn het geen dagcijfers meer.
         </div>
         <input ref={invoer} type="file" multiple accept=".csv,.tsv,.txt" style={{ display: 'none' }}
           onChange={(e) => { verwerkBestanden([...e.target.files]); e.target.value = ''; }} />
       </div>
 
-      {/* Meldingen over lege of onleesbare bestanden. Bewust twee verschillende
-          toonzettingen: leeg is normaal, onleesbaar vraagt actie. */}
-      {meldingen.map((m, i) => (
-        <div key={i} style={{
-          ...VAK, fontSize: 12,
-          borderColor: m.soort === ONLEESBAAR ? '#dc2626' : 'var(--sep)',
-          color: m.soort === ONLEESBAAR ? '#dc2626' : 'var(--text-3)',
-        }}>{m.tekst}</div>
-      ))}
+      {/* Drie uitkomsten, drie toonzettingen, want de gebruiker moet er iets
+          anders mee:
+            leeg       grijs   normaal, er was die periode geen activiteit
+            aggregaat  oranje  verkeerde exportinstelling, opnieuw exporteren
+            onleesbaar rood    verkeerd bestand
+          Ze op één hoop gooien laat iemand zoeken naar een fout die er niet is. */}
+      {meldingen.map((m, i) => {
+        const kleur = m.soort === LEEG ? null : m.soort === AGGREGAAT ? '#b45309' : '#dc2626';
+        return (
+          <div key={i} style={{
+            ...VAK, fontSize: 12,
+            borderColor: kleur || 'var(--sep)',
+            color: kleur || 'var(--text-3)',
+          }}>{m.tekst}</div>
+        );
+      })}
 
       {/* Bevestiging vooraf */}
       {voorbeeld && (
