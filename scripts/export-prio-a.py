@@ -25,7 +25,11 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RAAK = re.compile(r'people analytics|employee listening|colleague listening|employee experience|'
                   r'people experience|people data|hr analytics|people insights|workforce analytics|'
                   r'people systems|people technology|hris|hr technology|organisation effectiveness|'
-                  r'organizational effectiveness|engagement|people transformation|people strategy', re.I)
+                  r'organizational effectiveness|engagement|people transformation|people strategy|'
+                  # Leestekens mogen er tussen staan: LSEG schrijft 'Head of People, Data &
+                  # Analytics'. Een patroon dat 'people data' aaneengesloten verwacht mist die,
+                  # en dan belandt juist de doelrol in de categorie algemeen HR.
+                  r'people[\s,&-]+(data|analytics|insights)', re.I)
 # Ook de hoogste HR-baan zonder het woord 'chief': Oracle schrijft die als
 # 'Executive Vice President Human Resources'. Dat is dezelfde rol als een CHRO en
 # hoort niet als algemeen HR weggezet te worden. Een gewone 'VP HR' bij een
