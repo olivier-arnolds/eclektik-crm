@@ -1,8 +1,8 @@
 import { requireUser } from './_lib/guard.js';
-import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@supabase/supabase-js';
 import { statusAfterClassification } from '../src/bd/outreach-match.js';
-import { MODEL, SYSTEM, parseClassification } from './_lib/outreach-classify-lib.js';
+import { classifyWithClaude } from './_lib/outreach-classify-run.js';
+import { kort } from '../src/lib/mail-body.js';
 
 // POST /api/outreach-classify - job B, tweede helft.
 //
@@ -22,28 +22,12 @@ import { MODEL, SYSTEM, parseClassification } from './_lib/outreach-classify-lib
 // Idempotent: berichten waarvan het Graph-id al in outreach_message staat worden
 // overgeslagen, zodat een tweede scan niets dubbel doet of terugdraait.
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 const supabase = (process.env.VITE_SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY)
   ? createClient(process.env.VITE_SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY) : null;
 
 const MAX_CANDIDATES = 25;
 
 
-
-export async function classifyWithClaude({ fromAddress, subject, bodyPreview }) {
-  const prompt = `Afzender: ${fromAddress || 'onbekend'}
-Onderwerp: ${subject || '(geen)'}
-Bericht: ${String(bodyPreview || '').replace(/\s+/g, ' ').slice(0, 2000)}`;
-
-  const message = await anthropic.messages.create({
-    model: MODEL,
-    max_tokens: 200,
-    system: SYSTEM,
-    messages: [{ role: 'user', content: prompt }],
-  });
-  const text = (message.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
-  return parseClassification(text);
-}
 
 export default async function handler(req, res) {
   const authedUser = await requireUser(req, res);
@@ -127,6 +111,8 @@ export default async function handler(req, res) {
       from_address: c.fromAddress || null,
       subject: c.subject || null,
       body_preview: c.bodyPreview || null,
+      body_full: c.bodyFull || null,
+      body_fetched_at: c.bodyFull ? new Date().toISOString() : null,
       sent_or_received_at: c.receivedAt || null,
       classification: cls?.classification || null,
       classification_confidence: cls ? cls.confidence : null,
@@ -171,7 +157,7 @@ export default async function handler(req, res) {
       // bepaalt dit of wij nog moeten reageren (weergave 'Onbeantwoord').
       last_inbound_at: c.receivedAt || new Date().toISOString(),
       // De echte tekst van het antwoord, geen parafrase.
-      last_reply_summary: (c.bodyPreview || '').replace(/\s+/g, ' ').trim().slice(0, 500) || null,
+      last_reply_summary: kort(c.bodyFull || c.bodyPreview, 500),
       updated_at: new Date().toISOString(),
     };
     if (cls?.classification === 'bounce') upd.paused_reason = 'mail bouncede';

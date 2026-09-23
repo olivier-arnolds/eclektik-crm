@@ -14,9 +14,15 @@
 // Bij ING met 17 contacten mag stap 2 nooit automatisch iemand op 'replied'
 // zetten; daarom levert die alleen een domain_flag voor handwerk.
 //
-// BEKENDE BEPERKING: Graph levert hier bodyPreview (circa 255 tekens), niet de
-// volledige body. Genoeg voor classificatie (de kern staat vooraan) en voor het
-// terugvinden van een gebouncet adres in een DSN, maar niet gegarandeerd.
+// LET OP: de berichten die hier binnenkomen dragen alleen bodyPreview, en dat is
+// bij Graph per definitie de eerste 255 tekens. Genoeg om een gebouncet adres in
+// een DSN terug te vinden, maar NIET genoeg om op te classificeren. De aanname
+// dat "de kern vooraan staat" hield geen stand: van de 78 antwoorden op de
+// Amsterdam-campagne stonden er 49 op precies die grens, en een antwoord als
+// "ik kan zelf niet, maar mijn collega wel" verliest juist het bruikbare deel.
+// De scan in marketing-outreach.jsx haalt daarom per herkend antwoord de
+// volledige tekst apart op (graph.js getMessageBody) en zet die op bodyFull,
+// voordat de kandidaten naar /api/outreach-classify gaan.
 
 export const MATCH_SENDER = 'sender_email';
 export const MATCH_DOMAIN = 'domain_flag';

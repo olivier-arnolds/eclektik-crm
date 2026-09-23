@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../supabase';
 import { apiFetch } from '../lib/apiFetch';
 import { useAuth } from '../lib/auth';
-import { getFolderEmails, getMailboxFolderEmails, getMailboxMessagesSince } from '../lib/graph';
+import { getFolderEmails, getMailboxFolderEmails, getMailboxMessagesSince, getMessageBody, findMessageByInternetId } from '../lib/graph';
+import { kiesBerichttekst } from '../lib/mail-body';
 import { scanInbox, needsOurReply, matchRegistrations } from './outreach-match';
 import { outreachTextToHtml, subjectForStep } from '../lib/outreach-html';
 
@@ -89,6 +90,8 @@ export default function MarketingOutreach() {
   const [scanning, setScanning] = useState(false);
   const [scanErr, setScanErr] = useState(null);
   const [scanResult, setScanResult] = useState(null);
+  const [herstel, setHerstel] = useState(null);
+  const [herstelBezig, setHerstelBezig] = useState(false);
 
   const [sending, setSending] = useState(false);
   const [sendPlan, setSendPlan] = useState(null);
@@ -275,6 +278,72 @@ export default function MarketingOutreach() {
   const age = hoursSince(sync?.last_synced_at);
   const stale = age === null || age > STALE_HOURS;
 
+
+  // Eenmalige herstelactie voor antwoorden die zijn opgeslagen toen de scan nog
+  // bodyPreview bewaarde (de eerste 255 tekens die Graph teruggeeft). Haalt de
+  // volledige tekst alsnog op en laat opnieuw beoordelen.
+  const herstelAfgekapt = async () => {
+    if (!campaign) return;
+    setHerstelBezig(true); setHerstel(null);
+    try {
+      const { data, error } = await supabase
+        .from('outreach_message')
+        .select('id, provider_message_id, internet_message_id, body_preview')
+        .eq('campaign_id', campaign.id)
+        .eq('direction', 'inbound')
+        .is('body_full', null)
+        .is('body_fetched_at', null)
+        .limit(200);
+      if (error) throw new Error(error.message);
+
+      const afgekapt = (data || []).filter(r => (r.body_preview || '').length >= 255);
+      if (!afgekapt.length) {
+        setHerstel({ stats: { bekeken: 0 }, klaar: true, veranderingen: [] });
+        setHerstelBezig(false);
+        return;
+      }
+
+      const mailbox = isSender ? null : campaign.sender_mailbox;
+      const klaar = [];
+      for (const r of afgekapt) {
+        let vol = null;
+        try {
+          vol = await getMessageBody(mailbox, r.provider_message_id);
+          // Graph geeft een bericht een NIEUW id zodra het naar een andere map
+          // verhuist, dus het opgeslagen id kan verlopen zijn. Het
+          // internetMessageId verandert nooit; daarmee vinden we het terug.
+          if (!vol && r.internet_message_id) {
+            const versId = await findMessageByInternetId(mailbox, r.internet_message_id);
+            if (versId) vol = await getMessageBody(mailbox, versId);
+          }
+        } catch (e) {
+          console.warn('[outreach] herstel ophalen faalde', r.id, e.message);
+        }
+        klaar.push({ id: r.id, bodyFull: kiesBerichttekst(vol) });
+      }
+
+      const totaal = { bekeken: 0, tekst_bijgewerkt: 0, opnieuw_beoordeeld: 0, veranderd: 0, niet_gevonden: 0, fouten: 0 };
+      const veranderingen = [];
+      for (let i = 0; i < klaar.length; i += CLASSIFY_BATCH) {
+        const resp = await apiFetch('/api/outreach-reclassify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages: klaar.slice(i, i + CLASSIFY_BATCH) }),
+        });
+        const d = await resp.json();
+        if (!resp.ok) throw new Error(d?.error || `HTTP ${resp.status}`);
+        for (const k of Object.keys(totaal)) totaal[k] += (d.stats?.[k] || 0);
+        veranderingen.push(...(d.veranderingen || []));
+      }
+      setHerstel({ stats: totaal, veranderingen, klaar: true });
+      await load();
+    } catch (e) {
+      setHerstel({ fout: e.message });
+    } finally {
+      setHerstelBezig(false);
+    }
+  };
+
   const runScan = async () => {
     if (!campaign) return;
     setScanning(true); setScanErr(null); setScanResult(null);
@@ -293,6 +362,21 @@ export default function MarketingOutreach() {
         isSender ? null : campaign.sender_mailbox, sinceISO, 800,
       );
       const { candidates, stats } = scanInbox(messages, rows, { sinceISO });
+
+      // De lijstopvraag levert alleen bodyPreview, en dat is bij Graph per
+      // definitie de eerste 255 tekens. Voor de handvol berichten die als
+      // antwoord herkend zijn halen we daarom de volledige tekst apart op. Een
+      // bericht dat inmiddels verplaatst of verwijderd is geeft null; dan blijft
+      // de afgekorte tekst staan en gaat de scan gewoon door.
+      for (const k of candidates) {
+        try {
+          const vol = await getMessageBody(isSender ? null : campaign.sender_mailbox, k.messageId);
+          const tekst = kiesBerichttekst(vol);
+          if (tekst) k.bodyFull = tekst;
+        } catch (e) {
+          console.warn('[outreach] volledige tekst ophalen faalde', k.messageId, e.message);
+        }
+      }
 
       const applied = { processed: 0, skipped_known: 0, bounces: 0, flagged: 0, classified: 0, status_changed: 0, errors: 0 };
       for (let i = 0; i < candidates.length; i += CLASSIFY_BATCH) {
@@ -528,6 +612,11 @@ export default function MarketingOutreach() {
                 title={`Leest de inbox van ${campaign.sender_mailbox} en koppelt antwoorden aan prospects`}>
                 {scanning ? 'Scannen…' : 'Scan inbox'}
               </button>
+              <button className="btn-ghost tiny" disabled={herstelBezig || !hasGraphToken}
+                onClick={herstelAfgekapt}
+                title="Haalt de volledige tekst op van antwoorden die eerder afgekapt zijn opgeslagen, en laat ze opnieuw beoordelen">
+                {herstelBezig ? 'Ophalen…' : 'Afgekapte antwoorden herstellen'}
+              </button>
             </div>
           </div>
 
@@ -536,6 +625,38 @@ export default function MarketingOutreach() {
             {isSender ? ' (dat ben jij)' : `, via gedeelde leesrechten op jouw login (${myEmail})`}.
             {' '}Alle mappen, dus ook wat al opgeruimd of gearchiveerd is.
           </div>
+
+          {herstel && (
+            <div style={{ fontSize: 12, border: '0.5px solid var(--sep)', borderRadius: 8, padding: '8px 10px' }}>
+              {herstel.fout ? (
+                <span style={{ color: '#dc2626' }}>Herstel mislukt: {herstel.fout}</span>
+              ) : herstel.stats.bekeken === 0 ? (
+                <>Geen afgekapte antwoorden meer gevonden.</>
+              ) : (
+                <>
+                  {herstel.stats.tekst_bijgewerkt} antwoorden volledig opgehaald en opnieuw beoordeeld.
+                  {herstel.stats.niet_gevonden > 0 && (
+                    <> {herstel.stats.niet_gevonden} niet meer in de mailbox gevonden; die houden de oude tekst.</>
+                  )}
+                  {herstel.stats.fouten > 0 && <> {herstel.stats.fouten} mislukt.</>}
+                  {herstel.veranderingen.length > 0 ? (
+                    <div style={{ marginTop: 6 }}>
+                      <strong>{herstel.veranderingen.length}</strong> kregen een andere beoordeling.
+                      De status is bewust niet automatisch aangepast, want een deel is inmiddels
+                      met de hand afgehandeld. Ze staan gemarkeerd voor handwerk:
+                      <ul style={{ margin: '4px 0 0 16px', padding: 0 }}>
+                        {herstel.veranderingen.map(v => (
+                          <li key={v.id}>{v.from}: {v.was || 'onbekend'} wordt {v.wordt}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : (
+                    <> Geen enkele beoordeling veranderde.</>
+                  )}
+                </>
+              )}
+            </div>
+          )}
 
           {scanErr === 'NO_ACCESS' ? (
             <div style={{ fontSize: 12, color: '#b45309', lineHeight: 1.6 }}>
