@@ -98,7 +98,9 @@ def main():
 
     bedrijven = haal(url, key, 'companies', 'id,name,website,type')
     dom_van = {b['name']: domein(b.get('website')) for b in bedrijven}
-    contacten = haal(url, key, 'contacts', 'id,full_name,first_name,last_name,title,email,company_id,source')
+    contacten = haal(url, key, 'contacts',
+                 'id,full_name,first_name,last_name,title,email,company_id,source,'
+                 'stage,former,do_not_email')
     naam_van_bedrijf = {b['id']: b['name'] for b in bedrijven}
 
     rijen, twijfel = [], []
@@ -116,6 +118,12 @@ def main():
         bij_markt = (c.get('company_id') in glint_ids
                      or (c.get('source') or '').lower() in HERKOMST)
         if not bij_markt:
+            continue
+        # Wie we toch niet gaan benaderen hoeft geen verrijking. Een inactief
+        # contact is vaak juist een dubbele of iemand die daar weg is; die
+        # opnieuw aanbieden kost krediet en levert een adres op dat we niet
+        # mogen gebruiken.
+        if (c.get('stage') or '').lower() == 'inactive' or c.get('former') or c.get('do_not_email'):
             continue
         if (c.get('email') or '').strip():
             continue
