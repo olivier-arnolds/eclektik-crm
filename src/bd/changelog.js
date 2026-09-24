@@ -19,9 +19,29 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.123.0';
+export const CURRENT_VERSION = '1.124.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.124.0',
+    date: '2026-09-24T18:20:27Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Listening-platform per account vastgelegd',
+    summary:
+      'Bij een account staat nu welk employee listening platform ze draaien, met de datum waarop dat voor het laatst is gezien.',
+    changes: [
+      'Zes nieuwe velden op companies: listening_platform, listening_platforms_all, listening_evidence_date, listening_glint_last_seen, listening_source en listening_checked_at.',
+      'Eerste vulling voor 91 accounts uit Sumble, dat technologieen herkent in vacatureteksten. Daarvan 34 met een Glint-vermelding uit 2026, 17 met een ouder spoor en 40 op een ander platform.',
+      'Let op: dit is afgeleid bewijs, geen bevestiging door de klant. listening_source zegt waar het vandaan komt en listening_checked_at wanneer de check draaide, zodat je ziet of het toe is aan een verversing.',
+      'Backup voor de vulling staat in _dq_backup_companies_20260924.',
+    ],
+    files: [
+      'sql/schema_listening_platform_2026-09-24.sql',
+      'sql/data_listening_platforms_2026-09-24.sql',
+    ],
+    gitTag: 'v1.124.0',
+  },
   {
     version: '1.123.0',
     date: '2026-09-23T16:50:00Z',
