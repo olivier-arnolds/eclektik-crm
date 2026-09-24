@@ -32,8 +32,12 @@ from openpyxl.utils import get_column_letter
 # 'email' zijn de termen die Google kent, dus die belanden in het kanaal E-mail
 # in plaats van in Niet toegewezen. utm_content draagt de persona, zodat je na
 # afloop ziet welke invalshoek werkte.
-LANDING = ('https://www.eclectik.co/glint'
-           '?utm_source=outreach&utm_medium=email&utm_campaign=glint-prio-a&utm_content={persona}')
+# Markdown-vorm, want outreach-html.js zet [tekst](url) om in een link. Zo staat
+# er in de mail 'www.eclectik.co/glint' en zit de hele tagreeks in de href. Een
+# kale URL van honderdtwintig tekens in een persoonlijke mail leest als een
+# mailing, en dat is precies wat deze berichten niet moeten zijn.
+LANDING = ('[www.eclectik.co/glint](https://www.eclectik.co/glint'
+           '?utm_source=outreach&utm_medium=email&utm_campaign=glint-prio-a&utm_content={persona})')
 
 PERSONA = [
     ('analytics', re.compile(r'analytics|people data|people, data|insights|data science', re.I)),
@@ -177,7 +181,7 @@ def main():
     # Controle op de harde regels uit CLAUDE.md 2b.
     fout = [r[1] for r in rijen if '—' in r[6] or re.search(r'^\s*[-*•#]', r[6], re.M)]
     print(f'  regelcontrole (em-dash, bullets, koppen): {"FOUT bij " + ", ".join(fout) if fout else "schoon"}')
-    zonder = [r[1] for r in rijen if 'eclectik.co/glint' not in r[6]]
+    zonder = [r[1] for r in rijen if '](https://www.eclectik.co/glint' not in r[6]]
     print(f'  link naar de landingspagina: '
           f'{"ONTBREEKT bij " + ", ".join(zonder) if zonder else "in alle berichten"}')
 
