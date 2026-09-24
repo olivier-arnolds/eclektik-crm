@@ -124,6 +124,10 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument('--excel', default=os.path.expanduser(
         f'~/Downloads/prioriteit-a-bedrijven-en-contacten-{date.today():%Y-%m-%d}.xlsx'))
+    p.add_argument('--afzender', default='Marco',
+                   help='Naam onder het bericht. Moet overeenkomen met de mailbox die '
+                        'verstuurt; een bericht van olivier@ dat met Marco ondertekent '
+                        'leest als een sjabloon dat niemand heeft nagekeken.')
     p.add_argument('--out', default=os.path.expanduser(
         f'~/Downloads/outreach-teksten-prio-a-{date.today():%Y-%m-%d}.xlsx'))
     args = p.parse_args()
@@ -145,7 +149,7 @@ def main():
         pz = persona(r[K['Functie']])
         onderwerp, body = TEKST[pz]
         rijen.append([pz, naam, r[K['Functie']], r[K['Bedrijf']], r[K['E-mail']],
-                      onderwerp, body.format(vn=vn, link=LANDING.format(persona=pz))])
+                      onderwerp, body.format(vn=vn, link=LANDING.format(persona=pz)).replace('\nMarco', '\n' + args.afzender)])
 
     uit = openpyxl.Workbook()
     ws2 = uit.active

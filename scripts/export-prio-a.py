@@ -150,7 +150,7 @@ def main():
     kopjes = [c.value for c in aws[1]]
     K = {k: i for i, k in enumerate(kopjes)}
 
-    rij_b, rij_c = [], []
+    rij_b, rij_c, gezien_contact = [], [], set()
     for r in aws.iter_rows(min_row=2, values_only=True):
         if not any(r) or str(r[K['Priority']] or '').strip().upper() != 'A':
             continue
@@ -171,6 +171,13 @@ def main():
             r[K['Target roles']] or '',
         ])
         for c in sorted(levend, key=lambda x: (rol(x.get('title')), x.get('full_name') or '')):
+            # Twee analyseregels kunnen naar hetzelfde CRM-account wijzen
+            # ('Pierre Fabre' en 'Pierre Fabre Laboratories'). Zonder deze
+            # controle staat zo'n contact twee keer in de lijst, en dan struikelt
+            # een import erop met een unieke-sleutelfout.
+            if c['id'] in gezien_contact:
+                continue
+            gezien_contact.add(c['id'])
             rij_c.append([
                 rol(c.get('title')), c.get('full_name'), c.get('title'),
                 naam, b['account_no'] if b else '', c.get('email') or '',
