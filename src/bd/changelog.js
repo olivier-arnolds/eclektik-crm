@@ -19,9 +19,26 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.129.0';
+export const CURRENT_VERSION = '1.129.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.129.1',
+    date: '2026-09-25T16:08:06Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Bericht 2 zichtbaar in het contactvenster',
+    summary:
+      'Je kon een herinnering wel aanzetten maar nergens teruglezen. Het contactvenster verbergt tab Bericht 2 bij LinkedIn, want tot deze middag ging er via dat kanaal maar een bericht uit. Nu verschijnt die tab zodra een contact een klaargezette herinnering heeft.',
+    changes: [
+      'De tab verschijnt alleen bij wie een gevulde msg2_body heeft, dus hij toont precies wie er iets krijgt. Bij de rest blijft het venster ongewijzigd.',
+      'Het bijschrift bij bericht 2 beschreef de mailregel ("gaat 5 tot 7 dagen na bericht 1"). Bij LinkedIn klopt dat niet: daar gaat het pas uit als je zelf op Verstuur herinneringen klikt.',
+      'Het bijschrift bij bericht 1 zei nog dat het het enige bericht is dat via LinkedIn uitgaat. Dat is sinds 1.129.0 niet meer waar.',
+    ],
+    files: ['src/bd/marketing-outreach.jsx'],
+    rollback: 'git revert naar v1.129.0. Puur weergave; er wordt niets door geschreven.',
+    gitTag: 'v1.129.1',
+  },
   {
     version: '1.129.0',
     date: '2026-09-25T15:57:43Z',

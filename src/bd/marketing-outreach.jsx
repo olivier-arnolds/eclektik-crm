@@ -1911,7 +1911,11 @@ function ContactMailsModal({ contact, campaign, rows = [], registratie = null, o
               </div>
 
               <div style={{ display: 'inline-flex', border: '0.5px solid var(--sep)', borderRadius: 6, overflow: 'hidden', alignSelf: 'flex-start' }}>
-                {(isLinkedIn ? [1] : [1, 2]).map(n => {
+                {/* Bij LinkedIn ging er tot 1.129.0 maar een bericht uit, dus tab 2
+                    was daar verborgen. Nu verschijnt hij zodra deze persoon een
+                    klaargezette herinnering heeft. Een gevulde msg2_body is de
+                    aan-stand, dus dit toont precies wie er iets krijgt. */}
+                {(isLinkedIn && !String(detail?.msg2_body || '').trim() ? [1] : [1, 2]).map(n => {
                   const s = sentStep(n);
                   return (
                     <button key={n} type="button" className={tab === n ? 'btn-primary tiny' : 'btn-ghost tiny'}
@@ -1929,10 +1933,10 @@ function ContactMailsModal({ contact, campaign, rows = [], registratie = null, o
                     {s
                       ? `Verstuurd op ${String(s.sent_or_received_at || '').slice(0, 16).replace('T', ' ')}`
                       : (tab === 2
-                        ? 'Nog niet verstuurd. Gaat 5 tot 7 dagen na bericht 1, en alleen als er geen antwoord is.'
-                        : (isLinkedIn
-                          ? 'Nog niet verstuurd. Dit is het enige bericht dat via LinkedIn uitgaat.'
-                          : 'Nog niet verstuurd.'))}
+                        ? (isLinkedIn
+                          ? 'Klaargezet als herinnering. Gaat pas uit als je in de tab op Verstuur herinneringen klikt.'
+                          : 'Nog niet verstuurd. Gaat 5 tot 7 dagen na bericht 1, en alleen als er geen antwoord is.')
+                        : 'Nog niet verstuurd.')}
                   </div>
                 );
               })()}
