@@ -19,9 +19,33 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.126.0';
+export const CURRENT_VERSION = '1.127.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.127.0',
+    date: '2026-09-25T14:30:35Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'De hele gespreksdraad, in plaats van het laatste bericht',
+    summary:
+      'De eerste echte scan vond 12 antwoorden op 151 LinkedIn-DM\'s. Bij Josja van der Maas van IKEA stond als antwoord alleen "josjavandermaas@gmail.com", met classificatie "other" en 0.30 zekerheid. Oorzaak: de scan bewaarde alleen het LAATSTE inkomende bericht. Het bericht ervoor, waarin ze inhoudelijk reageerde, was weggegooid, en zonder die context kon de classificatie er niets van maken.',
+    changes: [
+      'De scan neemt nu alle inkomende berichten sinds onze verzending mee, als een tekst, en classificeert daarop. provider_message_id blijft het id van het laatste bericht, zodat de idempotentie ongewijzigd blijft: een nieuw antwoord later is een nieuw id en dus een nieuwe rij.',
+      'Nieuwe herscan-stand in het endpoint, met het vinkje "Opnieuw beoordelen" in het scanpaneel. Die laat al verwerkte contacten opnieuw beoordelen op de volledige draad en werkt de bestaande rij bij in plaats van er een toe te voegen.',
+      'Het vinkje omzetten gooit een eerdere droge run weg. Anders kun je een gewone run bekijken, daarna het vinkje aanzetten en op verwerken klikken, en pas je iets anders toe dan wat je gezien hebt.',
+      'Het contactvenster toonde last_reply_summary, en dat veld is bewust kort omdat het ook de smalle kolom Toelichting vult. De volledige tekst stond al in outreach_message.body_full maar werd niet opgehaald. Nu wel.',
+      'Het scanrapport kapte de antwoordtekst af op 200 tekens, terwijl dat juist het scherm is waarop je beoordeelt of de classificatie klopt. Nu 2000, met regeleinden intact zodat losse berichten in een draad herkenbaar blijven.',
+      'Klikken op het antwoordblok opent de volledige gespreksdraad, live uit Unipile. Daarmee zie je ook berichten die buiten de campagne om zijn gestuurd, want die staan niet in outreach_message. Alleen voor contacten met een linkedin_chat_id, en de berichten worden pas opgehaald bij openen omdat elke aanroep een echte vraag aan LinkedIn is.',
+      'De toelichting onderaan de tab zei nog "Antwoorden lees je in de Comms-lane". Dat stamde uit de tijd dat er geen scan was en klopt niet meer.',
+    ],
+    files: [
+      'api/outreach-linkedin-scan.js',
+      'src/bd/marketing-outreach.jsx',
+    ],
+    rollback: 'git revert naar v1.126.0. Let op: een herscan heeft body_full, body_preview, classification en classification_confidence van bestaande inbound-rijen overschreven met de volledige draadtekst. Terugdraaien van de code herstelt die rijen niet; dat zou een nieuwe scan vergen.',
+    gitTag: 'v1.127.0',
+  },
   {
     version: '1.126.0',
     date: '2026-09-25T14:08:04Z',
