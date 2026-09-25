@@ -15,7 +15,15 @@ export default async function handler(req, res) {
   if (!authedUser) return;
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { campaign_id, limit, onlyStep = null, dry_run = false } = req.body || {};
+  const { campaign_id, limit, dry_run = false } = req.body || {};
+
+  // De stap komt als JSON binnen en kan dus "2" zijn in plaats van 2. Zonder
+  // deze omzetting valt een herinnering stil weg: allowLinkedInStep2 wordt dan
+  // false en de filterregel step !== onlyStep laat niemand door. Het faalt naar
+  // de veilige kant, maar het ziet eruit alsof de knop niets doet, en dat is
+  // het soort fout waar je een uur naar zoekt.
+  const ruwe = (req.body || {}).onlyStep;
+  const onlyStep = ruwe === null || ruwe === undefined || ruwe === '' ? null : Number(ruwe);
 
   // Een tweede LinkedIn-bericht mag hier alleen als de gebruiker expliciet om
   // stap 2 vraagt. Dat hangt aan onlyStep en niet aan de knop als geheel, want
