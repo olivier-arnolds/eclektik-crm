@@ -1281,13 +1281,65 @@ function ContactMailsModal({ contact, campaign, rows = [], registratie = null, o
   // gewoon 'Bericht 1 verstuurd' staan.
   const [status, setStatus] = useState(contact.status);
 
+  // Hele LinkedIn-gesprek. outreach_message bevat alleen wat de campagne stuurde
+  // plus wat de scan vond; de echte draad bij Unipile kan meer bevatten, zoals
+  // berichten die met de hand zijn gestuurd. Bewust pas ophalen bij openen: elke
+  // aanroep is een echte LinkedIn-aanroep.
+  const [draadOpen, setDraadOpen] = useState(false);
+  const [draadBerichten, setDraadBerichten] = useState(null);
+  const [draadLaden, setDraadLaden] = useState(false);
+  const [draadFout, setDraadFout] = useState(null);
+
+  // Wissel je van contact, dan hoort de oude draad niet te blijven staan.
+  useEffect(() => {
+    setDraadOpen(false);
+    setDraadBerichten(null);
+    setDraadFout(null);
+    setDraadLaden(false);
+  }, [current.id]);
+
+  // Escape sluit het gespreksvenster, niet het contactvenster eronder.
+  useEffect(() => {
+    if (!draadOpen) return;
+    const opToets = (e) => { if (e.key === 'Escape') { e.stopPropagation(); setDraadOpen(false); } };
+    window.addEventListener('keydown', opToets, true);
+    return () => window.removeEventListener('keydown', opToets, true);
+  }, [draadOpen]);
+
+  const chatId = detail?.linkedin_chat_id || null;
+
+  // Ophalen gebeurt pas als het venster open is en er nog niets geladen is.
+  useEffect(() => {
+    if (!draadOpen || !chatId || draadBerichten) return;
+    let afgebroken = false;
+    setDraadLaden(true);
+    setDraadFout(null);
+    apiFetch(`/api/unipile?action=get-messages&chat_id=${encodeURIComponent(chatId)}`)
+      .then(r => r.json())
+      .then(j => {
+        if (j.error) throw new Error(j.error);
+        const items = j.data?.items || [];
+        const genormaliseerd = items.map(m => ({
+          id: m.id,
+          tekst: m.text || '',
+          ts: m.timestamp,
+          vanOns: m.is_sender === 1,
+        }));
+        genormaliseerd.sort((a, b) => new Date(a.ts || 0) - new Date(b.ts || 0));
+        if (!afgebroken) setDraadBerichten(genormaliseerd);
+      })
+      .catch(e => { if (!afgebroken) { setDraadFout(e.message || 'Onbekende fout'); setDraadBerichten([]); } })
+      .finally(() => { if (!afgebroken) setDraadLaden(false); });
+    return () => { afgebroken = true; };
+  }, [draadOpen, chatId, draadBerichten]);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
         const { data: d, error: e1 } = await supabase
           .from('outreach_contact')
-          .select('msg1_subject,msg1_body,msg2_subject,msg2_body,unsubscribe_token,paused_reason,last_reply_summary,status')
+          .select('msg1_subject,msg1_body,msg2_subject,msg2_body,unsubscribe_token,paused_reason,last_reply_summary,status,linkedin_chat_id')
           .eq('id', current.id).single();
         if (e1) throw e1;
         const { data: h, error: e2 } = await supabase
@@ -1536,12 +1588,32 @@ function ContactMailsModal({ contact, campaign, rows = [], registratie = null, o
                 // gebrek daaraan de ingekorte samenvatting.
                 const laatsteIn = [...(history || [])].reverse().find(x => x.direction === 'inbound');
                 const volledig = laatsteIn?.body_full || laatsteIn?.body_preview || detail.last_reply_summary;
+                // Alleen aanklikbaar als er echt een LinkedIn-draad achter zit.
+                // Bij e-mailcampagnes is er geen chat-id en blijft dit een blok
+                // tekst, zonder knopgedrag dat nergens toe leidt.
+                const klikbaar = Boolean(chatId);
                 return (
-                  <div style={{ fontSize: 12, color: 'var(--text-2)', background: 'var(--fill-1)', borderRadius: 6, padding: '8px 10px' }}>
+                  <div
+                    onClick={klikbaar ? () => setDraadOpen(true) : undefined}
+                    role={klikbaar ? 'button' : undefined}
+                    tabIndex={klikbaar ? 0 : undefined}
+                    onKeyDown={klikbaar ? (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setDraadOpen(true); } } : undefined}
+                    title={klikbaar ? 'Het hele LinkedIn-gesprek tonen' : undefined}
+                    style={{
+                      fontSize: 12, color: 'var(--text-2)', background: 'var(--fill-1)',
+                      borderRadius: 6, padding: '8px 10px',
+                      cursor: klikbaar ? 'pointer' : 'default',
+                      border: klikbaar ? '0.5px solid var(--sep)' : '0.5px solid transparent',
+                    }}>
                     {detail.last_reply_summary
                       ? <><strong>Antwoord:</strong>{' '}
                           <span style={{ whiteSpace: 'pre-wrap' }}>{volledig}</span></>
                       : <><strong>Gepauzeerd:</strong> {detail.paused_reason}</>}
+                    {klikbaar && (
+                      <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 4 }}>
+                        Klik om het hele gesprek te tonen
+                      </div>
+                    )}
                   </div>
                 );
               })()}
@@ -1729,6 +1801,62 @@ function ContactMailsModal({ contact, campaign, rows = [], registratie = null, o
           )}
         </div>
       </div>
+
+      {/* Hele gesprek uit LinkedIn. Ligt bovenop het contactvenster; klikken op
+          de achtergrond sluit alleen dit venster, niet het contact eronder. */}
+      {draadOpen && (
+        <div onClick={(e) => { e.stopPropagation(); setDraadOpen(false); }}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1100, padding: 16 }}>
+          <div onClick={e => e.stopPropagation()}
+            style={{ background: 'var(--bg-1)', border: '0.5px solid var(--sep)', borderRadius: 12, width: 'min(680px, 96vw)', maxHeight: '88vh', display: 'flex', flexDirection: 'column', boxShadow: '0 12px 40px rgba(0,0,0,0.25)' }}>
+            <div style={{ padding: '12px 16px', borderBottom: '0.5px solid var(--sep)', display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 600 }}>Hele gesprek op LinkedIn</div>
+                <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
+                  Live uit LinkedIn, dus ook berichten die buiten de campagne om zijn gestuurd.
+                </div>
+              </div>
+              <button className="btn-ghost tiny" style={{ marginLeft: 'auto' }} onClick={() => setDraadOpen(false)}>✕</button>
+            </div>
+
+            <div style={{ padding: 16, overflow: 'auto', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {draadLaden && <div style={{ fontSize: 12, color: 'var(--text-3)' }}>Gesprek ophalen…</div>}
+              {!draadLaden && draadFout && (
+                <div style={{ fontSize: 12, color: '#dc2626' }}>
+                  Kon het gesprek niet ophalen: {draadFout}
+                </div>
+              )}
+              {!draadLaden && !draadFout && draadBerichten && draadBerichten.length === 0 && (
+                <div style={{ fontSize: 12, color: 'var(--text-3)' }}>
+                  LinkedIn gaf geen berichten terug voor dit gesprek.
+                </div>
+              )}
+              {!draadLaden && !draadFout && (draadBerichten || []).map((m, i) => (
+                <div key={m.id || i} style={{
+                  alignSelf: m.vanOns ? 'flex-end' : 'flex-start',
+                  maxWidth: '82%',
+                  background: m.vanOns ? 'rgba(10,102,194,0.12)' : 'var(--fill-1)',
+                  border: '0.5px solid var(--sep)',
+                  borderRadius: 8,
+                  padding: '8px 10px',
+                }}>
+                  <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 3 }}>
+                    {m.vanOns ? 'Wij' : 'Zij'}
+                    {m.ts ? ` · ${String(m.ts).slice(0, 16).replace('T', ' ')}` : ''}
+                  </div>
+                  <div style={{ fontSize: 13, color: 'var(--text-1)', lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
+                    {m.tekst || '(geen tekst)'}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ padding: '10px 16px', borderTop: '0.5px solid var(--sep)', display: 'flex' }}>
+              <button className="btn-ghost tiny" style={{ marginLeft: 'auto' }} onClick={() => setDraadOpen(false)}>Sluiten</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
