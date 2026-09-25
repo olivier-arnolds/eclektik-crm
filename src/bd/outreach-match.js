@@ -301,3 +301,28 @@ export function matchRegistrations(contacts, registrations) {
   }
   return uit;
 }
+
+/**
+ * Kiest uit een Unipile-chat de berichten die als antwoord tellen: inkomend, en
+ * van NA onze eigen laatste verzending.
+ *
+ * Die tweede eis doet ertoe. Een deel van deze chats bestond al voordat de
+ * campagne liep, bijvoorbeeld omdat iemand Marco ooit zelf schreef. Zonder de
+ * drempel zou zo'n oud bericht als antwoord op de campagne gelezen worden en
+ * iemand ten onrechte op 'replied' zetten.
+ *
+ * Een bericht is van ons als is_sender 1 is; zo leest lane-comms.jsx het ook.
+ */
+export function inkomendNaVerzending(berichten, { laatsteVerzendingISO = null } = {}) {
+  const drempelRuw = laatsteVerzendingISO ? new Date(laatsteVerzendingISO).getTime() : null;
+  const drempel = Number.isFinite(drempelRuw) ? drempelRuw : null;
+
+  return (Array.isArray(berichten) ? berichten : [])
+    .filter((m) => m && m.is_sender !== 1)
+    .filter((m) => {
+      const t = m.timestamp ? new Date(m.timestamp).getTime() : null;
+      if (t === null || !Number.isFinite(t)) return false;
+      return drempel === null ? true : t > drempel;
+    })
+    .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+}

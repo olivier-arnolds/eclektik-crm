@@ -3,6 +3,7 @@ import {
   domainOf, isBounceMessage, looksLikeAutoReply, buildIndex, findContactEmailIn,
   matchMessage, scanInbox, statusAfterClassification,
   MATCH_SENDER, MATCH_DOMAIN, MATCH_NONE, CONFIDENCE_FLOOR, needsOurReply, matchRegistrations,
+  inkomendNaVerzending,
 } from './outreach-match';
 
 // Drie contacten, twee bij hetzelfde domein (de ING-situatie).
@@ -255,5 +256,59 @@ describe('matchRegistrations', () => {
   it('koppelt niemand zonder treffer, en gaat om met leeg', () => {
     expect(matchRegistrations([{ id: 'e', email: 'x@y.nl', first_name: 'Iemand', last_name: 'Anders' }], regs).size).toBe(0);
     expect(matchRegistrations(null, null).size).toBe(0);
+  });
+});
+
+describe('inkomendNaVerzending', () => {
+  const V = '2026-09-11T10:00:00Z';
+
+  it('laat onze eigen berichten weg', () => {
+    const uit = inkomendNaVerzending([
+      { id: 'a', is_sender: 1, timestamp: '2026-09-12T10:00:00Z' },
+    ], { laatsteVerzendingISO: V });
+    expect(uit).toEqual([]);
+  });
+
+  it('houdt een inkomend bericht van na onze verzending', () => {
+    const uit = inkomendNaVerzending([
+      { id: 'a', is_sender: 1, timestamp: '2026-09-11T10:00:00Z' },
+      { id: 'b', is_sender: 0, timestamp: '2026-09-12T10:00:00Z' },
+    ], { laatsteVerzendingISO: V });
+    expect(uit.map(m => m.id)).toEqual(['b']);
+  });
+
+  it('laat een inkomend bericht van VOOR onze verzending weg', () => {
+    const uit = inkomendNaVerzending([
+      { id: 'oud', is_sender: 0, timestamp: '2026-09-01T10:00:00Z' },
+    ], { laatsteVerzendingISO: V });
+    expect(uit).toEqual([]);
+  });
+
+  it('sorteert oplopend op tijd', () => {
+    const uit = inkomendNaVerzending([
+      { id: 'laat', is_sender: 0, timestamp: '2026-09-14T10:00:00Z' },
+      { id: 'vroeg', is_sender: 0, timestamp: '2026-09-12T10:00:00Z' },
+    ], { laatsteVerzendingISO: V });
+    expect(uit.map(m => m.id)).toEqual(['vroeg', 'laat']);
+  });
+
+  it('neemt alles inkomend mee als de verzenddatum onbekend is', () => {
+    const uit = inkomendNaVerzending([
+      { id: 'a', is_sender: 0, timestamp: '2026-09-01T10:00:00Z' },
+    ], { laatsteVerzendingISO: null });
+    expect(uit.map(m => m.id)).toEqual(['a']);
+  });
+
+  it('slaat berichten zonder bruikbare tijd over', () => {
+    const uit = inkomendNaVerzending([
+      { id: 'a', is_sender: 0, timestamp: null },
+      { id: 'b', is_sender: 0, timestamp: 'onzin' },
+    ], { laatsteVerzendingISO: V });
+    expect(uit).toEqual([]);
+  });
+
+  it('valt niet om op lege invoer', () => {
+    expect(inkomendNaVerzending(null, {})).toEqual([]);
+    expect(inkomendNaVerzending(undefined, undefined)).toEqual([]);
   });
 });
