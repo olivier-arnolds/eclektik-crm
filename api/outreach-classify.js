@@ -142,7 +142,7 @@ export default async function handler(req, res) {
     if (!c.contactId) continue;
 
     const { data: cur } = await supabase
-      .from('outreach_contact').select('status').eq('id', c.contactId).single();
+      .from('outreach_contact').select('status,paused_reason').eq('id', c.contactId).single();
     const next = statusAfterClassification({
       classification: cls?.classification ?? null,
       confidence: cls?.confidence ?? 0,
@@ -168,6 +168,10 @@ export default async function handler(req, res) {
       upd.paused_reason = cls?.classification
         ? `check handmatig: ${cls.classification} (${Math.round((cls.confidence || 0) * 100)}%)`
         : 'check handmatig: classificatie mislukt, geen leesbaar antwoord van het model';
+    } else if (String(cur?.paused_reason || '').startsWith('check handmatig:')) {
+      // Beoordeling niet meer nodig, dus het vlaggetje weg. Alleen wat een scan
+      // zelf schreef; een door een mens ingetypte reden blijft staan.
+      upd.paused_reason = null;
     }
 
     const { error: updErr } = await supabase.from('outreach_contact').update(upd).eq('id', c.contactId);

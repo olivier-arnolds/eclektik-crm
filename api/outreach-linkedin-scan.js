@@ -62,6 +62,9 @@ const supabase = (process.env.VITE_SUPABASE_URL && process.env.SUPABASE_SERVICE_
 // vier aanroepen. De client loopt door zolang volgende_offset niet null is.
 const BATCH = 40;
 
+// Herkent een paused_reason die door een scan is gezet, en niet door een mens.
+const REVIEW_PREFIX = 'check handmatig:';
+
 export default async function handler(req, res) {
   const authedUser = await requireUser(req, res);
   if (!authedUser) return;
@@ -84,7 +87,7 @@ export default async function handler(req, res) {
 
   const { data: contacten, error: selErr } = await supabase
     .from('outreach_contact')
-    .select('id,first_name,last_name,company,status,linkedin_chat_id,last_inbound_at,next_action_at')
+    .select('id,first_name,last_name,company,status,linkedin_chat_id,last_inbound_at,next_action_at,paused_reason')
     .eq('campaign_id', campaign_id)
     .not('linkedin_chat_id', 'is', null)
     // id als tweede sorteersleutel: de contacten van deze campagne delen maar
@@ -257,6 +260,15 @@ export default async function handler(req, res) {
       upd.paused_reason = classificatie?.classification
         ? `check handmatig: ${classificatie.classification} (${Math.round((classificatie.confidence || 0) * 100)}%)`
         : 'check handmatig: classificatie mislukt, geen leesbaar antwoord van het model';
+    } else if (String(c.paused_reason || '').startsWith(REVIEW_PREFIX)) {
+      // De beoordeling is niet meer nodig, dus het vlaggetje weg. Zonder dit
+      // bleef een opgelost geval eeuwig 'check handmatig' tonen: na de herscan
+      // stonden vier mensen met een keurige classificatie nog steeds als
+      // handwerk in de lijst.
+      //
+      // Alleen wat de scan zelf schreef wordt gewist. Een reden die een mens
+      // heeft ingetypt, zoals 'Niet meer werkzaam bij TNO', blijft staan.
+      upd.paused_reason = null;
     }
 
     const { error: updErr } = await supabase.from('outreach_contact').update(upd).eq('id', c.id);
