@@ -28,6 +28,27 @@ import { kort } from '../src/lib/mail-body.js';
 //   keer voor een Claude-classificatie betaald wordt. De unieke index is nog
 //   het vangnet voor gelijktijdige scans.
 //
+// DE HELE DRAAD, NIET ALLEEN HET LAATSTE BERICHT
+//   De eerste echte scan pakte alleen het laatste inkomende bericht. Josja van
+//   der Maas antwoordde met twee berichten; het laatste was alleen haar
+//   e-mailadres. Zonder het bericht ervoor zag de classificatie een kaal adres
+//   en kwam uit op 'other' met 0.30 zekerheid, dus een hold. Daarom gaat nu de
+//   volledige tekst van alle inkomende berichten sinds onze verzending naar de
+//   classificatie, chronologisch en gescheiden door een regeleinde.
+//   Het provider_message_id blijft dat van het LAATSTE bericht: komt er later
+//   een antwoord bij, dan is dat een nieuw id en dus een nieuwe rij. Dat is wat
+//   de idempotentie draagt.
+//
+// HERSCAN-STAND
+//   Contacten die al met alleen het laatste bericht verwerkt zijn, moeten
+//   opnieuw beoordeeld kunnen worden op de volledige tekst. Met body-vlag
+//   herscan:true slaan we de dedup over en werken we een bestaande inbound-rij
+//   met hetzelfde provider_message_id BIJ in plaats van er een toe te voegen.
+//   Gebruik dit alleen bewust en eenmalig na een wijziging in wat we aan de
+//   classificatie voeren; een gewone scan hoort hem uit te laten. dry_run blijft
+//   leidend, dus een herscan zonder dry_run:false laat alleen zien wat er zou
+//   veranderen.
+//
 // VOLGORDE VAN SCHRIJVEN
 //   Eerst de status van het contact, dan het bericht. Faalt de berichtinsert,
 //   dan klopt de status en ontbreekt alleen de bijlage; dat herstelt een
@@ -51,6 +72,8 @@ export default async function handler(req, res) {
   const { campaign_id, offset = 0 } = req.body || {};
   // Schrijven moet expliciet aangezet worden. Alles behalve false is een droge run.
   const dryRun = (req.body || {}).dry_run !== false;
+  // Herscan moet net zo expliciet aangezet worden: alleen een echte true telt.
+  const herscan = (req.body || {}).herscan === true;
   if (!campaign_id) return res.status(400).json({ error: 'campaign_id is verplicht' });
 
   const { count: totaal } = await supabase
@@ -95,7 +118,8 @@ export default async function handler(req, res) {
 
   // Al bekende inkomende berichten, in een query vooraf. Zo slaan we een contact
   // over VOOR de Claude-aanroep in plaats van pas bij de insert; dat scheelt
-  // kosten bij elke herhaalde (droge) run.
+  // kosten bij elke herhaalde (droge) run. Bij een herscan slaan we niets over,
+  // maar dezelfde set bepaalt dan of het een update of een insert wordt.
   const bekendeIds = new Set();
   if (ids.length) {
     const { data: bekend, error: bekendErr } = await supabase
@@ -142,7 +166,13 @@ export default async function handler(req, res) {
 
     metAntwoord += 1;
     const laatste = antwoorden[antwoorden.length - 1];
-    const tekst = String(laatste.text || '').trim();
+    // De hele draad sinds onze verzending, chronologisch. Een los laatste
+    // bericht ("josjavandermaas@gmail.com") mist de context van het bericht
+    // ervoor en kreeg daardoor een lage zekerheid.
+    const tekst = antwoorden
+      .map(m => String(m.text || '').trim())
+      .filter(Boolean)
+      .join('\n');
 
     // Zonder provider-id kunnen we niet garanderen dat een volgende scan dit
     // bericht herkent; de unieke index is partieel en negeert null. Overslaan.
@@ -152,7 +182,8 @@ export default async function handler(req, res) {
       continue;
     }
 
-    if (bekendeIds.has(laatste.id)) {
+    const alBekend = bekendeIds.has(laatste.id);
+    if (!herscan && alBekend) {
       resultaten.push({ id: c.id, naam, uitkomst: 'al bekend', ontvangen_op: laatste.timestamp });
       overgeslagen += 1;
       continue;
@@ -195,6 +226,7 @@ export default async function handler(req, res) {
       status_nu: c.status,
       status_straks: next.status,
       beoordeling_nodig: next.needs_review,
+      ...(herscan ? { herscan: true } : {}),
     });
 
     if (dryRun) continue;
@@ -227,23 +259,43 @@ export default async function handler(req, res) {
     }
     geschreven += 1;
 
-    // Dan pas het bericht. 23505 is de unieke index: een gelijktijdige scan was
-    // ons voor. Elke andere fout is een echte fout en moet zichtbaar zijn.
-    const { error: insErr } = await supabase.from('outreach_message').insert({
-      campaign_id,
-      contact_id: c.id,
-      channel: 'linkedin',
-      direction: 'inbound',
-      provider_message_id: laatste.id,
-      conversation_id: c.linkedin_chat_id,
-      match_method: 'conversation_id',
-      from_address: naam,
-      body_preview: kort(tekst, 500),
-      body_full: tekst,
-      sent_or_received_at: ontvangen,
-      classification: classificatie?.classification || null,
-      classification_confidence: classificatie?.confidence ?? null,
-    });
+    // Dan pas het bericht. Bij een herscan van een al vastgelegd bericht werken
+    // we de bestaande rij bij; anders zou de unieke index de nieuwe tekst
+    // weigeren en bleef de oude classificatie staan.
+    let insErr = null;
+    if (herscan && alBekend) {
+      const { error: updBerErr } = await supabase
+        .from('outreach_message')
+        .update({
+          body_preview: kort(tekst, 500),
+          body_full: tekst,
+          classification: classificatie?.classification || null,
+          classification_confidence: classificatie?.confidence ?? null,
+          sent_or_received_at: ontvangen,
+        })
+        .eq('provider_message_id', laatste.id)
+        .eq('direction', 'inbound');
+      insErr = updBerErr || null;
+    } else {
+      // 23505 is de unieke index: een gelijktijdige scan was ons voor. Elke
+      // andere fout is een echte fout en moet zichtbaar zijn.
+      const { error: insertErr } = await supabase.from('outreach_message').insert({
+        campaign_id,
+        contact_id: c.id,
+        channel: 'linkedin',
+        direction: 'inbound',
+        provider_message_id: laatste.id,
+        conversation_id: c.linkedin_chat_id,
+        match_method: 'conversation_id',
+        from_address: naam,
+        body_preview: kort(tekst, 500),
+        body_full: tekst,
+        sent_or_received_at: ontvangen,
+        classification: classificatie?.classification || null,
+        classification_confidence: classificatie?.confidence ?? null,
+      });
+      insErr = insertErr || null;
+    }
     if (insErr) {
       if (insErr.code === '23505') {
         rij.uitkomst = 'al bekend';
@@ -259,6 +311,7 @@ export default async function handler(req, res) {
   const volgende = Number(offset) + BATCH;
   return res.status(200).json({
     dry_run: dryRun,
+    herscan,
     totaal: totaal ?? 0,
     verwerkt: (contacten || []).length,
     met_antwoord: metAntwoord,
