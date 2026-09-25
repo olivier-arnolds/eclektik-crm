@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────
-// Changelog — single source of truth for the in-app "Log" tab.
+// Changelog - single source of truth for the in-app "Log" tab.
 //
 // HOW THIS WORKS
 //   • Every meaningful change to the app gets ONE entry here, newest first.
@@ -8,7 +8,7 @@
 //
 // HOW TO ADD AN ENTRY (do this with each change before committing)
 //   1. Bump `version` using semver: patch = fix, minor = feature, major = big.
-//   2. Set `date` to the real ISO timestamp (UTC) — run `date -u +%Y-%m-%dT%H:%M:%SZ`.
+//   2. Set `date` to the real ISO timestamp (UTC) - run `date -u +%Y-%m-%dT%H:%M:%SZ`.
 //   3. Fill `title`, `summary`, the `changes[]` detail, and `files[]` touched.
 //   4. Keep `gitTag` = `v<version>`; create that tag on the commit (see README/Log).
 //   5. Also bump "version" in package.json and the VERSION file to match.
@@ -19,9 +19,27 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.129.1';
+export const CURRENT_VERSION = '1.129.2';
 
 export const CHANGELOG = [
+  {
+    version: '1.129.2',
+    date: '2026-09-25T20:21:43Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Em-dashes uit de Log-tab en de outreach-lijst',
+    summary:
+      'De changelog rendert in de Log-tab en bevatte 105 em-dashes, het teken dat volgens de projectregels nergens in zichtbare tekst hoort. Vervangen door een gewoon streepje met spaties, wat de regel zelf als alternatief voorschrijft. Betekenis ongewijzigd; historische regels zijn niet herschreven.',
+    changes: [
+      '105 in changelog.js, allemaal als scheidingsteken in lopende tekst.',
+      'Drie in de outreach-lijst: twee lege-waardetekens in de kolommen Geopend en Geklikt, en de scheiding tussen naam en bedrijf in het contactvenster. Daar was het teken zelf de betekenis, dus per geval bekeken in plaats van mechanisch vervangen.',
+      'Code-commentaar is ongemoeid gelaten. CLAUDE.md 2b sluit dat expliciet uit van de contentregels; die gelden voor tekst die naar een mens gaat.',
+      'Nog niet gedaan: ongeveer 200 stuks in zichtbare tekst verspreid over zestig andere bestanden. Dat is een eigen opruimactie waard, niet een bijvangst van deze release.',
+    ],
+    files: ['src/bd/changelog.js', 'src/bd/marketing-outreach.jsx'],
+    rollback: 'git revert naar v1.129.1. Puur tekst.',
+    gitTag: 'v1.129.2',
+  },
   {
     version: '1.129.1',
     date: '2026-09-25T16:08:06Z',
@@ -1146,7 +1164,7 @@ export const CHANGELOG = [
     date: '2026-09-04T08:50:43Z',
     author: 'Olivier Arnolds (via Claude)',
     type: 'fix',
-    title: 'Funnel: "+ New Lead" — een nieuw record start altijd in Qualify',
+    title: 'Funnel: "+ New Lead" - een nieuw record start altijd in Qualify',
     summary:
       'De knop heet nu "+ New Lead" en een nieuw record start altijd als lead in de qualify-lane. De stage-keuze bij aanmaken is weggehaald; je kon eerder direct een "develop-lead" maken die nooit een opportunity werd (onzichtbaar voor alles wat alleen opportunities leest). Promotie naar develop/opportunity gebeurt nu uitsluitend via slepen, met de bestaande atomic lead->opp-promotie.',
     changes: [
@@ -2790,7 +2808,7 @@ export const CHANGELOG = [
       'email/teams). De LinkedIn-tab blijft ongewijzigd werken.',
     changes: [
       'Comms-query sluit channel=linkedin uit (.neq).',
-      'LinkedIn blijft live via Unipile (lane-comms.jsx) — ongewijzigd.',
+      'LinkedIn blijft live via Unipile (lane-comms.jsx) - ongewijzigd.',
     ],
     files: [
       'src/hooks/usePipelineData.js',
@@ -3841,7 +3859,7 @@ export const CHANGELOG = [
     type: 'fix',
     title: 'One-pager: geen omzetcijfers meer tonen',
     summary:
-      'Op verzoek (contractors mogen geen omzet zien): de KPI-tegel "Won revenue 2026" (€408k) is weg, en de New-vs-recurring-sectie toont nu het AANTAL gewonnen deals i.p.v. €-bedragen — bars per jaar (new vs recurring), groei in aantal deals YoY en recurring-share %. De "€717k full year"-referentie is verwijderd. eurK-helper en won-revenue-berekening zijn geschrapt; nergens in de one-pager staat nog een omzetbedrag.',
+      'Op verzoek (contractors mogen geen omzet zien): de KPI-tegel "Won revenue 2026" (€408k) is weg, en de New-vs-recurring-sectie toont nu het AANTAL gewonnen deals i.p.v. €-bedragen - bars per jaar (new vs recurring), groei in aantal deals YoY en recurring-share %. De "€717k full year"-referentie is verwijderd. eurK-helper en won-revenue-berekening zijn geschrapt; nergens in de one-pager staat nog een omzetbedrag.',
     changes: [
       'onepager-modal.jsx: KPI-rij 6→5 (Won revenue weg); NewRecurring op deal-count basis (newN/recN) i.p.v. €; eurK + wonRevFull/wonRevCur/wonRevPrevFull verwijderd.',
     ],
@@ -3883,7 +3901,7 @@ export const CHANGELOG = [
     type: 'fix',
     title: 'One-pager: ROI-opportunities uit kolommen proposal..sleeping',
     summary:
-      'In de lifecycle-kolommen Proposal / Onboarding / Running / Sleeping worden ROI-opportunities (product_line = ROI) nu weggelaten — die sectie toont alleen de niet-ROI (Glint c.s.) projecten. De Leads-kolom houdt bewust álle types, inclusief ROI. Effect: proposal 9→8, running 17→15, sleeping 28→26 (5 ROI-deals weg uit de funnel; onboarding had er geen).',
+      'In de lifecycle-kolommen Proposal / Onboarding / Running / Sleeping worden ROI-opportunities (product_line = ROI) nu weggelaten - die sectie toont alleen de niet-ROI (Glint c.s.) projecten. De Leads-kolom houdt bewust álle types, inclusief ROI. Effect: proposal 9→8, running 17→15, sleeping 28→26 (5 ROI-deals weg uit de funnel; onboarding had er geen).',
     changes: [
       'onepager-modal.jsx: isROI-helper (product_line=ROI); proposal/onboarding/active/sleeping-buckets gefilterd op !isROI; leadsBucket ongewijzigd (alle types).',
     ],
@@ -3999,7 +4017,7 @@ export const CHANGELOG = [
     summary:
       'Nieuwe "📊 One-pager"-knop rechts in de topbar opent een full-screen overzicht, bedoeld voor een informele meeting (bv. met contractors). Leest live uit Supabase via de ingelogde sessie en toont: kerncijfers 2026 (afgerond / nu lopend / in onboarding / in offerte / gevallen + totale gewonnen omzet), de delivery-funnel met de projectnamen (klanten) per fase, en new business vs recurring business 2025 → 2026 als omzetvergelijking met groei-%. Alleen totaalbedragen, geen per-deal omzet. Definities zijn 1-op-1 met de Reporting-tab (won = status Won, omzet = COALESCE(actual_revenue, est_revenue), jaar uit actual_close_date || close_date, new = eerste gewonnen deal per klant).',
     changes: [
-      'src/bd/onepager-modal.jsx: nieuw component — eigen focus-fetch (opportunities + companies + leads-count), funnel-snapshot + new/recurring over alle product-lijnen, presentatie-styling, Print/PDF-knop.',
+      'src/bd/onepager-modal.jsx: nieuw component - eigen focus-fetch (opportunities + companies + leads-count), funnel-snapshot + new/recurring over alle product-lijnen, presentatie-styling, Print/PDF-knop.',
       'topbar.jsx: nieuwe One-pager-knop in topbar-right (prop onOpenOnepager).',
       'BDApp.jsx: showOnepager-state + OnepagerModal in de globale-modal-set.',
     ],
@@ -4016,7 +4034,7 @@ export const CHANGELOG = [
       'Deal panel now shows a Weighted line under value/probability (value × probability, e.g. €142k · 60% of €236k). Funnel gets a "Close" period filter for the current year: All / Q1 / Q2 / Q3 / Q4 / Overdue, filtering deals by their close date. Overdue = open deals whose expected close has already passed - the chase list.',
     changes: [
       'inline-details.jsx: InlineDealDetail shows probability-weighted value.',
-      'lane-funnel.jsx: close-period filter — All / Q1 / Q2 / Q3 / Q4 (current calendar year) / Overdue.',
+      'lane-funnel.jsx: close-period filter - All / Q1 / Q2 / Q3 / Q4 (current calendar year) / Overdue.',
       'lane-accounts.jsx: deal-row headers (Open/Active/Sleeping) show probability + expected close.',
       'lane-funnel.jsx: deal cards now show expected close next to probability.',
       'usePipelineData.js: open deals now use est_close_date (expected close) as their close date, so editing it updates cards/rows/filter (a stale close_date no longer masks the change).',
@@ -4060,7 +4078,7 @@ export const CHANGELOG = [
     type: 'fix',
     title: 'Vercel build fix: unescaped apostrof in v1.40.3 changelog-entry',
     summary:
-      'De Nederlandse contractie in de v1.40.3 summary sloot de JS-string vroegtijdig waardoor Vercel build faalde met "Expected , or }". Apostrof verwijderd, build draait weer. Geen functionele wijziging — de cascade-fallback uit v1.40.3 zit hier dus ook in en is voor het eerst live.',
+      'De Nederlandse contractie in de v1.40.3 summary sloot de JS-string vroegtijdig waardoor Vercel build faalde met "Expected , or }". Apostrof verwijderd, build draait weer. Geen functionele wijziging - de cascade-fallback uit v1.40.3 zit hier dus ook in en is voor het eerst live.',
     changes: [
       'src/bd/changelog.js: summary van v1.40.3 herschreven zonder de string-brekende apostrof.',
     ],
@@ -4088,7 +4106,7 @@ export const CHANGELOG = [
     type: 'fix',
     title: 'Enrich-via-LinkedIn: gebruik LinkedIn-account van account-owner',
     summary:
-      'De Enrich-via-LinkedIn server-flow pakte tot nu toe altijd de eerste LinkedIn-account die Unipile teruggaf. Dat hoefde niet die van de juiste owner te zijn — voor een Microsoft-contact owned by Marco werd soms Yarmilla\'s of Olivier\'s LinkedIn gebruikt, en die geeft andere search-resultaten (1st-degree connections, geo-bias, rate limits). Resultaat: "no-results" terwijl Marco\'s LinkedIn de match wel had. Nu wordt op basis van companies.owner de juiste Unipile-account gekozen (Marco / Yarmilla / Olivier name → email → account_id). Fallback: eerste LinkedIn-account als owner onbekend. Response bevat voortaan used_account.owner_email zodat je in debug kan zien welke account gebruikt is.',
+      'De Enrich-via-LinkedIn server-flow pakte tot nu toe altijd de eerste LinkedIn-account die Unipile teruggaf. Dat hoefde niet die van de juiste owner te zijn - voor een Microsoft-contact owned by Marco werd soms Yarmilla\'s of Olivier\'s LinkedIn gebruikt, en die geeft andere search-resultaten (1st-degree connections, geo-bias, rate limits). Resultaat: "no-results" terwijl Marco\'s LinkedIn de match wel had. Nu wordt op basis van companies.owner de juiste Unipile-account gekozen (Marco / Yarmilla / Olivier name → email → account_id). Fallback: eerste LinkedIn-account als owner onbekend. Response bevat voortaan used_account.owner_email zodat je in debug kan zien welke account gebruikt is.',
     changes: [
       'api/unipile.js (find-contact-linkedin): companies.owner toegevoegd aan contact-fetch; NAME_TO_EMAIL + UNIPILE_BY_EMAIL inline mapping bepaalt voorkeurs-account; fallback naar eerste LinkedIn-account; used_account in alle response-paden.',
     ],
@@ -4102,9 +4120,9 @@ export const CHANGELOG = [
     type: 'fix',
     title: 'LinkedIn-search uit contact-detail: company-naam ipv slug',
     summary:
-      'De "Search this person on LinkedIn" link in de contact-detail bouwde de zoekstring als full_name + company-slug (uit companies.linkedin_url). Voor Microsoft Switzerland werd dat "Kahina Hanis hubswiss" — niet wat je verwacht. Nu altijd gewoon full_name + company-naam, dus "Kahina Hanis Microsoft Switzerland".',
+      'De "Search this person on LinkedIn" link in de contact-detail bouwde de zoekstring als full_name + company-slug (uit companies.linkedin_url). Voor Microsoft Switzerland werd dat "Kahina Hanis hubswiss" - niet wat je verwacht. Nu altijd gewoon full_name + company-naam, dus "Kahina Hanis Microsoft Switzerland".',
     changes: [
-      'inline-details.jsx: linkedinSearch() — slug-extractie weggehaald, gebruikt nu altijd companies.name (met fallback company_name).',
+      'inline-details.jsx: linkedinSearch() - slug-extractie weggehaald, gebruikt nu altijd companies.name (met fallback company_name).',
     ],
     files: ['src/bd/inline-details.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
     gitTag: 'v1.40.1',
@@ -4116,7 +4134,7 @@ export const CHANGELOG = [
     type: 'feat',
     title: 'Contact last-updated zichtbaar + sorteer-toggle in Marketing',
     summary:
-      'De DB houdt al automatisch contacts.updated_at bij (trg_contacts_updated_at trigger). Nu maken we het ook zichtbaar: (1) klein mono-relatief tijdje "· 2d" achter de contactnaam in de Marketing-lijst met de volle datum als hover-tooltip; (2) "Updated X ago" in de contact-detail popup header, met de created-datum erachter als ze niet gelijk zijn; (3) sorteer-toggle "Sort: Account | Recent" naast Select all — Account is de oude default (company A-Z + naam), Recent sorteert op meest recent geüpdate eerst. Nieuw helper relativeTime() in lib/constants centraliseert de "5m / 3h / 2d / 6w" formatter.',
+      'De DB houdt al automatisch contacts.updated_at bij (trg_contacts_updated_at trigger). Nu maken we het ook zichtbaar: (1) klein mono-relatief tijdje "· 2d" achter de contactnaam in de Marketing-lijst met de volle datum als hover-tooltip; (2) "Updated X ago" in de contact-detail popup header, met de created-datum erachter als ze niet gelijk zijn; (3) sorteer-toggle "Sort: Account | Recent" naast Select all - Account is de oude default (company A-Z + naam), Recent sorteert op meest recent geüpdate eerst. Nieuw helper relativeTime() in lib/constants centraliseert de "5m / 3h / 2d / 6w" formatter.',
     changes: [
       'lib/constants.js: relativeTime(input) helper voor "5m / 3h / 2d / 6w / 3mo / 2y" formatter.',
       'adapters.js: updatedAt + createdAt (camelCase) doorgegeven via pass-2 adaptContact.',
@@ -4133,7 +4151,7 @@ export const CHANGELOG = [
     type: 'fix',
     title: 'Clear-knop × in Marketing-zoekbalk naar links verplaatst',
     summary:
-      'De × in de Marketing-zoekbalk stond rechts; nu links — vóór het zoekwoord. Padding van de input is gespiegeld zodat de tekst niet over de knop loopt.',
+      'De × in de Marketing-zoekbalk stond rechts; nu links - vóór het zoekwoord. Padding van de input is gespiegeld zodat de tekst niet over de knop loopt.',
     changes: [
       'marketing-contacts.jsx: × button van right: 8 naar left: 8; input padding-left ipv padding-right wanneer searchText gevuld is.',
     ],
@@ -4161,7 +4179,7 @@ export const CHANGELOG = [
     type: 'feat',
     title: 'Reactivate-knop pakt ook former=true contacten',
     summary:
-      'De Reactivate-toggle in de contact-detail popup bekeek alleen stage=Inactive — contacten die via Account 360 → mark former (former=true, stage blijft Active) waren afgevoerd toonden nog steeds Inactivate. Nu telt former=true ook als "inactief", dus Sophia Driess et al. tonen Reactivate. Klikken zet stage=Active, wist inactive_reason + inactivated_at, en zet former=false — dus 1 enkele plek om vanuit Marketing iemand weer actief te maken.',
+      'De Reactivate-toggle in de contact-detail popup bekeek alleen stage=Inactive - contacten die via Account 360 → mark former (former=true, stage blijft Active) waren afgevoerd toonden nog steeds Inactivate. Nu telt former=true ook als "inactief", dus Sophia Driess et al. tonen Reactivate. Klikken zet stage=Active, wist inactive_reason + inactivated_at, en zet former=false - dus 1 enkele plek om vanuit Marketing iemand weer actief te maken.',
     changes: [
       'inline-details.jsx: isInactive folde stage=Inactive OF former=true; Reactivate-handler reset alle drie de inactiviteits-velden.',
     ],
@@ -4296,7 +4314,7 @@ export const CHANGELOG = [
     type: 'fix',
     title: 'Security follow-up: webhook-secret guard op unipile-webhook',
     summary:
-      'v1.39.0 dekte alle /api endpoints af behalve unipile-webhook — die '
+      'v1.39.0 dekte alle /api endpoints af behalve unipile-webhook - die '
       + 'bleef open omdat Unipile dashboard geen custom headers toestaat. '
       + 'Toegevoegd: requireWebhookSecret helper in api/_lib/guard.js die '
       + 'checkt op een UNIPILE_WEBHOOK_SECRET match in EITHER de '
@@ -4307,7 +4325,7 @@ export const CHANGELOG = [
       + 'request URL; de oude eclectik-crm webhook gaat 401 krijgen en moet '
       + 'handmatig worden verwijderd.',
     changes: [
-      'api/_lib/guard.js: nieuwe requireWebhookSecret(req, res, envName) — header OR query-param match tegen genoemde env var.',
+      'api/_lib/guard.js: nieuwe requireWebhookSecret(req, res, envName) - header OR query-param match tegen genoemde env var.',
       'api/unipile-webhook.js: vereist nu UNIPILE_WEBHOOK_SECRET via x-webhook-secret header of ?secret=... in URL.',
       'Vereist in Vercel env: UNIPILE_WEBHOOK_SECRET (random hex). Olivier heeft die gezet.',
       'Vereist in Unipile dashboard: nieuwe webhook met request_url eindigend op ?secret=<hex>. Olivier heeft eclectik-crm-secured aangemaakt.',
@@ -4329,7 +4347,7 @@ export const CHANGELOG = [
     type: 'fix',
     title: 'Security: auth guard on all serverless API endpoints',
     summary:
-      'Closes the highest-risk audit finding: 17 of the 19 /api endpoints ran with the Supabase service key (bypasses RLS) and accepted requests from anyone who knew the URL — including marketing-send (mass email), lusha (paid lookups), unipile (LinkedIn write actions), glint-sync (overwrites glint_delivery) and account-summary (client data + Anthropic spend). New shared guard in api/_lib/guard.js: requireUser verifies the caller\'s Supabase session JWT via auth.getUser; requireCron verifies Vercel cron invocations (CRON_SECRET if set, else the platform x-vercel-cron header); requireQueueSecret supports Claude\'s feature-request automation. Every frontend /api call (34 call sites across 22 files) now goes through src/lib/apiFetch.js, which attaches the session token. Webhooks keep their own validation (marketing-webhook: Svix signature; unipile-webhook: unchanged). Recommended follow-up in Vercel env: set CRON_SECRET (Vercel then signs cron calls automatically) and optionally FEATURE_QUEUE_SECRET for the Claude feature-pull workflow — without the latter, next-feature-request now requires a logged-in user (Claude can use the Supabase MCP instead).',
+      'Closes the highest-risk audit finding: 17 of the 19 /api endpoints ran with the Supabase service key (bypasses RLS) and accepted requests from anyone who knew the URL - including marketing-send (mass email), lusha (paid lookups), unipile (LinkedIn write actions), glint-sync (overwrites glint_delivery) and account-summary (client data + Anthropic spend). New shared guard in api/_lib/guard.js: requireUser verifies the caller\'s Supabase session JWT via auth.getUser; requireCron verifies Vercel cron invocations (CRON_SECRET if set, else the platform x-vercel-cron header); requireQueueSecret supports Claude\'s feature-request automation. Every frontend /api call (34 call sites across 22 files) now goes through src/lib/apiFetch.js, which attaches the session token. Webhooks keep their own validation (marketing-webhook: Svix signature; unipile-webhook: unchanged). Recommended follow-up in Vercel env: set CRON_SECRET (Vercel then signs cron calls automatically) and optionally FEATURE_QUEUE_SECRET for the Claude feature-pull workflow - without the latter, next-feature-request now requires a logged-in user (Claude can use the Supabase MCP instead).',
     changes: [
       'api/_lib/guard.js: requireUser (Supabase JWT), requireCron (CRON_SECRET / x-vercel-cron), requireQueueSecret.',
       '12 user-facing endpoints guarded with requireUser; 3 cron endpoints with requireCron; admin-weekly-export dual (cron path vs manual Run-now); next-feature-request accepts queue secret OR user JWT.',
@@ -4346,7 +4364,7 @@ export const CHANGELOG = [
     type: 'fix',
     title: 'Clickthrough round 2: no more stale cross-view context + predictable search dismiss',
     summary:
-      'Two navigation-predictability fixes from the live clickthrough. (1) Switching views now resets the cross-view selection state (right-pane context, selected deal/comm, and the account scope). Previously a deal picked in Funnel kept the Account 360 pinned to that account across War room, Tasks, Meetings AND quietly left a "Filtered by account" scope on Comms — if you missed the banner, your inbox looked nearly empty. The initial mount is skipped so a restored session keeps its state. (2) Search: Esc now clears the whole search (text + panel) instead of leaving orphaned text that looked active but showed no results, and focusing the search field reopens the results panel when there is still a query (e.g. after dismissing with the ✕ button, which keeps the text).',
+      'Two navigation-predictability fixes from the live clickthrough. (1) Switching views now resets the cross-view selection state (right-pane context, selected deal/comm, and the account scope). Previously a deal picked in Funnel kept the Account 360 pinned to that account across War room, Tasks, Meetings AND quietly left a "Filtered by account" scope on Comms - if you missed the banner, your inbox looked nearly empty. The initial mount is skipped so a restored session keeps its state. (2) Search: Esc now clears the whole search (text + panel) instead of leaving orphaned text that looked active but showed no results, and focusing the search field reopens the results panel when there is still a query (e.g. after dismissing with the ✕ button, which keeps the text).',
     changes: [
       'BDApp.jsx: view-switch effect resets rightContext / accountScope / selectedDeal / selectedComm (skips initial mount); passes onSearchFocus to Topbar.',
       'search-results-panel.jsx: Esc calls onClearSearch (text + panel) instead of onClose (panel only).',
@@ -4362,7 +4380,7 @@ export const CHANGELOG = [
     type: 'fix',
     title: 'Live-clickthrough fix round: Open deal button, Esc closes modals, calendar MS notice, column totals, contact row cleanup',
     summary:
-      'Five fixes from the first interactive clickthrough of the live app (driven via the Chrome connection). (1) The "Open deal" button in the Account 360 deal card was a silent no-op when the deal\'s account was visible — it now always opens the deal modal; explicit click = explicit intent. (2) Esc now closes the topmost open modal, app-wide, via one global listener that clicks the top .modal-backdrop (every modal already closes on backdrop click, so behavior-equivalent and future-proof). (3) The Calendar shows a "Microsoft is not connected" notice + Connect button when the Graph token is missing — previously the week just rendered empty as if you had no meetings (Comms already had this empty-state; Calendar now matches). (4) Funnel column totals under €1k display as "€<1k" instead of e.g. "€168", which read as 168k next to the other columns\' k-format. (5) The per-contact "former?" button read as a data-quality question on every row — renamed to "mark former" and only revealed on row hover (.hover-action); "↻ restore" stays visible on struck-through former contacts.',
+      'Five fixes from the first interactive clickthrough of the live app (driven via the Chrome connection). (1) The "Open deal" button in the Account 360 deal card was a silent no-op when the deal\'s account was visible - it now always opens the deal modal; explicit click = explicit intent. (2) Esc now closes the topmost open modal, app-wide, via one global listener that clicks the top .modal-backdrop (every modal already closes on backdrop click, so behavior-equivalent and future-proof). (3) The Calendar shows a "Microsoft is not connected" notice + Connect button when the Graph token is missing - previously the week just rendered empty as if you had no meetings (Comms already had this empty-state; Calendar now matches). (4) Funnel column totals under €1k display as "€<1k" instead of e.g. "€168", which read as 168k next to the other columns\' k-format. (5) The per-contact "former?" button read as a data-quality question on every row - renamed to "mark former" and only revealed on row hover (.hover-action); "↻ restore" stays visible on struck-through former contacts.',
     changes: [
       'BDApp.jsx: dedicated onOpenDeal handler for Account 360 (always opens modal) + global Esc-closes-topmost-modal listener.',
       'lane-calendar.jsx: "Microsoft is not connected" notice + Connect button in the lane header when hasGraphToken is false.',
@@ -4379,14 +4397,14 @@ export const CHANGELOG = [
     type: 'feat',
     title: 'Data safety: atomic lead→opp promotion + fetch-limit warning banner',
     summary:
-      'Two data-integrity fixes from the UX/architecture audit. (1) Lead→opportunity promotion is now ONE transactional Postgres function (promote_lead_to_opportunity, applied as migration promote_lead_to_opportunity_atomic) instead of four sequential best-effort writes — a failure halfway can no longer orphan child rows or delete a lead without its opportunity existing. Bonus: the lead\'s D-#### deal_no now carries over, so a deal keeps its number across promotion. Round-trip tested against production with throwaway data (insert lead + task → promote → verify opp/reparent/delete → clean up). (2) usePipelineData now reports when a table returns exactly its fetch cap (FETCH_LIMITS), and BDApp shows a dismissible warning banner naming the truncated tables — previously rows beyond the cap (e.g. >500 leads) silently vanished from the UI.',
+      'Two data-integrity fixes from the UX/architecture audit. (1) Lead→opportunity promotion is now ONE transactional Postgres function (promote_lead_to_opportunity, applied as migration promote_lead_to_opportunity_atomic) instead of four sequential best-effort writes - a failure halfway can no longer orphan child rows or delete a lead without its opportunity existing. Bonus: the lead\'s D-#### deal_no now carries over, so a deal keeps its number across promotion. Round-trip tested against production with throwaway data (insert lead + task → promote → verify opp/reparent/delete → clean up). (2) usePipelineData now reports when a table returns exactly its fetch cap (FETCH_LIMITS), and BDApp shows a dismissible warning banner naming the truncated tables - previously rows beyond the cap (e.g. >500 leads) silently vanished from the UI.',
     changes: [
-      'sql/schema_promote_lead_atomic_2026-06-09.sql: new promote_lead_to_opportunity(p_lead_id, p_updates) function — atomic insert+reparent+delete, deal_no carry-over, safe text→uuid cast for parent_contact.',
+      'sql/schema_promote_lead_atomic_2026-06-09.sql: new promote_lead_to_opportunity(p_lead_id, p_updates) function - atomic insert+reparent+delete, deal_no carry-over, safe text→uuid cast for parent_contact.',
       'src/bd/lead-promote.js: now a single supabase.rpc() call; stageUpdates stays the single source of truth for stage fields.',
       'src/hooks/usePipelineData.js: FETCH_LIMITS constant + truncation detection exposed as `truncated`.',
       'src/bd/useBDData.js: passes `truncated` through.',
       'src/bd/BDApp.jsx: dismissible warning banner when a fetch cap is hit.',
-      'CLAUDE.md: §8 transactions-gotcha updated — multi-table writes go through rpc now.',
+      'CLAUDE.md: §8 transactions-gotcha updated - multi-table writes go through rpc now.',
     ],
     files: ['sql/schema_promote_lead_atomic_2026-06-09.sql', 'src/bd/lead-promote.js', 'src/hooks/usePipelineData.js', 'src/bd/useBDData.js', 'src/bd/BDApp.jsx', 'CLAUDE.md', 'src/bd/changelog.js', 'VERSION', 'package.json'],
     gitTag: 'v1.36.0',
@@ -4398,7 +4416,7 @@ export const CHANGELOG = [
     type: 'feat',
     title: 'First automated test suite: vitest over the adapter business logic',
     summary:
-      'Adds vitest (dev-only, no runtime impact) and an 18-test suite over src/bd/adapters.js — the layer where stage encoding, owner mapping and drag-drop DB writes live, and where past bugs (first-name owner rows hiding tasks, sleeping-stage deals disappearing) originated. Covers ownerIdFromName (full names, first-name legacy rows, initials fallback), adaptDeal\'s 7-column stage derivation (past+Won → sleeping, past+Lost → close, sub_status fallback, leads/opportunities table mapping), stageUpdates for all 7 drop targets on both tables (incl. the "leads have no stage column" contract), and the stage-model invariants (column order, win probabilities). Run with `npm test`. Also corrects a stale CLAUDE.md §3 note: the per-view Topbar/modal duplication was already collapsed into one shell back in v1.2.0.',
+      'Adds vitest (dev-only, no runtime impact) and an 18-test suite over src/bd/adapters.js - the layer where stage encoding, owner mapping and drag-drop DB writes live, and where past bugs (first-name owner rows hiding tasks, sleeping-stage deals disappearing) originated. Covers ownerIdFromName (full names, first-name legacy rows, initials fallback), adaptDeal\'s 7-column stage derivation (past+Won → sleeping, past+Lost → close, sub_status fallback, leads/opportunities table mapping), stageUpdates for all 7 drop targets on both tables (incl. the "leads have no stage column" contract), and the stage-model invariants (column order, win probabilities). Run with `npm test`. Also corrects a stale CLAUDE.md §3 note: the per-view Topbar/modal duplication was already collapsed into one shell back in v1.2.0.',
     changes: [
       'package.json: vitest devDependency + `npm test` script (vitest run).',
       'src/bd/adapters.test.js: 18 tests over ownerIdFromName, adaptDeal stage derivation, stageUpdates, STAGES/STAGE_PROBABILITY invariants.',
@@ -4559,7 +4577,7 @@ export const CHANGELOG = [
     type: 'fix',
     title: 'Journey board: restore Configure & QA + Launch lanes; project name as ID (not account no.)',
     summary:
-      'Restored the two lanes that got folded into "Preparing for Launch" — the board is now the full journey: Preparing for Launch → Configure & QA → Launch → Survey live → Close & results rollout → Insights review & action → Enablement & embedding → Off Rails. Cards now show the project name (mono) as the identifier instead of the account number, so account vs project numbering isn\'t mixed.',
+      'Restored the two lanes that got folded into "Preparing for Launch" - the board is now the full journey: Preparing for Launch → Configure & QA → Launch → Survey live → Close & results rollout → Insights review & action → Enablement & embedding → Off Rails. Cards now show the project name (mono) as the identifier instead of the account number, so account vs project numbering isn\'t mixed.',
     changes: [
       'lane-warroom.jsx: JOURNEY_PHASES back to 8 lanes (Configure & QA + Launch restored); removed account number from cards, project_name shown as the project id; legend trimmed.',
       'Added a "Source: CRM database" note at the top of the board (single source of truth; sheet is just an input view).',
@@ -4642,7 +4660,7 @@ export const CHANGELOG = [
     type: 'feature',
     title: 'War room: Customer journey playbook (planning board)',
     summary:
-      'New War room tab "Customer journey" — a planning board that places each operational Glint ' +
+      'New War room tab "Customer journey" - a planning board that places each operational Glint ' +
       'client into the Viva Glint listening loop (Vision & Design → Launch → Insight Review → ' +
       'Manager enablement → Action → Sustain/Pulse), with the next best action and cross-sell SKU ' +
       'per phase, plus churn/expansion flags from the project notes. (Re-applied on top of v1.30.1 ' +
@@ -4875,7 +4893,7 @@ export const CHANGELOG = [
     type: 'fix',
     title: 'FX rates: fetch server-side (rates were stuck at 1:1)',
     summary:
-      'The live FX lookup failed because api.frankfurter.app now redirects to api.frankfurter.dev, which the browser fetch could not follow — so rates fell back to 1:1 (USD 1.00 / GBP 1.00, +€0). Added a server-side /api/fx-rates route (frankfurter.dev / ECB) that the Reporting lane calls same-origin, so conversion actually applies.',
+      'The live FX lookup failed because api.frankfurter.app now redirects to api.frankfurter.dev, which the browser fetch could not follow - so rates fell back to 1:1 (USD 1.00 / GBP 1.00, +€0). Added a server-side /api/fx-rates route (frankfurter.dev / ECB) that the Reporting lane calls same-origin, so conversion actually applies.',
     changes: [
       'api/fx-rates.js: new server-side endpoint returning EUR-per-USD/GBP (cached 1h), 1:1 fallback on failure.',
       'lane-reporting.jsx: fetch /api/fx-rates instead of the third-party URL directly.',
@@ -5201,7 +5219,7 @@ export const CHANGELOG = [
     summary:
       'Documentation refresh: README and CLAUDE.md now cover the War room (Projects/Insights/' +
       'Coverage), Reporting, the AI Account 360 brief, SharePoint document links, the A-####/D-#### ' +
-      'numbering, the People Science cross-DB read and the new env vars — plus a "Conventions & ' +
+      'numbering, the People Science cross-DB read and the new env vars - plus a "Conventions & ' +
       'learned protocols" section (versioning discipline, Supabase MCP backup-first flow, sandbox ' +
       'build workaround, region-field gotcha).',
     changes: [
@@ -5219,7 +5237,7 @@ export const CHANGELOG = [
     type: 'improve',
     title: 'Reporting: average deal size in Win / loss by line',
     summary:
-      'The Win / loss by line table now has an "Avg deal" column — average won deal size ' +
+      'The Win / loss by line table now has an "Avg deal" column - average won deal size ' +
       '(won value ÷ won count) per product line, placed between Won value and Lost est.',
     changes: [
       'lane-reporting.jsx: Avg deal column added to the Win / loss by line table.',
@@ -5234,7 +5252,7 @@ export const CHANGELOG = [
     type: 'improve',
     title: 'Numbering: all accounts get an A-#### number',
     summary:
-      'Per standard CRM practice, the account number is no longer limited to Customers/Partners — ' +
+      'Per standard CRM practice, the account number is no longer limited to Customers/Partners - ' +
       'every account is numbered. Existing A-0001..A-0081 unchanged; the remaining 105 accounts ' +
       'were backfilled chronologically as A-0082..A-0186, and the trigger now numbers every new account.',
     changes: [
@@ -5254,12 +5272,12 @@ export const CHANGELOG = [
     summary:
       'Automatic numbering: every deal gets a D-#### number on creation (one sequence across ' +
       'opportunities and leads), and every account that is or becomes Customer/Partner gets an ' +
-      'A-#### number — assigned by database triggers, so it works no matter where a row is created. ' +
+      'A-#### number - assigned by database triggers, so it works no matter where a row is created. ' +
       'Existing rows backfilled chronologically (A-0001..A-0081, D-0001..D-0175). Also: merged ' +
       'duplicate companies INTWO→Intwo and KMPG→KPMG (data-quality Phase A, with backups), and ' +
       'moved the "Glint | eNPS conversion" deal from Pep core group to PEPKOR.',
     changes: [
-      'DB migration account_and_deal_numbering: sequences, unique columns (companies.account_no, opportunities.deal_no, leads.deal_no), triggers on insert/update, chronological backfill — saved as sql/schema_numbering_2026-06-07.sql.',
+      'DB migration account_and_deal_numbering: sequences, unique columns (companies.account_no, opportunities.deal_no, leads.deal_no), triggers on insert/update, chronological backfill - saved as sql/schema_numbering_2026-06-07.sql.',
       'usePipelineData/adapters: dealNo and accountNo threaded through.',
       'UI: deal number on funnel cards, inline deal detail and the deal modal (with account number); account number in the Account 360 hero and the accounts grid.',
       'Phase A dedupe executed with backups (_dq_backup_companies_20260607 / _dq_backup_contacts_20260607): all child tables repointed, losers deleted (188→186 companies), INTWO company_name snapshots fixed.',
@@ -5299,7 +5317,7 @@ export const CHANGELOG = [
       'add a link with a name + URL, delete it, and click to open the document in a new browser ' +
       'window. Each deal also gets its own Documents block in the inline deal detail.',
     changes: [
-      'New document_links table in Supabase (account-level: account_id; per-deal: deal_table + deal_id), RLS for authenticated users — applied as migration create_document_links and saved as sql/schema_document_links.sql.',
+      'New document_links table in Supabase (account-level: account_id; per-deal: deal_table + deal_id), RLS for authenticated users - applied as migration create_document_links and saved as sql/schema_document_links.sql.',
       'New doc-links-section.jsx: reusable DocLinksSection (list, add label+URL form, delete with confirm, opens links target=_blank); URLs without a scheme get https:// prefixed.',
       'lane-accounts.jsx: Documents section in the 360 below Eclectik team.',
       'inline-details.jsx: compact "Documents (SOW, proposal, …)" block inside InlineDealDetail.',
@@ -5339,7 +5357,7 @@ export const CHANGELOG = [
       '(1 company) to the US match set alongside "US" / "United States".',
     changes: [
       'lane-funnel.jsx: DealCard region reads account.region (fallback country); US set now US / United States / USA.',
-      'lane-warroom.jsx: regionFor() reads account.region (fallback country); same US set — fixes Insights review grouping that previously put everyone under EMEA.',
+      'lane-warroom.jsx: regionFor() reads account.region (fallback country); same US set - fixes Insights review grouping that previously put everyone under EMEA.',
     ],
     note: 'Verified against the DB: US clients are stored as US (33), United States (12) and USA (1). Companies with no country (40) still fall under EMEA by design.',
     files: ['src/bd/lane-funnel.jsx', 'src/bd/lane-warroom.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
@@ -5352,7 +5370,7 @@ export const CHANGELOG = [
     type: 'refactor',
     title: 'Insights review: remove People scientist column',
     summary:
-      'Dropped the People scientist column from the Insights review matrix — Client now leads ' +
+      'Dropped the People scientist column from the Insights review matrix - Client now leads ' +
       'straight into the Previous / quarter columns.',
     changes: [
       'lane-warroom.jsx: removed the PS header and per-row cell, removed the PS sort toggle, and adjusted the region section header to a single leading column.',
@@ -5367,8 +5385,8 @@ export const CHANGELOG = [
     type: 'feature',
     title: 'Funnel: region stripe on deal cards (red = US, blue = EMEA)',
     summary:
-      'Every deal card in the funnel now has a colored left stripe by region — red for US, ' +
-      'blue for EMEA — derived from the linked account country (missing country → EMEA), ' +
+      'Every deal card in the funnel now has a colored left stripe by region - red for US, ' +
+      'blue for EMEA - derived from the linked account country (missing country → EMEA), ' +
       'matching the Reporting / Insights review region split.',
     changes: [
       'lane-funnel.jsx: DealCard gets a 3px left border, red (#E24B4A) for US accounts, blue (#3B82F6) for EMEA, with a US/EMEA tooltip.',
@@ -5383,7 +5401,7 @@ export const CHANGELOG = [
     type: 'feature',
     title: 'Insights review: grouped by region (US / EMEA) like Reporting',
     summary:
-      'The Insights review matrix is now grouped by region — US and EMEA sections — the same way ' +
+      'The Insights review matrix is now grouped by region - US and EMEA sections - the same way ' +
       'the Reporting view splits clients, instead of the People Science cohorts (Deeply analysed / ' +
       'Pre-IR / CLOSED). Region is taken from each client\'s matched CRM account country (US / United ' +
       'States = US, everything else = EMEA, missing country defaults to EMEA).',
@@ -5404,14 +5422,14 @@ export const CHANGELOG = [
     title: 'Insights review forecast: season-aware (same quarter each year)',
     summary:
       'The forecast now locks onto the client\'s dominant survey season (the most common ' +
-      'quarter-of-year across their past cycles) and predicts that same quarter annually — ' +
-      'twice a year when the cadence is semi-annual — instead of stepping blindly from the ' +
+      'quarter-of-year across their past cycles) and predicts that same quarter annually - ' +
+      'twice a year when the cadence is semi-annual - instead of stepping blindly from the ' +
       'last event, which could land a quarter off.',
     changes: [
       'predictFor(): compute the modal survey quarter (Q1–Q4) from past cycles and forecast that season each year within the 4-quarter horizon.',
       'Semi-annual clients get both seasons (the modal quarter and the one two quarters away).',
     ],
-    note: 'Still a heuristic — assumes the client keeps surveying on their established annual beat.',
+    note: 'Still a heuristic - assumes the client keeps surveying on their established annual beat.',
     files: ['src/bd/lane-warroom.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
     gitTag: 'v1.18.3',
   },
@@ -5422,7 +5440,7 @@ export const CHANGELOG = [
     type: 'improve',
     title: 'Insights review forecast: include CLOSED clients',
     summary:
-      'Forecast diamonds are now shown for churned (CLOSED cohort) clients too — useful as ' +
+      'Forecast diamonds are now shown for churned (CLOSED cohort) clients too - useful as ' +
       're-engagement / win-back prompts for when their next survey cycle would normally land.',
     changes: [
       'predictFor(): removed the CLOSED-cohort skip so closed clients also get cadence-based forecast diamonds.',
@@ -5447,7 +5465,7 @@ export const CHANGELOG = [
       'Single-cycle clients now forecast (annual) instead of being skipped.',
       'Churned (CLOSED cohort) clients no longer get a forecast.',
     ],
-    note: 'Still a heuristic anchored on engagement-survey norms, not a statistical model — verify against the real pipeline.',
+    note: 'Still a heuristic anchored on engagement-survey norms, not a statistical model - verify against the real pipeline.',
     files: ['src/bd/lane-warroom.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
     gitTag: 'v1.18.1',
   },
@@ -5459,7 +5477,7 @@ export const CHANGELOG = [
     title: 'Insights review: 4-quarter forecast (blue diamonds) + operational = blue square',
     summary:
       'The Insights review matrix now extends 4 quarters into the future and marks, per client, ' +
-      'when the next deal or PSC readout is likely — a blue diamond — based on the historical ' +
+      'when the next deal or PSC readout is likely - a blue diamond - based on the historical ' +
       'cadence (median gap between past events). The operational marker (was an orange/yellow dot) ' +
       'is now a blue square.',
     changes: [
@@ -5469,7 +5487,7 @@ export const CHANGELOG = [
       'Operational row marker changed from yellow dot (#EAB308) to blue square.',
       'Legend updated for both new markers.',
     ],
-    note: 'The forecast is a naive cadence extrapolation, not a statistical model — a planning prompt, not a probability.',
+    note: 'The forecast is a naive cadence extrapolation, not a statistical model - a planning prompt, not a probability.',
     files: ['src/bd/lane-warroom.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
     gitTag: 'v1.18.0',
   },
@@ -5561,7 +5579,7 @@ export const CHANGELOG = [
     type: 'refactor',
     title: 'Insights review: matrix starts at 2024-Q4',
     summary:
-      'The Insights review matrix now starts its quarter columns at 2024-Q4 — the ' +
+      'The Insights review matrix now starts its quarter columns at 2024-Q4 - the ' +
       'old 2022/2023 baseline quarters are hidden to keep it readable. Data is ' +
       'unchanged; just the visible column range.',
     changes: [
@@ -5578,7 +5596,7 @@ export const CHANGELOG = [
     title: 'Insights review: ★ marks the quarter a deal was signed',
     summary:
       'The Insights review matrix now shows a ❊ (black, white in dark mode) in the ' +
-      'quarter a deal was signed (from the CRM funnel, by close date) — alongside ' +
+      'quarter a deal was signed (from the CRM funnel, by close date) - alongside ' +
       'the analysis dots. ' +
       'Quarter columns are extended to include any quarter a deal was signed, even ' +
       'if there was no survey that quarter, so the star always has a column.',
@@ -5611,7 +5629,7 @@ export const CHANGELOG = [
     type: 'feature',
     title: 'Reporting: YoY split per region (US, EMEA) + total',
     summary:
-      'The YoY row in the All clients · US & EMEA table is now split — a YoY line ' +
+      'The YoY row in the All clients · US & EMEA table is now split - a YoY line ' +
       'under the US subtotal and under the EMEA subtotal (each vs its own same-' +
       'quarter-last-year), plus the overall one under All clients.',
     changes: [
@@ -5628,7 +5646,7 @@ export const CHANGELOG = [
     title: 'Reporting: YoY row under the All-clients subtotal',
     summary:
       'Added a year-over-year row beneath the "All clients" subtotal in the All ' +
-      'clients · US & EMEA table — each quarter vs the same quarter last year ' +
+      'clients · US & EMEA table - each quarter vs the same quarter last year ' +
       '(green ▲ / red ▼ %), matching the Won-revenue-by-quarter chart.',
     changes: [
       'lane-reporting.jsx: YoY % row under the grand-total row in the clients table (from colTotals).',
@@ -5695,7 +5713,7 @@ export const CHANGELOG = [
     title: 'Reporting: YoY delta on won revenue by quarter',
     summary:
       'The "Won revenue by quarter" chart now shows a year-over-year delta above ' +
-      'each quarter\'s total point — comparing it to the same quarter the previous ' +
+      'each quarter\'s total point - comparing it to the same quarter the previous ' +
       'year (Q1 2026 vs Q1 2025, Q4 2025 vs Q4 2024, …). Green ▲ up / red ▼ down ' +
       'with the % change. Shown only where the prior-year quarter is in range.',
     changes: [
@@ -5712,7 +5730,7 @@ export const CHANGELOG = [
     title: 'Meetings list: drop the redundant channel icon',
     summary:
       'Removed the per-row channel icon (the Teams "M") from the Account 360 ' +
-      'Meetings list — redundant, since everything in that section is a meeting.',
+      'Meetings list - redundant, since everything in that section is a meeting.',
     changes: [
       'lane-accounts.jsx: removed ChannelIcon from meeting rows.',
     ],
@@ -5746,7 +5764,7 @@ export const CHANGELOG = [
       'duplicate added twice). It rebuilds the deal notes field without that ' +
       'entry. Asks for confirmation first.',
     changes: [
-      'inline-details.jsx InlineDealDetail: per-entry delete (×) — removes the entry and writes back the remaining dated notes.',
+      'inline-details.jsx InlineDealDetail: per-entry delete (×) - removes the entry and writes back the remaining dated notes.',
     ],
     files: ['src/bd/inline-details.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
     gitTag: 'v1.14.1',
@@ -5756,7 +5774,7 @@ export const CHANGELOG = [
     date: '2026-06-06T19:30:00Z',
     author: 'Marco van Gelder (via Claude / Cowork)',
     type: 'feature',
-    title: 'Account-level notes — editable in Insights review + the 360',
+    title: 'Account-level notes - editable in Insights review + the 360',
     summary:
       'Added an editable, persisted account-level note (stored on companies.notes). ' +
       'In the War room → Insights review there is now a "Note" column on every ' +
@@ -5766,7 +5784,7 @@ export const CHANGELOG = [
     changes: [
       'lane-warroom.jsx InsightsMatrix: editable Note column per row, auto-saves (debounced while typing + immediately on blur / moving to the next) to companies.notes for the matched account; loads existing notes on open.',
       'inline-details.jsx: "Notes (account)" field added to the Account 360 detail panel (same companies.notes field).',
-      'Reuses existing companies.notes column — no schema change.',
+      'Reuses existing companies.notes column - no schema change.',
     ],
     files: ['src/bd/lane-warroom.jsx', 'src/bd/inline-details.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
     gitTag: 'v1.14.0',
@@ -5781,7 +5799,7 @@ export const CHANGELOG = [
       'Insights review now appends CRM customers (type Customer, Adecco excluded) ' +
       'that are not yet in the People Science database under the "Pre-IR / ' +
       'pre-contract" section, marked "· CRM" with no analysis dots and clickable ' +
-      'to their 360 — so the gap between served clients and analysed clients is ' +
+      'to their 360 - so the gap between served clients and analysed clients is ' +
       'visible. Also moved the Reporting tab to first (before Funnel).',
     changes: [
       'lane-warroom.jsx InsightsMatrix: append CRM customers missing from People Science to the Pre-IR cohort (count includes them); "· CRM" tag; 360 click + PS column still resolve.',
@@ -5798,7 +5816,7 @@ export const CHANGELOG = [
     title: 'Insights review: people scientist from the 360 Eclectik team',
     summary:
       'The "People scientist" column now resolves from each account\'s 360 ' +
-      'Eclectik-team links (the team member whose name is a PSC role — Avneeta, ' +
+      'Eclectik-team links (the team member whose name is a PSC role - Avneeta, ' +
       'Kirsty, Pablo, Paul Mastrangelo, Kate Feeney), instead of the delivery ' +
       'sheet PS owner. So it reflects who covers the client per the 360.',
     changes: [
@@ -5833,13 +5851,13 @@ export const CHANGELOG = [
     title: 'Insights review: meta-page cohorts + click client → 360',
     summary:
       'Matched the Insights-review matrix to the People Science meta page: clients ' +
-      'are grouped under the same three section headers — "Deeply analysed — IR ' +
-      'read end-to-end", "Pre-IR / pre-contract — predictive framing", and ' +
-      '"CLOSED — relationship-closed clients" — in the same order/names (cohort ' +
+      'are grouped under the same three section headers - "Deeply analysed - IR ' +
+      'read end-to-end", "Pre-IR / pre-contract - predictive framing", and ' +
+      '"CLOSED - relationship-closed clients" - in the same order/names (cohort ' +
       'from client status; the meta pseudo-client excluded). Clicking a client ' +
       'name opens that account\'s 360 on the right.',
     changes: [
-      'api/insights-review.js: returns three cohort sections with counts — deep (active), pre (pre-ir/pre-contract), closed (status closed); excludes the meta pseudo-client.',
+      'api/insights-review.js: returns three cohort sections with counts - deep (active), pre (pre-ir/pre-contract), closed (status closed); excludes the meta pseudo-client.',
       'lane-warroom.jsx InsightsMatrix: renders section headers + counts; client name matched to the CRM account and clickable → opens Account 360.',
     ],
     files: ['api/insights-review.js', 'src/bd/lane-warroom.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
@@ -5877,7 +5895,7 @@ export const CHANGELOG = [
     changes: [
       'War room split into Projects | Insights review sub-tabs (lane-warroom.jsx).',
       'New /api/insights-review.js reads the People Science Supabase (clients/cycles/analyses) and returns the client × quarter matrix. GATED on PS_SUPABASE_URL / PS_SUPABASE_KEY env (returns 503 until set).',
-      'Added docs/warroom-projects-field-guide.md — the field reference for Yarmilla (incl. how to mark a project finished).',
+      'Added docs/warroom-projects-field-guide.md - the field reference for Yarmilla (incl. how to mark a project finished).',
     ],
     files: ['src/bd/lane-warroom.jsx', 'api/insights-review.js', 'docs/warroom-projects-field-guide.md', 'src/bd/changelog.js', 'VERSION', 'package.json'],
     gitTag: 'v1.12.0',
@@ -5907,7 +5925,7 @@ export const CHANGELOG = [
     summary:
       'Changed the status-bar world clock from a bordered block to inline ' +
       'dot-separated segments, matching the "Eclectik BD · <user> · <date>" style ' +
-      '— e.g. "… · Amsterdam 08:02 ±0 · New York 02:02 -6h · …". Amsterdam is ' +
+      '- e.g. "… · Amsterdam 08:02 ±0 · New York 02:02 -6h · …". Amsterdam is ' +
       'emphasised as home.',
     changes: [
       'statusbar.jsx: render each location as a flat "City HH:MM offset" segment separated by ·, instead of the tz-strip cell block.',
@@ -5928,7 +5946,7 @@ export const CHANGELOG = [
       'since it now lives globally in the status bar.',
     changes: [
       'statusbar.jsx: now renders "Eclectik BD · <user> · <date>" + the 8-city live world clock (updates every 30s).',
-      'lane-calendar.jsx: removed the TimezoneFooter (and getOffset) — relocated to the status bar.',
+      'lane-calendar.jsx: removed the TimezoneFooter (and getOffset) - relocated to the status bar.',
     ],
     files: ['src/bd/statusbar.jsx', 'src/bd/lane-calendar.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
     gitTag: 'v1.11.2',
@@ -5994,17 +6012,17 @@ export const CHANGELOG = [
     title: 'War room: per-column hour totals + used/remaining hour bars',
     summary:
       'Each people column header now shows the total allocated hours across all ' +
-      'projects in brackets — CS (Xh) / PS (Yh) / Support (Zh). Under each ' +
+      'projects in brackets - CS (Xh) / PS (Yh) / Support (Zh). Under each ' +
       'person, a small hour bar shows used (green) vs remaining (red) of their ' +
       'allocated hours. The "used hours" source is not wired yet (placeholder = 0, ' +
-      'so bars read all-remaining for now) — to be pointed at the right field later.',
+      'so bars read all-remaining for now) - to be pointed at the right field later.',
     changes: [
       'Column headers sum allocated hours: CS / PS / Support (Xh).',
       'HourBar under each name: green blocks = used, red = remaining (~10h per block).',
-      'Reads cs_used_hours / ps_used_hours / other_used_hours — currently undefined (0) pending the chosen used-hours field.',
-      'Deal value shown after the project name, from the company\'s RUNNING (active/onboarding) CRM deal(s) only — fixes inflated values (e.g. IMC) caused by counting past/lost deals.',
+      'Reads cs_used_hours / ps_used_hours / other_used_hours - currently undefined (0) pending the chosen used-hours field.',
+      'Deal value shown after the project name, from the company\'s RUNNING (active/onboarding) CRM deal(s) only - fixes inflated values (e.g. IMC) caused by counting past/lost deals.',
       'Deal value followed by an effective rate in brackets: (€deal-value / total allocated hours per hour).',
-      'Top banner lists CRM "active"/onboarding deals whose company has no row in the delivery sheet — the missing projects.',
+      'Top banner lists CRM "active"/onboarding deals whose company has no row in the delivery sheet - the missing projects.',
     ],
     files: ['src/bd/lane-warroom.jsx', 'src/bd/changelog.js', 'VERSION', 'package.json'],
     gitTag: 'v1.10.2',
@@ -6018,8 +6036,8 @@ export const CHANGELOG = [
     summary:
       'Reworked the War room to focus on running Glint delivery. Removed the ' +
       'commercial-pipeline section and the Service and Health columns. People are ' +
-      'now split into their own columns — CS · PS · Support (Eclectik owners + ' +
-      'hours from the sheet) — and the operational detail (survey-live dates, ' +
+      'now split into their own columns - CS · PS · Support (Eclectik owners + ' +
+      'hours from the sheet) - and the operational detail (survey-live dates, ' +
       'dependencies) shows in a Details column. Columns: Client · project · CS · ' +
       'PS · Support · Milestone · Details · Status. Rows still order by urgency ' +
       '(Not started first, then soonest milestone).',
@@ -6037,7 +6055,7 @@ export const CHANGELOG = [
     date: '2026-06-05T15:20:00Z',
     author: 'Marco van Gelder (via Claude / Cowork)',
     type: 'feature',
-    title: 'War room — pipeline + running Glint projects on one screen',
+    title: 'War room - pipeline + running Glint projects on one screen',
     summary:
       'New "War room" tab: the commercial pipeline (from the CRM) and the running ' +
       'Glint delivery projects on one grid. Delivery rows are synced from ' +
@@ -6050,7 +6068,7 @@ export const CHANGELOG = [
     changes: [
       'New War-room tab (src/bd/lane-warroom.jsx) wired into BDApp NAV_VIEWS + Topbar; reads glint_delivery + open pipeline deals.',
       'New table public.glint_delivery (schema_glint_delivery.sql) + one-time seed of current rows (seed_glint_delivery.sql). RUN BOTH in Supabase.',
-      'New /api/glint-sync.js: reads the Master Project Overview workbook via Microsoft Graph (app-only) and upserts rows; the Update button triggers it. GATED on Graph Files.Read.All consent + GRAPH_TENANT_ID/CLIENT_ID/CLIENT_SECRET env — returns 503 until configured, seeded data shows meanwhile.',
+      'New /api/glint-sync.js: reads the Master Project Overview workbook via Microsoft Graph (app-only) and upserts rows; the Update button triggers it. GATED on Graph Files.Read.All consent + GRAPH_TENANT_ID/CLIENT_ID/CLIENT_SECRET env - returns 503 until configured, seeded data shows meanwhile.',
       'Auto-health + soonest-of-three milestone (survey / insight-review / delivery-end) logic.',
     ],
     files: [
@@ -6070,14 +6088,14 @@ export const CHANGELOG = [
       'Dragging a deal to active or onboarding (an existing-customer / new-project ' +
       'win) now also marks it status=Won with a close (won) date of today, instead ' +
       'of leaving status empty. This makes new-project wins appear in the quarterly ' +
-      'Won + new/recurring reporting — previously they fell into an "unstatused-' +
+      'Won + new/recurring reporting - previously they fell into an "unstatused-' +
       'active" bucket excluded from the quarter breakdown, so a win like Alex Lee\'s ' +
       'July 2026 project never scored. The deal still sits in the active/onboarding ' +
       'funnel column (the funnel keys off stage, not status); the close date is ' +
       'editable afterwards if the win belongs in a different quarter.',
     changes: [
       'stageUpdates() in adapters.js: for active/onboarding, set status=Won + close_date/actual_close_date=today (opportunities only) instead of clearing status.',
-      'No funnel change — display column still derives from stage, so won-active deals stay in the active column (matches existing active+Won deals).',
+      'No funnel change - display column still derives from stage, so won-active deals stay in the active column (matches existing active+Won deals).',
       'Data: existing Alex Lee 2026 deal patched separately via SQL (db_revert_alexlee_active_won_2026-06-05.sql for rollback).',
     ],
     files: [
@@ -6111,7 +6129,7 @@ export const CHANGELOG = [
     date: '2026-06-04T18:07:19Z',
     author: 'Marco van Gelder (via Claude / Cowork)',
     type: 'feature',
-    title: 'Tasks: "With" field — an Eclectik member on the task',
+    title: 'Tasks: "With" field - an Eclectik member on the task',
     summary:
       'Tasks now have a "With" field: a single Eclectik team member who joins or ' +
       'collaborates on the task, separate from the owner (the "For" person). The ' +
@@ -6119,7 +6137,7 @@ export const CHANGELOG = [
       'eclectik_team). In the all-tasks list the "With" column sits next to "For" ' +
       'and is sortable. Stored as a contact reference so names stay consistent.',
     changes: [
-      'Added with_contact_id column to tasks (FK to contacts) — see schema_tasks_with_member.sql (run in Supabase).',
+      'Added with_contact_id column to tasks (FK to contacts) - see schema_tasks_with_member.sql (run in Supabase).',
       'task-detail-modal.jsx: new single-select "With (Eclectik)" dropdown, roster = distinct eclectik_team contacts; writes with_contact_id.',
       'tasks-view.jsx: new sortable "With" column placed right after "For" (owner), resolving with_contact_id to the contact name.',
       'Threaded withContactId through both task adapters (usePipelineData + adapters.js) for app-wide use.',
@@ -6139,19 +6157,19 @@ export const CHANGELOG = [
     date: '2026-06-04T18:07:19Z',
     author: 'Marco van Gelder (via Claude / Cowork)',
     type: 'feature',
-    title: 'Account 360 — AI Summary brief + internal Teams channel stream',
+    title: 'Account 360 - AI Summary brief + internal Teams channel stream',
     summary:
       'New "Summary" section at the top of every Account 360, above Meetings: ' +
       'stat pills (last touch, interaction count, team-channel-linked, items ' +
       'needing attention), an AI-written brief of what has happened across every ' +
       'channel, and a "Needs attention" list. Merges meetings, email, LinkedIn, ' +
-      'notes, tasks and deal-stage changes, plus — per client — a linked internal ' +
+      'notes, tasks and deal-stage changes, plus - per client - a linked internal ' +
       'Teams channel (IMC Trading seeded). Generated on demand via the new ' +
       '/api/account-summary endpoint (Claude Sonnet), optional caching to account_briefs.',
     changes: [
       'Collapsible "Summary" Section above Meetings in AccountDetail with the AccountBrief component (stat pills, brief paragraphs, Needs-attention list, Generate/Refresh).',
       'New /api/account-summary.js endpoint: assembles the normalized interaction list and returns a structured JSON brief via Claude Sonnet; best-effort persistence to an optional account_briefs table (ephemeral fallback).',
-      'Per-client internal Teams channel via ACCOUNT_TEAMS_CHANNELS (seeded with IMC Trading) using getChannelMessages(); guarded — silently skipped until Graph channel scopes are admin-consented, so login is unaffected.',
+      'Per-client internal Teams channel via ACCOUNT_TEAMS_CHANNELS (seeded with IMC Trading) using getChannelMessages(); guarded - silently skipped until Graph channel scopes are admin-consented, so login is unaffected.',
       'Added schema_account_briefs.sql (optional caching table).',
     ],
     files: [
@@ -6178,7 +6196,7 @@ export const CHANGELOG = [
       'Sticky top-toolbar (search-input + select-all + bulk-acties) blijft bovenaan tijdens scrollen door contact-lijst.',
       'Per-contact opt-out toggle: groen envelope (✉) = wel mailen, rood circled-slash (⊘) = niet mailen. Tekst-Unicode i.p.v. emoji zodat CSS-color werkt. Optimistic local-state voor directe visuele feedback; async DB-write met rollback bij error.',
       'Visuele indicator: email-tekst strikethrough + opacity 0.5 wanneer opt-out actief.',
-      'Send-campaign filtert do_not_email=true contacten automatisch uit recipients. Confirm-dialog ("X contacten op opt-out — door met overige Y?") als er geskipped worden.',
+      'Send-campaign filtert do_not_email=true contacten automatisch uit recipients. Confirm-dialog ("X contacten op opt-out - door met overige Y?") als er geskipped worden.',
       '+ knop naast TAGS-header: inline input voor nieuwe tag-naam, persist in tags-tabel met random pastel-kleur.',
       '+ knop naast ACCOUNT STATUS-header: inline input voor nieuwe status, lokaal opgeslagen in localStorage (marketing_extra_statuses) zodat filter-optie zichtbaar wordt. Persistent in DB pas wanneer toegewezen aan een account via account-detail.',
       'Vereist eenmalige SQL: ALTER TABLE contacts ADD COLUMN do_not_email boolean NOT NULL DEFAULT false (door Olivier handmatig).',
@@ -6196,7 +6214,7 @@ export const CHANGELOG = [
     date: '2026-06-03T16:00:00Z',
     author: 'Olivier Arnolds (via Claude / Cowork)',
     type: 'fix',
-    title: 'Playbooks v2 — last-mile fixes voor signals + suggesties + cron',
+    title: 'Playbooks v2 - last-mile fixes voor signals + suggesties + cron',
     summary:
       'Zes opvolg-fixes na productie-deploy van 1.6.0. Volledige eind-tot-eind ' +
       'loop bewezen: signaal-poll detecteert LinkedIn-posts, Claude scoort, ' +
@@ -6230,7 +6248,7 @@ export const CHANGELOG = [
     date: '2026-06-03T10:00:00Z',
     author: 'Olivier Arnolds (via Claude / Cowork)',
     type: 'feature',
-    title: 'Playbooks v2 — visual workflow builder + execution engine + AI + signals',
+    title: 'Playbooks v2 - visual workflow builder + execution engine + AI + signals',
     summary:
       'Compleet nieuwe Playbooks-feature: graph-gebaseerd ontwerp met drag-drop ' +
       'visuele builder (React Flow), conditional branching, AI-gegenereerde drafts ' +
@@ -6302,7 +6320,7 @@ export const CHANGELOG = [
     date: '2026-06-01T21:20:00Z',
     author: 'Marco van Gelder (via Claude / Cowork)',
     type: 'fix',
-    title: 'Coverage matrix — Kate Feeney mapped to PSC',
+    title: 'Coverage matrix - Kate Feeney mapped to PSC',
     summary:
       'Kate Feeney (no role in the CRM, was showing under leadership/other) is a ' +
       'people scientist, grouped under PSC in the coverage matrix.',
@@ -6324,7 +6342,7 @@ export const CHANGELOG = [
     type: 'fix',
     title: 'Reporting: only flag won deals with no revenue at all',
     summary:
-      'The "won with no/zero actual revenue" data warning was misleading — it fired ' +
+      'The "won with no/zero actual revenue" data warning was misleading - it fired ' +
       'for deals that are won on an estimate (real revenue), e.g. Breitling and ' +
       'BioMarin. It now fires only when a won deal has no revenue at all (no actual ' +
       'AND no estimate), so estimate-based wins no longer raise a flag.',
@@ -6346,7 +6364,7 @@ export const CHANGELOG = [
     date: '2026-06-01T20:55:00Z',
     author: 'Marco van Gelder (via Claude / Cowork)',
     type: 'fix',
-    title: 'Coverage matrix — authoritative team role mapping',
+    title: 'Coverage matrix - authoritative team role mapping',
     summary:
       'The Reporting coverage matrix now uses an explicit role map for the Eclectik ' +
       'team instead of inferring purely from account_links. Eric Quintane and Manish ' +
@@ -6382,7 +6400,7 @@ export const CHANGELOG = [
       'BioMarin Pharmaceutical Inc: active deal marked Won; the €0 actual was cleared so the €33,250 estimate counts; account reclassified Prospect → Customer.',
       'European Training Foundation (ETF) and PIMCO Prime Real Estate: reclassified Prospect → Customer (they carry won revenue). Microsoft Corp intentionally left as Partner.',
       'BMC Software: country set to US (was blank, previously defaulting to EMEA).',
-      'Effect: won revenue €1,113,770 → €1,161,720, won deals 44 → 46, customers (excl. Adecco) 32 → 35. Breitling & BioMarin now appear under the (informational) "won on estimate, no actual booked" flag — actuals were deliberately not faked.',
+      'Effect: won revenue €1,113,770 → €1,161,720, won deals 44 → 46, customers (excl. Adecco) 32 → 35. Breitling & BioMarin now appear under the (informational) "won on estimate, no actual booked" flag - actuals were deliberately not faked.',
       'Snapshots: public._dq_backup_opps_20260601 and public._dq_backup_companies_20260601.',
     ],
     files: [
@@ -6391,7 +6409,7 @@ export const CHANGELOG = [
       'VERSION',
       'package.json',
     ],
-    rollback: 'Data: run db_revert_dataquality_2026-06-01.sql in the Supabase SQL Editor (restores from the _dq_backup_*_20260601 snapshots). This was a DB-only change — git checkout does not undo it.',
+    rollback: 'Data: run db_revert_dataquality_2026-06-01.sql in the Supabase SQL Editor (restores from the _dq_backup_*_20260601 snapshots). This was a DB-only change - git checkout does not undo it.',
     gitTag: 'v1.5.1',
   },
   {
@@ -6399,10 +6417,10 @@ export const CHANGELOG = [
     date: '2026-06-01T20:10:00Z',
     author: 'Marco van Gelder (via Claude / Cowork)',
     type: 'feature',
-    title: 'Reporting tab — BD revenue & pipeline dashboard',
+    title: 'Reporting tab - BD revenue & pipeline dashboard',
     summary:
       'New Reporting tab (after Comms) that reads live from Supabase and derives ' +
-      'every figure from queries at load time — no hardcoded numbers. Won revenue ' +
+      'every figure from queries at load time - no hardcoded numbers. Won revenue ' +
       'by quarter with target + linear trend, new vs recurring by line, win/loss by ' +
       'line, and an all-clients US/EMEA matrix. Clicking a client name opens that ' +
       "account's 360 in the right pane. Follows the app's light/dark theme.",
@@ -6414,7 +6432,7 @@ export const CHANGELOG = [
       'All-clients table groups US/EMEA with per-quarter columns, subtotals and a grand total that reconciles to total won; client-name click calls the existing pickAccount() so the persistent right pane shows the Account 360.',
       'Client-coverage matrix: clients (rows) × Eclectik team members (columns, grouped CSM → PSC → ROI → leadership/other from account_links), a colored dot marks each covered client; client name opens the 360.',
       'Config toggles: count unstatused-active deals as won (off by default) and new-vs-recurring at relationship vs product-line level.',
-      'Read-only feature — no database change, so no snapshot/revert required.',
+      'Read-only feature - no database change, so no snapshot/revert required.',
     ],
     files: [
       'src/bd/lane-reporting.jsx (new)',
@@ -6486,13 +6504,13 @@ export const CHANGELOG = [
       'Cleaned up the free-text `owner` field, which stored the same person under ' +
       'several spellings. Every owner in companies, contacts, leads, opportunities ' +
       'and tasks is now one of three canonical full names. This was a DATABASE change ' +
-      '(already applied live) — to undo it, run the revert SQL, not git.',
+      '(already applied live) - to undo it, run the revert SQL, not git.',
     changes: [
       'Normalized owner to: Marco van Gelder / Olivier Arnolds / Yarmilla Koenders across companies, contacts, leads, opportunities, tasks.',
       'Collapsed spelling variants: "MVG"/"Marco" → Marco van Gelder; "Olivier" → Olivier Arnolds; "Yarmilla" → Yarmilla Koenders.',
-      'Reassigned legacy Dynamics owners (Jonathan Khongwir — 54 opps + 63 contacts, Desiree Cisneros) to Marco van Gelder.',
+      'Reassigned legacy Dynamics owners (Jonathan Khongwir - 54 opps + 63 contacts, Desiree Cisneros) to Marco van Gelder.',
       'Filled empty owners (3 companies, 10 contacts, 3 leads, 5 opps, 9 tasks) with Marco van Gelder.',
-      'Left comms.owner untouched — it stores the external counterparty name, not a team owner.',
+      'Left comms.owner untouched - it stores the external counterparty name, not a team owner.',
       'Took a full snapshot first (public._owner_backup_20260601) for reversibility.',
     ],
     files: [
@@ -6540,13 +6558,13 @@ export const CHANGELOG = [
     type: 'feature',
     title: 'In-app Log / version-history tab + project metadata cleanup',
     summary:
-      'Added a Log tab so the team can see, in the app, exactly what changed and when — ' +
+      'Added a Log tab so the team can see, in the app, exactly what changed and when - ' +
       'with date-time stamps, per-version detail, and git-based rollback instructions. ' +
       'Also corrected stale project metadata. No Supabase data was touched.',
     changes: [
       'New "Log" tab in the top navigation (between Marketing and Admin).',
       'Added src/bd/changelog.js as the single source of truth for version history.',
-      'Added src/bd/log-view.jsx — renders the changelog as a timeline (newest first) with version badge, UTC + local date-time stamp, author, detailed change list, files touched, and the exact rollback command per version.',
+      'Added src/bd/log-view.jsx - renders the changelog as a timeline (newest first) with version badge, UTC + local date-time stamp, author, detailed change list, files touched, and the exact rollback command per version.',
       'Added a "history" icon to the shared icon set (src/bd/atoms.jsx).',
       'Wired the Log view into BDApp.jsx (view === "log") and the Topbar nav button.',
       'package.json: removed "type": "commonjs" (this is an ESM Vite app) and the stray "main": "index.js"; bumped version 1.0.0 → 1.1.0 to match this entry.',

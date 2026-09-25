@@ -1382,11 +1382,11 @@ export default function MarketingOutreach() {
                     <>
                       <td style={{ padding: '6px 10px', whiteSpace: 'nowrap', fontFamily: 'var(--font-mono)',
                         color: (betrokkenheid.get(r.id)?.opens || 0) > 0 ? '#0e7490' : 'var(--text-3)' }}>
-                        {(betrokkenheid.get(r.id)?.opens || 0) > 0 ? `${betrokkenheid.get(r.id).opens}x` : '—'}
+                        {(betrokkenheid.get(r.id)?.opens || 0) > 0 ? `${betrokkenheid.get(r.id).opens}x` : '-'}
                       </td>
                       <td style={{ padding: '6px 10px', whiteSpace: 'nowrap', fontFamily: 'var(--font-mono)',
                         color: (betrokkenheid.get(r.id)?.clicks || 0) > 0 ? '#6d28d9' : 'var(--text-3)' }}>
-                        {(betrokkenheid.get(r.id)?.clicks || 0) > 0 ? `${betrokkenheid.get(r.id).clicks}x` : '—'}
+                        {(betrokkenheid.get(r.id)?.clicks || 0) > 0 ? `${betrokkenheid.get(r.id).clicks}x` : '-'}
                       </td>
                     </>
                   )}
@@ -1807,7 +1807,7 @@ function ContactMailsModal({ contact, campaign, rows = [], registratie = null, o
                 const naam = [r.first_name, r.last_name].filter(Boolean).join(' ') || r.email || r.linkedin_url;
                 return (
                   <option key={r.id} value={r.id}>
-                    {r.outreach_prio ? `${r.outreach_prio}. ` : ''}{naam}{r.company ? ` — ${r.company}` : ''}
+                    {r.outreach_prio ? `${r.outreach_prio}. ` : ''}{naam}{r.company ? `, ${r.company}` : ''}
                   </option>
                 );
               })}
