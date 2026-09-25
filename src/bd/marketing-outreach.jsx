@@ -777,7 +777,7 @@ export default function MarketingOutreach() {
                         {r.beoordeling_nodig && (
                           <span style={{ color: '#b45309', fontWeight: 600 }}> · handmatig beoordelen</span>
                         )}
-                        <div style={{ color: 'var(--text-3)', marginTop: 2 }}>{r.tekst}</div>
+                        <div style={{ color: 'var(--text-3)', marginTop: 2, whiteSpace: 'pre-wrap' }}>{r.tekst}</div>
                       </li>
                     ))}
                   </ul>
@@ -1292,7 +1292,7 @@ function ContactMailsModal({ contact, campaign, rows = [], registratie = null, o
         if (e1) throw e1;
         const { data: h, error: e2 } = await supabase
           .from('outreach_message')
-          .select('direction,sequence_step,subject,body_preview,sent_or_received_at,classification,classification_confidence,match_method,provider_message_id,open_count,click_count,delivered_at')
+          .select('direction,sequence_step,subject,body_preview,body_full,sent_or_received_at,classification,classification_confidence,match_method,provider_message_id,open_count,click_count,delivered_at')
           .eq('contact_id', current.id)
           .order('sent_or_received_at', { ascending: true, nullsFirst: false });
         if (e2) throw e2;
@@ -1529,13 +1529,22 @@ function ContactMailsModal({ contact, campaign, rows = [], registratie = null, o
                 </div>
               )}
 
-              {(detail?.paused_reason || detail?.last_reply_summary) && (
-                <div style={{ fontSize: 12, color: 'var(--text-2)', background: 'var(--fill-1)', borderRadius: 6, padding: '8px 10px' }}>
-                  {detail.last_reply_summary
-                    ? <><strong>Antwoord:</strong> {detail.last_reply_summary}</>
-                    : <><strong>Gepauzeerd:</strong> {detail.paused_reason}</>}
-                </div>
-              )}
+              {(detail?.paused_reason || detail?.last_reply_summary) && (() => {
+                // last_reply_summary is bewust kort, want die vult ook de smalle
+                // kolom Toelichting in de lijst. Hier is er ruimte, dus tonen we
+                // de volledige tekst uit het laatste inkomende bericht en pas bij
+                // gebrek daaraan de ingekorte samenvatting.
+                const laatsteIn = [...(history || [])].reverse().find(x => x.direction === 'inbound');
+                const volledig = laatsteIn?.body_full || laatsteIn?.body_preview || detail.last_reply_summary;
+                return (
+                  <div style={{ fontSize: 12, color: 'var(--text-2)', background: 'var(--fill-1)', borderRadius: 6, padding: '8px 10px' }}>
+                    {detail.last_reply_summary
+                      ? <><strong>Antwoord:</strong>{' '}
+                          <span style={{ whiteSpace: 'pre-wrap' }}>{volledig}</span></>
+                      : <><strong>Gepauzeerd:</strong> {detail.paused_reason}</>}
+                  </div>
+                );
+              })()}
 
               {/* Stoppen. Bewust bovenaan, boven de berichten: het is de uitweg
                   als uit een antwoord blijkt dat iemand hier niet meer werkt, en

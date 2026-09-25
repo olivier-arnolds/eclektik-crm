@@ -219,7 +219,10 @@ export default async function handler(req, res) {
       bedrijf: c.company,
       uitkomst: 'antwoord',
       aantal: antwoorden.length,
-      tekst: kort(tekst, 200),
+      // Ruim, want dit is het scherm waarop een mens beoordeelt of de
+      // classificatie klopt. Op 200 tekens viel juist het deel weg waar het om
+      // ging. De korte versie is voor de kolom Toelichting in de lijst.
+      tekst: kort(tekst, 2000),
       ontvangen_op: laatste.timestamp,
       classificatie: classificatie?.classification || null,
       confidence: classificatie?.confidence ?? 0,
