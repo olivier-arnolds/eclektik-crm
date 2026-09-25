@@ -4,7 +4,12 @@ import { apiFetch } from '../lib/apiFetch';
 import { useAuth } from '../lib/auth';
 import { getFolderEmails, getMailboxFolderEmails, getMailboxMessagesSince, getMessageBody, findMessageByInternetId } from '../lib/graph';
 import { kiesBerichttekst } from '../lib/mail-body';
-import { scanInbox, needsOurReply, matchRegistrations } from './outreach-match';
+import {
+  scanInbox, needsOurReply, matchRegistrations,
+  conversatieStatus, reminderAdvies,
+  CONV_GEEN, CONV_ANTWOORD, CONV_HEEN_EN_WEER,
+  HERINNERING_KAN, HERINNERING_TE_VROEG, HERINNERING_AL, HERINNERING_NIET,
+} from './outreach-match';
 import { outreachTextToHtml, subjectForStep } from '../lib/outreach-html';
 
 // Outreach-tab onder Marketing. Ontwerp: docs/outreach-handover.md addendum §9.
@@ -34,6 +39,29 @@ const STATUS_COLOR = {
   queued: '#2563eb', msg1_sent: '#d97706', msg2_sent: '#d97706', replied: '#16a34a',
   bounced: '#dc2626', ooo: '#7c3aed', referred: '#0891b2', opted_out: '#6b7280',
   paused: '#6b7280', done: '#16a34a',
+};
+
+const CONV_LABEL = {
+  [CONV_GEEN]: 'geen',
+  [CONV_ANTWOORD]: 'antwoord',
+  [CONV_HEEN_EN_WEER]: 'heen en weer',
+};
+const CONV_COLOR = {
+  [CONV_GEEN]: 'var(--text-3)',
+  [CONV_ANTWOORD]: '#d97706',
+  [CONV_HEEN_EN_WEER]: '#16a34a',
+};
+const HERINNERING_LABEL = {
+  [HERINNERING_KAN]: 'kan',
+  [HERINNERING_TE_VROEG]: 'te vroeg',
+  [HERINNERING_AL]: 'al herinnerd',
+  [HERINNERING_NIET]: 'niet doen',
+};
+const HERINNERING_COLOR = {
+  [HERINNERING_KAN]: '#16a34a',
+  [HERINNERING_TE_VROEG]: 'var(--text-3)',
+  [HERINNERING_AL]: 'var(--text-3)',
+  [HERINNERING_NIET]: '#6b7280',
 };
 
 const CONTACT_COLS =
@@ -115,6 +143,8 @@ export default function MarketingOutreach() {
   // Opens en kliks per prospect. Staan per BERICHT in de database (een prospect
   // kan er twee hebben), dus hier opgeteld tot een beeld per persoon.
   const [betrokkenheid, setBetrokkenheid] = useState(new Map());
+  // Onze laatste uitgaande datum per prospect. Voedt reminderAdvies.
+  const [laatsteVerzending, setLaatsteVerzending] = useState(new Map());
 
   const [statusFilter, setStatusFilter] = useState('all');
   const [prioFilter, setPrioFilter] = useState('all');
@@ -183,10 +213,13 @@ export default function MarketingOutreach() {
       try {
         const { data: msgs } = await supabase
           .from('outreach_message')
-          .select('contact_id, open_count, click_count, delivered_at')
+          .select('contact_id, open_count, click_count, delivered_at, sent_or_received_at')
           .eq('campaign_id', camp.id).eq('direction', 'outbound')
           .limit(5000);
         const m = new Map();
+        // Onze laatste uitgaande datum per contact, in dezelfde lus. Nodig voor
+        // reminderAdvies; outreach_contact heeft geen last_sent_at-kolom.
+        const verzonden = new Map();
         for (const r of (msgs || [])) {
           if (!r.contact_id) continue;
           const v = m.get(r.contact_id) || { opens: 0, clicks: 0, delivered: 0 };
@@ -194,10 +227,18 @@ export default function MarketingOutreach() {
           v.clicks += r.click_count || 0;
           if (r.delivered_at) v.delivered += 1;
           m.set(r.contact_id, v);
+
+          const vorige = verzonden.get(r.contact_id);
+          if (r.sent_or_received_at
+            && (!vorige || new Date(r.sent_or_received_at) > new Date(vorige))) {
+            verzonden.set(r.contact_id, r.sent_or_received_at);
+          }
         }
         setBetrokkenheid(m);
+        setLaatsteVerzending(verzonden);
       } catch {
         setBetrokkenheid(new Map());
+        setLaatsteVerzending(new Map());
       }
 
       // Aanmeldingen erbij. Losse query en client-side koppelen, want er is geen
@@ -1034,7 +1075,7 @@ export default function MarketingOutreach() {
               <tr>
                 {['#', 'Naam', 'Bedrijf', 'Prioriteit', 'Status',
                   ...(isLinkedIn ? [] : ['Geopend', 'Geklikt']),
-                  'Volgende actie', 'Toelichting'].map(h => (
+                  'Conversatie', 'Herinnering', 'Volgende actie', 'Toelichting'].map(h => (
                   <th key={h} style={{ textAlign: 'left', padding: '7px 10px', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)', borderBottom: '0.5px solid var(--sep)' }}>{h}</th>
                 ))}
               </tr>
@@ -1098,6 +1139,32 @@ export default function MarketingOutreach() {
                       </td>
                     </>
                   )}
+                  <td style={{ padding: '6px 10px', whiteSpace: 'nowrap' }}>
+                    {(() => {
+                      const c = conversatieStatus(r);
+                      return (
+                        <span style={{ color: CONV_COLOR[c], fontWeight: c === CONV_GEEN ? 400 : 500 }}>
+                          {CONV_LABEL[c]}
+                        </span>
+                      );
+                    })()}
+                  </td>
+                  <td style={{ padding: '6px 10px', whiteSpace: 'nowrap' }}>
+                    {(() => {
+                      const a = reminderAdvies({
+                        status: r.status,
+                        last_inbound_at: r.last_inbound_at,
+                        next_action_at: r.next_action_at,
+                        laatsteVerzendingISO: laatsteVerzending.get(r.id) || null,
+                      });
+                      return (
+                        <span title={a.reden}
+                          style={{ color: HERINNERING_COLOR[a.advies], fontWeight: a.advies === HERINNERING_KAN ? 500 : 400 }}>
+                          {HERINNERING_LABEL[a.advies]}
+                        </span>
+                      );
+                    })()}
+                  </td>
                   <td style={{ padding: '6px 10px', color: 'var(--text-3)', whiteSpace: 'nowrap' }}>
                     {r.next_action_at ? String(r.next_action_at).slice(0, 10) : '-'}
                   </td>
@@ -1107,7 +1174,7 @@ export default function MarketingOutreach() {
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={isLinkedIn ? 7 : 9} style={{ padding: 16, textAlign: 'center', color: 'var(--text-3)' }}>Niets gevonden.</td></tr>
+                <tr><td colSpan={isLinkedIn ? 9 : 11} style={{ padding: 16, textAlign: 'center', color: 'var(--text-3)' }}>Niets gevonden.</td></tr>
               )}
             </tbody>
           </table>
