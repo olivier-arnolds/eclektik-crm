@@ -161,7 +161,14 @@ export default async function handler(req, res) {
       updated_at: new Date().toISOString(),
     };
     if (cls?.classification === 'bounce') upd.paused_reason = 'mail bouncede';
-    if (next.needs_review) upd.paused_reason = `check handmatig: ${cls?.classification || 'onbekend'} (${Math.round((cls?.confidence || 0) * 100)}%)`;
+    // Zie de toelichting in outreach-linkedin-scan.js: een laag percentage is
+    // twijfel van het model, geen classificatie is een storing. Dat moet je uit
+    // elkaar kunnen houden bij het nalopen.
+    if (next.needs_review) {
+      upd.paused_reason = cls?.classification
+        ? `check handmatig: ${cls.classification} (${Math.round((cls.confidence || 0) * 100)}%)`
+        : 'check handmatig: classificatie mislukt, geen leesbaar antwoord van het model';
+    }
 
     const { error: updErr } = await supabase.from('outreach_contact').update(upd).eq('id', c.contactId);
     if (updErr) {

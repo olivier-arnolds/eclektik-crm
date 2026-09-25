@@ -249,7 +249,14 @@ export default async function handler(req, res) {
     // Zelfde patroon als de mailscan: maak zichtbaar dat er een mens naar moet
     // kijken, anders is needs_review alleen in dit rapport te zien.
     if (next.needs_review) {
-      upd.paused_reason = `check handmatig: ${classificatie?.classification || 'onbekend'} (${Math.round((classificatie?.confidence || 0) * 100)}%)`;
+      // Twee verschillende dingen, en dat verschil moet leesbaar blijven. Een
+      // laag percentage betekent dat het model twijfelde. Geen classificatie
+      // betekent dat er niets bruikbaars terugkwam, en dat is een storing, geen
+      // oordeel. Allebei 'onbekend (0%)' noemen maakte een kapotte aanroep
+      // ononderscheidbaar van een moeilijk antwoord.
+      upd.paused_reason = classificatie?.classification
+        ? `check handmatig: ${classificatie.classification} (${Math.round((classificatie.confidence || 0) * 100)}%)`
+        : 'check handmatig: classificatie mislukt, geen leesbaar antwoord van het model';
     }
 
     const { error: updErr } = await supabase.from('outreach_contact').update(upd).eq('id', c.id);

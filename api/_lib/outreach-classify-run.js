@@ -23,7 +23,22 @@ export async function classifyWithClaude({ fromAddress, subject, bodyPreview, bo
   const tekst = String(bodyFull || bodyPreview || '').replace(/\s+/g, ' ').slice(0, 4000);
   const message = await anthropic.messages.create({
     model: MODEL,
-    max_tokens: 200,
+    // RUIM, en dat is geen slordigheid maar een reparatie.
+    //
+    // Op claude-opus-5 staat thinking standaard aan. Die 200 tokens moesten dus
+    // het denkwerk EN de JSON dekken. Bij een kort antwoord lukt dat; bij een
+    // lang of meerledig bericht is het budget op voordat de JSON eruit komt,
+    // parseClassification vindt dan niets en geeft null terug.
+    //
+    // Zichtbaar geworden toen de LinkedIn-scan hele gespreksdraden ging
+    // meesturen in plaats van alleen het laatste bericht: het aantal mislukte
+    // classificaties ging van een naar zes op twaalf antwoorden. Die kwamen
+    // allemaal binnen als 'check handmatig: onbekend (0%)', niet te
+    // onderscheiden van een echt twijfelgeval.
+    //
+    // Het antwoord zelf blijft klein (een regel JSON); dit budget is er voor
+    // het denkwerk ervoor. We betalen alleen voor wat werkelijk gebruikt wordt.
+    max_tokens: 2000,
     system: SYSTEM,
     messages: [{
       role: 'user',
