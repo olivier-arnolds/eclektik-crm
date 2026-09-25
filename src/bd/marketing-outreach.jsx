@@ -749,7 +749,14 @@ export default function MarketingOutreach() {
 
   // Aantal contacten met een tekst klaar. Dat is precies de groep waar stap 2
   // iets voor kan doen; de rest slaat de verzender over.
-  const herinneringenKlaar = useMemo(() => rows.filter(heeftHerinnering).length, [rows]);
+  // Alleen bij LinkedIn. Bij e-mail is msg2_body de gewone opvolgmail die bij de
+  // import is meegekomen; daar telde deze teller 1355 contacten als 'klaargezet'
+  // terwijl niemand iets had aangezet. Een gevulde msg2_body betekent per kanaal
+  // iets anders, en dat verschil was hier weggevallen.
+  const herinneringenKlaar = useMemo(
+    () => (isLinkedIn ? rows.filter(heeftHerinnering).length : 0),
+    [rows, isLinkedIn],
+  );
 
   // Stap 2 apart aanvragen. Dezelfde caps en dezelfde batchgrootte; het enige
   // verschil is dat we uitsluitend om bericht 2 vragen.
@@ -1276,8 +1283,15 @@ export default function MarketingOutreach() {
           <option value={REGISTERED}>Aangemeld{counts[REGISTERED] ? ` (${counts[REGISTERED]})` : ''}</option>
           <option value={OPENED}>Geopend{counts[OPENED] ? ` (${counts[OPENED]})` : ''}</option>
           <option value={CLICKED}>Geklikt{counts[CLICKED] ? ` (${counts[CLICKED]})` : ''}</option>
-          <option value={REMINDER_KAN}>Herinnering kan{counts[REMINDER_KAN] ? ` (${counts[REMINDER_KAN]})` : ''}</option>
-          <option value={REMINDER_KLAAR}>Herinnering klaargezet{counts[REMINDER_KLAAR] ? ` (${counts[REMINDER_KLAAR]})` : ''}</option>
+          {/* Alleen bij LinkedIn. Bij e-mail is msg2_body de gewone opvolgmail,
+              dus 'klaargezet' zou daar 1355 contacten tonen die niemand heeft
+              aangezet. */}
+          {isLinkedIn && (
+            <>
+              <option value={REMINDER_KAN}>Herinnering kan{counts[REMINDER_KAN] ? ` (${counts[REMINDER_KAN]})` : ''}</option>
+              <option value={REMINDER_KLAAR}>Herinnering klaargezet{counts[REMINDER_KLAAR] ? ` (${counts[REMINDER_KLAAR]})` : ''}</option>
+            </>
+          )}
           {Object.keys(STATUS_LABEL).map(s => (
             <option key={s} value={s}>{STATUS_LABEL[s]}{counts[s] ? ` (${counts[s]})` : ''}</option>
           ))}
@@ -1326,7 +1340,8 @@ export default function MarketingOutreach() {
               <tr>
                 {['#', 'Naam', 'Bedrijf', 'Prioriteit', 'Status',
                   ...(isLinkedIn ? [] : ['Geopend', 'Geklikt']),
-                  'Conversatie', 'Herinnering', 'Volgende actie', 'Toelichting'].map(h => (
+                  'Conversatie', ...(isLinkedIn ? ['Herinnering'] : []),
+                  'Volgende actie', 'Toelichting'].map(h => (
                   <th key={h} style={{ textAlign: 'left', padding: '7px 10px', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)', borderBottom: '0.5px solid var(--sep)' }}>{h}</th>
                 ))}
               </tr>
@@ -1400,6 +1415,7 @@ export default function MarketingOutreach() {
                       );
                     })()}
                   </td>
+                  {isLinkedIn && (
                   <td style={{ padding: '6px 10px', whiteSpace: 'nowrap' }}>
                     {(() => {
                       const a = adviesVoor(r);
@@ -1440,6 +1456,7 @@ export default function MarketingOutreach() {
                       );
                     })()}
                   </td>
+                  )}
                   <td style={{ padding: '6px 10px', color: 'var(--text-3)', whiteSpace: 'nowrap' }}>
                     {r.next_action_at ? String(r.next_action_at).slice(0, 10) : '-'}
                   </td>
@@ -1449,7 +1466,7 @@ export default function MarketingOutreach() {
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={isLinkedIn ? 9 : 11} style={{ padding: 16, textAlign: 'center', color: 'var(--text-3)' }}>Niets gevonden.</td></tr>
+                <tr><td colSpan={isLinkedIn ? 9 : 10} style={{ padding: 16, textAlign: 'center', color: 'var(--text-3)' }}>Niets gevonden.</td></tr>
               )}
             </tbody>
           </table>

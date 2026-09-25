@@ -19,9 +19,27 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.129.2';
+export const CURRENT_VERSION = '1.129.3';
 
 export const CHANGELOG = [
+  {
+    version: '1.129.3',
+    date: '2026-09-25T20:25:16Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Herinnering is weer alleen een LinkedIn-begrip',
+    summary:
+      'In de mailcampagne stonden 1355 contacten op "klaargezet" terwijl niemand iets had aangezet. Oorzaak: het idee "een gevulde msg2_body betekent klaargezette herinnering" is bedacht voor LinkedIn, waar dat veld leeg was, en daarna op alle campagnes losgelaten. Bij e-mail is msg2_body gewoon de opvolgmail uit de import, dus daar loog de kolom.',
+    changes: [
+      'De kolom Herinnering, de twee filters, de teller en de knop Verstuur herinneringen zijn nu alleen zichtbaar bij een LinkedIn-campagne.',
+      'Er gingen geen extra mails uit en er stond er ook geen klaar: van de 1813 contacten in de mailcampagne kwam er op dat moment precies een in aanmerking voor bericht 2, en dat is de gewone campagneloop die sinds 9 september draait.',
+      'De wijziging van 1.129.0 raakte e-mail sowieso niet: die parameter geldt alleen voor LinkedIn, en bericht 2 mocht bij e-mail altijd al uitgaan.',
+      'Kolomtelling bijgewerkt: e-mail gaat van 11 naar 10 kolommen, LinkedIn blijft 9.',
+    ],
+    files: ['src/bd/marketing-outreach.jsx'],
+    rollback: 'git revert naar v1.129.2. Puur weergave.',
+    gitTag: 'v1.129.3',
+  },
   {
     version: '1.129.2',
     date: '2026-09-25T20:21:43Z',
