@@ -61,7 +61,7 @@ const HERINNERING_COLOR = {
   [HERINNERING_KAN]: '#16a34a',
   [HERINNERING_TE_VROEG]: 'var(--text-3)',
   [HERINNERING_AL]: 'var(--text-3)',
-  [HERINNERING_NIET]: '#6b7280',
+  [HERINNERING_NIET]: '#dc2626',
 };
 
 const CONTACT_COLS =
