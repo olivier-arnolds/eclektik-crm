@@ -17,10 +17,22 @@ import { kort } from '../src/lib/mail-body.js';
 //   bericht staat niet in de mailbox. Hier is linkedin_chat_id een exacte
 //   sleutel: de chat IS de conversatie. Geen naamvergelijking, geen domain_flag.
 //
-// IDEMPOTENT
-//   outreach_message_inbound_provider_uniq is een unieke index op
-//   provider_message_id waar direction='inbound'. Een tweede scan botst daarop
-//   en doet niets dubbel.
+// IDEMPOTENT, MAAR ALLEEN MET EEN PROVIDER_MESSAGE_ID
+//   outreach_message_inbound_provider_uniq is een partiele unieke index op
+//   provider_message_id waar direction='inbound' EN provider_message_id niet
+//   null is. Een rij zonder id botst dus nergens op en zou bij elke scan
+//   opnieuw worden weggeschreven. Daarom slaat deze scan een antwoord zonder
+//   id over in plaats van het vast te leggen.
+//   De echte dedup gebeurt vooraf: we halen de al bekende inbound-ids van deze
+//   contacten in een keer op en slaan die contacten over, zodat er geen tweede
+//   keer voor een Claude-classificatie betaald wordt. De unieke index is nog
+//   het vangnet voor gelijktijdige scans.
+//
+// VOLGORDE VAN SCHRIJVEN
+//   Eerst de status van het contact, dan het bericht. Faalt de berichtinsert,
+//   dan klopt de status en ontbreekt alleen de bijlage; dat herstelt een
+//   volgende scan. Andersom (bericht eerst) zou een mislukte status-update
+//   voorgoed blijven staan, want de volgende scan ziet het bericht als bekend.
 
 const supabase = (process.env.VITE_SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY)
   ? createClient(process.env.VITE_SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY) : null;
@@ -52,7 +64,12 @@ export default async function handler(req, res) {
     .select('id,first_name,last_name,company,status,linkedin_chat_id,last_inbound_at,next_action_at')
     .eq('campaign_id', campaign_id)
     .not('linkedin_chat_id', 'is', null)
+    // id als tweede sorteersleutel: de contacten van deze campagne delen maar
+    // een handvol created_at-waarden, en Postgres mag rijen met gelijke sleutel
+    // per query in willekeurige volgorde teruggeven. Zonder tiebreaker vallen
+    // er contacten tussen de paginagrenzen door.
     .order('created_at', { ascending: true })
+    .order('id', { ascending: true })
     .range(Number(offset), Number(offset) + BATCH - 1);
   if (selErr) return res.status(500).json({ error: selErr.message });
 
@@ -62,11 +79,12 @@ export default async function handler(req, res) {
   // last_sent_at-kolom; dat moment leeft in outreach_message.
   const laatsteVerzending = new Map();
   if (ids.length) {
-    const { data: uit } = await supabase
+    const { data: uit, error: uitErr } = await supabase
       .from('outreach_message')
       .select('contact_id,sent_or_received_at')
       .in('contact_id', ids)
       .eq('direction', 'outbound');
+    if (uitErr) return res.status(500).json({ error: 'verzendmomenten ophalen: ' + uitErr.message });
     for (const m of uit || []) {
       const vorige = laatsteVerzending.get(m.contact_id);
       if (!vorige || new Date(m.sent_or_received_at) > new Date(vorige)) {
@@ -75,21 +93,48 @@ export default async function handler(req, res) {
     }
   }
 
+  // Al bekende inkomende berichten, in een query vooraf. Zo slaan we een contact
+  // over VOOR de Claude-aanroep in plaats van pas bij de insert; dat scheelt
+  // kosten bij elke herhaalde (droge) run.
+  const bekendeIds = new Set();
+  if (ids.length) {
+    const { data: bekend, error: bekendErr } = await supabase
+      .from('outreach_message')
+      .select('provider_message_id')
+      .in('contact_id', ids)
+      .eq('direction', 'inbound');
+    if (bekendErr) return res.status(500).json({ error: 'bestaande berichten ophalen: ' + bekendErr.message });
+    for (const m of bekend || []) {
+      if (m.provider_message_id) bekendeIds.add(m.provider_message_id);
+    }
+  }
+
   const resultaten = [];
   let metAntwoord = 0;
   let geschreven = 0;
+  let fouten = 0;
+  let overgeslagen = 0;
 
   for (const c of contacten || []) {
     const naam = [c.first_name, c.last_name].filter(Boolean).join(' ') || c.id;
-    const chat = await haalChatBerichten(c.linkedin_chat_id);
-    if (!chat.ok) {
-      resultaten.push({ id: c.id, naam, uitkomst: 'fout', detail: chat.error });
+    // Zonder bekend verzendmoment valt de drempel weg en zou ELK inkomend
+    // bericht in de chat als antwoord tellen, ook een gesprek van jaren terug.
+    // Dat zet iemand ten onrechte op 'replied', dus slaan we over.
+    const laatsteVerzendingISO = laatsteVerzending.get(c.id) || null;
+    if (!laatsteVerzendingISO) {
+      resultaten.push({ id: c.id, naam, uitkomst: 'verzendmoment onbekend' });
+      overgeslagen += 1;
       continue;
     }
 
-    const antwoorden = inkomendNaVerzending(chat.items, {
-      laatsteVerzendingISO: laatsteVerzending.get(c.id) || null,
-    });
+    const chat = await haalChatBerichten(c.linkedin_chat_id);
+    if (!chat.ok) {
+      resultaten.push({ id: c.id, naam, uitkomst: 'fout', detail: chat.error });
+      fouten += 1;
+      continue;
+    }
+
+    const antwoorden = inkomendNaVerzending(chat.items, { laatsteVerzendingISO });
     if (antwoorden.length === 0) {
       resultaten.push({ id: c.id, naam, uitkomst: 'geen antwoord' });
       continue;
@@ -99,12 +144,36 @@ export default async function handler(req, res) {
     const laatste = antwoorden[antwoorden.length - 1];
     const tekst = String(laatste.text || '').trim();
 
-    const classificatie = await classifyWithClaude({
-      fromAddress: naam,
-      subject: null,
-      bodyPreview: tekst,
-      bodyFull: tekst,
-    });
+    // Zonder provider-id kunnen we niet garanderen dat een volgende scan dit
+    // bericht herkent; de unieke index is partieel en negeert null. Overslaan.
+    if (!laatste.id) {
+      resultaten.push({ id: c.id, naam, uitkomst: 'geen bericht-id', ontvangen_op: laatste.timestamp });
+      overgeslagen += 1;
+      continue;
+    }
+
+    if (bekendeIds.has(laatste.id)) {
+      resultaten.push({ id: c.id, naam, uitkomst: 'al bekend', ontvangen_op: laatste.timestamp });
+      overgeslagen += 1;
+      continue;
+    }
+
+    let classificatie = null;
+    try {
+      classificatie = await classifyWithClaude({
+        fromAddress: naam,
+        subject: null,
+        bodyPreview: tekst,
+        bodyFull: tekst,
+      });
+    } catch (e) {
+      // Een 429 of 529 van Anthropic mag niet de hele batch omgooien. Niets
+      // wijzigen, melden, door met de rest. De volgende scan probeert opnieuw.
+      console.error('[outreach-linkedin-scan] classificatie faalde', c.id, e.message);
+      resultaten.push({ id: c.id, naam, uitkomst: 'fout', detail: 'classificatie: ' + e.message });
+      fouten += 1;
+      continue;
+    }
 
     const next = statusAfterClassification({
       classification: classificatie?.classification,
@@ -130,35 +199,61 @@ export default async function handler(req, res) {
 
     if (dryRun) continue;
 
-    // Het bericht vastleggen. Botst het op de unieke index, dan is deze chat al
-    // eerder gescand en hoeft de status niet opnieuw gezet te worden.
+    const rij = resultaten[resultaten.length - 1];
+    const ontvangen = laatste.timestamp || new Date().toISOString();
+
+    // Eerst de status van het contact. Faalt dit, dan schrijven we het bericht
+    // bewust NIET weg: anders zou de volgende scan het als bekend overslaan en
+    // bleef dit contact voorgoed zonder last_inbound_at staan.
+    const upd = {
+      last_inbound_at: ontvangen,
+      status: next.status,
+      next_action_at: next.next_action_at,
+      last_reply_summary: kort(tekst, 200),
+    };
+    // Zelfde patroon als de mailscan: maak zichtbaar dat er een mens naar moet
+    // kijken, anders is needs_review alleen in dit rapport te zien.
+    if (next.needs_review) {
+      upd.paused_reason = `check handmatig: ${classificatie?.classification || 'onbekend'} (${Math.round((classificatie?.confidence || 0) * 100)}%)`;
+    }
+
+    const { error: updErr } = await supabase.from('outreach_contact').update(upd).eq('id', c.id);
+    if (updErr) {
+      console.error('[outreach-linkedin-scan] status-update faalde', c.id, updErr.message);
+      rij.uitkomst = 'fout';
+      rij.detail = 'status-update: ' + updErr.message;
+      fouten += 1;
+      continue;
+    }
+    geschreven += 1;
+
+    // Dan pas het bericht. 23505 is de unieke index: een gelijktijdige scan was
+    // ons voor. Elke andere fout is een echte fout en moet zichtbaar zijn.
     const { error: insErr } = await supabase.from('outreach_message').insert({
       campaign_id,
       contact_id: c.id,
       channel: 'linkedin',
       direction: 'inbound',
-      provider_message_id: laatste.id || null,
+      provider_message_id: laatste.id,
       conversation_id: c.linkedin_chat_id,
       match_method: 'conversation_id',
       from_address: naam,
       body_preview: kort(tekst, 500),
       body_full: tekst,
-      sent_or_received_at: laatste.timestamp || new Date().toISOString(),
+      sent_or_received_at: ontvangen,
       classification: classificatie?.classification || null,
       classification_confidence: classificatie?.confidence ?? null,
     });
     if (insErr) {
-      resultaten[resultaten.length - 1].uitkomst = 'al bekend';
-      continue;
+      if (insErr.code === '23505') {
+        rij.uitkomst = 'al bekend';
+      } else {
+        console.error('[outreach-linkedin-scan] insert faalde', c.id, insErr.message);
+        rij.uitkomst = 'fout';
+        rij.detail = `bericht vastleggen (${insErr.code || 'geen code'}): ${insErr.message}`;
+        fouten += 1;
+      }
     }
-
-    await supabase.from('outreach_contact').update({
-      last_inbound_at: laatste.timestamp || new Date().toISOString(),
-      status: next.status,
-      next_action_at: next.next_action_at,
-      last_reply_summary: kort(tekst, 200),
-    }).eq('id', c.id);
-    geschreven += 1;
   }
 
   const volgende = Number(offset) + BATCH;
@@ -168,6 +263,8 @@ export default async function handler(req, res) {
     verwerkt: (contacten || []).length,
     met_antwoord: metAntwoord,
     geschreven,
+    fouten,
+    overgeslagen,
     volgende_offset: volgende < (totaal ?? 0) ? volgende : null,
     resultaten,
   });
