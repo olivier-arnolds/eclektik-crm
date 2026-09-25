@@ -9,6 +9,7 @@ import {
   conversatieStatus, reminderAdvies,
   CONV_GEEN, CONV_ANTWOORD, CONV_HEEN_EN_WEER,
   HERINNERING_KAN, HERINNERING_TE_VROEG, HERINNERING_AL, HERINNERING_NIET,
+  REGIOS, hoortBijRegio,
 } from './outreach-match';
 import { outreachTextToHtml, subjectForStep } from '../lib/outreach-html';
 
@@ -66,7 +67,8 @@ const HERINNERING_COLOR = {
 
 const CONTACT_COLS =
   'id,email,first_name,last_name,title,company,status,priority_tier,priority_label,outreach_prio,is_reserve,' +
-  'next_action_at,paused_reason,last_reply_summary,contact_id,company_id,last_inbound_at,answered_at,linkedin_url';
+  'next_action_at,paused_reason,last_reply_summary,contact_id,company_id,last_inbound_at,answered_at,linkedin_url,' +
+  'location';
 
 const AWAITING = '__awaiting__';
 const REGISTERED = '__registered__';
@@ -158,6 +160,7 @@ export default function MarketingOutreach() {
 
   const [statusFilter, setStatusFilter] = useState('all');
   const [prioFilter, setPrioFilter] = useState('all');
+  const [locFilter, setLocFilter] = useState('all');
   const [showReserve, setShowReserve] = useState(false);
   const [q, setQ] = useState('');
 
@@ -313,6 +316,31 @@ export default function MarketingOutreach() {
     return [...m.entries()].sort((a, b) => b[1] - a[1]);
   }, [rows]);
 
+  // Locatie-opties: bovenaan de regio's, daaronder de losse plaatsnamen zoals ze
+  // in de data staan. Net als bij prioriteit tellen alleen de niet-reserve rijen
+  // mee, en regio's zonder ook maar iemand laten we weg.
+  const locOptions = useMemo(() => {
+    const perPlaats = new Map();
+    const perRegio = new Map(Object.keys(REGIOS).map(r => [r, 0]));
+
+    for (const r of rows) {
+      const loc = String(r.location || '').trim();
+      if (!loc) continue;
+      if (!perPlaats.has(loc)) perPlaats.set(loc, 0);
+      if (!r.is_reserve) {
+        perPlaats.set(loc, perPlaats.get(loc) + 1);
+        for (const regio of perRegio.keys()) {
+          if (hoortBijRegio(loc, regio)) perRegio.set(regio, perRegio.get(regio) + 1);
+        }
+      }
+    }
+
+    return {
+      regios: [...perRegio.entries()].filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1]),
+      plaatsen: [...perPlaats.entries()].sort((a, b) => b[1] - a[1]),
+    };
+  }, [rows]);
+
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
     return rows.filter(r => {
@@ -323,11 +351,17 @@ export default function MarketingOutreach() {
       else if (statusFilter === CLICKED) { if (!((betrokkenheid.get(r.id)?.clicks || 0) > 0)) return false; }
       else if (statusFilter !== 'all' && r.status !== statusFilter) return false;
       if (prioFilter !== 'all' && (r.priority_label || '') !== prioFilter) return false;
+      // Een regio toetst op de losse fragmenten, een plaatsnaam letterlijk.
+      // Wie geen locatie heeft valt zodra er gefilterd wordt sowieso af.
+      if (locFilter !== 'all') {
+        if (REGIOS[locFilter]) { if (!hoortBijRegio(r.location, locFilter)) return false; }
+        else if (String(r.location || '').trim() !== locFilter) return false;
+      }
       if (!needle) return true;
       return [r.email, r.company, r.first_name, r.last_name, r.title]
         .some(v => String(v || '').toLowerCase().includes(needle));
     });
-  }, [rows, showReserve, statusFilter, prioFilter, q, aanmeldingen, betrokkenheid]);
+  }, [rows, showReserve, statusFilter, prioFilter, locFilter, q, aanmeldingen, betrokkenheid]);
 
   // Bepaalt welk Graph-pad we gebruiken: eigen mailbox of gedeelde leesrechten.
   const myEmail = String(session?.user?.email || '').toLowerCase();
@@ -1075,6 +1109,25 @@ export default function MarketingOutreach() {
           {prioOptions.map(([label, n]) => (
             <option key={label} value={label}>{label}{n ? ` (${n})` : ''}</option>
           ))}
+        </select>
+        <select value={locFilter} onChange={e => setLocFilter(e.target.value)}
+          title="Locatie: eerst de regio's, daaronder de losse plaatsen"
+          style={{ padding: '6px 8px', borderRadius: 6, border: '0.5px solid var(--sep)', background: 'var(--bg-1)', fontSize: 12, maxWidth: 260 }}>
+          <option value="all">Alle locaties</option>
+          {locOptions.regios.length > 0 && (
+            <optgroup label="Regio">
+              {locOptions.regios.map(([regio, n]) => (
+                <option key={regio} value={regio}>{regio}{n ? ` (${n})` : ''}</option>
+              ))}
+            </optgroup>
+          )}
+          {locOptions.plaatsen.length > 0 && (
+            <optgroup label="Plaats">
+              {locOptions.plaatsen.map(([plaats, n]) => (
+                <option key={plaats} value={plaats}>{plaats}{n ? ` (${n})` : ''}</option>
+              ))}
+            </optgroup>
+          )}
         </select>
         <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, cursor: 'pointer' }}>
           <input type="checkbox" checked={showReserve} onChange={e => setShowReserve(e.target.checked)} />

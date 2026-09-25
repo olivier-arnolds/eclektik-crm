@@ -5,6 +5,7 @@ import {
   MATCH_SENDER, MATCH_DOMAIN, MATCH_NONE, CONFIDENCE_FLOOR, needsOurReply, matchRegistrations,
   inkomendNaVerzending, conversatieStatus, CONV_GEEN, CONV_ANTWOORD, CONV_HEEN_EN_WEER,
   reminderAdvies, HERINNERING_KAN, HERINNERING_TE_VROEG, HERINNERING_AL, HERINNERING_NIET,
+  REGIOS, hoortBijRegio,
 } from './outreach-match';
 
 // Drie contacten, twee bij hetzelfde domein (de ING-situatie).
@@ -419,5 +420,81 @@ describe('reminderAdvies', () => {
 
   it('valt niet om op lege invoer', () => {
     expect(reminderAdvies().advies).toBe(HERINNERING_NIET);
+  });
+});
+
+describe('hoortBijRegio', () => {
+  it('geen locatie is nooit een treffer', () => {
+    expect(hoortBijRegio('', 'Regio Amsterdam')).toBe(false);
+    expect(hoortBijRegio(null, 'Regio Amsterdam')).toBe(false);
+    expect(hoortBijRegio(undefined, 'Regio Amsterdam')).toBe(false);
+    expect(hoortBijRegio('   ', 'Regio Amsterdam')).toBe(false);
+  });
+
+  it('een onbekende regionaam geeft false', () => {
+    expect(hoortBijRegio('Amsterdam', 'Regio Groningen')).toBe(false);
+    expect(hoortBijRegio('Amsterdam', '')).toBe(false);
+    expect(hoortBijRegio('Amsterdam', null)).toBe(false);
+  });
+
+  it('let niet op hoofdletters', () => {
+    expect(hoortBijRegio('AMSTERDAM', 'Regio Amsterdam')).toBe(true);
+    expect(hoortBijRegio('amsterdam', 'Regio Amsterdam')).toBe(true);
+    expect(hoortBijRegio('Den Haag', 'Regio Rotterdam Den Haag')).toBe(true);
+  });
+
+  it('trekt de plaats uit rommel eromheen', () => {
+    expect(hoortBijRegio('1506 MA Zaandam', 'Regio Amsterdam')).toBe(true);
+    expect(hoortBijRegio('Amsterdam-Duivendrecht', 'Regio Amsterdam')).toBe(true);
+    expect(hoortBijRegio('Amsterdam, Noord-Holland, Nederland', 'Regio Amsterdam')).toBe(true);
+  });
+
+  it('houdt de regio\'s uit elkaar', () => {
+    expect(hoortBijRegio('Rotterdam', 'Regio Amsterdam')).toBe(false);
+    expect(hoortBijRegio('Rotterdam', 'Regio Rotterdam Den Haag')).toBe(true);
+    expect(hoortBijRegio('Bunnik', 'Regio Utrecht')).toBe(true);
+    expect(hoortBijRegio('Bunnik', 'Regio Amsterdam')).toBe(false);
+    expect(hoortBijRegio('Teaneck', 'Regio Amsterdam')).toBe(false);
+    expect(hoortBijRegio('Worldwide', 'Regio Amsterdam')).toBe(false);
+  });
+
+  // Haarlem zit letterlijk in Haarlemmermeer. Dat valt goed uit (beide Regio
+  // Amsterdam), maar het laat zien waarom een kale substring-vergelijking riskant is.
+  it('Haarlem hoort bij Amsterdam en nergens anders', () => {
+    expect(hoortBijRegio('Haarlem', 'Regio Amsterdam')).toBe(true);
+    expect(hoortBijRegio('Haarlem', 'Regio Rotterdam Den Haag')).toBe(false);
+    expect(hoortBijRegio('Haarlem', 'Regio Utrecht')).toBe(false);
+    expect(hoortBijRegio('Haarlemmermeer', 'Regio Amsterdam')).toBe(true);
+    expect(hoortBijRegio('Haarlemmermeer', 'Regio Rotterdam Den Haag')).toBe(false);
+  });
+
+  // Een fragment mag alleen aan het begin van een woord staan, anders levert een
+  // langere naam waar het toevallig middenin zit een valse treffer op.
+  it('matcht alleen op woordbegin', () => {
+    expect(hoortBijRegio('Oud-Zaandam-achtig', 'Regio Amsterdam')).toBe(true);
+    expect(hoortBijRegio('Kortenhoef', 'Regio Amsterdam')).toBe(false);
+    expect(hoortBijRegio('Hoensbroek', 'Regio Amsterdam')).toBe(false);
+  });
+
+  // Uitlopers van een plaatsnaam tellen wel mee: dat is dezelfde plek.
+  it('neemt uitlopers van een plaatsnaam mee', () => {
+    expect(hoortBijRegio('Weesperkarspel', 'Regio Amsterdam')).toBe(true);
+    expect(hoortBijRegio('Aalsmeerderbrug', 'Regio Amsterdam')).toBe(true);
+    expect(hoortBijRegio('Utrechtse Heuvelrug', 'Regio Utrecht')).toBe(true);
+  });
+
+  // De enige echte valse treffer die de scan opleverde: er zijn twee Ouderkerken.
+  it('Ouderkerk aan den IJssel hoort niet bij Amsterdam', () => {
+    expect(hoortBijRegio('Ouderkerk aan de Amstel', 'Regio Amsterdam')).toBe(true);
+    expect(hoortBijRegio('Ouderkerk aan den IJssel', 'Regio Amsterdam')).toBe(false);
+    expect(hoortBijRegio('Capelle aan den IJssel', 'Regio Rotterdam Den Haag')).toBe(true);
+  });
+
+  it('elke regio uit REGIOS is bruikbaar', () => {
+    expect(Object.keys(REGIOS)).toContain('Regio Amsterdam');
+    for (const regio of Object.keys(REGIOS)) {
+      expect(REGIOS[regio].length).toBeGreaterThan(0);
+      expect(hoortBijRegio(REGIOS[regio][0], regio)).toBe(true);
+    }
   });
 });

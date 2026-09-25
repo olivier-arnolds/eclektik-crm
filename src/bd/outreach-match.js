@@ -411,3 +411,60 @@ export function reminderAdvies({
   const dagen = Math.floor((now.getTime() - verzonden.getTime()) / 86400000);
   return { advies: HERINNERING_KAN, reden: `${dagen} dagen geleden benaderd`, vanaf: vanaf.toISOString() };
 }
+
+/**
+ * Regio's voor het locatiefilter. Aardrijkskunde, geen data, dus met de hand.
+ *
+ * Nodig omdat location vrije tekst is: "Amsterdam", "Amsterdam-Duivendrecht" en
+ * "1506 MA Zaandam" horen bij elkaar maar zijn drie verschillende strings. De
+ * losse steden blijven apart kiesbaar; dit is het handvat erbovenop.
+ */
+export const REGIOS = {
+  'Regio Amsterdam': ['amsterdam', 'amstelveen', 'haarlem', 'hoofddorp', 'diemen',
+    'zaandam', 'zaanstad', 'almere', 'hilversum', 'schiphol', 'badhoevedorp',
+    'weesp', 'purmerend', 'duivendrecht', 'ouderkerk', 'abcoude', 'aalsmeer',
+    'uithoorn', 'landsmeer', 'haarlemmermeer'],
+  'Regio Rotterdam Den Haag': ['rotterdam', 'den haag', 'the hague', 'delft',
+    'schiedam', 'capelle', 'rijswijk', 'zoetermeer', 'leiden', 'dordrecht',
+    'vlaardingen', 'spijkenisse', 'barendrecht', 'gouda', 'voorburg'],
+  'Regio Utrecht': ['utrecht', 'amersfoort', 'nieuwegein', 'zeist', 'houten',
+    'bunnik', 'veenendaal', 'woerden', 'driebergen', 'de bilt'],
+};
+
+/**
+ * Er zijn twee dorpen die Ouderkerk heten: Ouderkerk aan de Amstel ligt tegen
+ * Amsterdam aan, Ouderkerk aan den IJssel ligt bij Rotterdam. Het fragment
+ * 'ouderkerk' pakt ze allebei, dus wordt de IJssel-variant hier weggestreept.
+ * De enige valse treffer die uit de controle van de fragmentenlijst kwam.
+ */
+const REGIO_UITZONDERINGEN = {
+  'Regio Amsterdam': [(t) => t.includes(' ouderkerk') && t.includes(' ijssel')],
+};
+
+// Maakt van vrije tekst een reeks woorden met een spatie ervoor en erachter, zodat
+// er op woordbegin getoetst kan worden. Accenten en leestekens gaan eruit:
+// "Amsterdam-Duivendrecht" en "1506 MA Zaandam" worden allebei gewone woorden.
+const normLocatie = (v) => ` ${String(v || '')
+  .toLowerCase()
+  .normalize('NFKD')
+  .replace(/[^a-z]+/g, ' ')
+  .trim()} `;
+
+/**
+ * Hoort deze locatie bij die regio? Ongevoelig voor hoofdletters en voor rommel
+ * eromheen, want er staan postcodes en samenstellingen in het veld.
+ *
+ * Een fragment telt alleen als het aan het BEGIN van een woord staat. Middenin
+ * zou het valse treffers geven; aan het eind juist niet, want een uitloper als
+ * Weesperkarspel of Aalsmeerderbrug is dezelfde plek.
+ */
+export function hoortBijRegio(location, regio) {
+  const fragmenten = REGIOS[regio];
+  if (!Array.isArray(fragmenten)) return false;
+
+  const t = normLocatie(location);
+  if (t.trim() === '') return false;
+
+  if ((REGIO_UITZONDERINGEN[regio] || []).some((f) => f(t))) return false;
+  return fragmenten.some((f) => t.includes(` ${f}`));
+}
