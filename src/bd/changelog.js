@@ -19,9 +19,38 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.124.0';
+export const CURRENT_VERSION = '1.125.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.125.0',
+    date: '2026-09-25T10:03:37Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Uitnodigingen voor de Glint user session',
+    summary:
+      'De Ja/Nee-knoppen in de uitnodigingsmail landen straks op eclectik.co. De site houdt geen databasesleutels, dus de antwoorden komen via een nieuw endpoint hier binnen. Een klik telt nog niet als antwoord: dat wordt het pas als de landingspagina het bevestigt, want de linkscanners van Outlook en Mimecast openen elke link in een bericht.',
+    changes: [
+      'Nieuwe tabel user_session_invites met een token per ontvanger, plus de view user_session_results die de uitkomsten toont zonder dat token.',
+      'De tabel staat op RLS zonder policies, dus alleen de service key komt erbij. Dat wijkt af van de uniforme policy die de rest van de tabellen heeft, omdat wie een token leest namens die persoon kan antwoorden. Het team leest de view.',
+      'Nieuw endpoint api/session-invite.js met de acties click, confirm en submit, achter hetzelfde WEBSITE_WEBHOOK_SECRET als website-signal en scorecard-intake.',
+      'De klik schrijft alleen pending_answer en hoogt de teller op; answer wordt uitsluitend door de bevestiging gezet, met het antwoord dat de pagina meestuurt. Een scanner kan daardoor geen antwoord achterlaten en ook geen bestaand antwoord omgooien.',
+      'De deadline (22 oktober 2026 23:59 CEST) wordt hier nog een keer gecontroleerd, zodat hij niet te omzeilen is door de landingspagina over te slaan. Te verzetten met de env-var SESSION_INVITE_DEADLINE.',
+      'Een onbekend token krijgt hetzelfde antwoord als een bestaand token na sluiting: status 200 en een reason. Nergens is aan de statuscode af te lezen of een token bestond.',
+      'Geen IP-adressen en geen user agents in de database; bot_suspected komt als boolean binnen van de site.',
+      'scripts/maak-session-invites.py zet de ontvangerslijst klaar: contacten bij accounts met een lopend Glint-project, met een willekeurig token van 32 tekens per persoon en een csv voor de mailmerge. Dry-run tenzij je --apply meegeeft.',
+      'De migratie is NIET gedraaid. Het sql-bestand ligt klaar voor de Supabase SQL Editor.',
+    ],
+    files: [
+      'sql/schema_user_session_invites_2026-09-25.sql',
+      'api/session-invite.js',
+      'api/_lib/session-invite-lib.js',
+      'api/_lib/session-invite-lib.test.js',
+      'scripts/maak-session-invites.py',
+    ],
+    rollback: 'drop view public.user_session_results; drop table public.user_session_invites; (staat onderaan het sql-bestand)',
+    gitTag: 'v1.125.0',
+  },
   {
     version: '1.124.0',
     date: '2026-09-24T18:20:27Z',
