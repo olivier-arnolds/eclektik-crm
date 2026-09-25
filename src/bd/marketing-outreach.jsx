@@ -127,6 +127,16 @@ export default function MarketingOutreach() {
   const [liVoortgang, setLiVoortgang] = useState(null);
   const [liScanDroog, setLiScanDroog] = useState(null);
   const [liScanEcht, setLiScanEcht] = useState(null);
+  // Herscan beoordeelt ook contacten die al verwerkt zijn, op de volledige
+  // gespreksdraad. Nodig geweest toen bleek dat de scan eerst alleen het laatste
+  // inkomende bericht bewaarde: Josja van der Maas antwoordde met alleen haar
+  // e-mailadres en kwam daardoor op 'other' met 0.30 zekerheid uit.
+  //
+  // Het omzetten van dit vinkje gooit een eerdere droge run weg. Anders kun je
+  // een gewone run bekijken, daarna het vinkje aanzetten en op Verwerken
+  // klikken, en dan pas je iets anders toe dan wat je gezien hebt.
+  const [liHerscan, setLiHerscanState] = useState(false);
+  const setLiHerscan = (aan) => { setLiHerscanState(aan); setLiScanDroog(null); setLiScanEcht(null); };
   const [liErr, setLiErr] = useState(null);
 
   const [sending, setSending] = useState(false);
@@ -506,7 +516,7 @@ export default function MarketingOutreach() {
       const resp = await apiFetch('/api/outreach-linkedin-scan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ campaign_id: campaign.id, offset, dry_run: dryRun }),
+        body: JSON.stringify({ campaign_id: campaign.id, offset, dry_run: dryRun, herscan: liHerscan }),
       });
       const data = await resp.json().catch(() => null);
       if (!resp.ok) throw new Error(data?.error || `HTTP ${resp.status}`);
@@ -548,7 +558,9 @@ export default function MarketingOutreach() {
 
   const liVerwerk = async () => {
     if (!campaign || !liKanVerwerken) return;
-    if (!window.confirm(`${liAntwoordRijen.length} antwoorden verwerken en de status bijwerken?`)) return;
+    if (!window.confirm(liHerscan
+      ? `${liAntwoordRijen.length} antwoorden OPNIEUW beoordelen? Dit overschrijft de eerder vastgelegde tekst en classificatie, en kan de status wijzigen.`
+      : `${liAntwoordRijen.length} antwoorden verwerken en de status bijwerken?`)) return;
     setLiBezig(true); setLiErr(null); setLiScanEcht(null);
     try {
       const uitkomst = await liLoop(false);
@@ -708,6 +720,12 @@ export default function MarketingOutreach() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             <span style={{ fontSize: 13, fontWeight: 600 }}>LinkedIn-inboxscan</span>
             <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'var(--text-3)', cursor: 'pointer' }}
+                title="Beoordeelt ook antwoorden die al verwerkt zijn, nu op de volledige gespreksdraad in plaats van alleen het laatste bericht">
+                <input type="checkbox" checked={liHerscan} disabled={liBezig}
+                  onChange={e => setLiHerscan(e.target.checked)} />
+                Opnieuw beoordelen
+              </label>
               <button className="btn-primary tiny" disabled={liBezig} onClick={liDrogeRun}
                 title={`Leest de LinkedIn-gesprekken van ${campaign.sender_mailbox} en toont welke prospects geantwoord hebben. Schrijft niets.`}>
                 {liBezig ? 'Bezig…' : 'Scan LinkedIn (droge run)'}
