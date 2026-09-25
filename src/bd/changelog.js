@@ -19,9 +19,45 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.125.0';
+export const CURRENT_VERSION = '1.126.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.126.0',
+    date: '2026-09-25T14:08:04Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'LinkedIn-antwoorden komen binnen in cold outreach',
+    summary:
+      'De campagne verstuurde 151 LinkedIn-DM\'s en registreerde nul antwoorden. Reden: last_inbound_at werd alleen gezet door de mailboxscan, en een LinkedIn-scan bestond niet. Antwoorden bleven in Marco\'s LinkedIn-inbox liggen zonder dat de campagne ervan wist. Die scan is er nu, en het overzicht toont per contact of er een conversatie is geweest en of een gentle reminder kan. Dat laatste is advies; versturen blijft handmatig.',
+    changes: [
+      'Nieuw endpoint api/outreach-linkedin-scan.js dat per contact de Unipile-chat leest op het exacte linkedin_chat_id. Anders dan de mailscan is er geen naamvergelijking nodig: de chat is de conversatie.',
+      'Droge run staat standaard aan. Alleen een echte boolean dry_run:false laat het schrijven; een ontbrekende body, de tekst "false" of een 0 vallen allemaal naar de veilige kant.',
+      'Hergebruikt classifyWithClaude en statusAfterClassification, zodat een LinkedIn-antwoord hetzelfde betekent als een e-mailantwoord en er geen tweede statusmachine ontstaat.',
+      'De scanknop stond nooit in beeld bij een LinkedIn-campagne, want er viel geen inbox te scannen. Nu wel. Verwerken kan pas na een volledig afgeronde droge run en vraagt nog een bevestiging met het aantal erbij.',
+      'Twee kolommen in het overzicht: conversatie (geen, antwoord, heen en weer) en herinnering (kan, te vroeg, al herinnerd, niet doen), met de reden in de tooltip. Een kolom die alleen "nee" zegt levert een vraag op in plaats van een antwoord.',
+      'Wachttijd voor een herinnering is tien dagen, als constante HERINNERING_NA_DAGEN. Een lopende afwezigheidsdatum gaat daar altijd voor.',
+      'De blokkade op een tweede LinkedIn-DM in outreach-send-lib.js blijft staan. De kolom is advies, Marco verstuurt zelf. Handmatig een herinnering sturen is iets anders dan een cron die er honderdvijftig achter elkaar uitgooit, en dat tweede is wat een account kost.',
+      'Gevonden bij review: de paginering sorteerde alleen op created_at, en de 151 contacten van deze campagne delen precies twee created_at-waarden (99 en 52 rijen, uit twee importblokken). De paginagrenzen vielen daar middenin, dus over paginagrenzen heen werden contacten stil overgeslagen. Opgelost met id als tweede sorteersleutel.',
+      'Ook uit de review: de contact-update gaat nu voor de berichtinsert en wordt op fouten gecontroleerd. Andersom bleef bij een mislukte update de berichtrij achter, waarna elke volgende scan op de unieke index botste en het contact voorgoed zonder last_inbound_at bleef zitten.',
+      'Contacten zonder bekend verzendmoment of zonder bericht-id worden overgeslagen in plaats van onbeschermd verwerkt. Zonder drempel zou een oud gesprek uit de tijd dat iemand Marco zelf schreef als antwoord op de campagne gelezen worden.',
+      'Ontdubbelen gebeurt nu voor de Claude-aanroep in plaats van erna, zodat een tweede scan niet opnieuw betaalt voor antwoorden die al bekend zijn.',
+      'Comms-tab: de koppeling van een LinkedIn-chat aan een contactpersoon vergeleek attendee_provider_id (ACoAAA...) met linkedin_url (de publieke slug). Twee verschillende nummersystemen, dus nul treffers op acht geteste records. Nu eerst exact op linkedin_chat_id en anders op de slug uit de profiel-URL, zoals unipile-webhook.js het al deed.',
+      'Geen migratie nodig; alle kolommen bestonden al. 29 nieuwe tests op de drie pure functies.',
+    ],
+    files: [
+      'api/outreach-linkedin-scan.js',
+      'api/_lib/unipile-chat.js',
+      'src/bd/outreach-match.js',
+      'src/bd/outreach-match.test.js',
+      'src/bd/marketing-outreach.jsx',
+      'src/bd/lane-comms.jsx',
+      'docs/superpowers/specs/2026-09-25-linkedin-outreach-conversatie-design.md',
+      'docs/superpowers/plans/2026-09-25-linkedin-outreach-conversatie.md',
+    ],
+    rollback: 'git revert naar v1.125.0. De scan schrijft alleen last_inbound_at, status, next_action_at, paused_reason en last_reply_summary op outreach_contact, plus inbound-rijen in outreach_message. Die rijen zijn te vinden met channel=\'linkedin\' and direction=\'inbound\'.',
+    gitTag: 'v1.126.0',
+  },
   {
     version: '1.125.0',
     date: '2026-09-25T10:03:37Z',
