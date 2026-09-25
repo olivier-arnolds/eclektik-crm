@@ -93,6 +93,14 @@ export default function MarketingOutreach() {
   const [herstel, setHerstel] = useState(null);
   const [herstelBezig, setHerstelBezig] = useState(false);
 
+  // LinkedIn-inboxscan. liScanDroog vult zich alleen bij een VOLLEDIG afgeronde
+  // droge run; die state is de sleutel van de verwerkknop, zie liVerwerk.
+  const [liBezig, setLiBezig] = useState(false);
+  const [liVoortgang, setLiVoortgang] = useState(null);
+  const [liScanDroog, setLiScanDroog] = useState(null);
+  const [liScanEcht, setLiScanEcht] = useState(null);
+  const [liErr, setLiErr] = useState(null);
+
   const [sending, setSending] = useState(false);
   const [sendPlan, setSendPlan] = useState(null);
   const [sendResult, setSendResult] = useState(null);
@@ -440,6 +448,78 @@ export default function MarketingOutreach() {
     setScanning(false);
   };
 
+  // Loopt /api/outreach-linkedin-scan af in rondes van 40 contacten, tot het
+  // endpoint volgende_offset null teruggeeft. MAX_RONDES is een noodrem: een
+  // bug in volgende_offset zou anders eindeloos doorpompen.
+  const LI_MAX_RONDES = 20;
+  const liLoop = async (dryRun) => {
+    const totalen = { totaal: 0, verwerkt: 0, met_antwoord: 0, geschreven: 0, fouten: 0, overgeslagen: 0 };
+    const resultaten = [];
+    let offset = 0;
+    let ronde = 0;
+    let compleet = false;
+
+    while (ronde < LI_MAX_RONDES) {
+      ronde += 1;
+      setLiVoortgang({ ronde, offset, dryRun });
+      const resp = await apiFetch('/api/outreach-linkedin-scan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ campaign_id: campaign.id, offset, dry_run: dryRun }),
+      });
+      const data = await resp.json().catch(() => null);
+      if (!resp.ok) throw new Error(data?.error || `HTTP ${resp.status}`);
+
+      totalen.totaal = data.totaal ?? totalen.totaal;
+      totalen.verwerkt += data.verwerkt || 0;
+      totalen.met_antwoord += data.met_antwoord || 0;
+      totalen.geschreven += data.geschreven || 0;
+      totalen.fouten += data.fouten || 0;
+      totalen.overgeslagen += data.overgeslagen || 0;
+      for (const r of data.resultaten || []) resultaten.push(r);
+
+      if (data.volgende_offset === null || data.volgende_offset === undefined) { compleet = true; break; }
+      offset = Number(data.volgende_offset);
+    }
+
+    return { ...totalen, resultaten, compleet, rondes: ronde, dryRun };
+  };
+
+  const liDrogeRun = async () => {
+    if (!campaign) return;
+    setLiBezig(true); setLiErr(null); setLiScanDroog(null); setLiScanEcht(null);
+    try {
+      const uitkomst = await liLoop(true);
+      setLiScanDroog(uitkomst);
+      if (!uitkomst.compleet) {
+        setLiErr(`Gestopt na ${LI_MAX_RONDES} rondes zonder einde. Verwerken kan zo niet, meld dit.`);
+      }
+    } catch (e) {
+      setLiErr(e.message || String(e));
+    }
+    setLiVoortgang(null);
+    setLiBezig(false);
+  };
+
+  const liAntwoordRijen = (liScanDroog?.resultaten || []).filter(r => r.uitkomst === 'antwoord');
+  // Verwerken mag pas na een VOLLEDIG afgeronde droge run met antwoorden.
+  const liKanVerwerken = !!liScanDroog && liScanDroog.compleet && liAntwoordRijen.length > 0;
+
+  const liVerwerk = async () => {
+    if (!campaign || !liKanVerwerken) return;
+    if (!window.confirm(`${liAntwoordRijen.length} antwoorden verwerken en de status bijwerken?`)) return;
+    setLiBezig(true); setLiErr(null); setLiScanEcht(null);
+    try {
+      const uitkomst = await liLoop(false);
+      setLiScanEcht(uitkomst);
+      await load();
+    } catch (e) {
+      setLiErr(e.message || String(e));
+    }
+    setLiVoortgang(null);
+    setLiBezig(false);
+  };
+
   const callSend = async ({ dryRun }) => {
     if (!campaign) return;
     setSending(true); setSendErr(null); setSendResult(null);
@@ -576,17 +656,90 @@ export default function MarketingOutreach() {
         {kpi('Reserve', rows.length - wave.length, 'var(--text-3)')}
       </div>
 
-      {/* Inboxscan: de kern van de veiligheid bij e-mail. Bij een DM bestaat die
-          inbox niet: antwoorden komen binnen op LinkedIn zelf en zijn live te
-          lezen in de Comms-lane, dus hier zou een scanknop niets doen. */}
+      {/* Inboxscan. Bij e-mail leest hij de mailbox van de afzender; bij LinkedIn
+          leest api/outreach-linkedin-scan.js de chats via Unipile. Twee aparte
+          paneeltjes, want de knoppen en de uitkomst verschillen. */}
       {isLinkedIn ? (
         <div style={{
           border: '0.5px solid var(--sep)', borderRadius: 8, padding: 12,
-          fontSize: 12, color: 'var(--text-2)', lineHeight: 1.6,
+          display: 'flex', flexDirection: 'column', gap: 8,
         }}>
-          <strong>Antwoorden lees je in de Comms-lane.</strong> Die haalt LinkedIn live op uit
-          het account van {campaign.sender_mailbox}. Er is hier geen inboxscan, want er gaat ook
-          geen opvolgbericht uit dat afgeremd moet worden.
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 13, fontWeight: 600 }}>LinkedIn-inboxscan</span>
+            <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
+              <button className="btn-primary tiny" disabled={liBezig} onClick={liDrogeRun}
+                title={`Leest de LinkedIn-gesprekken van ${campaign.sender_mailbox} en toont welke prospects geantwoord hebben. Schrijft niets.`}>
+                {liBezig ? 'Bezig…' : 'Scan LinkedIn (droge run)'}
+              </button>
+              {liKanVerwerken && (
+                <button className="btn-ghost tiny" disabled={liBezig} onClick={liVerwerk}
+                  title="Legt de gevonden antwoorden vast en werkt de status van die prospects bij">
+                  Verwerk deze antwoorden
+                </button>
+              )}
+            </div>
+          </div>
+
+          <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
+            Scant de LinkedIn-gesprekken van <strong>{campaign.sender_mailbox}</strong>, per ronde 40 contacten.
+            {' '}De droge run schrijft niets; pas daarna kun je verwerken.
+          </div>
+
+          {liVoortgang && (
+            <div style={{ fontSize: 12, color: 'var(--text-2)' }}>
+              {liVoortgang.dryRun ? 'Droge run' : 'Verwerken'} bezig: ronde {liVoortgang.ronde}, vanaf contact {liVoortgang.offset + 1}.
+            </div>
+          )}
+
+          {liErr && (
+            <div style={{ fontSize: 12, color: '#dc2626' }}>Scan mislukt: {liErr}</div>
+          )}
+
+          {(liScanEcht || liScanDroog) && (() => {
+            const res = liScanEcht || liScanDroog;
+            const antwoorden = (res.resultaten || []).filter(r => r.uitkomst === 'antwoord');
+            const foutRijen = (res.resultaten || []).filter(r => r.uitkomst === 'fout');
+            return (
+              <div style={{ fontSize: 12, color: 'var(--text-2)', lineHeight: 1.6 }}>
+                <strong>{res.dryRun ? 'Droge run' : 'Verwerkt'}:</strong> {res.verwerkt} van {res.totaal} contacten bekeken,
+                {' '}<strong>{res.met_antwoord}</strong> met antwoord, {res.fouten} fout(en), {res.overgeslagen} overgeslagen.
+                {!res.dryRun && <> {res.geschreven} status(sen) bijgewerkt.</>}
+                {!res.compleet && (
+                  <span style={{ color: '#b45309' }}> Gestopt op de veiligheidsrem van {LI_MAX_RONDES} rondes.</span>
+                )}
+
+                {antwoorden.length > 0 && (
+                  <ul style={{ margin: '8px 0 0 16px', padding: 0 }}>
+                    {antwoorden.map(r => (
+                      <li key={r.id} style={{ marginBottom: 6 }}>
+                        <strong>{r.naam}</strong>{r.bedrijf ? ` (${r.bedrijf})` : ''}:
+                        {' '}{r.classificatie || 'onbekend'} ({Math.round((r.confidence || 0) * 100)}%),
+                        {' '}{r.status_nu || 'onbekend'} naar {r.status_straks || 'onbekend'}
+                        {r.beoordeling_nodig && (
+                          <span style={{ color: '#b45309', fontWeight: 600 }}> · handmatig beoordelen</span>
+                        )}
+                        <div style={{ color: 'var(--text-3)', marginTop: 2 }}>{r.tekst}</div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+
+                {foutRijen.length > 0 && (
+                  <ul style={{ margin: '8px 0 0 16px', padding: 0, color: '#dc2626' }}>
+                    {foutRijen.map(r => (
+                      <li key={`f-${r.id}`}>{r.naam}: {r.detail || 'onbekende fout'}</li>
+                    ))}
+                  </ul>
+                )}
+
+                {res.dryRun && antwoorden.length === 0 && res.compleet && (
+                  <div style={{ color: 'var(--text-3)', marginTop: 4 }}>
+                    Geen nieuwe antwoorden gevonden. Er valt dus niets te verwerken.
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </div>
       ) : (
         <div style={{
