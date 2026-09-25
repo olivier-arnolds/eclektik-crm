@@ -40,6 +40,20 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
   }, []);
   useEffect(() => { reloadChatLinks(); }, [reloadChatLinks]);
 
+  // Chats die vanuit een outreach-campagne zijn gestart. linkedin_chat_id is een
+  // exacte sleutel; hier hoeft niets geraden te worden.
+  const [outreachPerChat, setOutreachPerChat] = useState({});
+  useEffect(() => {
+    supabase.from('outreach_contact')
+      .select('id,first_name,last_name,title,company,status,linkedin_chat_id,linkedin_url')
+      .not('linkedin_chat_id', 'is', null)
+      .then(({ data }) => {
+        const m = {};
+        for (const r of data || []) m[r.linkedin_chat_id] = r;
+        setOutreachPerChat(m);
+      });
+  }, []);
+
   // Close list-row context menu on outside click / scroll / Escape
   useEffect(() => {
     if (!listCtxMenu) return;
@@ -190,6 +204,7 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
   const myUnipileAccountId = USER_TO_UNIPILE_ACCOUNT[userEmail] || null;
   const [liveLinkedInChats, setLiveLinkedInChats] = useState([]);
   const [chatAttendeeNames, setChatAttendeeNames] = useState({}); // chatId → display name
+  const [chatProfileUrls, setChatProfileUrls] = useState({}); // chatId → profiel-URL of slug
   const [loadingLi, setLoadingLi] = useState(false);
   const [liError, setLiError] = useState(null);
 
@@ -218,43 +233,75 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
             const attendees = data.data?.items || [];
             // Pick the first attendee whose provider_id is NOT the logged-in user
             const other = attendees.find(a => a.provider_id !== chat.account_id_owner_provider_id) || attendees[0];
-            return [chat.id, other?.name || null];
-          } catch { return [chat.id, null]; }
-        })).then(pairs => {
-          const map = {};
-          for (const [id, name] of pairs) if (name) map[id] = name;
-          setChatAttendeeNames(map);
+            // Unipile is niet consistent in de veldnaam van de publieke profiel-URL.
+            // Zelfde drie varianten als in src/hooks/useContactSearch.js. Ontbreken ze
+            // alledrie, dan blijft dit null en valt de slug-match gewoon weg.
+            const url = other?.profile_url
+              || other?.public_profile_url
+              || (other?.public_identifier ? `https://www.linkedin.com/in/${other.public_identifier}` : null);
+            return [chat.id, other?.name || null, url || null];
+          } catch { return [chat.id, null, null]; }
+        })).then(triples => {
+          const names = {};
+          const urls = {};
+          for (const [id, name, url] of triples) {
+            if (name) names[id] = name;
+            if (url) urls[id] = url;
+          }
+          setChatAttendeeNames(names);
+          setChatProfileUrls(urls);
         });
       })
       .catch(e => setLiError(e.message || String(e)))
       .finally(() => setLoadingLi(false));
   }, [channel, myUnipileAccountId]);
 
-  // Map Unipile attendee_provider_id → known contact via linkedin_url substring.
-  // Falls back to the live attendee name fetched per chat so the user always
-  // sees a real name instead of "LinkedIn user".
+  // Een LinkedIn-chat koppelen aan de juiste contactpersoon.
+  //
+  // NIET matchen op attendee_provider_id. Dat is de interne LinkedIn-id in de
+  // vorm ACoAAAM8V9wBqh0bXsiaho1KRs3Wq69meDcvVX8, terwijl contacts.linkedin_url
+  // de publieke slug bevat (https://www.linkedin.com/in/clare-dunn). Twee
+  // verschillende nummersystemen: die vergelijking levert per definitie nul
+  // treffers op (getoetst op echte records). Draai dit niet terug.
+  //
+  // Volgorde van zekerheid:
+  //   1. outreach_contact.linkedin_chat_id, een exacte sleutel op chat-id.
+  //   2. de slug uit de profiel-URL van de tegenpartij, zoals
+  //      api/unipile-webhook.js het ook doet.
+  const slugOf = (url) => {
+    if (!url || typeof url !== 'string') return '';
+    const s = url.split('?')[0].replace(/\/+$/, '');
+    const after = s.includes('/in/') ? s.split('/in/')[1] : s;
+    return (after || '').split('/')[0].toLowerCase();
+  };
+
   const linkedInChatRows = useMemo(() => {
     if (channel !== 'linkedin') return [];
     return liveLinkedInChats.map(c => {
-      const providerId = c.attendee_provider_id || '';
-      const contact = providerId
-        ? (contacts || []).find(x => x.linkedin_url && x.linkedin_url.includes(providerId))
+      const outreach = outreachPerChat[c.id] || null;
+      const chatSlug = slugOf(chatProfileUrls[c.id]);
+      const contact = (!outreach && chatSlug)
+        ? (contacts || []).find(x => x.linkedin_url && slugOf(x.linkedin_url) === chatSlug)
         : null;
       const liveName = chatAttendeeNames[c.id];
+      const outreachName = outreach
+        ? `${outreach.first_name || ''} ${outreach.last_name || ''}`.trim()
+        : '';
       return {
         key: c.id,
         chatId: c.id,
         contactId: contact?.id || null,
-        contactName: contact?.name || liveName || c.name || 'LinkedIn user',
-        contactRole: contact?.role || '',
+        contactName: outreachName || contact?.name || liveName || c.name || 'LinkedIn user',
+        contactRole: outreach?.title || contact?.role || '',
         accountId: contact?.accountId || null,
-        account: '',
+        account: outreach?.company || '',
+        outreachStatus: outreach?.status || null,
         unreadCount: c.unread_count || 0,
         messageCount: 0, // unknown until messages fetched
         lastMessage: { ts: c.timestamp, preview: '' },
       };
     });
-  }, [liveLinkedInChats, channel, contacts, chatAttendeeNames]);
+  }, [liveLinkedInChats, channel, contacts, chatAttendeeNames, chatProfileUrls, outreachPerChat]);
 
   // Teams grouping. 1:1 / group chats use the other-party name; channel
   // rows (chatType='channel') use the Team / Channel subject so e.g.
@@ -423,6 +470,12 @@ export default function CommsLane({ comms, accounts, contacts, graphEmails: rawG
                 {g.lastMessage.preview && <div className="comm-preview">{g.lastMessage.preview}</div>}
                 <div className="comm-row-bottom" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   {g.account && <span className="comm-account">{g.account}</span>}
+                  {g.outreachStatus && (
+                    <span title="Deze persoon zit in een outreach-campagne"
+                      style={{ fontSize: 9, padding: '1px 4px', borderRadius: 3, border: '0.5px solid var(--sep)', color: 'var(--text-3)' }}>
+                      campagne
+                    </span>
+                  )}
                   <span style={{ marginLeft: 'auto', fontSize: 10, color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>
                     {g.messageCount} msg{g.messageCount === 1 ? '' : 's'}
                     {g.unreadCount > 0 && ` · ${g.unreadCount} unread`}
