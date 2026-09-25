@@ -19,9 +19,32 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.127.0';
+export const CURRENT_VERSION = '1.127.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.127.1',
+    date: '2026-09-25T15:07:18Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Classificatie kreeg te weinig ruimte om te antwoorden',
+    summary:
+      'Zes van de twaalf LinkedIn-antwoorden kwamen binnen als "check handmatig: onbekend (0%)". Dat leek een onzeker model, maar het was een storing: op claude-opus-5 staat thinking standaard aan, en max_tokens stond op 200. Dat budget moest het denkwerk en de JSON samen dekken. Bij een kort antwoord lukt dat, bij een lang bericht is het op voordat de JSON eruit komt.',
+    changes: [
+      'max_tokens in classifyWithClaude van 200 naar 2000. Het antwoord zelf blijft een regel JSON; die ruimte is voor het denkwerk ervoor, en er wordt alleen betaald voor wat gebruikt wordt.',
+      'De fout kwam aan het licht doordat de scan hele gespreksdraden ging meesturen in plaats van alleen het laatste bericht. Langere tekst betekent meer denkwerk, dus ging het van een mislukking naar zes. Victorina de Boer en Jaimy van Os hadden bij de eerste scan nog een nette classificatie en verloren die bij de herscan.',
+      'De mailscan had exact dezelfde zwakte, want beide kanalen delen classifyWithClaude. Daar is het nooit opgevallen omdat e-mailantwoorden korter binnenkwamen.',
+      'Een mislukte classificatie en een onzeker model heetten allebei "onbekend (0%)" en waren daardoor niet uit elkaar te houden. Een storing zegt nu dat hij een storing is.',
+      'Assistant prefill was de eerste ingeving om de JSON af te dwingen, maar dat geeft een 400 op claude-opus-5. Niet gedaan.',
+    ],
+    files: [
+      'api/_lib/outreach-classify-run.js',
+      'api/outreach-classify.js',
+      'api/outreach-linkedin-scan.js',
+    ],
+    rollback: 'git revert naar v1.127.0. Let op: de zes contacten met een mislukte classificatie moeten daarna opnieuw beoordeeld worden met het vinkje Opnieuw beoordelen.',
+    gitTag: 'v1.127.1',
+  },
   {
     version: '1.127.0',
     date: '2026-09-25T14:30:35Z',
