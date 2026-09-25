@@ -326,3 +326,21 @@ export function inkomendNaVerzending(berichten, { laatsteVerzendingISO = null } 
     })
     .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 }
+
+export const CONV_GEEN = 'geen';
+export const CONV_ANTWOORD = 'antwoord';
+export const CONV_HEEN_EN_WEER = 'heen_en_weer';
+
+/**
+ * Afgeleid uit dezelfde twee tijdstempels als needsOurReply, en om dezelfde
+ * reden niet als DB-status opgeslagen: "heeft geantwoord" en "wij hebben
+ * teruggeschreven" zijn onafhankelijke feiten. Zo blijft het kloppen als iemand
+ * twee keer achter elkaar schrijft.
+ */
+export function conversatieStatus(r) {
+  const inAt = r?.last_inbound_at ? new Date(r.last_inbound_at).getTime() : null;
+  if (inAt === null || !Number.isFinite(inAt)) return CONV_GEEN;
+  const outAt = r?.answered_at ? new Date(r.answered_at).getTime() : null;
+  if (outAt !== null && Number.isFinite(outAt) && outAt > inAt) return CONV_HEEN_EN_WEER;
+  return CONV_ANTWOORD;
+}

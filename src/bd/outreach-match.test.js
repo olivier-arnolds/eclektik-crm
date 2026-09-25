@@ -3,7 +3,7 @@ import {
   domainOf, isBounceMessage, looksLikeAutoReply, buildIndex, findContactEmailIn,
   matchMessage, scanInbox, statusAfterClassification,
   MATCH_SENDER, MATCH_DOMAIN, MATCH_NONE, CONFIDENCE_FLOOR, needsOurReply, matchRegistrations,
-  inkomendNaVerzending,
+  inkomendNaVerzending, conversatieStatus, CONV_GEEN, CONV_ANTWOORD, CONV_HEEN_EN_WEER,
 } from './outreach-match';
 
 // Drie contacten, twee bij hetzelfde domein (de ING-situatie).
@@ -310,5 +310,42 @@ describe('inkomendNaVerzending', () => {
   it('valt niet om op lege invoer', () => {
     expect(inkomendNaVerzending(null, {})).toEqual([]);
     expect(inkomendNaVerzending(undefined, undefined)).toEqual([]);
+  });
+});
+
+describe('conversatieStatus', () => {
+  it('geen zonder inkomend bericht', () => {
+    expect(conversatieStatus({})).toBe(CONV_GEEN);
+    expect(conversatieStatus({ last_inbound_at: null })).toBe(CONV_GEEN);
+  });
+
+  it('antwoord als zij schreven en wij nog niet terug', () => {
+    expect(conversatieStatus({ last_inbound_at: '2026-09-12T10:00:00Z' }))
+      .toBe(CONV_ANTWOORD);
+  });
+
+  it('antwoord als ons bericht ouder is dan het hunne', () => {
+    expect(conversatieStatus({
+      last_inbound_at: '2026-09-12T10:00:00Z',
+      answered_at: '2026-09-11T10:00:00Z',
+    })).toBe(CONV_ANTWOORD);
+  });
+
+  it('heen en weer als wij als laatste schreven', () => {
+    expect(conversatieStatus({
+      last_inbound_at: '2026-09-12T10:00:00Z',
+      answered_at: '2026-09-13T10:00:00Z',
+    })).toBe(CONV_HEEN_EN_WEER);
+  });
+
+  it('blijft antwoord als iemand twee keer achter elkaar schrijft', () => {
+    expect(conversatieStatus({
+      last_inbound_at: '2026-09-14T10:00:00Z',
+      answered_at: '2026-09-13T10:00:00Z',
+    })).toBe(CONV_ANTWOORD);
+  });
+
+  it('negeert onbruikbare datums', () => {
+    expect(conversatieStatus({ last_inbound_at: 'onzin' })).toBe(CONV_GEEN);
   });
 });
