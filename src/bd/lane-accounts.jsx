@@ -702,7 +702,7 @@ function AccountsList({ accounts, contacts, deals, onPickAccount, search, onAddA
               <div className="account-card-name">{a.name}</div>
               <div className="account-card-meta">
                 {a.accountNo && <><span style={{ fontFamily: 'var(--font-mono)' }}>{a.accountNo}</span><span className="sep">·</span></>}
-                <span>{a.type || '—'}</span>
+                <span>{a.type || '-'}</span>
                 {a.region && <><span className="sep">·</span><span>{a.region}</span></>}
                 {a.industry && <><span className="sep">·</span><span>{a.industry}</span></>}
               </div>
@@ -1020,7 +1020,7 @@ function AccountDetail({ account, highlight, accounts, contacts, deals, rawItems
           </div>
           <div className="acc-hero-meta">
             {account.accountNo && <><span style={{ fontFamily: 'var(--font-mono)' }}>{account.accountNo}</span><span className="sep">·</span></>}
-            <span>{account.type || '—'}</span>
+            <span>{account.type || '-'}</span>
             {account.tier && <><span className="sep">·</span><span>{account.tier}</span></>}
             {account.region && <><span className="sep">·</span><span>{account.region}</span></>}
             {account.arr && <><span className="sep">·</span><span>{account.arr}</span></>}
@@ -1712,14 +1712,14 @@ function AddTaskInline({ accountId, onDone, onCancel }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <div style={labelStyle}>For</div>
           <select value={owner} onChange={e => setOwner(e.target.value)} style={fieldStyle}>
-            <option value="">—</option>
+            <option value="">-</option>
             {['Marco', 'Olivier', 'Yarmilla'].map(n => <option key={n} value={n}>{n}</option>)}
           </select>
         </div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           <div style={labelStyle}>With (Eclectik)</div>
           <select value={withId} onChange={e => setWithId(e.target.value)} style={fieldStyle}>
-            <option value="">—</option>
+            <option value="">-</option>
             {team.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
           </select>
         </div>
@@ -1766,7 +1766,7 @@ function AccountBrief({ brief, briefAt, loading, error, onGenerate, interactions
       {!brief && !loading && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-start' }}>
           <div style={{ fontSize: 12, color: 'var(--text-3)', lineHeight: 1.5 }}>
-            Generate an AI brief of what's happened with this client — across meetings, email, LinkedIn, notes, tasks and the team channel.
+            Generate an AI brief of what's happened with this client - across meetings, email, LinkedIn, notes, tasks and the team channel.
           </div>
           <button className="btn-ghost tiny" onClick={onGenerate} style={{ color: 'var(--accent)' }}>✨ Generate brief</button>
         </div>
@@ -1797,7 +1797,7 @@ function AccountBrief({ brief, briefAt, loading, error, onGenerate, interactions
               <ul style={{ margin: 0, paddingLeft: 16 }}>
                 {attention.map((a, i) => (
                   <li key={i} style={{ fontSize: 13, lineHeight: 1.55, color: 'var(--text-1)', marginBottom: 3 }}>
-                    {a.text}{a.meta && <span style={{ color: 'var(--text-3)', fontSize: 12 }}> — {a.meta}</span>}
+                    {a.text}{a.meta && <span style={{ color: 'var(--text-3)', fontSize: 12 }}> - {a.meta}</span>}
                   </li>
                 ))}
               </ul>

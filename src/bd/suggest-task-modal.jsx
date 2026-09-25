@@ -197,7 +197,7 @@ export default function SuggestTaskModal({ comm, accounts, contacts, onClose, on
                       cursor: 'pointer',
                     }} onClick={() => setAccountPickerOpen(true)}>
                       <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {(accounts || []).find(a => a.id === accountId)?.name || '—'}
+                        {(accounts || []).find(a => a.id === accountId)?.name || '-'}
                       </span>
                       <span style={{ fontSize: 10, color: 'var(--text-3)' }}>change</span>
                     </div>

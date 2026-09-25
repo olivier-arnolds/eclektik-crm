@@ -453,7 +453,7 @@ function ItemCard({ it, draggable = false, dragging = false, setDraggingId, onOp
       onDragStart={canDrag ? (e) => { e.stopPropagation(); setDraggingId && setDraggingId(it.id); } : undefined}
       onDragEnd={canDrag ? () => setDraggingId && setDraggingId(null) : undefined}
       onClick={(e) => { e.stopPropagation(); onOpen && onOpen(it); }}
-      title={`${st.label}${it.subject ? ' · ' + it.subject : ''}${canDrag ? ' — sleep om te (her)plannen, klik om te openen' : ''}`}
+      title={`${st.label}${it.subject ? ' · ' + it.subject : ''}${canDrag ? ' - sleep om te (her)plannen, klik om te openen' : ''}`}
       style={{
         background: st.bg, border: `1px solid ${st.border}`, borderRadius: 6,
         padding: '4px 6px', display: 'flex', flexDirection: 'column', gap: 2, minWidth: 0,
@@ -599,7 +599,7 @@ function UnscheduledTray({ items, draggingId, setDraggingId, onMoveToDate, onOpe
   return (
     <div style={{ marginTop: 16 }}>
       <div style={{ fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)', marginBottom: 6 }}>
-        Nog in te plannen ({items?.length || 0}) — sleep hierheen om van de kalender te halen
+        Nog in te plannen ({items?.length || 0}) - sleep hierheen om van de kalender te halen
       </div>
       <div
         onDragOver={(e) => { if (draggingId) { e.preventDefault(); setOver(true); } }}
@@ -988,7 +988,7 @@ function ContentItemModal({ item, contacts = [], accounts = [], allTags = [], on
                     );
                   })()}
                 </>
-              ) : <span style={{ fontSize: 12, color: 'var(--text-3)' }}>—</span>}
+              ) : <span style={{ fontSize: 12, color: 'var(--text-3)' }}>-</span>}
               {recipient && (
                 recipientConn === 'connected'
                   ? <span style={{ fontSize: 11, color: '#16a34a' }}>Verbonden via {linkedinAccountLabel(accountId)} - DM komt direct aan.</span>

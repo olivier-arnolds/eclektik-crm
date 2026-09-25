@@ -92,7 +92,7 @@ export default function AccountLinksSection({ account, contacts, linkType, label
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div className="contact-name">{c.name}</div>
                   <div className="contact-role">
-                    {c.account || '—'}
+                    {c.account || '-'}
                     {c.role ? ` · ${c.role}` : ''}
                   </div>
                 </div>
@@ -186,7 +186,7 @@ function ContactPicker({ contacts, excludeAccountId, alreadyLinkedIds, onPick, o
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-1)' }}>{c.name}</div>
               <div style={{ fontSize: 10, color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>
-                {c.account || '—'}{c.role ? ` · ${c.role}` : ''}
+                {c.account || '-'}{c.role ? ` · ${c.role}` : ''}
               </div>
             </div>
           </div>

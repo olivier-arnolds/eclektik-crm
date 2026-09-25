@@ -173,7 +173,7 @@ export default function AddAccountModal({ onClose, onCreated, initialName, initi
         </div>
         <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div style={{ fontSize: 12, color: 'var(--text-3)' }}>
-            Fill in the basics — we'll auto-enrich industry, size, description, and more via Surfe.
+            Fill in the basics - we'll auto-enrich industry, size, description, and more via Surfe.
           </div>
 
           <div>

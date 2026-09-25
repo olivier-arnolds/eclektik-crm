@@ -156,7 +156,7 @@ export default function TasksView({ accounts, contacts, onSelectTask, onPickAcco
             {filtered.map(t => {
               const acc = t.company_id ? accById.get(t.company_id) : null;
               const contact = t.contact_id ? contactById.get(t.contact_id) : null;
-              const regarding = acc?.name || contact?.name || '—';
+              const regarding = acc?.name || contact?.name || '-';
               const priority = (t.priority || 'Normal').replace(/^\w/, c => c.toUpperCase());
               const overdue = t.due_date && new Date(t.due_date) < new Date(new Date().toDateString());
               const showDescription = cols.some(c => c.key === 'description');
@@ -186,11 +186,11 @@ export default function TasksView({ accounts, contacts, onSelectTask, onPickAcco
                     {t.title || '(untitled)'}
                   </td>
                   <td style={{ padding: '6px 10px', color: 'var(--text-2)' }}>
-                    {t.owner || <span style={{ color: 'var(--text-3)', fontStyle: 'italic' }}>—</span>}
+                    {t.owner || <span style={{ color: 'var(--text-3)', fontStyle: 'italic' }}>-</span>}
                   </td>
                   <td style={{ padding: '6px 10px', color: 'var(--text-2)' }}>
                     {contactById.get(t.with_contact_id)?.name
-                      || <span style={{ color: 'var(--text-3)', fontStyle: 'italic' }}>—</span>}
+                      || <span style={{ color: 'var(--text-3)', fontStyle: 'italic' }}>-</span>}
                   </td>
                   {showDescription && (
                     <td style={{ padding: '6px 10px', color: 'var(--text-2)', maxWidth: 420, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

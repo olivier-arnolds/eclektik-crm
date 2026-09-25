@@ -158,7 +158,7 @@ export default function BulkLinkDealsModal({ accounts, onClose, onDone }) {
                             border: '0.5px solid var(--sep)', background: 'var(--bg-1)',
                             color: 'var(--text-1)', fontSize: 12, fontFamily: 'var(--font)', outline: 'none',
                           }}>
-                          <option value="">— pick account —</option>
+                          <option value="">- pick account -</option>
                           {filteredAccounts.map(a => (
                             <option key={a.id} value={a.id}>{a.name}</option>
                           ))}

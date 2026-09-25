@@ -55,7 +55,7 @@ function qShort(q) { const [y, n] = q.split('-Q'); return `Q${n} ${y.slice(2)}`;
 const eur = (v) => '€' + Math.round((v || 0) / 1000) + 'k';
 const ccShort = (c) => {
   const m = { 'United States': 'US', 'United Kingdom': 'UK', 'Netherlands': 'NL', 'Ireland': 'IE', 'Germany': 'DE', 'Switzerland': 'CH', 'Spain': 'ES', 'Italy': 'IT' };
-  return c ? (m[c] || c) : '—';
+  return c ? (m[c] || c) : '-';
 };
 
 // Marco's authoritative role assignment (overrides whatever account_links.role
@@ -230,7 +230,7 @@ export function computeMetrics(opps, companies, links, teamContacts, cfg) {
     const q = quarterOf(o); if (!q || !(q in totals)) continue;
     const l = lineOf(o); if (l !== 'Glint' && l !== 'ROI') continue;
     const node = (dealsByQLine[q] = dealsByQLine[q] || { Glint: [], ROI: [] });
-    node[l].push({ name: o.company_name || '—', eur: revenueOf(o), isNew: seqOf.get(o.id) === 'new' });
+    node[l].push({ name: o.company_name || '-', eur: revenueOf(o), isNew: seqOf.get(o.id) === 'new' });
   }
   Object.values(dealsByQLine).forEach(n => { n.Glint.sort((a, b) => b.eur - a.eur); n.ROI.sort((a, b) => b.eur - a.eur); });
 
@@ -286,8 +286,8 @@ export function computeMetrics(opps, companies, links, teamContacts, cfg) {
   // Data-quality warnings
   const warnings = {
     wonNoRevenue: won.filter((o) => revenueOf(o) === 0)
-      .map((o) => o.company_name || byId.get(o.company_id)?.name || '—'),
-    activeNoStatus: activeNoStatus.map((o) => o.company_name || byId.get(o.company_id)?.name || '—'),
+      .map((o) => o.company_name || byId.get(o.company_id)?.name || '-'),
+    activeNoStatus: activeNoStatus.map((o) => o.company_name || byId.get(o.company_id)?.name || '-'),
     wonNonCustomer: won.filter((o) => { const c = byId.get(o.company_id); return c && c.type !== 'Customer'; })
       .map((o) => `${byId.get(o.company_id)?.name} (${byId.get(o.company_id)?.type})`),
     missingCountry: customers.filter((c) => !c.country).map((c) => c.name),
@@ -300,7 +300,7 @@ export function computeMetrics(opps, companies, links, teamContacts, cfg) {
   const ctById = new Map((teamContacts || []).map((c) => [c.id, c]));
   const personName = (c) => {
     const n = `${c.first_name || ''} ${c.last_name || ''}`.trim();
-    return n || c.full_name || '—';
+    return n || c.full_name || '-';
   };
   const clientIds = new Set(rows.map((r) => r.id));
   const people = new Map(); // by display name (merge duplicate contact rows)
@@ -712,7 +712,7 @@ function ClientsTable({ m, onPick }) {
       </table>
       <div style={{ fontSize: 11, ...muted, marginTop: 10, lineHeight: 1.6 }}>
         Region split: US {eur(subtotal(us).total)} · EMEA {eur(subtotal(emea).total)} = {eur(grand.total)}, reconciling to total won.
-        {warnings.missingCountry.length > 0 && ` ${warnings.missingCountry.join(', ')} ${warnings.missingCountry.length === 1 ? 'has' : 'have'} no country in the CRM — shown under EMEA.`}
+        {warnings.missingCountry.length > 0 && ` ${warnings.missingCountry.join(', ')} ${warnings.missingCountry.length === 1 ? 'has' : 'have'} no country in the CRM - shown under EMEA.`}
       </div>
     </div>
   );
@@ -811,7 +811,7 @@ export default function ReportingLane({ onPickAccount, accounts = [] }) {
             </Panel>
 
             <Panel title="New vs recurring business by quarter" hint={`Full tone = new client, light tone = recurring · hollow bars (${qShort(m.proposal.quarter)}) = open proposal pipeline by line, probability-weighted, not yet won · recurring ${eur(m.recTotal)} of ${eur(m.kpi.wonRev)} won: Glint ${eur(m.recGlint)} · ROI ${eur(m.recRoi)} · ${m.recDeals} repeat deals`}>
-              <Legend items={[['Glint — new', 'var(--good)'], ['Glint — recurring', 'var(--good)', null, 0.4], ['ROI — new', 'var(--accent)'], ['ROI — recurring', 'var(--accent)', null, 0.4], ['Proposals (open)', 'var(--text-3)', 'dashed']]} />
+              <Legend items={[['Glint - new', 'var(--good)'], ['Glint - recurring', 'var(--good)', null, 0.4], ['ROI - new', 'var(--accent)'], ['ROI - recurring', 'var(--accent)', null, 0.4], ['Proposals (open)', 'var(--text-3)', 'dashed']]} />
               <NewRecurringChart m={m} />
             </Panel>
 
@@ -830,9 +830,9 @@ export default function ReportingLane({ onPickAccount, accounts = [] }) {
                       <td style={{ padding: '4px 6px' }}>{r.line}</td>
                       <td style={{ padding: '4px 6px', textAlign: 'right', ...mono }}>{r.wonN}</td>
                       <td style={{ padding: '4px 6px', textAlign: 'right', ...mono }}>{r.lostN}</td>
-                      <td style={{ padding: '4px 6px', textAlign: 'right', ...mono }}>{(r.wonN + r.lostN) ? ((r.wonN / (r.wonN + r.lostN)) * 100).toFixed(0) + '%' : '—'}</td>
+                      <td style={{ padding: '4px 6px', textAlign: 'right', ...mono }}>{(r.wonN + r.lostN) ? ((r.wonN / (r.wonN + r.lostN)) * 100).toFixed(0) + '%' : '-'}</td>
                       <td style={{ padding: '4px 6px', textAlign: 'right', fontWeight: 500, ...mono }}>{eur(r.wonVal)}</td>
-                      <td style={{ padding: '4px 6px', textAlign: 'right', ...mono }}>{r.wonN ? eur(r.wonVal / r.wonN) : '—'}</td>
+                      <td style={{ padding: '4px 6px', textAlign: 'right', ...mono }}>{r.wonN ? eur(r.wonVal / r.wonN) : '-'}</td>
                       <td style={{ padding: '4px 6px', textAlign: 'right', ...mono, ...muted }}>{eur(r.lostEst)}</td>
                     </tr>
                   ))}
@@ -848,7 +848,7 @@ export default function ReportingLane({ onPickAccount, accounts = [] }) {
               <ClientsTable m={m} onPick={pick} />
             </Panel>
 
-            <Panel title="Dormant clients" hint="Customers (excl. Adecco) with no live or open work — re-engagement candidates.">
+            <Panel title="Dormant clients" hint="Customers (excl. Adecco) with no live or open work - re-engagement candidates.">
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>
                 <thead><tr style={{ textAlign: 'left', fontWeight: 400, ...muted }}>
                   <th style={{ padding: '4px 6px', fontWeight: 400 }}>Client</th><th style={{ padding: '4px 6px', fontWeight: 400 }}>Region</th>
@@ -859,7 +859,7 @@ export default function ReportingLane({ onPickAccount, accounts = [] }) {
                     <tr key={r.id} onClick={() => pick(r.id)} style={{ borderTop: '0.5px solid var(--sep)', cursor: 'pointer' }}>
                       <td style={{ padding: '4px 6px', textDecoration: 'underline', textDecorationColor: 'var(--sep-strong)', textUnderlineOffset: 2 }}>{r.name}</td>
                       <td style={{ padding: '4px 6px', ...muted }}>{r.region}</td>
-                      <td style={{ padding: '4px 6px', textAlign: 'right', ...mono }}>{r.total > 0 ? eur(r.total) : '—'}</td>
+                      <td style={{ padding: '4px 6px', textAlign: 'right', ...mono }}>{r.total > 0 ? eur(r.total) : '-'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -870,7 +870,7 @@ export default function ReportingLane({ onPickAccount, accounts = [] }) {
 
               <div style={{ ...card, fontSize: 11.5, ...muted, lineHeight: 1.7 }}>
               <div style={{ fontWeight: 500, color: 'var(--text-2)', marginBottom: 4 }}>Methodology &amp; caveats</div>
-              Revenue = COALESCE(actual, estimate, 0). Quarter = quarter of actual/expected close date. Won = status Won; Open pipeline = stage opportunity; weighted = Σ(estimate × probability). Probability is now stage-driven (set automatically on stage moves), so weighted pipeline behaves as a stage weighting rather than independent judgement — win rate is shown alongside as a cross-check. Customer = companies.type Customer (Adecco Group excluded; we deliver under LHH). Live = stage active/onboarding; active client = a Customer with any active/onboarding/opportunity deal; dormant = none. Region: US = country US/United States, else EMEA. New vs recurring ranks a client's won deals by close date ({recurringLineLevel ? 'per product line' : 'across all lines'}). Target = €1M/yr (€250k/q). Figures are operational CRM values, not reconciled finance actuals.
+              Revenue = COALESCE(actual, estimate, 0). Quarter = quarter of actual/expected close date. Won = status Won; Open pipeline = stage opportunity; weighted = Σ(estimate × probability). Probability is now stage-driven (set automatically on stage moves), so weighted pipeline behaves as a stage weighting rather than independent judgement - win rate is shown alongside as a cross-check. Customer = companies.type Customer (Adecco Group excluded; we deliver under LHH). Live = stage active/onboarding; active client = a Customer with any active/onboarding/opportunity deal; dormant = none. Region: US = country US/United States, else EMEA. New vs recurring ranks a client's won deals by close date ({recurringLineLevel ? 'per product line' : 'across all lines'}). Target = €1M/yr (€250k/q). Figures are operational CRM values, not reconciled finance actuals.
             </div>
           </>
         )}

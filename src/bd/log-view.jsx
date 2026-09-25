@@ -51,7 +51,7 @@ export default function LogView() {
       </div>
 
       <p style={{ color: 'var(--text-3)', fontSize: 12.5, lineHeight: 1.6, marginTop: 8, marginBottom: 24 }}>
-        Every change to this app is recorded below — newest first — with a date-time stamp and
+        Every change to this app is recorded below - newest first - with a date-time stamp and
         the exact detail of what was done. Each version maps to a git tag, so any version can be
         restored. To roll back, run the command shown on that version (or ask Claude to do it).
       </p>

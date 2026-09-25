@@ -65,9 +65,9 @@ export default async function handler(req, res) {
       : c.display_order;
 
     const SECTIONS = [
-      { key: 'deep', label: 'Deeply analysed — IR read end-to-end' },
-      { key: 'pre', label: 'Pre-IR / pre-contract — predictive framing' },
-      { key: 'closed', label: 'CLOSED — relationship-closed clients' },
+      { key: 'deep', label: 'Deeply analysed - IR read end-to-end' },
+      { key: 'pre', label: 'Pre-IR / pre-contract - predictive framing' },
+      { key: 'closed', label: 'CLOSED - relationship-closed clients' },
     ];
     const rows = [];
     SECTIONS.forEach(s => {

@@ -197,7 +197,7 @@ export default function NewMeetingModal({ dayDate, contacts, deals, accounts, on
             <div>
               <div style={label}>Link to account</div>
               <select style={fieldStyle} value={accountId} onChange={e => { setAccountId(e.target.value); setDealId(''); }}>
-                <option value="">— none —</option>
+                <option value="">- none -</option>
                 {[...(accounts || [])].sort((a, b) => a.name.localeCompare(b.name)).map(a => (
                   <option key={a.id} value={a.id}>{a.name}</option>
                 ))}
@@ -207,7 +207,7 @@ export default function NewMeetingModal({ dayDate, contacts, deals, accounts, on
               <div style={label}>Link to deal</div>
               <select style={fieldStyle} value={dealId} onChange={e => setDealId(e.target.value)}
                 disabled={accountDeals.length === 0}>
-                <option value="">— none —</option>
+                <option value="">- none -</option>
                 {accountDeals.map(d => (
                   <option key={d.id} value={d.id}>{d.title}</option>
                 ))}

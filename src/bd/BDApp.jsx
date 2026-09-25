@@ -376,7 +376,7 @@ export default function BDApp() {
         }}>
           <span aria-hidden="true">⚠️</span>
           <span style={{ flex: 1 }}>
-            Niet alle data is geladen — limiet bereikt voor: {truncated.map(t => `${t.table} (${t.limit})`).join(', ')}.
+            Niet alle data is geladen - limiet bereikt voor: {truncated.map(t => `${t.table} (${t.limit})`).join(', ')}.
             Oudere records zijn niet zichtbaar in de app.
           </span>
           <button onClick={() => setTruncWarnDismissed(true)} aria-label="Waarschuwing sluiten"

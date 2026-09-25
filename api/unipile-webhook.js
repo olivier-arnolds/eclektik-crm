@@ -56,7 +56,7 @@ export default async function handler(req, res) {
       };
       const unipileUser = UNIPILE_ACCOUNT_OWNERS[account_id] || null;
       if (!unipileUser) {
-        console.warn(`Unknown Unipile account_id: ${account_id} — message will have unipile_user=NULL and won't appear in any user's inbox`);
+        console.warn(`Unknown Unipile account_id: ${account_id} - message will have unipile_user=NULL and won't appear in any user's inbox`);
       }
 
       // Store in comms table. chat_id is the Unipile thread identifier so

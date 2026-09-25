@@ -74,7 +74,7 @@ export default function PropertyPanel({ selectedNode, onChangeConfig, onDeleteNo
                 value={config[field.key] || ''}
                 onChange={e => updateField(field.key, e.target.value)}
                 style={{ width:'100%', padding:'4px 6px', fontSize:11, border:'0.5px solid #D3D1C7', borderRadius:4, fontFamily:'inherit' }}>
-                <option value="">— kies —</option>
+                <option value="">- kies -</option>
                 {field.options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
               </select>
             )}

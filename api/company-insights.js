@@ -104,10 +104,10 @@ COMPANY DATA FROM CRM:
 - Primary contact: ${company.primary_contact || 'Unknown'}
 
 CONTACTS IN CRM (${(companyContacts || []).length}):
-${(companyContacts || []).map(c => `- ${c.full_name} — ${c.title || 'no role'} (${c.email || 'no email'})`).join('\n') || 'No contacts'}
+${(companyContacts || []).map(c => `- ${c.full_name} - ${c.title || 'no role'} (${c.email || 'no email'})`).join('\n') || 'No contacts'}
 
 PIPELINE ITEMS:
-${(companyItems || []).map(i => `- ${i.topic} — status: ${i.status}, stage: ${i.stage}, revenue: €${i.est_revenue || i.actual_revenue || 0}`).join('\n') || 'No items'}
+${(companyItems || []).map(i => `- ${i.topic} - status: ${i.status}, stage: ${i.stage}, revenue: €${i.est_revenue || i.actual_revenue || 0}`).join('\n') || 'No items'}
 
 ${websiteContent ? `WEBSITE HOMEPAGE CONTENT:\n${websiteContent.substring(0, 4000)}` : 'No website content available.'}
 
@@ -121,10 +121,10 @@ ${Object.entries(subPages).map(([path, content]) => `WEBSITE ${path.toUpperCase(
       messages: [{
         role: 'user',
         content: `Je bent een business development analist voor Eclectik, een B2B consultancy gespecialiseerd in:
-1. AI Transformatie — AI readiness assessments, ROI modellen, implementatie
-2. People Science / Glint — employee engagement, Viva Insights, cultuuranalyse
-3. Microsoft 365 / Teams — implementatie, adoptie, change management
-4. Technical — Azure, Teams, cloud migratie
+1. AI Transformatie - AI readiness assessments, ROI modellen, implementatie
+2. People Science / Glint - employee engagement, Viva Insights, cultuuranalyse
+3. Microsoft 365 / Teams - implementatie, adoptie, change management
+4. Technical - Azure, Teams, cloud migratie
 
 Analyseer het volgende bedrijf en maak een gestructureerd overzicht in het Nederlands met deze secties:
 

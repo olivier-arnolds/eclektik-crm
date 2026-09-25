@@ -191,7 +191,7 @@ export default function CalendarLane({ events: dbEvents, tasks: dbTasks, deals, 
             meetings". Mirror the Comms empty-state so the cause is visible. */}
         {!hasGraphToken && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 11, color: 'var(--text-3)' }}>
-            <span>Microsoft is not connected — Outlook meetings are not shown.</span>
+            <span>Microsoft is not connected - Outlook meetings are not shown.</span>
             <button className="btn-primary tiny" onClick={reconnectMicrosoft}>Connect Microsoft</button>
           </div>
         )}
@@ -497,7 +497,7 @@ function AddTaskModal({ day, dayDate, accounts, deals, onClose, onCreated }) {
       <div className="modal" style={{ minWidth: 340, maxWidth: 420 }} onClick={e => e.stopPropagation()}>
         <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <I.plus />
-          <span>Add task — {DAYS[day]} {dayDate.getDate()}</span>
+          <span>Add task - {DAYS[day]} {dayDate.getDate()}</span>
           <button className="icon-btn tiny" style={{ marginLeft: 'auto' }} onClick={onClose}><I.close /></button>
         </div>
         <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingTop: 4 }}>
@@ -511,7 +511,7 @@ function AddTaskModal({ day, dayDate, accounts, deals, onClose, onCreated }) {
           <div>
             <div style={labelStyle}>Link to account (makes it visible in Account 360)</div>
             <select style={fieldStyle} value={accountId} onChange={e => { setAccountId(e.target.value); setDealId(''); }}>
-              <option value="">— none —</option>
+              <option value="">- none -</option>
               {[...accounts].sort((a, b) => a.name.localeCompare(b.name)).map(a => (
                 <option key={a.id} value={a.id}>{a.name}</option>
               ))}
@@ -521,7 +521,7 @@ function AddTaskModal({ day, dayDate, accounts, deals, onClose, onCreated }) {
             <div>
               <div style={labelStyle}>Linked deal (optional)</div>
               <select style={fieldStyle} value={dealId} onChange={e => setDealId(e.target.value)}>
-                <option value="">— none —</option>
+                <option value="">- none -</option>
                 {accountDeals.map(d => (
                   <option key={d.id} value={d.id}>[{d.stage}] {d.title} · {fmtMoney(d.value)}</option>
                 ))}

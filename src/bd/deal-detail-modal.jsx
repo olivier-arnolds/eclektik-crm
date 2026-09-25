@@ -226,7 +226,7 @@ export default function DealDetailModal({ deal, accounts, contacts, rawItems, on
                   style={{ width: '100%', padding: '4px 6px', borderRadius: 4, border: '0.5px solid var(--sep)', background: 'var(--fill-1)', fontSize: 12, boxSizing: 'border-box' }} />
               ) : (
                 <button className="btn-ghost tiny" style={{ justifyContent: 'flex-start', padding: '4px 0' }} onClick={() => setEditingField('closeDate')}>
-                  {deal.closeDate || '— pick date'}
+                  {deal.closeDate || '- pick date'}
                 </button>
               )}
             </F>
@@ -303,7 +303,7 @@ function ProductLinePicker({ value, onSave }) {
           fontSize: 12, color: current ? 'var(--text-1)' : 'var(--text-3)',
           fontFamily: 'inherit',
         }}>
-        {current || '— pick'} <span style={{ fontSize: 9, color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>▾</span>
+        {current || '- pick'} <span style={{ fontSize: 9, color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>▾</span>
       </button>
       {open && (
         <div style={{

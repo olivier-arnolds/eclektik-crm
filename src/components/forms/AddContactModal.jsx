@@ -50,7 +50,7 @@ export default function AddContactModal({ open, onClose, refetch, accounts }) {
         <div style={{ marginBottom: 10 }}>
           <div style={labelStyle}>Company</div>
           <select value={form.company_id} onChange={e => setForm(p => ({ ...p, company_id: e.target.value }))} style={{ ...inputStyle, background: "#fff" }}>
-            <option value="">— Select company —</option>
+            <option value="">- Select company -</option>
             {(accounts || []).sort((a, b) => a.name.localeCompare(b.name)).map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
           </select>
         </div>

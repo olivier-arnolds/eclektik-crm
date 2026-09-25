@@ -54,7 +54,7 @@ export default function OnepagerModal({ open, onClose }) {
   }, [open]);
 
   const m = useMemo(() => {
-    const nameOf = (o) => o.company_name || companyById.get(o.company_id)?.name || '— onbekend —';
+    const nameOf = (o) => o.company_name || companyById.get(o.company_id)?.name || '- onbekend -';
 
     // ── Funnel-categorie per opportunity ──
     const catOf = (o) => {
@@ -233,7 +233,7 @@ export default function OnepagerModal({ open, onClose }) {
       <div className="modal" style={{ width: '100vw', height: '100vh', maxWidth: '100vw', maxHeight: '100vh', borderRadius: 0, display: 'flex', flexDirection: 'column' }} onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontSize: 24 }}>Eclectik — 2026 Overview</span>
+          <span style={{ fontSize: 24 }}>Eclectik - 2026 Overview</span>
           <span style={{ fontSize: 14, color: 'var(--text-3)', fontWeight: 400 }}>state of play · {today}</span>
           <button className="icon-btn tiny" style={{ marginLeft: 'auto', color: 'var(--text-2)' }} onClick={onClose}><I.close /></button>
         </div>
@@ -255,13 +255,13 @@ export default function OnepagerModal({ open, onClose }) {
 
               {/* Win rate — proposal-stage deals only */}
               {m.winRate !== null && (
-                <Section title="Win rate — deals that reached a proposal">
+                <Section title="Win rate - deals that reached a proposal">
                   <WinRate won={m.wonN} lost={m.lostQualified} rate={m.winRate} />
                 </Section>
               )}
 
               {/* Project lifecycle: leads → proposal → onboarding → running/completed → sleeping */}
-              <Section title="The project lifecycle — leads to sleeping">
+              <Section title="The project lifecycle - leads to sleeping">
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12 }}>
                   <FunnelCol title="Leads" sub="pre-proposal pipeline" color="var(--text-3)" names={m.leadsBucket} />
                   <FunnelCol title="Proposal" sub="open proposals" color="var(--warn)" names={m.proposal} />
@@ -272,7 +272,7 @@ export default function OnepagerModal({ open, onClose }) {
               </Section>
 
               {/* Where we're strong — client base profile */}
-              <Section title={`Where we're strong — clients we deliver to (${m.clientCount})`}>
+              <Section title={`Where we're strong - clients we deliver to (${m.clientCount})`}>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
                   <ProfilePanel title="Geography" rows={[{ label: 'EMEA', n: m.region.EMEA }, { label: 'US', n: m.region.US }]} total={m.clientCount} color="var(--accent)" />
                   <ProfilePanel title="Sector strength" rows={m.sectors} total={m.clientCount} color="var(--good)" />
@@ -281,7 +281,7 @@ export default function OnepagerModal({ open, onClose }) {
               </Section>
 
               {/* New vs recurring — like-for-like YTD */}
-              <Section title={`New business vs. recurring business — like-for-like (1 Jan – ${m.ytdLabel})`}>
+              <Section title={`New business vs. recurring business - like-for-like (1 Jan – ${m.ytdLabel})`}>
                 <NewRecurring prev={m.nrPrev} cur={m.nrCur} prevYr={PREV_YEAR} curYr={CUR_YEAR} ytdLabel={m.ytdLabel} />
               </Section>
 
@@ -360,7 +360,7 @@ function WinRate({ won, lost, rate }) {
         </div>
       </div>
       <div style={{ fontSize: 12, color: 'var(--text-3)' }}>
-        Only opportunities that reached a proposal count as a loss — deals that dropped out earlier (qualify/develop) are excluded. Across all tracked deals.
+        Only opportunities that reached a proposal count as a loss - deals that dropped out earlier (qualify/develop) are excluded. Across all tracked deals.
       </div>
     </div>
   );

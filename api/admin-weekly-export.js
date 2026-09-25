@@ -50,7 +50,7 @@ async function buildMarkdown() {
   const today = new Date();
   const stamp = today.toISOString().split('T')[0];
   const lines = [
-    `# Eclectik CRM — weekly export`,
+    `# Eclectik CRM - weekly export`,
     ``,
     `Snapshot: **${today.toUTCString()}**`,
     ``,
@@ -89,7 +89,7 @@ async function sendExport({ recipients, mdContent, stamp }) {
     body: JSON.stringify({
       from: `${fromName} <${fromEmail}>`,
       to: recipients,
-      subject: `Eclectik CRM weekly export — ${stamp}`,
+      subject: `Eclectik CRM weekly export - ${stamp}`,
       html: `<p>The weekly Eclectik CRM database snapshot is attached as a Markdown file.</p>
              <p>You can paste it into Claude or any text editor for quick analysis.</p>
              <p><small>Generated ${new Date().toUTCString()}</small></p>`,

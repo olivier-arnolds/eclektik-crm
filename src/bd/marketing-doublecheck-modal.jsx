@@ -290,7 +290,7 @@ function ScoreLabel({ label, value }) {
     return (
       <div style={{ textAlign: 'center' }}>
         <div style={{ fontSize: 9, color: 'var(--text-3)', textTransform: 'uppercase', fontWeight: 600 }}>{label}</div>
-        <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>—</div>
+        <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>-</div>
       </div>
     );
   }
@@ -312,10 +312,10 @@ function SidePanel({ title, data, accent, link }) {
       <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-3)', fontWeight: 700, marginBottom: 10 }}>
         {title}
       </div>
-      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>{data.name || <em style={{ color: '#9ca3af' }}>—</em>}</div>
-      <div style={{ fontSize: 12, color: 'var(--text-2)', marginBottom: 8 }}>{data.title || <em style={{ color: '#9ca3af' }}>—</em>}</div>
+      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 4 }}>{data.name || <em style={{ color: '#9ca3af' }}>-</em>}</div>
+      <div style={{ fontSize: 12, color: 'var(--text-2)', marginBottom: 8 }}>{data.title || <em style={{ color: '#9ca3af' }}>-</em>}</div>
       <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
-        {data.company || <em style={{ color: '#9ca3af' }}>—</em>}
+        {data.company || <em style={{ color: '#9ca3af' }}>-</em>}
         {data.company_note && (
           <span title={data.company_note} style={{ fontSize: 9, marginLeft: 6, color: '#92400e', cursor: 'help' }}>ⓘ</span>
         )}

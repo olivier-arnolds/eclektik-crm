@@ -24,7 +24,7 @@ export async function sendDraft(draft) {
 
 async function sendEmail(draft) {
   const token = localStorage.getItem('graph_token');
-  if (!token) throw new Error('Niet ingelogd bij Microsoft (graph_token mist) — heraanmelden');
+  if (!token) throw new Error('Niet ingelogd bij Microsoft (graph_token mist) - heraanmelden');
 
   const { data: contact } = await supabase
     .from('contacts')

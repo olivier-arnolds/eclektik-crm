@@ -139,7 +139,7 @@ export default function TaskDetailModal({ taskId, accounts, onClose, refetch }) 
               <select value={row.with_contact_id || ''}
                 onChange={e => update({ with_contact_id: e.target.value || null })}
                 style={fieldInput}>
-                <option value="">—</option>
+                <option value="">-</option>
                 {team.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
                 {/* keep the current value selectable even if not in the roster */}
                 {row.with_contact_id && !team.some(m => m.id === row.with_contact_id) && (

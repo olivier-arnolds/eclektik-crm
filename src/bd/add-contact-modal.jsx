@@ -105,7 +105,7 @@ export default function AddContactModal({ account, onClose, onCreated, initialNa
       <div className="modal" style={{ width: 440 }} onClick={e => e.stopPropagation()}>
         <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <I.plus />
-          <span>New contact{locked && account?.name ? ` — ${account.name}` : ''}</span>
+          <span>New contact{locked && account?.name ? ` - ${account.name}` : ''}</span>
           <button className="icon-btn tiny" style={{ marginLeft: 'auto' }} onClick={onClose}><I.close /></button>
         </div>
         <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -164,7 +164,7 @@ export default function AddContactModal({ account, onClose, onCreated, initialNa
                   )}
                   {!pickedAccount && (
                     <div style={{ fontSize: 10, color: 'var(--text-3)', fontStyle: 'italic', marginTop: 4 }}>
-                      Leave empty to create contact without account — you can link later.
+                      Leave empty to create contact without account - you can link later.
                     </div>
                   )}
                 </div>

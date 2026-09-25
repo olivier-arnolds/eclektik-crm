@@ -181,9 +181,9 @@ export default function CampaignDetail({ campaignId, onBack }) {
               <div style={{ fontWeight: 500 }}>{name}</div>
               <div style={{ color: 'var(--text-3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.recipient_email}</div>
               <div><StatusPill status={s.status} bounceReason={s.bounce_reason} /></div>
-              <div style={{ color: s.open_count ? 'var(--good)' : 'var(--text-3)' }}>{s.open_count ? `${s.open_count}×` : '—'}</div>
-              <div style={{ color: s.click_count ? 'var(--good)' : 'var(--text-3)' }}>{s.click_count ? `${s.click_count}×` : '—'}</div>
-              <div style={{ color: 'var(--text-3)', fontSize: 11 }}>{s.sent_at ? new Date(s.sent_at).toLocaleDateString() : '—'}</div>
+              <div style={{ color: s.open_count ? 'var(--good)' : 'var(--text-3)' }}>{s.open_count ? `${s.open_count}×` : '-'}</div>
+              <div style={{ color: s.click_count ? 'var(--good)' : 'var(--text-3)' }}>{s.click_count ? `${s.click_count}×` : '-'}</div>
+              <div style={{ color: 'var(--text-3)', fontSize: 11 }}>{s.sent_at ? new Date(s.sent_at).toLocaleDateString() : '-'}</div>
             </div>
           );
         })}

@@ -25,17 +25,17 @@ export default function Topbar({ theme, setTheme, view, setView, layout, setLayo
 
       <div className="topbar-nav">
         <button className={view === 'reporting' ? 'on' : ''}
-          onClick={() => setView('reporting')} title="Reporting — revenue & pipeline">
+          onClick={() => setView('reporting')} title="Reporting - revenue & pipeline">
           <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.4">
             <path d="M2 14h12M4 14V8M8 14V4M12 14v-7" strokeLinecap="round" />
           </svg> Reporting
         </button>
         <button className={view === 'funnel' ? 'on' : ''}
-          onClick={() => setView('funnel')} title="Funnel — deal pipeline">
+          onClick={() => setView('funnel')} title="Funnel - deal pipeline">
           <I.funnel /> Funnel
         </button>
         <button className={view === 'warroom' ? 'on' : ''}
-          onClick={() => setView('warroom')} title="War room — pipeline & running projects">
+          onClick={() => setView('warroom')} title="War room - pipeline & running projects">
           <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.4">
             <circle cx="8" cy="8" r="5.5" /><circle cx="8" cy="8" r="1.6" fill="currentColor" stroke="none" />
             <path d="M8 .5v2M8 13.5v2M.5 8h2M13.5 8h2" strokeLinecap="round" />
@@ -45,11 +45,11 @@ export default function Topbar({ theme, setTheme, view, setView, layout, setLayo
           <I.check /> Tasks
         </button>
         <button className={view === 'meetings' ? 'on' : ''}
-          onClick={() => setView('meetings')} title="Meetings — calendar & agenda">
+          onClick={() => setView('meetings')} title="Meetings - calendar & agenda">
           <I.calendar /> Meetings
         </button>
         <button className={view === 'organogram' ? 'on' : ''}
-          onClick={() => setView('organogram')} title="Org chart — per account">
+          onClick={() => setView('organogram')} title="Org chart - per account">
           <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.4">
             <rect x="6" y="1.5" width="4" height="3" rx="0.5" />
             <rect x="1.5" y="11.5" width="4" height="3" rx="0.5" />
@@ -58,15 +58,15 @@ export default function Topbar({ theme, setTheme, view, setView, layout, setLayo
           </svg> Org.chart
         </button>
         <button className={view === 'comms' ? 'on' : ''}
-          onClick={() => setView('comms')} title="Comms — email, Teams & LinkedIn">
+          onClick={() => setView('comms')} title="Comms - email, Teams & LinkedIn">
           <I.inbox /> Comms
         </button>
         <button className={view === 'marketing' ? 'on' : ''}
-          onClick={() => setView('marketing')} title="Marketing — segment & campaign">
+          onClick={() => setView('marketing')} title="Marketing - segment & campaign">
           <I.send /> Marketing
         </button>
         <button className={view === 'content-calendar' ? 'on' : ''}
-          onClick={() => setView('content-calendar')} title="Content Calendar — gedrafte content per kanaal, goedkeuren & plannen">
+          onClick={() => setView('content-calendar')} title="Content Calendar - gedrafte content per kanaal, goedkeuren & plannen">
           <I.calendar /> Content
         </button>
         <button className={view === 'playbooks' ? 'on' : ''} onClick={() => setView('playbooks')} title="Playbooks">
@@ -74,12 +74,12 @@ export default function Topbar({ theme, setTheme, view, setView, layout, setLayo
         </button>
         {isAdmin && (
           <button className={view === 'admin' ? 'on' : ''}
-            onClick={() => setView('admin')} title="Admin — recurring jobs & exports">
+            onClick={() => setView('admin')} title="Admin - recurring jobs & exports">
             <I.dots /> Admin
           </button>
         )}
         <button className={view === 'log' ? 'on' : ''}
-          onClick={() => setView('log')} title="Change log — version history & rollback">
+          onClick={() => setView('log')} title="Change log - version history & rollback">
           <I.history /> Log
         </button>
       </div>
@@ -109,7 +109,7 @@ export default function Topbar({ theme, setTheme, view, setView, layout, setLayo
             color: hasGraphToken ? 'var(--good)' : 'var(--warn)',
             fontWeight: hasGraphToken ? 400 : 600,
           }}
-          title={hasGraphToken ? 'Microsoft connected — click to re-authenticate' : 'Microsoft not connected — click to authenticate'}>
+          title={hasGraphToken ? 'Microsoft connected - click to re-authenticate' : 'Microsoft not connected - click to authenticate'}>
           {hasGraphToken ? '● MS' : '⚠ Reconnect MS'}
         </button>
         {onRefreshGraph && hasGraphToken && (

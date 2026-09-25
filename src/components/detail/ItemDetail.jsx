@@ -306,7 +306,7 @@ export default function ItemDetail({ item, onBack, onSelectContact, extraTimelin
                 <div style={{ fontSize:14, fontWeight:500 }}>
                   {isLD
                     ? <EditableField value={item.closeDate} field="close_date" table={itemTable} rowId={item.id} type="date" refetch={refetch} updateRow={updateRow} />
-                    : <EditableField value={item.startDate || ""} field="start_date" table={itemTable} rowId={item.id} type="date" displayValue={item.startDate || "—"} refetch={refetch} updateRow={updateRow} />
+                    : <EditableField value={item.startDate || ""} field="start_date" table={itemTable} rowId={item.id} type="date" displayValue={item.startDate || "-"} refetch={refetch} updateRow={updateRow} />
                   }
                 </div>
               </div>

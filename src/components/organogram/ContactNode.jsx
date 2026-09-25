@@ -67,7 +67,7 @@ export default function ContactNode({ id, data, selected }) {
           const next = prompt('Role hint for this unknown contact (e.g. "Team lead"):', data.label || '');
           if (next !== null) onSetNodeLabel(id, next.trim() || null);
         }}
-        title="Unknown contact — drag a contact from the left menu onto it to replace. Double-click for a role hint."
+        title="Unknown contact - drag a contact from the left menu onto it to replace. Double-click for a role hint."
         style={{
           position: 'relative',
           background: 'var(--bg-1)',

@@ -69,7 +69,7 @@ export default async function handler(req, res) {
       it.direction ? `(${it.direction})` : '',
       it.internal ? '[INTERNAL TEAM CHANNEL]' : '',
       it.who ? `by ${it.who}` : '',
-      it.title ? `— ${it.title}` : '',
+      it.title ? `- ${it.title}` : '',
       it.text ? `: ${String(it.text).replace(/\s+/g, ' ').slice(0, 400)}` : '',
     ].filter(Boolean);
     return '- ' + parts.join(' ');
@@ -77,7 +77,7 @@ export default async function handler(req, res) {
 
   const prompt = `You are a business development analyst for Eclectik, a B2B consultancy (AI transformation, People Science / Microsoft Viva Glint, Microsoft 365 / Teams, and technical/Azure work).
 
-Below is the full interaction history with the client "${accountName || 'this account'}", newest first. It merges several streams: client-facing email and meetings, LinkedIn, internal Teams chats, an INTERNAL team channel where Eclectik colleagues coordinate (marked [INTERNAL TEAM CHANNEL] — this is our own discussion ABOUT the client, not something the client said), notes logged against the deal, tasks, and deal-stage changes.
+Below is the full interaction history with the client "${accountName || 'this account'}", newest first. It merges several streams: client-facing email and meetings, LinkedIn, internal Teams chats, an INTERNAL team channel where Eclectik colleagues coordinate (marked [INTERNAL TEAM CHANNEL] - this is our own discussion ABOUT the client, not something the client said), notes logged against the deal, tasks, and deal-stage changes.
 
 Write a concise relationship brief so a colleague can understand the state of play in ten seconds without reading every panel. Return ONLY valid JSON, no markdown fences, in exactly this shape:
 

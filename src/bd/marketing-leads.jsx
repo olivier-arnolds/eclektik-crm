@@ -20,7 +20,7 @@ function ownerFromEmail(email) {
 
 function PayloadLines({ payload }) {
   const entries = Object.entries(payload || {});
-  if (!entries.length) return <span style={{ color: 'var(--text-dim, #888)' }}>—</span>;
+  if (!entries.length) return <span style={{ color: 'var(--text-dim, #888)' }}>-</span>;
   return (
     <span>
       {entries.map(([k, v]) => (
@@ -89,7 +89,7 @@ export default function MarketingLeads() {
         email: lead.email,
         company_name: lead.company || null,
         title: lead.role || null,
-        source: 'Website — marketing lead',
+        source: 'Website - marketing lead',
         status: 'New',
         owner: ownerFromEmail(auth?.user?.email),
         notes,
@@ -104,7 +104,7 @@ export default function MarketingLeads() {
       if (updErr) throw updErr;
       if (!updated?.length) {
         alert(
-          'De sales lead is aangemaakt, maar de status van deze marketing lead was intussen al veranderd — ' +
+          'De sales lead is aangemaakt, maar de status van deze marketing lead was intussen al veranderd - ' +
           'controleer de lijst (en de sales-funnel) op dubbelingen. Lijst wordt ververst.'
         );
       }
@@ -126,7 +126,7 @@ export default function MarketingLeads() {
       .update({ status: 'archived', updated_at: new Date().toISOString() })
       .eq('id', lead.id).eq('status', 'active').select('id');
     if (error) alert('Archiveren mislukt: ' + error.message);
-    else if (!updated?.length) alert('Status is intussen veranderd — lijst wordt ververst.');
+    else if (!updated?.length) alert('Status is intussen veranderd - lijst wordt ververst.');
     await load();
     setBusyId(null);
   };
@@ -137,7 +137,7 @@ export default function MarketingLeads() {
       .update({ status: 'active', updated_at: new Date().toISOString() })
       .eq('id', lead.id).eq('status', 'archived').select('id');
     if (error) alert('Heractiveren mislukt: ' + error.message);
-    else if (!updated?.length) alert('Status is intussen veranderd — lijst wordt ververst.');
+    else if (!updated?.length) alert('Status is intussen veranderd - lijst wordt ververst.');
     await load();
     setBusyId(null);
   };
@@ -196,13 +196,13 @@ function LeadRow({ lead, expanded, activityRows, busy, onToggle, onPromote, onAr
   return (
     <>
       <tr onClick={onToggle} style={{ cursor: 'pointer' }}>
-        <td style={td}>{lead.full_name || '—'}</td>
+        <td style={td}>{lead.full_name || '-'}</td>
         <td style={td}>{lead.email}</td>
-        <td style={td}>{lead.company || '—'}</td>
-        <td style={td}>{lead.role || '—'}</td>
-        <td style={td}>{lead.sector || '—'}</td>
-        <td style={td}>{lead.first_src || '—'}</td>
-        <td style={td}>{lead.last_activity_at ? fmtRelative(lead.last_activity_at) : '—'}</td>
+        <td style={td}>{lead.company || '-'}</td>
+        <td style={td}>{lead.role || '-'}</td>
+        <td style={td}>{lead.sector || '-'}</td>
+        <td style={td}>{lead.first_src || '-'}</td>
+        <td style={td}>{lead.last_activity_at ? fmtRelative(lead.last_activity_at) : '-'}</td>
         <td style={td}><span className="chip" style={{ fontSize: 11 }}>{lead.status}</span></td>
         <td style={{ ...td, whiteSpace: 'nowrap' }} onClick={e => e.stopPropagation()}>
           {lead.status === 'active' && (

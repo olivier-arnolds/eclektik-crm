@@ -334,7 +334,7 @@ export function usePipelineData() {
       .filter(([table, limit]) => counts[table] >= limit)
       .map(([table, limit]) => ({ table, limit }))
     setTruncated(hit)
-    if (hit.length) console.warn('Fetch limit hit — UI is showing a truncated dataset:', hit)
+    if (hit.length) console.warn('Fetch limit hit - UI is showing a truncated dataset:', hit)
     } catch (e) {
       console.error('Pipeline data load failed:', e)
     } finally {

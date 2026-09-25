@@ -16,7 +16,7 @@ describe('content calendar status logic', () => {
     expect(deriveStatus(true, true)).toBe('scheduled'); // goedgekeurd met datum
   });
 
-  describe('statusAfterMove — slepen mag goedkeuring NOOIT omklappen', () => {
+  describe('statusAfterMove - slepen mag goedkeuring NOOIT omklappen', () => {
     it('draft naar een dag blijft draft (wordt niet stiekem goedgekeurd)', () => {
       expect(statusAfterMove('draft', true)).toBe('draft');
     });
@@ -39,7 +39,7 @@ describe('content calendar status logic', () => {
   });
 });
 
-describe('itemReport — afgeleide rapportage per contentstuk', () => {
+describe('itemReport - afgeleide rapportage per contentstuk', () => {
   const NOW = new Date('2026-08-19T12:00:00Z');
   const base = {
     status: 'draft', channel: 'glint', type: 'email',
@@ -107,7 +107,7 @@ describe('itemReport — afgeleide rapportage per contentstuk', () => {
   });
 });
 
-describe('excludeAlreadyReached — dubbel-beveiliging (nooit dezelfde uiting 2x)', () => {
+describe('excludeAlreadyReached - dubbel-beveiliging (nooit dezelfde uiting 2x)', () => {
   const recipients = [
     { id: 'c1', email: 'Aa@X.nl' },
     { id: 'c2', email: 'bb@x.nl' },

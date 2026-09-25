@@ -89,7 +89,7 @@ function FieldRow({ label, value, field, accountId, refetch, companyName, dropdo
             style={{ fontSize:12, cursor:"pointer", color:(displayValue && displayValue !== 'null') ? "#2C2C2A" : "#B4B2A9", minHeight:18 }}
             onMouseEnter={e => e.currentTarget.style.background="#FAFAF8"}
             onMouseLeave={e => e.currentTarget.style.background="transparent"}>
-            {saved ? <span style={{ color:"#1D9E75", fontSize:11 }}>✓</span> : ((displayValue && displayValue !== 'null') ? String(displayValue) : '—')}
+            {saved ? <span style={{ color:"#1D9E75", fontSize:11 }}>✓</span> : ((displayValue && displayValue !== 'null') ? String(displayValue) : '-')}
           </div>
         )}
       </div>

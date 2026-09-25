@@ -267,7 +267,7 @@ function InviteEnrollModal({ eligible, accountLabel, onConfirm, onClose, busy })
             {previewText || <span style={{ color: 'var(--text-3)' }}>(kaal verzoek, zonder bericht)</span>}
           </div>
           <div style={{ fontSize: 11, color: over ? '#dc2626' : 'var(--text-3)' }}>
-            {previewText.length}/{LIMIT} tekens{over ? ' — te lang, LinkedIn kapt af of weigert' : ''}
+            {previewText.length}/{LIMIT} tekens{over ? ' - te lang, LinkedIn kapt af of weigert' : ''}
             {'  ·  LinkedIn limiteert het aantal invites mét bericht (met Premium ruimer).'}
           </div>
         </div>
@@ -477,7 +477,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
       });
       const s = data.stats || {};
       alert(`Connectiecheck via ${acct?.label} klaar:\n✓ ${s.connected || 0} verbonden\n– ${s.not_connected || 0} niet verbonden\n✗ ${s.errors || 0} fout`
-        + (s.skipped_time ? `\n⏱ ${s.skipped_time} niet gehaald (tijd) — draai nog een ronde` : ''));
+        + (s.skipped_time ? `\n⏱ ${s.skipped_time} niet gehaald (tijd) - draai nog een ronde` : ''));
     } catch (err) {
       setConnChecking(false);
       alert('Connectiecheck mislukt: ' + err.message);
@@ -542,7 +542,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
     const skipped = selected.size - eligible.length;
     const MAX_BATCH = 25;
     if (eligible.length > MAX_BATCH) {
-      alert(`Selecteer maximaal ${MAX_BATCH} contacten per ronde — Surfe poll-timeout is 50s. Je hebt ${eligible.length} eligible contacten geselecteerd.`);
+      alert(`Selecteer maximaal ${MAX_BATCH} contacten per ronde - Surfe poll-timeout is 50s. Je hebt ${eligible.length} eligible contacten geselecteerd.`);
       return;
     }
     const msg = `Find emails via Surfe (waterfall over 8 providers):\n- ${eligible.length} contact${eligible.length === 1 ? '' : 'en'} te verrijken${skipped > 0 ? `\n- ${skipped} skipped (al email of geen LinkedIn-URL)` : ''}\n\nLet op: elk succes verbruikt Surfe-credits. Doorgaan?`;
@@ -1034,7 +1034,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
           <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Account status</div>
           <button onClick={() => setShowAddStatus(v => !v)}
-            title="Nieuwe status toevoegen (lokaal — wordt zichtbaar als filter; wijs toe via account-detail om te persisten in DB)"
+            title="Nieuwe status toevoegen (lokaal - wordt zichtbaar als filter; wijs toe via account-detail om te persisten in DB)"
             style={{ background:'transparent', border:'0.5px solid var(--sep)', borderRadius:3, cursor:'pointer', fontSize:11, padding:'0 5px', lineHeight:'14px', color:'var(--text-3)' }}>
             +
           </button>
@@ -1531,8 +1531,8 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
                       <span
                         onClick={() => { setEditingEmailId(c.id); setEmailDraft(c.email || ''); }}
                         title={has
-                          ? `${c.email}${blocked ? ' (opt-out)' : ''} — klik om te bewerken`
-                          : 'Geen e-mail — klik om toe te voegen'}
+                          ? `${c.email}${blocked ? ' (opt-out)' : ''} - klik om te bewerken`
+                          : 'Geen e-mail - klik om toe te voegen'}
                         style={{
                           display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                           width: 22, height: 20, borderRadius: 4, cursor: 'pointer',

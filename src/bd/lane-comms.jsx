@@ -921,7 +921,7 @@ function ChatThreadPane({ chat, channel, localMessages, userFirstName, myUnipile
         {!canReply && (
           <div style={{ fontSize: 10, color: 'var(--text-3)', marginBottom: 6 }}>
             {channel === 'linkedin' && !chat.chatId
-              ? 'Cannot reply — this conversation pre-dates chat_id tracking. Reply via LinkedIn directly.'
+              ? 'Cannot reply - this conversation pre-dates chat_id tracking. Reply via LinkedIn directly.'
               : 'Reply not available for this conversation.'}
           </div>
         )}
@@ -1110,7 +1110,7 @@ function ReadingPane({ comm, accounts, contacts, refetch, refetchGraph, onCompos
           <button className="btn-ghost tiny" onClick={() => onCompose && onCompose({ forwardOf: comm })}>
             <I.forward /> Forward
           </button>
-          <button className="btn-ghost tiny" onClick={() => setShowSuggestTask(true)} title="Create task from this email — AI drafts a suggestion you can edit">
+          <button className="btn-ghost tiny" onClick={() => setShowSuggestTask(true)} title="Create task from this email - AI drafts a suggestion you can edit">
             ✨ Task
           </button>
           <button className="btn-ghost tiny" onClick={archive}>

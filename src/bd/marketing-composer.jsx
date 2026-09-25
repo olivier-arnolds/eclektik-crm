@@ -256,7 +256,7 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
         const detail = data?.detail
           ? (typeof data.detail === 'string' ? data.detail : (data.detail.message || JSON.stringify(data.detail)))
           : '';
-        throw new Error((data?.error || `HTTP ${resp.status}`) + (detail ? ` — ${detail}` : ''));
+        throw new Error((data?.error || `HTTP ${resp.status}`) + (detail ? ` - ${detail}` : ''));
       }
       if (useBroadcast) {
         setResult({ ok: true, sent: data.recipients, failed: data.failed || 0, testOnly: false });
@@ -335,8 +335,8 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
           Links taggen voor Analytics
           <span style={{ color: 'var(--text-3)', marginLeft: 6 }}>
             {utmCampaign
-              ? `— eigen links krijgen utm_campaign=${utmCampaign}, zodat je in de Analytics-tab ziet wat deze mail opleverde`
-              : '— vul eerst een naam of onderwerp in, dat wordt de campagnenaam in Analytics'}
+              ? `- eigen links krijgen utm_campaign=${utmCampaign}, zodat je in de Analytics-tab ziet wat deze mail opleverde`
+              : '- vul eerst een naam of onderwerp in, dat wordt de campagnenaam in Analytics'}
           </span>
         </span>
       </label>
@@ -348,15 +348,15 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
           Handtekening toevoegen
           <span style={{ color: 'var(--text-3)', marginLeft: 6 }}>
             {hasSignature(fromEmail)
-              ? `— handtekening van ${senderNameFor(fromEmail)}, zichtbaar in de test-mail (niet in de preview)`
-              : '— geen handtekening bekend voor dit afzenderadres'}
+              ? `- handtekening van ${senderNameFor(fromEmail)}, zichtbaar in de test-mail (niet in de preview)`
+              : '- geen handtekening bekend voor dit afzenderadres'}
           </span>
         </span>
       </label>
 
       <div>
         <div style={{ fontSize: 10, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Subject</div>
-        <input value={subject} onChange={e => setSubject(e.target.value)} placeholder="Viva Glint &amp; Pulse — May update" style={inputStyle} />
+        <input value={subject} onChange={e => setSubject(e.target.value)} placeholder="Viva Glint &amp; Pulse - May update" style={inputStyle} />
       </div>
 
       <div>
@@ -389,7 +389,7 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
             <span style={{ fontSize: 10, color: 'var(--text-3)', marginRight: 2 }}>Invoegen:</span>
             {KNOWN_VARS.map(v => (
               <button key={v} type="button" className="btn-ghost tiny"
-                title={`Voegt {{${v}}} in — wordt per ontvanger vervangen`}
+                title={`Voegt {{${v}}} in - wordt per ontvanger vervangen`}
                 onClick={() => insertVar(`{{${v}}}`)}>
                 + {VAR_LABELS[v] || v}
               </button>

@@ -114,13 +114,13 @@ export default function NewDealModal({ accounts, contacts, onClose, onCreated })
             {chipSingle(['Inbound', 'Outbound', 'Referral', 'Renewal', 'Platform'], source, setSource)}
           </F>
 
-          <F label="Value (€) — optioneel">
+          <F label="Value (€) - optioneel">
             <input placeholder="0" value={value} onChange={e => setValue(e.target.value)}
               style={{ background: 'var(--fill-1)', border: '0.5px solid var(--sep)', borderRadius: 'var(--radius-sm)', padding: '6px 8px', color: 'var(--text-1)', fontSize: 12, width: '100%', boxSizing: 'border-box' }} />
           </F>
 
           <div style={{ fontSize: 11, color: 'var(--text-3)', lineHeight: 1.5 }}>
-            Een nieuwe lead start in <strong>Qualify</strong>. Sleep hem later naar Develop zodra er een gesprek/budget is — dan wordt het automatisch een opportunity.
+            Een nieuwe lead start in <strong>Qualify</strong>. Sleep hem later naar Develop zodra er een gesprek/budget is - dan wordt het automatisch een opportunity.
           </div>
 
         </div>

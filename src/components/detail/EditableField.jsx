@@ -164,7 +164,7 @@ export default function EditableField({ value, field, table, rowId, type = "text
     );
   }
 
-  const shown = displayValue != null ? displayValue : (value ?? "—");
+  const shown = displayValue != null ? displayValue : (value ?? "-");
 
   return (
     <span

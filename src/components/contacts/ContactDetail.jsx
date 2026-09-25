@@ -764,7 +764,7 @@ export default function ContactDetail({ contact, accounts, allItems, onBack, ref
                   <div style={{ flex:1 }}>
                     <div style={{ fontSize:13, fontWeight:500 }}>{pb.name}</div>
                     <div style={{ fontSize:10, color:"#888780", marginTop:2 }}>
-                      {pb.step_count || '?'} steps · {pb.status} · Owner: {pb.owner || '—'}
+                      {pb.step_count || '?'} steps · {pb.status} · Owner: {pb.owner || '-'}
                     </div>
                   </div>
                   {enrolling === pb.id ? (

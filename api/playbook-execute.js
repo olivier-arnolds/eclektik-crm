@@ -31,7 +31,7 @@ const anthropic = process.env.ANTHROPIC_API_KEY
 const EXTERNAL_COMMUNICATION_RULES = `Je schrijft een bericht dat naar een echte persoon verstuurd wordt (email, LinkedIn, WhatsApp, Instagram). Volg deze regels strikt:
 
 VERBODEN:
-- Em-dashes (—). Gebruik gewone streepjes (-) met spaties, of komma's, of splits in zinnen.
+- Em-dashes (-). Gebruik gewone streepjes (-) met spaties, of komma's, of splits in zinnen.
 - Markdown-headers (# of ##). Berichten worden letterlijk getoond.
 - Bullet lists (- of *) tenzij expliciet om gevraagd.
 - Filler-openingen zoals "Hopelijk gaat het goed!" of "I hope this message finds you well".
@@ -39,7 +39,7 @@ VERBODEN:
 
 VOORKEUREN:
 - Korte zinnen, natuurlijke spreektaal.
-- Persoonlijk en concreet — verwijs naar specifieke dingen, niet generiek.
+- Persoonlijk en concreet - verwijs naar specifieke dingen, niet generiek.
 - Eindig met óf een open vraag óf een duidelijke call-to-action, niet beide.
 
 Geef alleen de pure berichttekst terug, geen omhullende tekst, geen labels, geen "Hier is je bericht:".`;

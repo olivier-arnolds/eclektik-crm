@@ -310,7 +310,7 @@ export function InlineContactDetail({ contactId, onCompose, refetch, allTags, on
       <div style={{ gridColumn: 'span 2' }}>
         <CompanyPicker
           value={row.company_id}
-          label={row.companies?.name || row.company_name || '— no account linked —'}
+          label={row.companies?.name || row.company_name || '- no account linked -'}
           accounts={allAccounts}
           saving={saving.company_id}
           onChange={moveToAccount}
@@ -420,7 +420,7 @@ export function InlineContactDetail({ contactId, onCompose, refetch, allTags, on
           <div style={{ border: '0.5px solid var(--accent)', borderRadius: 6, padding: 8, background: 'var(--fill-1)', display: 'flex', flexDirection: 'column', gap: 6 }}>
             <select value={selectedPlaybookId} onChange={e => setSelectedPlaybookId(e.target.value)}
               style={{ padding: '4px 6px', borderRadius: 4, border: '0.5px solid var(--sep)', background: 'var(--bg-1)', color: 'var(--text-1)', fontSize: 12, fontFamily: 'inherit' }}>
-              <option value="">— kies playbook —</option>
+              <option value="">- kies playbook -</option>
               {playbookOptions.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
             <textarea value={intent} onChange={e => setIntent(e.target.value)}
@@ -484,10 +484,10 @@ export function InlineContactDetail({ contactId, onCompose, refetch, allTags, on
                     {s.sent_at ? new Date(s.sent_at).toLocaleDateString('en', { day: 'numeric', month: 'short', year: 'numeric' }) : ''}
                   </span>
                   <span style={{ color: opened ? 'var(--good)' : 'var(--text-3)', fontSize: 10 }} title={`${s.open_count} opens`}>
-                    {opened ? `●Opened${s.open_count > 1 ? ` (${s.open_count}×)` : ''}` : '—'}
+                    {opened ? `●Opened${s.open_count > 1 ? ` (${s.open_count}×)` : ''}` : '-'}
                   </span>
                   <span style={{ color: clicked ? 'var(--good)' : 'var(--text-3)', fontSize: 10 }} title={`${s.click_count} clicks`}>
-                    {clicked ? `●Clicked${s.click_count > 1 ? ` (${s.click_count}×)` : ''}` : '—'}
+                    {clicked ? `●Clicked${s.click_count > 1 ? ` (${s.click_count}×)` : ''}` : '-'}
                   </span>
                   {s.status === 'bounced' && <span style={{ color: 'var(--danger)', fontSize: 10 }} title={s.bounce_reason}>bounced</span>}
                 </div>
@@ -761,7 +761,7 @@ function ParentAccountPicker({ value, parent, parentNameFallback, accounts, curr
           }}
           onMouseEnter={e => e.currentTarget.style.background = 'var(--fill-1)'}
           onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-          {parentNameFallback ? `${parentNameFallback} (not linked) — click to link` : 'Click to link a parent…'}
+          {parentNameFallback ? `${parentNameFallback} (not linked) - click to link` : 'Click to link a parent…'}
         </div>
       )}
     </div>
@@ -1204,7 +1204,7 @@ export function InlineDealDetail({ deal, rawItems, onCompose, onOpenModal, refet
           <select value={rawRow?.product_line || ''}
             onChange={e => updateField('product_line', e.target.value || null)}
             style={{ padding: '3px 6px', borderRadius: 4, border: '0.5px solid var(--sep)', background: 'var(--fill-1)', fontSize: 12, fontFamily: 'inherit' }}>
-            <option value="">— pick</option>
+            <option value="">- pick</option>
             {['Glint', 'ROI', 'Seer', 'Insights', 'Other'].map(o => <option key={o} value={o}>{o}</option>)}
             {rawRow?.product_line && !['Glint', 'ROI', 'Seer', 'Insights', 'Other'].includes(rawRow.product_line) && (
               <option value={rawRow.product_line}>{rawRow.product_line}</option>
@@ -1221,7 +1221,7 @@ export function InlineDealDetail({ deal, rawItems, onCompose, onOpenModal, refet
           Add note (auto-dated)
         </div>
         <input value={noteDraft} onChange={e => setNoteDraft(e.target.value)}
-          placeholder="New note — gets today's date prefix on save…"
+          placeholder="New note - gets today's date prefix on save…"
           onKeyDown={e => { if (e.key === 'Enter') addDatedNote(); }}
           style={fieldInputStyle} />
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 4 }}>
@@ -1250,7 +1250,7 @@ export function InlineDealDetail({ deal, rawItems, onCompose, onOpenModal, refet
                   {e.date.toLocaleDateString('en', { day: 'numeric', month: 'short', year: 'numeric' })}
                 </div>
               ) : (
-                <div style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-3)', flexShrink: 0 }}>—</div>
+                <div style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-3)', flexShrink: 0 }}>-</div>
               )}
               <div style={{ fontSize: 12, color: 'var(--text-1)', lineHeight: 1.5, whiteSpace: 'pre-wrap', flex: 1 }}>
                 {e.text}
@@ -1379,7 +1379,7 @@ export function InlineTaskDetail({ taskId, refetch }) {
               background: 'var(--fill-1)', color: 'var(--text-1)', fontSize: 12,
               fontFamily: 'var(--font)', outline: 'none',
             }}>
-            <option value="">—</option>
+            <option value="">-</option>
             {['Marco', 'Olivier', 'Yarmilla'].map(n => <option key={n} value={n}>{n}</option>)}
             {row.owner && !['Marco', 'Olivier', 'Yarmilla'].includes(row.owner) && (
               <option value={row.owner}>{row.owner}</option>
@@ -1394,7 +1394,7 @@ export function InlineTaskDetail({ taskId, refetch }) {
               background: 'var(--fill-1)', color: 'var(--text-1)', fontSize: 12,
               fontFamily: 'var(--font)', outline: 'none',
             }}>
-            <option value="">—</option>
+            <option value="">-</option>
             {team.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
             {row.with_contact_id && !team.some(m => m.id === row.with_contact_id) && (
               <option value={row.with_contact_id}>(linked member)</option>

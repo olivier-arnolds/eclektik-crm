@@ -51,7 +51,7 @@ export default function ContactSearchModal({ account, onClose }) {
       <div className="modal" style={{ width: 480 }} onClick={e => e.stopPropagation()}>
         <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <I.search />
-          <span>Search contacts on LinkedIn{account?.name ? ` — ${account.name}` : ''}</span>
+          <span>Search contacts on LinkedIn{account?.name ? ` - ${account.name}` : ''}</span>
           <button className="icon-btn tiny" style={{ marginLeft: 'auto' }} onClick={onClose}><I.close /></button>
         </div>
 

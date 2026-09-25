@@ -28,7 +28,7 @@ async function notifyHotLead({ email, computed, door, src }) {
   const lines = [
     `Scorecard ingevuld: ${email}`,
     `Route: ${computed.route} · Kwadrant: ${computed.quadrant}`,
-    `Scores — value ${s.value}, change ${s.change}, readiness ${s.readiness}, index ${s.index}`,
+    `Scores - value ${s.value}, change ${s.change}, readiness ${s.readiness}, index ${s.index}`,
     `Profiel: ${computed.profile.role} · ${computed.profile.org_size} · renewal ${computed.profile.renewal_window}`,
     `Deur: ${door}${src ? ` · bron: ${src}` : ''}`,
     '', 'Zie Marketing → Leads in de CRM.',
@@ -39,7 +39,7 @@ async function notifyHotLead({ email, computed, door, src }) {
       headers: { 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         from, to,
-        subject: `Scorecard: ${email} — ${computed.route} (index ${s.index})`,
+        subject: `Scorecard: ${email} - ${computed.route} (index ${s.index})`,
         text: lines.join('\n'),
       }),
     });

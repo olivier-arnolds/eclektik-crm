@@ -96,7 +96,7 @@ export function ConvertLeadModal({ deal, accounts, rawItems, onClose, onDone }) 
           <div>
             <div style={label}>Product line</div>
             <select style={fieldStyle} value={productLine} onChange={e => setProductLine(e.target.value)}>
-              <option value="">—</option>
+              <option value="">-</option>
               <option value="Glint">Glint</option>
               <option value="ROI">ROI</option>
               <option value="Seer">Seer</option>

@@ -55,7 +55,7 @@ export default function OnepagerModal({ open, onClose }) {
   }, [open]);
 
   const m = useMemo(() => {
-    const nameOf = (o) => o.company_name || companyById.get(o.company_id) || '— onbekend —';
+    const nameOf = (o) => o.company_name || companyById.get(o.company_id) || '- onbekend -';
 
     // ── Funnel-categorie per opportunity ──
     const catOf = (o) => {
@@ -141,7 +141,7 @@ export default function OnepagerModal({ open, onClose }) {
       <div className="modal" style={{ width: 'min(1080px, 96vw)', maxHeight: '92vh', display: 'flex', flexDirection: 'column' }} onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontSize: 18 }}>Eclectik — Overzicht 2026</span>
+          <span style={{ fontSize: 18 }}>Eclectik - Overzicht 2026</span>
           <span style={{ fontSize: 11, color: 'var(--text-3)', fontWeight: 400 }}>stand van zaken · {today}</span>
           <button className="icon-btn tiny" style={{ marginLeft: 'auto', color: 'var(--text-2)' }} onClick={onClose}><I.close /></button>
         </div>
@@ -163,7 +163,7 @@ export default function OnepagerModal({ open, onClose }) {
               </div>
 
               {/* Delivery-funnel met projectnamen */}
-              <Section title="De projecten — van offerte tot afgerond">
+              <Section title="De projecten - van offerte tot afgerond">
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
                   <FunnelCol title="In offerte" sub="lopende voorstellen" color="var(--warn)" names={m.proposal} />
                   <FunnelCol title="In onboarding" sub="net gewonnen, opstart" color="var(--accent)" names={m.onboarding} />
@@ -184,7 +184,7 @@ export default function OnepagerModal({ open, onClose }) {
               )}
 
               {/* New vs recurring 2025 → 2026 */}
-              <Section title="New business vs. recurring business — 2025 → 2026">
+              <Section title="New business vs. recurring business - 2025 → 2026">
                 <NewRecurring prev={m.nrPrev} cur={m.nrCur} prevYr={PREV_YEAR} curYr={CUR_YEAR} />
               </Section>
 

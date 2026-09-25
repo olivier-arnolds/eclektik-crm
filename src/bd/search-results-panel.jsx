@@ -287,7 +287,7 @@ function MoreRow({ count, expanded, onClick }) {
       }}
       onMouseEnter={e => e.currentTarget.style.background = 'var(--fill-1)'}
       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-      {expanded ? '↑ show less' : `+${count} more — click to show all`}
+      {expanded ? '↑ show less' : `+${count} more - click to show all`}
     </button>
   );
 }

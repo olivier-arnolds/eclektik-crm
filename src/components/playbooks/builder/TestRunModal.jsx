@@ -86,11 +86,11 @@ export default function TestRunModal({ playbookId, nodes, edges, onClose }) {
           logs.push({ level: 'info', msg: `[STAGE UPDATE] → ${eff.config.new_stage}` });
         }
       } else if (result.action === 'wait_until') {
-        logs.push({ level: 'info', msg: `[WAIT] tot ${new Date(result.next_action_at).toLocaleDateString('nl-NL')} — skip in simulation` });
+        logs.push({ level: 'info', msg: `[WAIT] tot ${new Date(result.next_action_at).toLocaleDateString('nl-NL')} - skip in simulation` });
       }
 
       if (!result.next_node_id) {
-        logs.push({ level: 'info', msg: 'Geen volgende node — eind van pad.' });
+        logs.push({ level: 'info', msg: 'Geen volgende node - eind van pad.' });
         break;
       }
       enrollment.current_node_id = result.next_node_id;
@@ -113,7 +113,7 @@ export default function TestRunModal({ playbookId, nodes, edges, onClose }) {
             onChange={e => setSelectedContactId(e.target.value)}
             disabled={running}
             style={{ width:'100%', padding:'6px 10px', fontSize:12, border:'0.5px solid #D3D1C7', borderRadius:4, marginTop:4 }}>
-            <option value="">— kies contact —</option>
+            <option value="">- kies contact -</option>
             {contacts.map(c => <option key={c.id} value={c.id}>{c.full_name || `${c.first_name} ${c.last_name}`}</option>)}
           </select>
         </div>

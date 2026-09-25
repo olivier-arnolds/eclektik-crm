@@ -194,7 +194,7 @@ function OrganogramCanvas({ accountId, accounts, contacts, deals, onPickAccount,
         <select value={accountId || ''}
           onChange={(e) => { const a = accounts.find(x => x.id === e.target.value); onPickAccount(a || null); }}
           style={{ flex: 1, maxWidth: 320, padding: '5px 8px', borderRadius: 4, border: '0.5px solid var(--sep)', background: 'var(--bg-1)', color: 'var(--text-1)', fontSize: 12, fontFamily: 'inherit' }}>
-          <option value="">— Choose an account —</option>
+          <option value="">- Choose an account -</option>
           {[...accounts].sort((a, b) => (a.name || '').localeCompare(b.name || '')).map(a => (
             <option key={a.id} value={a.id}>{a.name}</option>
           ))}

@@ -89,7 +89,7 @@ export default function TaskFromEmailModal({ comm, contacts, accounts, onClose, 
             <div>
               <div style={label}>Link to account</div>
               <select style={fieldStyle} value={accountId || ''} onChange={e => setAccountId(e.target.value || null)}>
-                <option value="">— none —</option>
+                <option value="">- none -</option>
                 {[...(accounts || [])].sort((a, b) => a.name.localeCompare(b.name)).map(a => (
                   <option key={a.id} value={a.id}>{a.name}</option>
                 ))}

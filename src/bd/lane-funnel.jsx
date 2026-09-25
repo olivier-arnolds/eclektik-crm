@@ -217,7 +217,7 @@ export default function FunnelLane({ deals, accounts, contacts, filters, setFilt
                   <span className="swimlane-count">{sDeals.length}</span>
                 </div>
                 {/* Sub-€1k column totals: "€168" next to "€165k" reads as
-                    168k at a glance — show "€<1k" instead. */}
+                    168k at a glance - show "€<1k" instead. */}
                 <div className="swimlane-value">{total > 0 && total < 1000 ? '€<1k' : fmtMoney(total)}</div>
               </div>
               {!collapsed && (

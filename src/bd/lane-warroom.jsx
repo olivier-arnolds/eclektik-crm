@@ -163,7 +163,7 @@ function HourBar({ allocated, used = 0 }) {
 }
 
 function PersonCell({ name, hours, used }) {
-  if (!isPerson(name)) return <span style={{ color: 'var(--text-3)', fontSize: 11 }}>—</span>;
+  if (!isPerson(name)) return <span style={{ color: 'var(--text-3)', fontSize: 11 }}>-</span>;
   return (
     <div style={{ fontSize: 11.5 }}>
       <div>{name}{hours ? ` · ${hours}h` : ''}</div>
@@ -306,7 +306,7 @@ function InsightsMatrix({ accounts = [], pscByAccount = {}, teamByAccount = {}, 
     for (let k = horizonStart; k <= horizonStart + 3; k++) if (seasons.has(((k - 1) % 4) + 1)) out.add(k);
     return out;
   };
-  const diamond = <span title="Predicted next activity (deal or PSC readout) — based on past cadence" style={{ display: 'inline-block', width: 8, height: 8, background: BLUE, transform: 'rotate(45deg)' }} />;
+  const diamond = <span title="Predicted next activity (deal or PSC readout) - based on past cadence" style={{ display: 'inline-block', width: 8, height: 8, background: BLUE, transform: 'rotate(45deg)' }} />;
   const sortRows = (list) => {
     if (sortKey === 'ps') return [...list].sort((a, b) => (psFor(a) || '~').localeCompare(psFor(b) || '~'));
     return [...list].sort((a, b) => a.name.localeCompare(b.name)); // default + 'client' → alphabetical
@@ -321,7 +321,7 @@ function InsightsMatrix({ accounts = [], pscByAccount = {}, teamByAccount = {}, 
         <td style={{ ...td2, paddingLeft: c.isSub ? 22 : 8, fontWeight: c.isSub ? 400 : 500, position: 'sticky', left: 0, background: 'var(--bg-1)', whiteSpace: 'nowrap', color: acc && onPickAccount ? 'var(--accent)' : 'inherit', cursor: acc && onPickAccount ? 'pointer' : 'default' }}
           onClick={() => acc && onPickAccount && onPickAccount(acc)}
           title={acc ? `Open ${acc.name} (360)${operational ? ' · operational (running project)' : ''}` : undefined}>
-          <span title={operational ? 'Operational — running project' : undefined} style={{ display: 'inline-block', width: 8, height: 8, borderRadius: 1, marginRight: 6, verticalAlign: 'middle', background: operational ? BLUE : 'transparent' }} />
+          <span title={operational ? 'Operational - running project' : undefined} style={{ display: 'inline-block', width: 8, height: 8, borderRadius: 1, marginRight: 6, verticalAlign: 'middle', background: operational ? BLUE : 'transparent' }} />
           {c.name}{c.crmOnly && <span style={{ color: 'var(--text-3)', fontWeight: 400 }}> · CRM</span>}
         </td>
         <td style={{ ...td2, whiteSpace: 'nowrap' }}>
@@ -436,8 +436,8 @@ const JOURNEY_PHASES = [
   { key: 'review',    lead: 'PS',  label: 'Insights review & action', when: '1–3 wks after',      action: 'Insight Review + facilitated action-planning workshop; wk-4 / wk-8 check-ins.', sku: 'Action-planning workshop' },
   { key: 'embed',     lead: 'PS',  label: 'Enablement & embedding',   when: 'months after',       action: 'Manager/HRBP training, Team Conversations + Nudges, Pulse, quarterly retainer.', sku: 'Enablement + quarterly retainer' },
   { key: 'car',       lead: 'PS',  label: 'Client Accountability Review', when: 'every quarter',  action: 'Quarterly PS check-in: how are things moving, did managers act on their results and how often did they check in, what has changed since last cycle.', sku: 'Quarterly accountability review' },
-  { key: 'offrails',  lead: 'OFF', label: 'Off Rails',                when: 'needs attention',    action: 'Stalled, blocked, overdue or churn-risk — needs an intervention / save play.', sku: 'Recovery / re-engagement' },
-  { key: 'graveyard', lead: 'GY',  label: 'Graveyard',                when: 'dormant / closed',   action: 'Won or delivered but no live project — dormant. Warm renewal candidate for the next cycle.', sku: 'Re-engagement / renewal' },
+  { key: 'offrails',  lead: 'OFF', label: 'Off Rails',                when: 'needs attention',    action: 'Stalled, blocked, overdue or churn-risk - needs an intervention / save play.', sku: 'Recovery / re-engagement' },
+  { key: 'graveyard', lead: 'GY',  label: 'Graveyard',                when: 'dormant / closed',   action: 'Won or delivered but no live project - dormant. Warm renewal candidate for the next cycle.', sku: 'Re-engagement / renewal' },
 ];
 const LEAD_COLOR = { CS: '#185FA5', PS: '#0F6E56', OFF: '#C0392B', GY: '#6B7280' }; // CS · PS · off-rails · graveyard
 // Board columns: lanes are stacked into columns to fit the screen width.
@@ -517,7 +517,7 @@ function JourneyBoard({ glintDeals = [], accById = new Map(), onPickAccount, onM
           <span title={ps ? 'People Science analysis on record' : 'No People Science analysis yet'}
             style={{ flex: '0 0 auto', width: 9, height: 9, borderRadius: '50%', background: ps ? '#1D9E75' : '#E24B4A' }} />
           <span onClick={() => acc && onPickAccount && onPickAccount(acc)}
-            style={{ fontWeight: 600, fontSize: 13, color: acc && onPickAccount ? 'var(--accent)' : 'var(--text-1)', cursor: acc && onPickAccount ? 'pointer' : 'default' }}>{d.account || '—'}</span>
+            style={{ fontWeight: 600, fontSize: 13, color: acc && onPickAccount ? 'var(--accent)' : 'var(--text-1)', cursor: acc && onPickAccount ? 'pointer' : 'default' }}>{d.account || '-'}</span>
         </div>
         {d.title && <div style={{ fontSize: 11, color: 'var(--text-2)', marginTop: 3, lineHeight: 1.3 }}>{d.title}</div>}
         {d.dealNo && (
@@ -537,7 +537,7 @@ function JourneyBoard({ glintDeals = [], accById = new Map(), onPickAccount, onM
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '0 0 12px' }}>
         <input value={q} onChange={(e) => setQ(e.target.value)}
-          placeholder="Search client or contractor — e.g. paul, war…"
+          placeholder="Search client or contractor - e.g. paul, war…"
           style={{ flex: '0 1 320px', fontSize: 12.5, padding: '6px 10px', borderRadius: 8, border: '0.5px solid var(--sep)', background: 'var(--bg-1)', color: 'var(--text-1)' }} />
         {ql && <span style={{ fontSize: 11.5, color: 'var(--text-3)' }}>{deals.length} match{deals.length === 1 ? '' : 'es'}<span onClick={() => setQ('')} style={{ marginLeft: 8, color: 'var(--accent)', cursor: 'pointer' }}>clear</span></span>}
       </div>
@@ -567,7 +567,7 @@ function JourneyBoard({ glintDeals = [], accById = new Map(), onPickAccount, onM
                     <div style={{ fontSize: 10.5, color: lc, fontWeight: 500, marginBottom: 10 }}>＋ {p.sku}</div>
                   </div>
                   {byPhase[p.key].length === 0
-                    ? <div style={{ fontSize: 11, color: 'var(--text-4)', fontStyle: 'italic', padding: '6px 2px' }}>{p.key === 'offrails' ? 'Nothing off rails 🎉' : p.key === 'embed' ? 'No one in a between-cycle retainer yet — the gap.' : 'Drop a deal here'}</div>
+                    ? <div style={{ fontSize: 11, color: 'var(--text-4)', fontStyle: 'italic', padding: '6px 2px' }}>{p.key === 'offrails' ? 'Nothing off rails 🎉' : p.key === 'embed' ? 'No one in a between-cycle retainer yet - the gap.' : 'Drop a deal here'}</div>
                     : byPhase[p.key].map(card)}
                 </div>
               );
@@ -771,7 +771,7 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount, 
           ))}
           {onOpenOnepager && (
             <button className="btn-ghost tiny" onClick={onOpenOnepager}
-              title="One-pager — 2026 overview for the contractor meeting"
+              title="One-pager - 2026 overview for the contractor meeting"
               style={{ color: 'var(--text-3)' }}>
               📊 One-pager
             </button>
@@ -789,7 +789,7 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount, 
             </div>
             <a href="/warroom-projects-field-guide.md" target="_blank" rel="noreferrer"
               style={{ fontSize: 11, color: 'var(--accent)', whiteSpace: 'nowrap', alignSelf: 'center' }}
-              title="How to fill the project sheet — usage guide">📄 Field guide</a>
+              title="How to fill the project sheet - usage guide">📄 Field guide</a>
             <button className="btn-ghost tiny" onClick={update} disabled={syncing}
               style={{ color: 'var(--accent)', whiteSpace: 'nowrap' }} title="Pull the latest from Yarmilla's sheet">
               {syncing ? 'Updating…' : '↻ Update'}
@@ -813,7 +813,7 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount, 
             return (
               <div key={d.id} style={{ fontSize: 12, display: 'flex', gap: 8, alignItems: 'baseline', padding: '2px 0' }}>
                 <span style={{ fontWeight: 500, color: acc && onPickAccount ? 'var(--accent)' : 'inherit', cursor: acc && onPickAccount ? 'pointer' : 'default' }}
-                  onClick={() => acc && onPickAccount && onPickAccount(acc)}>{acc?.name || d.account || '—'}</span>
+                  onClick={() => acc && onPickAccount && onPickAccount(acc)}>{acc?.name || d.account || '-'}</span>
                 {acc?.accountNo && <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-3)' }}>{acc.accountNo}</span>}
                 <span style={{ color: 'var(--text-3)' }}>{d.title}</span>
                 {d.dealNo && <span style={{ fontSize: 10, fontFamily: 'var(--font-mono)', color: 'var(--text-3)' }}>{d.dealNo}</span>}
@@ -838,7 +838,7 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount, 
         ) : null;
       })()}
       <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-2)', margin: '6px 0' }}>
-        Glint delivery — running projects · {delivery.length}
+        Glint delivery - running projects · {delivery.length}
       </div>
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead><tr>
@@ -849,7 +849,7 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount, 
         <tbody>
           {loading && <tr><td style={td} colSpan={9}>Loading…</td></tr>}
           {!loading && delivery.length === 0 && (
-            <tr><td style={{ ...td, color: 'var(--text-3)' }} colSpan={9}>No delivery rows yet — run the seed or hit Update.</td></tr>
+            <tr><td style={{ ...td, color: 'var(--text-3)' }} colSpan={9}>No delivery rows yet - run the seed or hit Update.</td></tr>
           )}
           {delivery.map(r => {
             const acc = r.company_id ? accById.get(r.company_id) : null;
@@ -885,13 +885,13 @@ export default function WarRoomLane({ accounts = [], deals = [], onPickAccount, 
                 <td style={cTd}><PersonCell name={r.ps_owner} hours={r.ps_hours} used={r.ps_used_hours} /></td>
                 <td style={cTd}><PersonCell name={r.other_contractors} hours={r.other_hours} used={r.other_used_hours} /></td>
                 <td style={cTd}>{r.next_milestone_label ? weekifyLabel(r.next_milestone_label) : <span style={sub}>TBC</span>}</td>
-                <td style={{ ...cTd, fontSize: 11.5, whiteSpace: 'nowrap' }}>{dateLabel(r.ko_date) || <span style={sub}>—</span>}</td>
-                <td style={{ ...cTd, fontSize: 11.5, whiteSpace: 'nowrap' }}>{dateLabel(r.delivery_start) || <span style={sub}>—</span>}</td>
-                <td style={{ ...cTd, fontSize: 11.5, whiteSpace: 'nowrap' }}>{dateLabel(r.delivery_end) || <span style={sub}>—</span>}</td>
+                <td style={{ ...cTd, fontSize: 11.5, whiteSpace: 'nowrap' }}>{dateLabel(r.ko_date) || <span style={sub}>-</span>}</td>
+                <td style={{ ...cTd, fontSize: 11.5, whiteSpace: 'nowrap' }}>{dateLabel(r.delivery_start) || <span style={sub}>-</span>}</td>
+                <td style={{ ...cTd, fontSize: 11.5, whiteSpace: 'nowrap' }}>{dateLabel(r.delivery_end) || <span style={sub}>-</span>}</td>
                 <td style={cTd}><span style={chip(
                   r.status === 'Not started' ? 'rgba(226,75,74,.13)' : r.status === 'Completed' ? 'rgba(136,135,128,.15)' : 'rgba(29,158,117,.14)',
                   r.status === 'Not started' ? '#A32D2D' : r.status === 'Completed' ? '#5F5E5A' : '#0F6E56'
-                )}>{r.status || '—'}</span></td>
+                )}>{r.status || '-'}</span></td>
               </tr>
               {hasNotes && (
                 <tr>

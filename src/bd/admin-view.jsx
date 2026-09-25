@@ -260,7 +260,7 @@ function JobRow({ job, onChange }) {
           <div style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 14 }}>
             <span>type: <code style={{ fontSize: 10 }}>{job.job_type}</code></span>
             <span>last run: {job.last_run_at
-              ? `${new Date(job.last_run_at).toLocaleString()} (${job.last_run_status || '—'})`
+              ? `${new Date(job.last_run_at).toLocaleString()} (${job.last_run_status || '-'})`
               : 'never'}</span>
           </div>
           {job.last_run_error && (

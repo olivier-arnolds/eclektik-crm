@@ -31,7 +31,7 @@ export function validatePlaybook({ nodes, edges }) {
   if (triggers.length === 0) {
     issues.push({ severity: 'error', message: 'Geen trigger-node aanwezig. Een playbook moet beginnen met een trigger.' });
   } else if (triggers.length > 1) {
-    issues.push({ severity: 'error', message: `${triggers.length} trigger-nodes gevonden — slechts één trigger per playbook is toegestaan.` });
+    issues.push({ severity: 'error', message: `${triggers.length} trigger-nodes gevonden - slechts één trigger per playbook is toegestaan.` });
   }
 
   // Rule 2: trigger heeft geen incoming edges

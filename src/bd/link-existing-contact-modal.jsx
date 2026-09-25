@@ -46,7 +46,7 @@ export default function LinkExistingContactModal({ account, contacts, onClose, o
         onClick={e => e.stopPropagation()}>
         <div className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <I.search />
-          <span>Link existing contact — {account?.name}</span>
+          <span>Link existing contact - {account?.name}</span>
           <button className="icon-btn tiny" style={{ marginLeft: 'auto' }} onClick={onClose}><I.close /></button>
         </div>
 

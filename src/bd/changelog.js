@@ -19,9 +19,28 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.129.3';
+export const CURRENT_VERSION = '1.129.4';
 
 export const CHANGELOG = [
+  {
+    version: '1.129.4',
+    date: '2026-09-25T20:26:46Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Em-dashes uit de rest van de app',
+    summary:
+      'Vervolg op 1.129.2, dat alleen de Log-tab en de outreach-lijst opruimde. Nu de overige 195 in zichtbare tekst: knoppen, tooltips, labels, plaatshouders en lege-waardetekens, verspreid over 59 bestanden. Overal vervangen door een gewoon streepje, wat CLAUDE.md 2b als alternatief voorschrijft.',
+    changes: [
+      '195 vervangen in tekst die een mens op het scherm ziet. De grootste groepen zaten in de war room, reporting, de topbar, inline-details en de marketingschermen.',
+      '194 in code-commentaar blijven staan. CLAUDE.md 2b sluit commentaar expliciet uit; die regels gelden voor tekst die naar een mens gaat, niet voor wat een ontwikkelaar leest.',
+      'Twee plekken bewust met rust gelaten. In content-audience-logic.test.js staat een test die juist controleert dat er GEEN em-dash in een samenvatting zit; die moet het teken houden om op te kunnen toetsen. En TimelineView.jsx splitst binnenkomende titels op " - "; dat is een parseerteken, geen schermtekst.',
+      'Vooraf gecontroleerd op functioneel gebruik (split, replace, match, RegExp, vergelijkingen) zodat er niets stilletjes brak. Alleen die twee kwamen eruit.',
+      'Testuitslag onveranderd: 430 groen, plus de vier bekende fouten in broadcast-recipients.test.js die hier los van staan.',
+    ],
+    files: ['59 bestanden in src/ en api/'],
+    rollback: 'git revert naar v1.129.3. Puur tekst, geen gedrag.',
+    gitTag: 'v1.129.4',
+  },
   {
     version: '1.129.3',
     date: '2026-09-25T20:25:16Z',

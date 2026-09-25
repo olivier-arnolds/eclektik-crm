@@ -81,7 +81,7 @@ export default function TypePicker({ value, onSave, compact = false, saving = fa
         onMouseEnter={e => { if (!compact) e.currentTarget.style.background = 'var(--fill-1)'; }}
         onMouseLeave={e => { if (!compact) e.currentTarget.style.background = 'transparent'; }}
         title="Click to change type">
-        {value || '—'}
+        {value || '-'}
         {saving && <span style={{ color: 'var(--accent)', marginLeft: 4 }}>…</span>}
         {!compact && <span style={{ color: 'var(--text-3)', fontSize: 10, fontFamily: 'var(--font-mono)', marginLeft: 4 }}>▾</span>}
       </span>

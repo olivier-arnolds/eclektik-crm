@@ -143,8 +143,8 @@ export default function IndustryBreakdown({ companies = [] }) {
       const s = sectorOf(c.industry);
       const t = tierOf(c);
       acc[s] = acc[s] || { sector: s, clients: 0, prospects: 0, clientNames: [], prospectNames: [], clientTiers: emptyTiers(), prospectTiers: emptyTiers() };
-      if (c.type === 'Customer') { acc[s].clients += 1; acc[s].clientNames.push({ name: c.name || '—', tier: t }); acc[s].clientTiers[t] += 1; tc += 1; }
-      else { acc[s].prospects += 1; acc[s].prospectNames.push({ name: c.name || '—', tier: t }); acc[s].prospectTiers[t] += 1; tp += 1; }
+      if (c.type === 'Customer') { acc[s].clients += 1; acc[s].clientNames.push({ name: c.name || '-', tier: t }); acc[s].clientTiers[t] += 1; tc += 1; }
+      else { acc[s].prospects += 1; acc[s].prospectNames.push({ name: c.name || '-', tier: t }); acc[s].prospectTiers[t] += 1; tp += 1; }
     }
     const sortAZ = (a, b) => String(a.name).localeCompare(String(b.name));
     Object.values(acc).forEach((s) => { s.clientNames.sort(sortAZ); s.prospectNames.sort(sortAZ); });

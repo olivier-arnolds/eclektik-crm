@@ -94,7 +94,7 @@ export default async function handler(req, res) {
 
   const cleanBody = latestMessageOnly(stripHtml(body)).slice(0, 6000);
   if (!cleanBody && !subject) {
-    return res.status(400).json({ error: 'Empty email — nothing to summarize.' });
+    return res.status(400).json({ error: 'Empty email - nothing to summarize.' });
   }
 
   const userContent = [
