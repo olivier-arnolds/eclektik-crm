@@ -1203,8 +1203,9 @@ export default function MarketingOutreach() {
         {isLinkedIn ? (
           <>Via LinkedIn gaat er precies een bericht per persoon, met tientallen seconden ertussen
           en maximaal 10 per keer. Een account dat in een paar minuten een reeks DM's afvuurt valt
-          op, en een beperking op dat account is niet terug te draaien. Antwoorden lees je in de
-          Comms-lane, die haalt LinkedIn live op.</>
+          op, en een beperking op dat account is niet terug te draaien. Antwoorden haalt de scan
+          hierboven binnen; de volledige gespreksdraad lees je in de Comms-lane, die LinkedIn live
+          ophaalt.</>
         ) : (
           <>Bericht 2 gaat alleen uit als de inboxscan jonger is dan {STALE_HOURS} uur, zodat een
           opvolgmail nooit naar iemand gaat die inmiddels al geantwoord heeft. Bericht 1 heeft die
