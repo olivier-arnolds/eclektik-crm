@@ -26,7 +26,10 @@ import { outreachTextToHtml, subjectForStep } from '../lib/outreach-html';
 //      is: bericht 2 mag niet uitgaan op verouderde reply-data.
 //
 // De lijst met contacten wordt bewust ZONDER de berichtteksten opgehaald
-// (msg1_body/msg2_body zijn volledige e-mails); die horen niet in een overzicht.
+// (msg1_body is een volledige e-mail); die horen niet in een overzicht.
+// Uitzondering: msg2_body komt wel mee, want een gevulde msg2_body IS de
+// aan-stand van de herinnering. Zonder dat veld kan de tab niet laten zien wie
+// er aanstaat, en dan zie je pas bij het versturen wat er klaarstaat.
 
 const STALE_HOURS = 12;
 const CLASSIFY_BATCH = 25;
@@ -68,12 +71,41 @@ const HERINNERING_COLOR = {
 const CONTACT_COLS =
   'id,email,first_name,last_name,title,company,status,priority_tier,priority_label,outreach_prio,is_reserve,' +
   'next_action_at,paused_reason,last_reply_summary,contact_id,company_id,last_inbound_at,answered_at,linkedin_url,' +
-  'location';
+  'location,msg2_body';
 
 const AWAITING = '__awaiting__';
 const REGISTERED = '__registered__';
 const OPENED = '__opened__';
 const CLICKED = '__clicked__';
+const REMINDER_KAN = '__reminder_kan__';
+const REMINDER_KLAAR = '__reminder_klaar__';
+
+// Standaardtekst van de herinnering. De tekst zelf is Engels, want de campagne
+// is Engelstalig; de UI eromheen blijft Nederlands.
+const REMINDER_SJABLOON =
+  'Just a friendly reminder. Have you been able to consider attending our session on the 6th?';
+
+// Een gevulde msg2_body is de aan-stand. Er is geen apart vinkje: wie geen tekst
+// heeft wordt door de verzender overgeslagen met de reden 'tekst ontbreekt'.
+const heeftHerinnering = (r) => !!String(r?.msg2_body || '').trim();
+
+// Vult {{first_name}} en {{company}} in. Puur, want wat hier uitkomt wordt
+// letterlijk opgeslagen, precies zoals msg1_body dat al doet: in de database
+// staat de uitgeschreven tekst, geen plaatshouder. Een ontbrekende waarde wordt
+// een lege string en laat geen dubbele spatie of losse spatie voor een leesteken
+// achter.
+function vulPlaatshouders(sjabloon, contact) {
+  const waarden = {
+    first_name: String(contact?.first_name || '').trim(),
+    company: String(contact?.company || '').trim(),
+  };
+  return String(sjabloon || '')
+    .replace(/\{\{\s*(first_name|company)\s*\}\}/g, (_, sleutel) => waarden[sleutel] || '')
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/[ \t]+([,.!?;:])/g, '$1')
+    .replace(/[ \t]+$/gm, '')
+    .trim();
+}
 
 // Stoppen is een ingreep, hervatten draait die terug. Dezelfde kleuren als de
 // statussen elders in deze tab, zodat de knop meteen leest als wat hij doet.
@@ -147,6 +179,13 @@ export default function MarketingOutreach() {
   const [sendErr, setSendErr] = useState(null);
   const [batchSize, setBatchSize] = useState(25);
   const [busyStatus, setBusyStatus] = useState(false);
+
+  // Herinnering klaarzetten. reminderBezigId is het contact dat op dit moment
+  // wordt weggeschreven, zodat alleen die ene cel 'bezig' toont.
+  const [reminderSjabloon, setReminderSjabloon] = useState(REMINDER_SJABLOON);
+  const [reminderBezigId, setReminderBezigId] = useState(null);
+  const [reminderBulkBezig, setReminderBulkBezig] = useState(false);
+  const [reminderErr, setReminderErr] = useState(null);
 
   const [openContact, setOpenContact] = useState(null);
   // Aanmeldingen voor het event, per prospect. Komt uit marketing_lead_activity,
@@ -294,6 +333,15 @@ export default function MarketingOutreach() {
 
   useEffect(() => { load(); }, [load]);
 
+  // Het herinneringsadvies van een rij. Op één plek, want de kolom, de tellers
+  // en het filter moeten hetzelfde antwoord geven.
+  const adviesVoor = useCallback((r) => reminderAdvies({
+    status: r.status,
+    last_inbound_at: r.last_inbound_at,
+    next_action_at: r.next_action_at,
+    laatsteVerzendingISO: laatsteVerzending.get(r.id) || null,
+  }), [laatsteVerzending]);
+
   const wave = useMemo(() => rows.filter(r => !r.is_reserve), [rows]);
   const counts = useMemo(() => {
     const c = {};
@@ -302,8 +350,10 @@ export default function MarketingOutreach() {
     c[REGISTERED] = wave.filter(r => aanmeldingen.has(r.id)).length;
     c[OPENED] = wave.filter(r => (betrokkenheid.get(r.id)?.opens || 0) > 0).length;
     c[CLICKED] = wave.filter(r => (betrokkenheid.get(r.id)?.clicks || 0) > 0).length;
+    c[REMINDER_KAN] = wave.filter(r => adviesVoor(r).advies === HERINNERING_KAN).length;
+    c[REMINDER_KLAAR] = wave.filter(heeftHerinnering).length;
     return c;
-  }, [wave, aanmeldingen, betrokkenheid]);
+  }, [wave, aanmeldingen, betrokkenheid, adviesVoor]);
 
   // Prioriteit-opties uit de data zelf, met het aantal in golf 1 erbij.
   const prioOptions = useMemo(() => {
@@ -349,6 +399,8 @@ export default function MarketingOutreach() {
       else if (statusFilter === REGISTERED) { if (!aanmeldingen.has(r.id)) return false; }
       else if (statusFilter === OPENED) { if (!((betrokkenheid.get(r.id)?.opens || 0) > 0)) return false; }
       else if (statusFilter === CLICKED) { if (!((betrokkenheid.get(r.id)?.clicks || 0) > 0)) return false; }
+      else if (statusFilter === REMINDER_KAN) { if (adviesVoor(r).advies !== HERINNERING_KAN) return false; }
+      else if (statusFilter === REMINDER_KLAAR) { if (!heeftHerinnering(r)) return false; }
       else if (statusFilter !== 'all' && r.status !== statusFilter) return false;
       if (prioFilter !== 'all' && (r.priority_label || '') !== prioFilter) return false;
       // Een regio toetst op de losse fragmenten, een plaatsnaam letterlijk.
@@ -361,7 +413,7 @@ export default function MarketingOutreach() {
       return [r.email, r.company, r.first_name, r.last_name, r.title]
         .some(v => String(v || '').toLowerCase().includes(needle));
     });
-  }, [rows, showReserve, statusFilter, prioFilter, locFilter, q, aanmeldingen, betrokkenheid]);
+  }, [rows, showReserve, statusFilter, prioFilter, locFilter, q, aanmeldingen, betrokkenheid, adviesVoor]);
 
   // Bepaalt welk Graph-pad we gebruiken: eigen mailbox of gedeelde leesrechten.
   const myEmail = String(session?.user?.email || '').toLowerCase();
@@ -607,7 +659,58 @@ export default function MarketingOutreach() {
     setLiBezig(false);
   };
 
-  const callSend = async ({ dryRun }) => {
+  // Herinnering aan- of uitzetten voor één contact. Aanzetten schrijft de
+  // ingevulde tekst weg, uitzetten maakt het veld weer leeg. De rij werken we
+  // lokaal bij, zodat de lijst niet opnieuw hoeft te laden voor één cel.
+  const zetHerinnering = async (r, aan) => {
+    if (!r || reminderBezigId) return;
+    const tekst = aan ? vulPlaatshouders(reminderSjabloon, r) : null;
+    if (aan && !tekst) { setReminderErr('De sjabloontekst is leeg.'); return; }
+    setReminderBezigId(r.id); setReminderErr(null);
+    const { error } = await supabase.from('outreach_contact')
+      .update({ msg2_body: tekst }).eq('id', r.id);
+    setReminderBezigId(null);
+    if (error) { setReminderErr('Opslaan mislukt: ' + error.message); return; }
+    setRows(prev => prev.map(x => (x.id === r.id ? { ...x, msg2_body: tekst } : x)));
+  };
+
+  // Hetzelfde veld, maar voor precies wat de lijst nu toont. Wie al een tekst
+  // heeft slaan we over: die is al aangezet, en overschrijven zou een met de
+  // hand aangepaste tekst stilletjes kwijtmaken.
+  const zetHerinneringBulk = async () => {
+    const doelen = filtered.filter(r => !heeftHerinnering(r));
+    if (doelen.length === 0) {
+      setReminderErr('Alle getoonde contacten hebben al een herinnering klaarstaan.');
+      return;
+    }
+    if (!confirm(`Herinnering klaarzetten voor ${doelen.length} van de ${filtered.length} getoonde contacten?`
+      + '\n\nEr gaat nog niets uit; je zet alleen de tekst klaar.')) return;
+
+    setReminderBulkBezig(true); setReminderErr(null);
+    const geschreven = new Map();
+    let fout = null;
+    for (let i = 0; i < doelen.length && !fout; i += 20) {
+      const stuk = doelen.slice(i, i + 20);
+      // eslint-disable-next-line no-await-in-loop
+      const uitkomsten = await Promise.all(stuk.map(async (r) => {
+        const tekst = vulPlaatshouders(reminderSjabloon, r);
+        const { error } = await supabase.from('outreach_contact')
+          .update({ msg2_body: tekst }).eq('id', r.id);
+        return { id: r.id, tekst, error };
+      }));
+      for (const u of uitkomsten) {
+        if (u.error) { fout = fout || u.error.message; continue; }
+        geschreven.set(u.id, u.tekst);
+      }
+    }
+    if (geschreven.size) {
+      setRows(prev => prev.map(x => (geschreven.has(x.id) ? { ...x, msg2_body: geschreven.get(x.id) } : x)));
+    }
+    setReminderBulkBezig(false);
+    if (fout) setReminderErr(`Opslaan mislukt bij een deel: ${fout}. ${geschreven.size} wel klaargezet.`);
+  };
+
+  const callSend = async ({ dryRun, onlyStep = null }) => {
     if (!campaign) return;
     setSending(true); setSendErr(null); setSendResult(null);
     if (dryRun) setSendPlan(null);
@@ -615,7 +718,12 @@ export default function MarketingOutreach() {
       const resp = await apiFetch('/api/outreach-send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ campaign_id: campaign.id, limit: batchSize, dry_run: dryRun }),
+        body: JSON.stringify({
+          campaign_id: campaign.id, limit: batchSize, dry_run: dryRun,
+          // Alleen meesturen als we er echt om vragen: onlyStep 2 is aan de
+          // verzendkant ook de sleutel die een tweede LinkedIn-bericht toestaat.
+          ...(onlyStep ? { onlyStep: Number(onlyStep) } : {}),
+        }),
       });
       const data = await resp.json();
       if (!resp.ok) throw new Error(data?.error || `HTTP ${resp.status}`);
@@ -637,6 +745,24 @@ export default function MarketingOutreach() {
       : `Tot ${batchSize} ${wat} versturen vanaf ${vanaf}?`;
     if (!confirm(msg + '\n\nDit gaat naar echte prospects en is niet terug te draaien.')) return;
     await callSend({ dryRun: false });
+  };
+
+  // Aantal contacten met een tekst klaar. Dat is precies de groep waar stap 2
+  // iets voor kan doen; de rest slaat de verzender over.
+  const herinneringenKlaar = useMemo(() => rows.filter(heeftHerinnering).length, [rows]);
+
+  // Stap 2 apart aanvragen. Dezelfde caps en dezelfde batchgrootte; het enige
+  // verschil is dat we uitsluitend om bericht 2 vragen.
+  const verstuurHerinneringen = async () => {
+    if (!herinneringenKlaar) return;
+    const dm = campaign.channel === 'linkedin';
+    const wat = dm ? 'LinkedIn-bericht(en)' : 'mail(s)';
+    const vanaf = dm ? `het LinkedIn-account van ${campaign.sender_mailbox}` : campaign.sender_mailbox;
+    if (!confirm(`${herinneringenKlaar} contact(en) hebben een herinnering klaarstaan.`
+      + ` Nu maximaal ${batchSize} ${wat} versturen vanaf ${vanaf}?`
+      + '\n\nDit zijn echte berichten aan echte prospects en is niet terug te draaien.'
+      + ' Alleen wie een tekst klaar heeft krijgt iets.')) return;
+    await callSend({ dryRun: false, onlyStep: 2 });
   };
 
   // Automatisch versturen aan of uit. Los van de status: 'active' blijft de
@@ -776,6 +902,40 @@ export default function MarketingOutreach() {
           <div style={{ fontSize: 11, color: 'var(--text-3)' }}>
             Scant de LinkedIn-gesprekken van <strong>{campaign.sender_mailbox}</strong>, per ronde 40 contacten.
             {' '}De droge run schrijft niets; pas daarna kun je verwerken.
+          </div>
+
+          {/* Herinnering klaarzetten. Een gevulde msg2_body is de aan-stand:
+              wie hier niet is aangezet heeft geen tekst en wordt door de
+              verzender overgeslagen. Dat is de veiligheidsklep, dus er zit
+              bewust geen tweede schakelaar omheen. */}
+          <div style={{
+            borderTop: '0.5px solid var(--sep)', paddingTop: 8, marginTop: 2,
+            display: 'flex', flexDirection: 'column', gap: 6,
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 13, fontWeight: 600 }}>Herinnering</span>
+              <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
+                {herinneringenKlaar} klaargezet · {counts[REMINDER_KAN] || 0} kunnen er een krijgen
+              </span>
+              <button className="btn-ghost tiny" style={{ marginLeft: 'auto' }}
+                disabled={reminderBulkBezig || filtered.length === 0}
+                onClick={zetHerinneringBulk}
+                title="Zet de tekst hieronder klaar voor precies de contacten die de lijst nu toont. Wie al een tekst heeft wordt overgeslagen.">
+                {reminderBulkBezig ? 'Bezig…' : 'Herinnering klaarzetten voor selectie'}
+              </button>
+            </div>
+            <textarea value={reminderSjabloon} rows={2}
+              onChange={e => setReminderSjabloon(e.target.value)}
+              style={{
+                width: '100%', boxSizing: 'border-box', padding: '6px 8px', borderRadius: 6,
+                border: '0.5px solid var(--sep)', background: 'var(--bg-1)', fontSize: 12,
+                fontFamily: 'inherit', resize: 'vertical',
+              }} />
+            <div style={{ fontSize: 11, color: 'var(--text-3)', lineHeight: 1.6 }}>
+              {'Plaatshouders {{first_name}} en {{company}} worden per contact ingevuld voordat de tekst wordt opgeslagen; in de database staat dus de uitgeschreven tekst. Klik in de kolom Herinnering op '}
+              <em>kan</em>{' om iemand aan te zetten.'}
+            </div>
+            {reminderErr && <div style={{ fontSize: 12, color: '#dc2626' }}>{reminderErr}</div>}
           </div>
 
           {liVoortgang && (
@@ -1003,6 +1163,12 @@ export default function MarketingOutreach() {
                 <button className="btn-primary tiny" disabled={sending} onClick={doSend}>
                   Verstuur batch
                 </button>
+                {herinneringenKlaar > 0 && (
+                  <button className="btn-ghost tiny" disabled={sending} onClick={verstuurHerinneringen}
+                    title="Vraagt uitsluitend om bericht 2. Alleen contacten met een klaargezette tekst krijgen iets; dezelfde batch-, dag- en weekgrenzen gelden.">
+                    Verstuur herinneringen ({herinneringenKlaar})
+                  </button>
+                )}
                 <button className="btn-ghost tiny" disabled={busyStatus} onClick={() => setCampaignStatus('paused')}
                   title="Killswitch: stopt het versturen onmiddellijk">
                   Pauzeer
@@ -1098,6 +1264,8 @@ export default function MarketingOutreach() {
           <option value={REGISTERED}>Aangemeld{counts[REGISTERED] ? ` (${counts[REGISTERED]})` : ''}</option>
           <option value={OPENED}>Geopend{counts[OPENED] ? ` (${counts[OPENED]})` : ''}</option>
           <option value={CLICKED}>Geklikt{counts[CLICKED] ? ` (${counts[CLICKED]})` : ''}</option>
+          <option value={REMINDER_KAN}>Herinnering kan{counts[REMINDER_KAN] ? ` (${counts[REMINDER_KAN]})` : ''}</option>
+          <option value={REMINDER_KLAAR}>Herinnering klaargezet{counts[REMINDER_KLAAR] ? ` (${counts[REMINDER_KLAAR]})` : ''}</option>
           {Object.keys(STATUS_LABEL).map(s => (
             <option key={s} value={s}>{STATUS_LABEL[s]}{counts[s] ? ` (${counts[s]})` : ''}</option>
           ))}
@@ -1222,17 +1390,41 @@ export default function MarketingOutreach() {
                   </td>
                   <td style={{ padding: '6px 10px', whiteSpace: 'nowrap' }}>
                     {(() => {
-                      const a = reminderAdvies({
-                        status: r.status,
-                        last_inbound_at: r.last_inbound_at,
-                        next_action_at: r.next_action_at,
-                        laatsteVerzendingISO: laatsteVerzending.get(r.id) || null,
-                      });
+                      const a = adviesVoor(r);
+                      const klaar = heeftHerinnering(r);
+                      const bezig = reminderBezigId === r.id;
+                      // Een gevulde tekst is de feitelijke stand en gaat voor
+                      // het advies: die persoon krijgt bij stap 2 een bericht.
+                      const label = bezig ? 'bezig…' : (klaar ? 'klaargezet' : HERINNERING_LABEL[a.advies]);
+                      // Aanzetten kan alleen bij LinkedIn: daar staat het
+                      // sjabloon, en een e-mail heeft ook een onderwerp nodig
+                      // dat deze weg niet schrijft.
+                      const klikbaar = isLinkedIn && !bezig && (klaar || a.advies === HERINNERING_KAN);
+                      if (!klikbaar) {
+                        return (
+                          <span title={klaar ? 'Tekst staat klaar voor bericht 2' : a.reden}
+                            style={klaar
+                              ? { color: '#1d4ed8', fontWeight: 500, background: 'rgba(37,99,235,0.14)', padding: '1px 6px', borderRadius: 4 }
+                              : { color: HERINNERING_COLOR[a.advies], fontWeight: a.advies === HERINNERING_KAN ? 500 : 400 }}>
+                            {label}
+                          </span>
+                        );
+                      }
                       return (
-                        <span title={a.reden}
-                          style={{ color: HERINNERING_COLOR[a.advies], fontWeight: a.advies === HERINNERING_KAN ? 500 : 400 }}>
-                          {HERINNERING_LABEL[a.advies]}
-                        </span>
+                        <button type="button"
+                          onClick={(e) => { e.stopPropagation(); zetHerinnering(r, !klaar); }}
+                          title={klaar
+                            ? 'Klik om de herinnering weer uit te zetten: de tekst wordt gewist en er gaat niets naar deze persoon.'
+                            : `${a.reden}. Klik om de herinneringstekst klaar te zetten voor deze persoon.`}
+                          style={{
+                            font: 'inherit', border: 0, borderRadius: 4, padding: '1px 6px',
+                            cursor: 'pointer', fontWeight: 500,
+                            color: klaar ? '#1d4ed8' : HERINNERING_COLOR[a.advies],
+                            background: klaar ? 'rgba(37,99,235,0.14)' : 'transparent',
+                            textDecoration: klaar ? 'none' : 'underline dotted',
+                          }}>
+                          {label}
+                        </button>
                       );
                     })()}
                   </td>
