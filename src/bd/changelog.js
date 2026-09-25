@@ -19,9 +19,37 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.127.1';
+export const CURRENT_VERSION = '1.128.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.128.0',
+    date: '2026-09-25T15:35:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Filter op locatie en regio in cold outreach',
+    summary:
+      'Het event is in Amsterdam, dus de terugkerende vraag is wie er makkelijk kan komen. Dat vroeg tot nu toe een databasequery. Nu staat er een filter naast status en prioriteit, met de regio als handvat boven de losse plaatsnamen.',
+    changes: [
+      'Drie regio\'s: Amsterdam, Rotterdam Den Haag en Utrecht. Daaronder blijven de losse plaatsnamen kiesbaar, gesorteerd op aantal.',
+      'Een regio is nodig omdat location vrije tekst is. "Amsterdam", "Amsterdam-Duivendrecht" en "1506 MA Zaandam" horen bij elkaar maar zijn drie verschillende strings; een kale stedenlijst trekt die uit elkaar.',
+      'De vergelijking toetst op woordbegin, niet op kale substring. Einde van een woord mag wel, want Weesperkarspel en Aalsmeerderbrug zijn dezelfde plek.',
+      'Er zijn twee dorpen die Ouderkerk heten: Ouderkerk aan de Amstel ligt bij Amsterdam, Ouderkerk aan den IJssel bij Rotterdam. Het fragment pakte ze allebei. Opgelost met een expliciete uitzondering plus een test die controleert dat Capelle aan den IJssel gewoon in de Rotterdamse regio blijft.',
+      'location stond niet in de kolommen die de tab ophaalt. Zonder die toevoeging had het filter op lege waarden gedraaid en er kapot uitgezien.',
+      'De regiologica is over de echte locatiewaarden van de campagne gedraaid. Daarbij vielen Lijnden, Velsen-Noord, Vleuten en Maarssen eerst in geen enkele regio terwijl ze op forensafstand liggen; Vleuten is zelfs gemeente Utrecht. Toegevoegd, met tests.',
+      'Opgeloste beoordelingen laten geen vlaggetje meer achter: paused_reason werd wel gezet maar nooit gewist, waardoor vier mensen met een keurige classificatie als handwerk bleven staan. Alleen wat een scan zelf schreef wordt opgeruimd; een reden die een mens intypt blijft.',
+      '78 tests op de pure logica.',
+    ],
+    files: [
+      'src/bd/outreach-match.js',
+      'src/bd/outreach-match.test.js',
+      'src/bd/marketing-outreach.jsx',
+      'api/outreach-classify.js',
+      'api/outreach-linkedin-scan.js',
+    ],
+    rollback: 'git revert naar v1.127.1. Het filter is puur weergave; er wordt niets door geschreven.',
+    gitTag: 'v1.128.0',
+  },
   {
     version: '1.127.1',
     date: '2026-09-25T15:07:18Z',

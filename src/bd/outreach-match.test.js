@@ -424,6 +424,18 @@ describe('reminderAdvies', () => {
 });
 
 describe('hoortBijRegio', () => {
+  it.each([
+    ['Lijnden', 'Regio Amsterdam'],
+    ['Velsen-Noord', 'Regio Amsterdam'],
+    ['Vleuten', 'Regio Utrecht'],
+    ['Maarssen', 'Regio Utrecht'],
+  ])('%s hoort bij %s', (loc, regio) => {
+    // Gevonden door de regiologica over de echte locatiewaarden van de
+    // campagne te draaien; deze vier vielen eerst in geen enkele regio terwijl
+    // ze op forensafstand liggen. Vleuten is zelfs gemeente Utrecht.
+    expect(hoortBijRegio(loc, regio)).toBe(true);
+  });
+
   it('geen locatie is nooit een treffer', () => {
     expect(hoortBijRegio('', 'Regio Amsterdam')).toBe(false);
     expect(hoortBijRegio(null, 'Regio Amsterdam')).toBe(false);

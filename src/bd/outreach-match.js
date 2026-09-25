@@ -423,12 +423,14 @@ export const REGIOS = {
   'Regio Amsterdam': ['amsterdam', 'amstelveen', 'haarlem', 'hoofddorp', 'diemen',
     'zaandam', 'zaanstad', 'almere', 'hilversum', 'schiphol', 'badhoevedorp',
     'weesp', 'purmerend', 'duivendrecht', 'ouderkerk', 'abcoude', 'aalsmeer',
-    'uithoorn', 'landsmeer', 'haarlemmermeer'],
+    'uithoorn', 'landsmeer', 'haarlemmermeer', 'lijnden', 'velsen', 'ijmuiden',
+    'beverwijk', 'heemstede', 'bloemendaal', 'zandvoort', 'nieuw-vennep'],
   'Regio Rotterdam Den Haag': ['rotterdam', 'den haag', 'the hague', 'delft',
     'schiedam', 'capelle', 'rijswijk', 'zoetermeer', 'leiden', 'dordrecht',
     'vlaardingen', 'spijkenisse', 'barendrecht', 'gouda', 'voorburg'],
   'Regio Utrecht': ['utrecht', 'amersfoort', 'nieuwegein', 'zeist', 'houten',
-    'bunnik', 'veenendaal', 'woerden', 'driebergen', 'de bilt'],
+    'bunnik', 'veenendaal', 'woerden', 'driebergen', 'de bilt', 'vleuten',
+    'maarssen', 'de meern', 'leidsche rijn', 'bilthoven'],
 };
 
 /**
