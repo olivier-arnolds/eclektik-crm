@@ -55,7 +55,7 @@ begin
 end $$;
 
 comment on function public.create_stage_change_suggestions is
-  'Trigger: creeert playbook_suggestions bij stage-changes op opportunities. Dedupes per deal+playbook.';
+  'Trigger: creëert playbook_suggestions bij stage-changes op opportunities. Dedupes per deal+playbook.';
 
 -- =====================
 -- STAP 2: Trigger op opportunities
