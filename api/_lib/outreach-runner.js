@@ -93,7 +93,9 @@ const domainOf = (email) => {
 /**
  * @returns {{ status:number, body:object }} zodat de aanroeper de HTTP-code zet.
  */
-export async function runOutreachBatch({ campaign_id, limit, onlyStep = null, dry_run = false } = {}) {
+export async function runOutreachBatch({
+  campaign_id, limit, onlyStep = null, dry_run = false, allowLinkedInStep2 = false,
+} = {}) {
   const fout = (status, error) => ({ status, body: { error } });
   if (!supabase) return fout(500, 'Supabase not configured');
   if (!campaign_id) return fout(400, 'campaign_id is verplicht');
@@ -217,6 +219,7 @@ export async function runOutreachBatch({ campaign_id, limit, onlyStep = null, dr
     lastScanISO: sync?.last_synced_at || null,
     staleHours: STALE_HOURS,
     onlyStep,
+    allowLinkedInStep2,
   });
 
   const plan = {

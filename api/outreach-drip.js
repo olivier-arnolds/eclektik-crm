@@ -43,7 +43,10 @@ export default async function handler(req, res) {
 
   const { data: camps, error } = await supabase
     .from('outreach_campaign')
-    .select('id,name,channel,status,daily_cap,weekly_cap,auto_send,hard_stop_at')
+    // linkedin_followup hoort hier bij de selectie: die kolom beslist of de cron
+    // een tweede LinkedIn-bericht mag sturen. Laat je hem weg, dan is de waarde
+    // undefined en staat de rem toevallig goed, maar om de verkeerde reden.
+    .select('id,name,channel,status,daily_cap,weekly_cap,auto_send,hard_stop_at,linkedin_followup')
     .eq('status', 'active')
     .eq('auto_send', true);
   if (error) return res.status(500).json({ error: 'campagnes ophalen: ' + error.message });
@@ -92,7 +95,14 @@ export default async function handler(req, res) {
     // Vanaf hier exact de weg van de knop, inclusief alle kleppen. De caps worden
     // daar nog een keer gecontroleerd; dat is bewust dubbelop, want deze telling
     // is een momentopname en de verzending kan minuten duren.
-    const { status, body } = await runOutreachBatch({ campaign_id: camp.id, limit: count });
+    //
+    // Hier kijkt niemand mee, dus een tweede LinkedIn-bericht gaat alleen uit
+    // als de campagne daar apart voor aangezet is. Die vlag staat overal uit.
+    const { status, body } = await runOutreachBatch({
+      campaign_id: camp.id,
+      limit: count,
+      allowLinkedInStep2: camp.linkedin_followup === true,
+    });
     if (status !== 200) {
       console.error('[outreach-drip] verzenden faalde', camp.name, body?.error);
       runs.push({ campaign: camp.name, sent: 0, error: body?.error || `HTTP ${status}` });

@@ -64,6 +64,8 @@ export function stepForStatus(status) {
  *   lastScanISO            ISO of null  laatste inboxscan
  *   staleHours             int
  *   onlyStep               1 | 2 | null  optioneel beperken tot een stap
+ *   allowLinkedInStep2     bool (standaard false): mag bericht 2 via LinkedIn
+ *                          uit? Wordt per AANROEPER gegeven, niet per campagne.
  *   channel                'email' | 'linkedin'
  * @returns {{ batch: Array, skipped: object, remainingCap: number }}
  */
@@ -73,6 +75,7 @@ export function selectSendable(candidates, opts = {}) {
     weeklyCap = null, sentThisWeek = 0,
     maxPerCompanyPerWeek = 2, domainCounts = {}, companyCounts = {}, hardStopAt = null,
     lastScanISO = null, staleHours = STALE_HOURS, onlyStep = null,
+    allowLinkedInStep2 = false,
     channel = 'email',
   } = opts;
   const isLinkedIn = channel === 'linkedin';
@@ -155,10 +158,17 @@ export function selectSendable(candidates, opts = {}) {
       bump('antwoord binnen, wacht op beoordeling'); continue;
     }
 
-    // Via LinkedIn sturen we alleen bericht 1. Een ongevraagd tweede DM aan
-    // iemand die niet reageerde is precies het gedrag waar LinkedIn accounts op
-    // beperkt, en er staat ook geen tweede tekst in de lijst.
-    if (isLinkedIn && step === 2) { bump('geen opvolgbericht via LinkedIn'); continue; }
+    // Via LinkedIn gaat er normaal alleen bericht 1 uit. Een ongevraagd tweede
+    // DM aan iemand die niet reageerde is precies het gedrag waar LinkedIn
+    // accounts op beperkt, en zo'n beperking is niet terug te draaien.
+    //
+    // De uitzondering wordt per aanroeper gegeven, niet per campagne, want het
+    // verschil dat ertoe doet is of er een mens kijkt: de knop in de tab mag
+    // het als je er expliciet om vraagt, de cron alleen als de campagne er
+    // apart voor aangezet is.
+    if (isLinkedIn && step === 2 && !allowLinkedInStep2) {
+      bump('geen opvolgbericht via LinkedIn'); continue;
+    }
 
     // Bericht 2 heeft twee extra remmen.
     if (step === 2) {

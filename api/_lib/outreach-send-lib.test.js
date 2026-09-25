@@ -335,6 +335,60 @@ describe('selectSendable op het LinkedIn-kanaal', () => {
   });
 });
 
+// ── Herinnering via LinkedIn (allowLinkedInStep2) ────────────────────────────
+// De blokkade op bericht 2 is geen harde regel meer maar een parameter. Wie de
+// uitzondering krijgt, hangt af van de aanroeper: de knop in de tab als er
+// expliciet om stap 2 gevraagd wordt, de cron alleen bij een campagne die
+// daarvoor apart aangezet is. Alle andere remmen blijven onverkort gelden.
+describe('selectSendable met allowLinkedInStep2', () => {
+  const herinnering = (o = {}) => li({
+    status: 'msg1_sent', msg2_body: 'Hi Nelleke,\n\nnog even een herinnering.', ...o,
+  });
+
+  it('zonder de optie gaat er geen tweede bericht uit', () => {
+    const { batch, skipped } = selectSendable([herinnering()], liBase);
+    expect(batch).toHaveLength(0);
+    expect(skipped['geen opvolgbericht via LinkedIn']).toBe(1);
+  });
+
+  it('met de optie gaat het tweede bericht wel uit', () => {
+    const { batch } = selectSendable([herinnering()], { ...liBase, allowLinkedInStep2: true });
+    expect(batch).toHaveLength(1);
+    expect(batch[0].step).toBe(2);
+    expect(batch[0].body).toContain('herinnering');
+  });
+
+  it('KRITIEK: een lege msg2_body is de uit-stand per contact en blijft blokkeren', () => {
+    const { batch, skipped } = selectSendable([herinnering({ msg2_body: null })], {
+      ...liBase, allowLinkedInStep2: true,
+    });
+    expect(batch).toHaveLength(0);
+    expect(skipped['tekst ontbreekt']).toBe(1);
+  });
+
+  it('KRITIEK: wie geantwoord heeft krijgt nooit een herinnering', () => {
+    const { batch, skipped } = selectSendable([
+      herinnering({ last_inbound_at: '2026-09-15T12:00:00Z', next_action_at: null }),
+    ], { ...liBase, allowLinkedInStep2: true });
+    expect(batch).toHaveLength(0);
+    expect(skipped['antwoord binnen, wacht op beoordeling']).toBe(1);
+  });
+
+  it('verandert niets aan een e-mailcampagne: bericht 2 ging daar altijd al uit', () => {
+    const zonder = selectSendable([c({ status: 'msg1_sent' })], base);
+    const met = selectSendable([c({ status: 'msg1_sent' })], { ...base, allowLinkedInStep2: true });
+    expect(zonder.batch).toHaveLength(1);
+    expect(met.batch).toHaveLength(1);
+    expect(met.batch[0].step).toBe(2);
+  });
+
+  it('bericht 1 via LinkedIn blijft gewoon werken zonder de optie', () => {
+    const { batch } = selectSendable([li()], { ...liBase, allowLinkedInStep2: false });
+    expect(batch).toHaveLength(1);
+    expect(batch[0].step).toBe(1);
+  });
+});
+
 describe('statusAfterSend op het LinkedIn-kanaal', () => {
   it('KRITIEK: plant geen opvolging, want die bestaat niet', () => {
     const r = statusAfterSend(1, { now: NOW, channel: 'linkedin' });

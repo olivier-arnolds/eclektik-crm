@@ -16,6 +16,16 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const { campaign_id, limit, onlyStep = null, dry_run = false } = req.body || {};
-  const { status, body } = await runOutreachBatch({ campaign_id, limit, onlyStep, dry_run });
+
+  // Een tweede LinkedIn-bericht mag hier alleen als de gebruiker expliciet om
+  // stap 2 vraagt. Dat hangt aan onlyStep en niet aan de knop als geheel, want
+  // een gewone batch stuurt stap 1 en 2 door elkaar; dan zou een herinnering
+  // meeliften zonder dat iemand dat bedoeld heeft. Stap 2 kiezen is een aparte
+  // handeling van een mens die weet wat er uitgaat.
+  const allowLinkedInStep2 = onlyStep === 2;
+
+  const { status, body } = await runOutreachBatch({
+    campaign_id, limit, onlyStep, dry_run, allowLinkedInStep2,
+  });
   return res.status(status).json(body);
 }
