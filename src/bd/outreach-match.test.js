@@ -4,6 +4,7 @@ import {
   matchMessage, scanInbox, statusAfterClassification,
   MATCH_SENDER, MATCH_DOMAIN, MATCH_NONE, CONFIDENCE_FLOOR, needsOurReply, matchRegistrations,
   inkomendNaVerzending, conversatieStatus, CONV_GEEN, CONV_ANTWOORD, CONV_HEEN_EN_WEER,
+  reminderAdvies, HERINNERING_KAN, HERINNERING_TE_VROEG, HERINNERING_AL, HERINNERING_NIET,
 } from './outreach-match';
 
 // Drie contacten, twee bij hetzelfde domein (de ING-situatie).
@@ -347,5 +348,76 @@ describe('conversatieStatus', () => {
 
   it('negeert onbruikbare datums', () => {
     expect(conversatieStatus({ last_inbound_at: 'onzin' })).toBe(CONV_GEEN);
+  });
+});
+
+describe('reminderAdvies', () => {
+  const NU = new Date('2026-09-25T12:00:00Z');
+  const basis = { status: 'msg1_sent', laatsteVerzendingISO: '2026-09-11T10:00:00Z', now: NU };
+
+  it('kan na tien dagen zonder reactie', () => {
+    const a = reminderAdvies(basis);
+    expect(a.advies).toBe(HERINNERING_KAN);
+    expect(a.reden).toBe('14 dagen geleden benaderd');
+  });
+
+  it('precies tien dagen telt als kan', () => {
+    const a = reminderAdvies({ ...basis, laatsteVerzendingISO: '2026-09-15T12:00:00Z' });
+    expect(a.advies).toBe(HERINNERING_KAN);
+  });
+
+  it('negen dagen is nog te vroeg en noemt de datum', () => {
+    const a = reminderAdvies({ ...basis, laatsteVerzendingISO: '2026-09-16T12:00:00Z' });
+    expect(a.advies).toBe(HERINNERING_TE_VROEG);
+    expect(a.reden).toBe('kan vanaf 2026-09-26');
+  });
+
+  it('niet doen als er een antwoord binnen is', () => {
+    const a = reminderAdvies({ ...basis, last_inbound_at: '2026-09-12T10:00:00Z' });
+    expect(a.advies).toBe(HERINNERING_NIET);
+    expect(a.reden).toBe('heeft geantwoord');
+  });
+
+  it.each([
+    ['opted_out', 'afgemeld'],
+    ['bounced', 'gebounced'],
+    ['paused', 'gepauzeerd'],
+    ['replied', 'heeft geantwoord'],
+    ['referred', 'doorverwezen'],
+  ])('niet doen bij status %s', (status, reden) => {
+    const a = reminderAdvies({ ...basis, status });
+    expect(a.advies).toBe(HERINNERING_NIET);
+    expect(a.reden).toBe(reden);
+  });
+
+  it('al herinnerd na msg2', () => {
+    expect(reminderAdvies({ ...basis, status: 'msg2_sent' }).advies).toBe(HERINNERING_AL);
+  });
+
+  it('niet doen als er nog niets verstuurd is', () => {
+    const a = reminderAdvies({ ...basis, status: 'queued' });
+    expect(a.advies).toBe(HERINNERING_NIET);
+    expect(a.reden).toBe('nog niets verstuurd');
+  });
+
+  it('een lopende wachtdatum gaat voor op de tien dagen', () => {
+    const a = reminderAdvies({ ...basis, next_action_at: '2026-10-01T09:00:00Z' });
+    expect(a.advies).toBe(HERINNERING_TE_VROEG);
+    expect(a.reden).toBe('kan vanaf 2026-10-01');
+  });
+
+  it('een verlopen wachtdatum blokkeert niet', () => {
+    const a = reminderAdvies({ ...basis, next_action_at: '2026-09-20T09:00:00Z' });
+    expect(a.advies).toBe(HERINNERING_KAN);
+  });
+
+  it('niet doen als de verzenddatum onbekend is', () => {
+    const a = reminderAdvies({ ...basis, laatsteVerzendingISO: null });
+    expect(a.advies).toBe(HERINNERING_NIET);
+    expect(a.reden).toBe('verzenddatum onbekend');
+  });
+
+  it('valt niet om op lege invoer', () => {
+    expect(reminderAdvies().advies).toBe(HERINNERING_NIET);
   });
 });

@@ -344,3 +344,70 @@ export function conversatieStatus(r) {
   if (outAt !== null && Number.isFinite(outAt) && outAt > inAt) return CONV_HEEN_EN_WEER;
   return CONV_ANTWOORD;
 }
+
+/**
+ * Hoe lang na ons laatste bericht een herinnering redelijk is.
+ * Afgesproken met Olivier op 25 september 2026.
+ */
+export const HERINNERING_NA_DAGEN = 10;
+
+export const HERINNERING_KAN = 'kan';
+export const HERINNERING_TE_VROEG = 'te_vroeg';
+export const HERINNERING_AL = 'al_herinnerd';
+export const HERINNERING_NIET = 'niet';
+
+/**
+ * Advies, geen handeling. Het versturen van een herinnering blijft handmatig;
+ * de blokkade op een tweede LinkedIn-DM in outreach-send-lib.js blijft staan.
+ *
+ * Elke uitkomst draagt zijn reden mee, zodat de lijst laat zien waarom er niet
+ * herinnerd kan worden. Een kolom die alleen 'nee' zegt levert een vraag op in
+ * plaats van een antwoord.
+ *
+ * @param {{status?: string, last_inbound_at?: string, next_action_at?: string,
+ *          laatsteVerzendingISO?: string, now?: Date}} arg
+ * @returns {{advies: string, reden: string, vanaf: string|null}}
+ */
+export function reminderAdvies({
+  status, last_inbound_at, next_action_at, laatsteVerzendingISO, now = new Date(),
+} = {}) {
+  const niet = (reden) => ({ advies: HERINNERING_NIET, reden, vanaf: null });
+  const teVroeg = (d) => ({
+    advies: HERINNERING_TE_VROEG,
+    reden: `kan vanaf ${d.toISOString().slice(0, 10)}`,
+    vanaf: d.toISOString(),
+  });
+
+  if (last_inbound_at) return niet('heeft geantwoord');
+
+  switch (status) {
+    case 'opted_out': return niet('afgemeld');
+    case 'bounced': return niet('gebounced');
+    case 'paused': return niet('gepauzeerd');
+    case 'replied': return niet('heeft geantwoord');
+    case 'referred': return niet('doorverwezen');
+    case 'msg2_sent':
+      return { advies: HERINNERING_AL, reden: 'bericht 2 is al verstuurd', vanaf: null };
+    case 'msg1_sent':
+    case 'ooo':
+      break;
+    default:
+      return niet('nog niets verstuurd');
+  }
+
+  // Een gemelde afwezigheid zet een terugkeerdatum. Tot die dag is elke
+  // herinnering te vroeg, ongeacht hoe oud ons bericht is.
+  const wacht = next_action_at ? new Date(next_action_at) : null;
+  if (wacht && Number.isFinite(wacht.getTime()) && wacht.getTime() > now.getTime()) {
+    return teVroeg(wacht);
+  }
+
+  const verzonden = laatsteVerzendingISO ? new Date(laatsteVerzendingISO) : null;
+  if (!verzonden || !Number.isFinite(verzonden.getTime())) return niet('verzenddatum onbekend');
+
+  const vanaf = new Date(verzonden.getTime() + HERINNERING_NA_DAGEN * 86400000);
+  if (vanaf.getTime() > now.getTime()) return teVroeg(vanaf);
+
+  const dagen = Math.floor((now.getTime() - verzonden.getTime()) / 86400000);
+  return { advies: HERINNERING_KAN, reden: `${dagen} dagen geleden benaderd`, vanaf: vanaf.toISOString() };
+}
