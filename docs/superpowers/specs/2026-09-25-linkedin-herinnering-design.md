@@ -124,16 +124,18 @@ expanding rapidly in organizations, and I assume within Arcadis as well." Een
 Nederlandse herinnering op een Engelse uitnodiging leest als een ander gesprek.
 Het standaardsjabloon is dus Engels.
 
-Concept, te wijzigen in het venster:
+Het standaardsjabloon, aangeleverd door Olivier:
 
-> Hi {{first_name}}, I sent you an invitation earlier this month for our session
-> on 6 October in Amsterdam, on HR's role in AI transformation. It may well have
-> been buried. The group signing up is exactly what makes this conversation
-> worthwhile, mostly CHROs and people analytics leads from the region. If you
-> would like to join, let me know and I will keep a seat.
+> Just a friendly reminder. Have you been able to consider attending our session
+> on the 6th?
 
-Geen verontschuldiging voor het tweede bericht, en niet vragen of het eerste is
-aangekomen. Het eerste maakt het klein, het tweede legt de last bij hen.
+Kort, en dat is hier juist goed. Dit is een DM-draad, dus het eerste bericht
+staat er letterlijk boven. De uitnodiging opnieuw uitleggen klinkt alsof je
+vergeten bent dat je hem al stuurde. Bij e-mail zou dat anders liggen.
+
+Het venster laat de tekst bewerken en kent `{{first_name}}` en `{{company}}` voor
+wie er toch een aanhef bij wil. Standaard staat er geen naam in: in een lopend
+gesprek leest een aanhef als een sjabloon.
 
 Dit valt onder §2b van CLAUDE.md: geen em-dashes, geen opsommingen, geen
 markdown-koppen, hooguit een emoji, en eindigen met een open vraag of een
