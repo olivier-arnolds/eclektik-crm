@@ -19,9 +19,43 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.128.0';
+export const CURRENT_VERSION = '1.129.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.129.0',
+    date: '2026-09-25T15:57:43Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Herinnering via LinkedIn, per contact aangezet',
+    summary:
+      'De kolom Herinnering gaf advies maar deed niets. Nu is het woord "kan" een knop: klikken zet de herinnering aan voor die ene persoon. Versturen gebeurt met de hand, via een eigen knop die uitsluitend om bericht 2 vraagt. De cron blijft er voorlopig vanaf.',
+    changes: [
+      'Drie sloten in plaats van de harde blokkade op een tweede LinkedIn-DM. Die regel is geen verbod meer maar een parameter, en wie hem opent verschilt per aanroeper.',
+      'Slot 1: de knop in de tab opent hem alleen als je expliciet om bericht 2 vraagt. Een gewone batch stuurt stap 1 en 2 door elkaar; zo zou een herinnering meeliften zonder dat iemand dat bedoelde.',
+      'Slot 2: nieuwe kolom outreach_campaign.linkedin_followup, standaard uit. De cron (outreach-drip, elke 20 minuten) stuurt alleen herinneringen als die aanstaat, en dat staat bij alle campagnes uit. Bewust: eerst met de hand, later pas automatisch.',
+      'Slot 3, en het idee van Olivier: een gevulde msg2_body is de aan-stand per contact. Wie je niet aanklikt heeft geen tekst, en de bestaande controle "tekst ontbreekt" slaat die persoon over. Dat werkt ook als de cron ooit aangezet wordt.',
+      'Klikken op "kan" schrijft de tekst weg voor dat contact en het woord wordt "klaargezet"; nog een keer klikken maakt het ongedaan. Een bulkknop doet hetzelfde voor de getoonde selectie, voor als het er zeventig zijn in plaats van twintig.',
+      'Twee filters erbij: "Herinnering kan" en "Herinnering klaargezet", zodat je kunt nalopen wie je hebt aangezet voordat je verstuurt.',
+      'Het sjabloon is Engels, want de campagne is dat ook: "Just a friendly reminder. Have you been able to consider attending our session on the 6th?" Kort met opzet, want in een DM-draad staat het eerste bericht er letterlijk boven.',
+      'Een eigen droge run voor de herinneringen. Het bestaande Toon plan vraagt niet om stap 2 en laat ze dus juist niet zien.',
+      'Het stapnummer uit de request body wordt omgezet naar een getal. Kwam "2" als string binnen, dan viel de herinnering stil weg en leek het alsof de knop niets deed.',
+      'linkedin_followup zat niet in de select van de cron, waardoor de rem goed stond om de verkeerde reden (undefined in plaats van false). Toegevoegd.',
+      'Ongewijzigd: batch van maximaal 10 bij LinkedIn, dagcap 30, weekcap 150, 12 tot 25 seconden tussen berichten, groepering per bedrijf, en de guard die iedereen overslaat die inmiddels geantwoord heeft. 64 tests op de verzendlogica.',
+    ],
+    files: [
+      'sql/schema_outreach_linkedin_followup_2026-09-25.sql',
+      'api/_lib/outreach-send-lib.js',
+      'api/_lib/outreach-send-lib.test.js',
+      'api/_lib/outreach-runner.js',
+      'api/outreach-send.js',
+      'api/outreach-drip.js',
+      'src/bd/marketing-outreach.jsx',
+      'docs/superpowers/specs/2026-09-25-linkedin-herinnering-design.md',
+    ],
+    rollback: 'git revert naar v1.128.0. De kolom linkedin_followup mag blijven staan; zonder de code doet hij niets. Al weggeschreven msg2_body-teksten blijven ook staan, maar zonder deze release gaat er via LinkedIn geen bericht 2 uit.',
+    gitTag: 'v1.129.0',
+  },
   {
     version: '1.128.0',
     date: '2026-09-25T15:35:00Z',

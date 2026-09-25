@@ -1164,10 +1164,22 @@ export default function MarketingOutreach() {
                   Verstuur batch
                 </button>
                 {herinneringenKlaar > 0 && (
-                  <button className="btn-ghost tiny" disabled={sending} onClick={verstuurHerinneringen}
-                    title="Vraagt uitsluitend om bericht 2. Alleen contacten met een klaargezette tekst krijgen iets; dezelfde batch-, dag- en weekgrenzen gelden.">
-                    Verstuur herinneringen ({herinneringenKlaar})
-                  </button>
+                  <>
+                    {/* Eerst kijken, dan sturen. Overal in deze tab gaat een
+                        droge run vooraf aan iets onomkeerbaars, en een DM is
+                        het meest onomkeerbare wat hier uitgaat. Het bestaande
+                        'Toon plan' vraagt niet om stap 2 en laat de
+                        herinneringen dus juist niet zien. */}
+                    <button className="btn-ghost tiny" disabled={sending}
+                      onClick={() => callSend({ dryRun: true, onlyStep: 2 })}
+                      title="Laat zien welke herinneringen nu zouden uitgaan, zonder iets te versturen">
+                      Toon herinneringsplan
+                    </button>
+                    <button className="btn-ghost tiny" disabled={sending} onClick={verstuurHerinneringen}
+                      title="Vraagt uitsluitend om bericht 2. Alleen contacten met een klaargezette tekst krijgen iets; dezelfde batch-, dag- en weekgrenzen gelden.">
+                      Verstuur herinneringen ({herinneringenKlaar})
+                    </button>
+                  </>
                 )}
                 <button className="btn-ghost tiny" disabled={busyStatus} onClick={() => setCampaignStatus('paused')}
                   title="Killswitch: stopt het versturen onmiddellijk">
