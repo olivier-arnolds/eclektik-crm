@@ -5,10 +5,14 @@ import { apiFetch } from '../../lib/apiFetch';
 export default function AddCompanyModal({ open, onClose, refetch }) {
   const [form, setForm] = useState({ name: '', country: '', city: '', industry: '', website: '', type: 'Klant', phone: '', email: '', linkedin_url: '' });
   const [saving, setSaving] = useState(false);
+  // Deze stond onder de early return hieronder. Bij een gesloten venster draaiden
+  // er dan twee hooks en bij een open venster drie, en React gooit daarop
+  // "Rendered more hooks than during the previous render". Hooks moeten in elke
+  // render in dezelfde volgorde en in hetzelfde aantal draaien, dus ze horen
+  // allemaal boven elke return te staan.
+  const [enriching, setEnriching] = useState(false);
 
   if (!open) return null;
-
-  const [enriching, setEnriching] = useState(false);
 
   const handleSave = async () => {
     if (!form.name) return;

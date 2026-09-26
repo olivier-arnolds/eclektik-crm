@@ -19,9 +19,29 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.129.5';
+export const CURRENT_VERSION = '1.130.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.130.0',
+    date: '2026-09-26T05:05:25Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'ESLint erbij, plus de eerste bug die hij vond',
+    summary:
+      'Na de crash van de outreach-tab: een variabele werd voor haar declaratie gebruikt, de build slaagde en de tests slaagden, en pas het openen van de tab bracht het aan het licht. ESLint vangt precies die klasse. Aangezet met een bewust kleine set regels, nog niet afgedwongen.',
+    changes: [
+      'npm run lint draait nu. Twee blokken: src op browserglobals, api op node. Alleen regels die crashes vangen; geen stijlregels, geen opmaak.',
+      'Getoetst voordat het werd aangezet: no-use-before-define op de kapotte versie van gisteren geeft twee meldingen, precies op de bug.',
+      'Meteen gevonden en gerepareerd: in AddCompanyModal.jsx stond een useState na een early return. Bij een gesloten venster draaiden er twee hooks en bij een open venster drie, waarop React "Rendered more hooks than during the previous render" gooit. Dat venster hangt aan de accountlijst van het oude dashboard, dat main.jsx nog steeds achter een schakelaar rendert.',
+      'Stand nu: 78 fouten en 37 waarschuwingen. De 76 use-before-define zitten in tien bestanden, waarvan vijf er samen 59 hebben. Die ruimen we per bestand op, in eigen commits.',
+      'Nog niet afgedwongen. Zolang die 78 er staan zou een blokkade in de build alleen maar in de weg zitten.',
+      'Een overbodige eslint-disable-regel in marketing-outreach.jsx verwijderd; die verwees naar een regel die we niet aanzetten.',
+    ],
+    files: ['eslint.config.js', 'package.json', 'src/components/forms/AddCompanyModal.jsx', 'src/bd/marketing-outreach.jsx', 'docs/superpowers/specs/2026-09-26-eslint-voorstel.md'],
+    rollback: 'git revert naar v1.129.5, plus npm uninstall eslint eslint-plugin-react-hooks globals. De fix in AddCompanyModal wil je houden.',
+    gitTag: 'v1.130.0',
+  },
   {
     version: '1.129.5',
     date: '2026-09-26T04:52:45Z',

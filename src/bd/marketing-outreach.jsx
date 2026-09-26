@@ -691,7 +691,6 @@ export default function MarketingOutreach() {
     let fout = null;
     for (let i = 0; i < doelen.length && !fout; i += 20) {
       const stuk = doelen.slice(i, i + 20);
-      // eslint-disable-next-line no-await-in-loop
       const uitkomsten = await Promise.all(stuk.map(async (r) => {
         const tekst = vulPlaatshouders(reminderSjabloon, r);
         const { error } = await supabase.from('outreach_contact')
