@@ -147,6 +147,17 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
   // opgehaald zodra de tokenmodus aan gaat, zodat de preview de werkelijkheid
   // toont. Null betekent: nog niet opgehaald of nog niet aangemaakt.
   const [previewToken, setPreviewToken] = useState(null);
+
+  // Keuzevenster voor de spamcheck. window.confirm kan zijn knoppen niet
+  // hernoemen, en met OK/Annuleren was volstrekt onduidelijk wat er gebeurde:
+  // allebei verstuurden, alleen naar een andere groep. Nu twee knoppen die
+  // zeggen wat ze doen, en een echte uitweg.
+  const [spamVraag, setSpamVraag] = useState(null);
+  const vraagSpamKeuze = (info) => new Promise((resolve) => setSpamVraag({ ...info, resolve }));
+  const beantwoordSpam = (keuze) => {
+    if (spamVraag?.resolve) spamVraag.resolve(keuze);
+    setSpamVraag(null);
+  };
   const previewEmail = recipients?.[0]?.email || null;
   useEffect(() => {
     if (!tokenModus || !previewEmail) { setPreviewToken(null); return; }
@@ -291,6 +302,11 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
       }
     }
 
+    // Overrulet de vijfdaagse cooldown in api/marketing-send.js. Bij een test
+    // altijd: een testmail aan jezelf die stil wordt overgeslagen is nooit wat
+    // je bedoelt, en je ziet nergens dat het gebeurd is.
+    let negeerCooldown = !!testOnly;
+
     // Spam-preventie: check welke recipients in de afgelopen 3 dagen al een
     // campaign-mail van ons hebben gehad (status sent of delivered). Skip die
     // by-default, met override-optie. Test-sends skippen deze check (eigen mail).
@@ -328,21 +344,21 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
         (r.contact_id && recentIds.has(r.contact_id)) || recentEmails.has((r.email || '').toLowerCase())
       );
       if (skip.length > 0) {
-        const remaining = payloadRecipients.length - skip.length;
         const sample = skip.slice(0, 5).map(r => r.email).join(', ');
         const moreNote = skip.length > 5 ? ` (en ${skip.length - 5} meer)` : '';
-        const ok = confirm(
-          `Spam-preventie: ${skip.length} van de ${payloadRecipients.length} contacten kregen in de afgelopen 3 dagen al een campaign-mail van ons.\n\n` +
-          `Voorbeeld: ${sample}${moreNote}\n\n` +
-          `Klik OK om alleen naar de overige ${remaining} contact${remaining === 1 ? '' : 'en'} te mailen.\n` +
-          `Annuleer om alle ${payloadRecipients.length} alsnog te mailen (override).`
-        );
-        if (ok) {
-          payloadRecipients = payloadRecipients.filter(r =>
-            !((r.contact_id && recentIds.has(r.contact_id)) || recentEmails.has((r.email || '').toLowerCase()))
-          );
+        const keuze = await vraagSpamKeuze({
+          skip: skip.length,
+          totaal: payloadRecipients.length,
+          voorbeeld: `${sample}${moreNote}`,
+        });
+        if (keuze !== 'toch') {
+          setBusy(false);
+          return;
         }
-        // Bij Annuleer: laat payloadRecipients ongewijzigd (full send).
+        // 'Verzend toch' overrulet ook de vijfdaagse cooldown aan de serverkant.
+        // Anders kies je hier bewust voor versturen en slaat marketing-send
+        // dezelfde mensen alsnog stil over, zonder dat je dat ergens ziet.
+        negeerCooldown = true;
       }
       if (payloadRecipients.length === 0) {
         setResult({ ok: false, error: 'Alle geselecteerde contacten kregen in de afgelopen 3 dagen al een campaign-mail.' });
@@ -381,6 +397,7 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
           audience_filter: testOnly ? { test: true } : null,
           recipients: payloadRecipients,
           sent_by: sentBy,
+          ignoreCooldown: negeerCooldown,
         };
 
     try {
@@ -580,6 +597,47 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
           {busy ? 'Sending…' : `Send to ${recipientsWithEmail} recipient${recipientsWithEmail !== 1 ? 's' : ''}`}
         </button>
       </div>
+
+      {/* Spamcheck. Twee knoppen die zeggen wat ze doen, want met OK en
+          Annuleren verstuurden ze allebei, alleen naar een andere groep, en
+          was er geen enkele manier om ertussenuit te stappen. */}
+      {spamVraag && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 1200, background: 'rgba(0,0,0,0.45)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+        }}
+          onClick={() => beantwoordSpam('niet')}>
+          <div onClick={(e) => e.stopPropagation()} style={{
+            background: 'var(--bg-1)', border: '0.5px solid var(--sep)', borderRadius: 10,
+            padding: 18, maxWidth: 480, width: '100%', display: 'flex', flexDirection: 'column', gap: 10,
+          }}>
+            <div style={{ fontSize: 14, fontWeight: 600 }}>Spamcheck</div>
+            <div style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.6 }}>
+              {spamVraag.skip} van de {spamVraag.totaal} ontvanger(s) kregen in de afgelopen
+              drie dagen al een campagnemail van ons.
+            </div>
+            <div style={{
+              fontSize: 12, color: 'var(--text-3)', background: 'var(--fill-1)',
+              borderRadius: 6, padding: '6px 8px', wordBreak: 'break-word',
+            }}>
+              {spamVraag.voorbeeld}
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--text-3)', lineHeight: 1.5 }}>
+              Verzend toch stuurt naar alle {spamVraag.totaal}, en zet ook de vijfdaagse
+              cooldown aan de serverkant opzij. Zonder dat zouden dezelfde mensen daar
+              alsnog stil worden overgeslagen.
+            </div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
+              <button className="btn-ghost tiny" onClick={() => beantwoordSpam('niet')}>
+                Verzend niet
+              </button>
+              <button className="btn-primary tiny" onClick={() => beantwoordSpam('toch')}>
+                Verzend toch ({spamVraag.totaal})
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

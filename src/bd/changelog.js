@@ -19,9 +19,28 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.131.0';
+export const CURRENT_VERSION = '1.131.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.131.1',
+    date: '2026-09-26T06:23:32Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Spamcheck met twee knoppen die zeggen wat ze doen',
+    summary:
+      'De spamcheck gebruikte window.confirm met OK en Annuleren, en daar verstuurden allebei de knoppen: OK naar de overigen, Annuleren naar iedereen. Er was geen enkele manier om ertussenuit te stappen. Nu een echt venster met Verzend niet en Verzend toch.',
+    changes: [
+      'Verzend niet breekt af en stuurt niets. Dat kon voorheen helemaal niet.',
+      'Verzend toch stuurt naar iedereen en zet ook de vijfdaagse cooldown in api/marketing-send.js opzij. Zonder dat kies je hier bewust voor versturen en slaat de serverkant dezelfde mensen alsnog stil over.',
+      'Die cooldown kreeg nooit een ignoreCooldown mee, dus hij gold altijd. Dat is de reden dat een tweede testmail naar een adres dat in contacts staat nooit aankwam, zonder melding.',
+      'Een testverzending negeert de cooldown voortaan altijd. Een testmail aan jezelf die stil wordt overgeslagen is nooit wat je bedoelt.',
+      'Vervallen: de optie om alleen naar de overige ontvangers te sturen. Die zat op de OK-knop en is met deze twee keuzes weg. Terug te zetten als derde knop als je hem mist.',
+    ],
+    files: ['src/bd/marketing-composer.jsx'],
+    rollback: 'git revert naar v1.131.0. Let op dat daarmee ook de ignoreCooldown weer verdwijnt en testmails weer stil kunnen wegvallen.',
+    gitTag: 'v1.131.1',
+  },
   {
     version: '1.131.0',
     date: '2026-09-26T06:00:58Z',
