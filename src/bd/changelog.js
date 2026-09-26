@@ -19,9 +19,27 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.131.2';
+export const CURRENT_VERSION = '1.131.3';
 
 export const CHANGELOG = [
+  {
+    version: '1.131.3',
+    date: '2026-09-26T10:28:07Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Plaatshouders trekken zich niets meer aan van hoofdletters',
+    summary:
+      'De knoppen in de uitnodiging gebruikten {{TOKEN}} met hoofdletters. Dat gold als een onbekende naam, werd een lege string, en de link was weer dood terwijl de knop er goed uitzag. De derde variant van dezelfde stille fout op een dag.',
+    changes: [
+      'renderTemplate vergelijkt de naam nu ongevoelig voor hoofdletters. {{TOKEN}}, {{Token}} en {{token}} doen allemaal hetzelfde, net als {{First_Name}} en {{first_name}}.',
+      'bevatToken idem, zodat ook de tokenmodus aanslaat en de tokens worden aangemaakt.',
+      'Een echt onbekende naam wordt nog steeds weggestreken. Dat gedrag blijft.',
+      'Wie een plaatshouder intypt bedoelt de variabele, niet een bepaalde schrijfwijze. De oude strengheid leverde geen enkele bescherming op, alleen een dode link zonder melding.',
+    ],
+    files: ['src/lib/template-vars.js', 'src/lib/template-vars.test.js'],
+    rollback: 'git revert naar v1.131.2. Dan moet de plaatshouder weer exact in kleine letters.',
+    gitTag: 'v1.131.3',
+  },
   {
     version: '1.131.2',
     date: '2026-09-26T06:39:40Z',

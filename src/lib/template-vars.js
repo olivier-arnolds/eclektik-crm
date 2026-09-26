@@ -24,14 +24,19 @@ export const TOKEN_VAR = 'token';
 // naam die er alleen op lijkt, zoals my_token, telt niet mee.
 export function bevatToken(body) {
   if (!body) return false;
-  return /\{\{\s*token\s*\}\}/.test(String(body));
+  return /\{\{\s*token\s*\}\}/i.test(String(body));
 }
 
 export function renderTemplate(body, vars) {
   if (!body) return '';
   return body.replace(/\{\{\s*(\w+)\s*\}\}/g, (_, key) => {
-    if (!KNOWN.includes(key)) return ''; // strip unknown vars silently
-    const v = vars && vars[key];
+    // Ongevoelig voor hoofdletters. {{TOKEN}} in een knoplink werd anders een
+    // onbekende naam en dus een lege string, en dan is de link dood terwijl de
+    // knop er goed uitziet. Wie een plaatshouder intypt bedoelt de variabele,
+    // niet een bepaalde schrijfwijze.
+    const canon = KNOWN.find(k => k.toLowerCase() === String(key).toLowerCase());
+    if (!canon) return ''; // strip unknown vars silently
+    const v = vars && (vars[canon] != null ? vars[canon] : vars[key]);
     return v == null ? '' : String(v);
   });
 }

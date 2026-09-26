@@ -59,3 +59,26 @@ describe('bevatToken', () => {
     expect(bevatToken('{{my_token}}')).toBe(false);
   });
 });
+
+describe('hoofdletters in een plaatshouder', () => {
+  // {{TOKEN}} in een knoplink werd een onbekende naam en dus een lege string.
+  // De knop zag er goed uit en de link was dood; precies de stille fout waar
+  // deze hele reeks om draait.
+  it('vult {{TOKEN}} net zo goed in als {{token}}', () => {
+    expect(renderTemplate('?t={{TOKEN}}', { token: 'abc' })).toBe('?t=abc');
+    expect(renderTemplate('?t={{Token}}', { token: 'abc' })).toBe('?t=abc');
+  });
+
+  it('herkent {{TOKEN}} als tokenmodus', () => {
+    expect(bevatToken('?t={{TOKEN}}')).toBe(true);
+    expect(bevatToken('?t={{ Token }}')).toBe(true);
+  });
+
+  it('geldt ook voor de andere variabelen', () => {
+    expect(renderTemplate('Hi {{First_Name}},', { first_name: 'Nel' })).toBe('Hi Nel,');
+  });
+
+  it('een echt onbekende naam blijft weggestreken', () => {
+    expect(renderTemplate('a{{VERZONNEN}}b', {})).toBe('ab');
+  });
+});
