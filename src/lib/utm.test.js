@@ -110,3 +110,33 @@ describe('een echt outreach-bericht taggen', () => {
     expect(r).toContain('Groet, Marco');
   });
 });
+
+describe('plaatshouders in een link', () => {
+  // new URL().toString() codeert accolades naar %7B, waardoor renderTemplate
+  // de plaatshouder niet meer herkent en er een onvervangen link in de mail
+  // belandt. Zo kwamen de uitnodigingsknoppen op /s/invalid uit.
+  const opties = { source: 'campagne', medium: 'email', campaign: 'test' };
+
+  it('houdt {{token}} leesbaar in een querystring', () => {
+    const uit = addUtmToUrl('https://www.eclectik.co/api/s/click?t={{token}}&a=yes', opties);
+    expect(uit).toContain('t={{token}}');
+    expect(uit).not.toContain('%7B');
+  });
+
+  it('tagt de link daarnaast gewoon', () => {
+    const uit = addUtmToUrl('https://www.eclectik.co/api/s/click?t={{token}}&a=yes', opties);
+    expect(uit).toContain('utm_source=campagne');
+    expect(uit).toContain('a=yes');
+  });
+
+  it('laat een gecodeerde accolade met rust als het geen plaatshouder is', () => {
+    const uit = addUtmToUrl('https://www.eclectik.co/p?q=%7Bhandmatig%7D', opties);
+    expect(uit).toContain('%7Bhandmatig%7D');
+  });
+
+  it('werkt ook in een volledige href', () => {
+    const html = '<a href="https://www.eclectik.co/api/s/click?t={{token}}&a=no">Nee</a>';
+    const uit = addUtmToHtml(html, opties);
+    expect(uit).toContain('t={{token}}');
+  });
+});

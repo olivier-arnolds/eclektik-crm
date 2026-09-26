@@ -72,7 +72,21 @@ export function addUtmToUrl(url, { source, medium, campaign, content, domains = 
   if (medium) u.searchParams.set('utm_medium', medium);
   if (campaign) u.searchParams.set('utm_campaign', campaign);
   if (content) u.searchParams.set('utm_content', content);
-  return u.toString();
+  return herstelPlaatshouders(u.toString());
+}
+
+/**
+ * new URL().toString() codeert accolades naar %7B en %7D. Een plaatshouder die
+ * in een link staat, zoals ?t={{token}}, komt er dan uit als ?t=%7B%7Btoken%7D%7D
+ * en die vorm herkent renderTemplate niet meer. Het gevolg is een link met een
+ * onvervangen plaatshouder erin, en dat is precies hoe de uitnodigingsknoppen
+ * op /s/invalid uitkwamen.
+ *
+ * Alleen onze eigen plaatshouders worden hersteld, niet elke gecodeerde accolade:
+ * een url die om een andere reden %7B bevat blijft ongemoeid.
+ */
+function herstelPlaatshouders(url) {
+  return String(url).replace(/%7B%7B\s*(\w+)\s*%7D%7D/gi, '{{$1}}');
 }
 
 /**

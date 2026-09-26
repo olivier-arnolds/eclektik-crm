@@ -19,9 +19,27 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.131.1';
+export const CURRENT_VERSION = '1.131.2';
 
 export const CHANGELOG = [
+  {
+    version: '1.131.2',
+    date: '2026-09-26T06:39:40Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'UTM-tags maakten de plaatshouder in een link onleesbaar',
+    summary:
+      'Een plaatshouder die in een link staat, zoals ?t={{token}}, kwam in de verstuurde mail terecht met gecodeerde accolades. addUtmToUrl bouwt de link met new URL() en toString(), en dat zet een accolade om in %7B. renderTemplate herkent die vorm niet meer, dus de plaatshouder bleef onvervangen en de knop kwam uit op /s/invalid.',
+    changes: [
+      'addUtmToUrl herstelt de accolades van onze eigen plaatshouders na het taggen. Alleen die vorm; een url die om een andere reden een gecodeerde accolade bevat blijft ongemoeid.',
+      'Dit stond los van de whitelist uit 1.131.0. Ook met token als bekende variabele zou de link stuk zijn gegaan, want de templating kreeg hem nooit in een vorm die zij kon matchen. Twee onafhankelijke oorzaken voor dezelfde dode knop.',
+      'Gevonden door te kijken wat er werkelijk de deur uit ging: in campaigns.html_body stond de knoplink met een gecodeerde SESSION_TOKEN erin.',
+      'De hele keten getoetst, van body met plaatshouder via de utm-stap naar de templating, plus vier tests op utm.js.',
+    ],
+    files: ['src/lib/utm.js', 'src/lib/utm.test.js'],
+    rollback: 'git revert naar v1.131.1. Dan komt de plaatshouder weer gecodeerd in de mail en zijn de knoppen weer dood.',
+    gitTag: 'v1.131.2',
+  },
   {
     version: '1.131.1',
     date: '2026-09-26T06:23:32Z',
