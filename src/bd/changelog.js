@@ -19,9 +19,41 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.130.3';
+export const CURRENT_VERSION = '1.131.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.131.0',
+    date: '2026-09-26T06:00:58Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Token per ontvanger in de marketingtab',
+    summary:
+      'De uitnodiging voor de user session bevat per ontvanger een eigen Ja- en Nee-link. De eerste testverzending mislukte omdat {{token}} geen bekende variabele was: renderTemplate maakte er stilletjes een lege string van, de link werd ?t=&a=yes en iedereen belandde op /s/invalid. In de preview zag de knop er goed uit. Dat stille gedrag was de eigenlijke fout.',
+    changes: [
+      'token is nu een bekende variabele. Een onbekende plaatshouder wordt nog steeds weggestreken, want dat is bestaand gedrag, maar token valt daar niet meer onder.',
+      'Nieuw endpoint api/session-invite-ensure.js zet vlak voor het verzenden een rij klaar in user_session_invites voor elke geselecteerde ontvanger. Server-side, want die tabel staat op RLS zonder policies: wie een token leest kan namens die persoon antwoorden.',
+      'Het aanmaken volgt de campagnedoelgroep in plaats van een eigen regel. Er was al scripts/maak-session-invites.py met een eigen selectie van 51 contacten; twee lijsten die in de pas moeten lopen gaan uit elkaar lopen. De ontvangers van de mail zijn nu de enige bron.',
+      'Een bestaand token wordt altijd hergebruikt, anders sterft de link uit een eerdere mail. Nieuwe unieke index user_session_invites_email_uniek op lower(btrim(email)) maakt dat een garantie in plaats van een applicatiebelofte, en vangt de race af waarin twee verzendingen tegelijk hetzelfde adres willen aanmaken.',
+      'Voor het verzenden verschijnt wat er gaat gebeuren: hoeveel ontvangers al een uitnodiging hebben en hoeveel er worden aangemaakt. Automatisch mag, onzichtbaar niet, want het schrijft in de database.',
+      'Lukt het aanmaken voor iemand niet, dan wordt die overgeslagen en gemeld. Een dode link is erger dan een niet verstuurde mail: de ontvanger klikt, belandt op /s/invalid en je hoort er niets meer van.',
+      'Broadcast is geblokkeerd zolang {{token}} in de body staat, met uitleg in de interface en bij een verzendpoging. Dat pad geeft de lijst aan Resend, die daarna een body voor iedereen rendert; een token per ontvanger kan daar principieel niet. Bewust weigeren in plaats van stilletjes omschakelen, want transactioneel heeft een andere limiet en een ander afmeldmechanisme.',
+      'De preview toont het echte token van de voorbeeldontvanger als dat er al is, en anders zichtbaar TOKEN-VOLGT-BIJ-VERZENDEN. Nooit meer een lege string.',
+      'Zonder {{token}} in de body verandert er niets. Dat blok slaat dan over.',
+      '22 nieuwe tests op de variabelen en op de verdeling in bestaand, nieuw en onbruikbaar.',
+    ],
+    files: [
+      'src/lib/template-vars.js',
+      'src/lib/template-vars.test.js',
+      'api/session-invite-ensure.js',
+      'api/_lib/session-invite-ensure-lib.js',
+      'api/_lib/session-invite-ensure-lib.test.js',
+      'src/bd/marketing-composer.jsx',
+      'sql/schema_user_session_invites_uniek_email_2026-09-26.sql',
+    ],
+    rollback: 'git revert naar v1.130.3. De unieke index mag blijven staan. Al aangemaakte tokens blijven geldig, maar zonder deze code komt {{token}} weer als lege string in de mail.',
+    gitTag: 'v1.131.0',
+  },
   {
     version: '1.130.3',
     date: '2026-09-26T05:52:26Z',

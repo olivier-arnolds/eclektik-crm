@@ -3,11 +3,29 @@
 // an empty string; the user is responsible for choosing variables that exist.
 //
 // Supported variables (v1):
-//   first_name, last_name, full_name, company_name, role
+//   first_name, last_name, full_name, company_name, role, token
 //
 // Usage:
 //   renderTemplate('Hi {{first_name}},', { first_name: 'Marco' }) === 'Hi Marco,'
-const KNOWN = ['first_name', 'last_name', 'full_name', 'company_name', 'role'];
+//
+// OVER token, EN WAAROM HIJ HIER MOEST STAAN
+//   De uitnodiging voor de user session bevat per ontvanger een eigen token in
+//   de Ja- en Nee-knop. Zolang token niet in deze lijst stond, viel hij onder
+//   "onbekende plaatshouder" en werd hij stilletjes een lege string. De link
+//   werd dan ?t=&a=yes, iedereen belandde op /s/invalid, en in de preview zag
+//   de knop er gewoon goed uit. Precies de fout die de eerste testverzending
+//   onbruikbaar maakte.
+const KNOWN = ['first_name', 'last_name', 'full_name', 'company_name', 'role', 'token'];
+
+export const TOKEN_VAR = 'token';
+
+// Staat de tokenplaatshouder in deze tekst? Bepaalt of er tokens aangemaakt
+// moeten worden en of het broadcast-pad geblokkeerd wordt. Bewust exact: een
+// naam die er alleen op lijkt, zoals my_token, telt niet mee.
+export function bevatToken(body) {
+  if (!body) return false;
+  return /\{\{\s*token\s*\}\}/.test(String(body));
+}
 
 export function renderTemplate(body, vars) {
   if (!body) return '';
@@ -28,6 +46,11 @@ export function varsForContact(contact) {
     full_name: fullName,
     company_name: contact.company_name || contact.account || '',
     role: contact.role || contact.title || '',
+    // Staat niet op het contact zelf maar wordt er vlak voor verzenden op
+    // gezet, uit user_session_invites. Leeg betekent hier "nog geen token";
+    // de composer weigert dan te versturen in plaats van een dode link te
+    // maken. Zie api/session-invite-ensure.js.
+    token: contact.token || '',
   };
 }
 

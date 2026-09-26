@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 // Ontbrak sinds 11 juni, terwijl de spam-preventie hieronder supabase wel
 // aanroept. Die aanroep gooide dus een ReferenceError, de catch eromheen ving
 // hem op met een console.warn, en de check liep altijd door zonder filter. Er
@@ -6,7 +6,7 @@ import { useState, useMemo, useRef } from 'react';
 // Gevonden door ESLint (no-undef) op de dag dat die werd aangezet.
 import { supabase } from '../supabase';
 import { useAuth } from '../lib/auth';
-import { renderTemplate, varsForContact, KNOWN_VARS } from '../lib/template-vars';
+import { renderTemplate, varsForContact, KNOWN_VARS, bevatToken } from '../lib/template-vars';
 import { apiFetch } from '../lib/apiFetch';
 import { SENDERS, senderNameFor, hasSignature } from '../lib/senders';
 import { addUtmToHtml, slugify, UTM_BRONNEN } from '../lib/utm';
@@ -134,15 +134,65 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
   };
   const VAR_LABELS = {
     first_name: 'Voornaam', last_name: 'Achternaam', full_name: 'Volledige naam',
-    company_name: 'Bedrijf', role: 'Functie',
+    company_name: 'Bedrijf', role: 'Functie', token: 'Uitnodigingstoken',
   };
 
-  // Live preview — render with the first recipient's vars (or empty)
-  const previewVars = useMemo(() => varsForContact(recipients?.[0] || {}), [recipients]);
+  // Tokenmodus: staat {{token}} in de body, dan krijgt elke ontvanger een eigen
+  // uitnodigingslink en gelden er extra regels. Staat hij er niet in, dan
+  // verandert er niets aan het bestaande gedrag; dat is een harde eis, want
+  // alle andere campagnes lopen hier ook langs.
+  const tokenModus = useMemo(() => bevatToken(effectiveHtml), [effectiveHtml]);
+
+  // Het echte token van de voorbeeldontvanger, als die er al een heeft. Wordt
+  // opgehaald zodra de tokenmodus aan gaat, zodat de preview de werkelijkheid
+  // toont. Null betekent: nog niet opgehaald of nog niet aangemaakt.
+  const [previewToken, setPreviewToken] = useState(null);
+  const previewEmail = recipients?.[0]?.email || null;
+  useEffect(() => {
+    if (!tokenModus || !previewEmail) { setPreviewToken(null); return; }
+    let afgebroken = false;
+    apiFetch('/api/session-invite-ensure', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ dry_run: true, recipients: [{ email: previewEmail }] }),
+    })
+      .then(r => r.json())
+      .then(d => { if (!afgebroken) setPreviewToken(d?.tokens?.[String(previewEmail).trim().toLowerCase()] || null); })
+      .catch(() => { if (!afgebroken) setPreviewToken(null); });
+    return () => { afgebroken = true; };
+  }, [tokenModus, previewEmail]);
+
+  // Live preview - render with the first recipient's vars (or empty)
+  const previewVars = useMemo(() => {
+    const basis = varsForContact(recipients?.[0] || {});
+    if (!tokenModus) return basis;
+    // Nooit een lege string bij een ontbrekend token: dan oogt de knop goed en
+    // is de link dood, en dat is precies hoe de eerste testverzending mislukte.
+    return { ...basis, token: previewToken || 'TOKEN-VOLGT-BIJ-VERZENDEN' };
+  }, [recipients, tokenModus, previewToken]);
   const previewHtml = useMemo(() => renderTemplate(effectiveHtml, previewVars), [effectiveHtml, previewVars]);
 
   const send = async (testOnly) => {
     if (!subject.trim() || !hasBody) return;
+
+    // Broadcast kan principieel geen token per ontvanger. Dat pad geeft de
+    // ontvangers als contactenlijst aan Resend, en Resend rendert daarna EEN
+    // body voor iedereen. Alleen /api/marketing-send rendert per ontvanger aan
+    // onze kant.
+    //
+    // Bewust weigeren en niet stilletjes omschakelen: wie denkt een newsletter
+    // te versturen moet weten dat het een transactionele verzending wordt, met
+    // een andere limiet en een ander afmeldmechanisme.
+    if (tokenModus && !testOnly && sendMode === 'broadcast') {
+      setResult({
+        ok: false,
+        error: 'Deze mail bevat {{token}}, en dat kan niet via Broadcast. Resend rendert daar een '
+          + 'body voor de hele lijst, dus iedereen zou dezelfde link krijgen. Kies Transactioneel; '
+          + 'dan wordt de mail per ontvanger opgebouwd.',
+      });
+      return;
+    }
+
     setBusy(true);
     setResult(null);
 
@@ -162,6 +212,83 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
       setResult({ ok: false, error: 'No recipients with an email address' });
       setBusy(false);
       return;
+    }
+
+    // ---- Uitnodigingstokens klaarzetten ----------------------------------
+    // Alleen als {{token}} in de body staat. Staat hij er niet in, dan slaat
+    // dit blok over en verandert er niets voor andere campagnes.
+    //
+    // Automatisch en niet achter een vinkje: een vinkje is iets om te vergeten,
+    // en vergeten geeft precies de stille fout waar dit voor gebouwd is. Wel
+    // eerst tonen wat er gaat gebeuren, want het schrijft in de database.
+    if (tokenModus) {
+      try {
+        const lijst = payloadRecipients.map(r => ({
+          email: r.email,
+          first_name: r.vars?.first_name || null,
+          company: r.vars?.company_name || null,
+          contact_id: r.contact_id || null,
+        }));
+
+        const droog = await apiFetch('/api/session-invite-ensure', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ dry_run: true, recipients: lijst }),
+        }).then(r => r.json());
+        if (droog?.error) throw new Error(droog.error);
+
+        if (droog.nieuw > 0 || droog.ongeldig?.length) {
+          const regels = [
+            `${droog.bestaand} ontvanger(s) hebben al een uitnodiging, die link blijft werken.`,
+            `${droog.nieuw} krijgen er nu een aangemaakt.`,
+          ];
+          if (droog.ongeldig?.length) {
+            regels.push(`${droog.ongeldig.length} zonder bruikbaar adres worden overgeslagen.`);
+          }
+          if (!confirm(`${regels.join('\n')}\n\nDoorgaan met versturen?`)) {
+            setBusy(false);
+            return;
+          }
+        }
+
+        const echt = await apiFetch('/api/session-invite-ensure', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ dry_run: false, recipients: lijst }),
+        }).then(r => r.json());
+        if (echt?.error) throw new Error(echt.error);
+
+        // Zonder token geen mail. Een dode link is erger dan een niet
+        // verstuurde mail: de ontvanger klikt, belandt op /s/invalid, en jij
+        // hoort er niets meer van.
+        const tokens = echt.tokens || {};
+        const zonderToken = [];
+        payloadRecipients = payloadRecipients.filter((r) => {
+          const t = tokens[String(r.email || '').trim().toLowerCase()];
+          if (!t) { zonderToken.push(r.email); return false; }
+          r.vars = { ...r.vars, token: t };
+          return true;
+        });
+
+        if (payloadRecipients.length === 0) {
+          setResult({ ok: false, error: 'Geen enkele ontvanger heeft een uitnodigingstoken gekregen, er is niets verstuurd.' });
+          setBusy(false);
+          return;
+        }
+        if (zonderToken.length > 0) {
+          const namen = zonderToken.slice(0, 5).join(', ');
+          const meer = zonderToken.length > 5 ? ` (en ${zonderToken.length - 5} meer)` : '';
+          if (!confirm(`Voor ${zonderToken.length} ontvanger(s) lukte het aanmaken niet: ${namen}${meer}.\n\n`
+            + `Die worden overgeslagen. Doorgaan met de overige ${payloadRecipients.length}?`)) {
+            setBusy(false);
+            return;
+          }
+        }
+      } catch (e) {
+        setResult({ ok: false, error: `Uitnodigingstokens klaarzetten mislukte: ${e.message}. Er is niets verstuurd.` });
+        setBusy(false);
+        return;
+      }
     }
 
     // Spam-preventie: check welke recipients in de afgelopen 3 dagen al een
@@ -305,13 +432,20 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
         <div style={{ fontSize: 10, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Verzenden via</div>
         <div style={{ display: 'flex', gap: 8, fontSize: 12 }}>
           <label style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
-            <input type="radio" name="sendmode" checked={sendMode === 'broadcast'} onChange={() => setSendMode('broadcast')} />
+            <input type="radio" name="sendmode" checked={sendMode === 'broadcast'} disabled={tokenModus}
+              onChange={() => setSendMode('broadcast')} />
             Newsletter (Broadcast) <span style={{ color: 'var(--text-3)' }}>· marketingplan, personalisatie: voornaam</span>
           </label>
           <label style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
             <input type="radio" name="sendmode" checked={sendMode === 'transactional'} onChange={() => setSendMode('transactional')} />
             Transactioneel (1-op-1)
           </label>
+          {tokenModus && (
+            <span style={{ fontSize: 11, color: '#b45309' }}>
+              Deze mail bevat een token per ontvanger, dus Broadcast kan niet: Resend rendert
+              daar een body voor de hele lijst en iedereen zou dezelfde link krijgen.
+            </span>
+          )}
         </div>
       </div>
 
