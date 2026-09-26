@@ -13,6 +13,9 @@ import { fetchAllRows } from '../hooks/usePipelineData';
 import IndustryBreakdown from './industry-breakdown';
 import { apiFetch } from '../lib/apiFetch';
 
+const mono = { fontFamily: 'var(--font-mono)' };
+const muted = { color: 'var(--text-3)' };
+
 // ───────────────────────── canonical metric helpers ─────────────────────────
 const ADECCO = 'Adecco Group';
 const TARGET_Q = 250000;          // €250k / quarter
@@ -394,8 +397,6 @@ export function TeamCoverageMatrix({ m, onPick }) {
 
 // ───────────────────────── small UI atoms ─────────────────────────
 const card = { background: 'var(--bg-1)', border: '0.5px solid var(--sep)', borderRadius: 'var(--radius-card)', padding: '14px 16px' };
-const mono = { fontFamily: 'var(--font-mono)' };
-const muted = { color: 'var(--text-3)' };
 
 function Kpi({ label, value, sub, danger }) {
   return (
