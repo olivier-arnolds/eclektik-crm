@@ -753,9 +753,16 @@ export default function MarketingOutreach() {
   // import is meegekomen; daar telde deze teller 1355 contacten als 'klaargezet'
   // terwijl niemand iets had aangezet. Een gevulde msg2_body betekent per kanaal
   // iets anders, en dat verschil was hier weggevallen.
+  //
+  // LET OP: hier bewust NIET de variabele isLinkedIn. Die wordt pas ruim vijftig
+  // regels verderop gedeclareerd, na de early returns, en een const bestaat
+  // daarvoor nog niet. De dependency-array wordt bij elke render meteen
+  // uitgerekend, dus dat gaf een ReferenceError en een witte tab. De build zag
+  // het niet, want het is geen syntaxfout. Naar beneden verplaatsen kan niet:
+  // er zitten early returns tussen en een hook mag daar niet achter.
   const herinneringenKlaar = useMemo(
-    () => (isLinkedIn ? rows.filter(heeftHerinnering).length : 0),
-    [rows, isLinkedIn],
+    () => (campaign?.channel === 'linkedin' ? rows.filter(heeftHerinnering).length : 0),
+    [rows, campaign],
   );
 
   // Stap 2 apart aanvragen. Dezelfde caps en dezelfde batchgrootte; het enige

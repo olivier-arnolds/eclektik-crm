@@ -19,9 +19,28 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.129.4';
+export const CURRENT_VERSION = '1.129.5';
 
 export const CHANGELOG = [
+  {
+    version: '1.129.5',
+    date: '2026-09-26T04:52:45Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Outreach-tab crashte na de herinneringswijziging',
+    summary:
+      'De tab gaf "Something went wrong". Oorzaak: in 1.129.3 ging de teller herinneringenKlaar de variabele isLinkedIn gebruiken, maar die wordt ruim vijftig regels verderop pas gedeclareerd. Een const bestaat daarvoor nog niet, en de dependency-array van een useMemo wordt bij elke render meteen uitgerekend. Dat gaf een ReferenceError en dus een lege tab.',
+    changes: [
+      'De teller kijkt nu rechtstreeks naar campaign.channel in plaats van naar isLinkedIn. Dat veld is state vanaf het begin van het onderdeel, dus het probleem kan zich daar niet voordoen.',
+      'Naar beneden verplaatsen was geen optie: tussen beide punten staan drie early returns, en een hook mag daar niet achter.',
+      'De build ziet dit niet. Het is geen syntaxfout maar een fout op het moment van renderen, en vite bouwt vrolijk door.',
+      'Het hele onderdeel is nagelopen op hetzelfde patroon. Negen andere treffers bleken vals alarm: objectsleutels, lokale variabelen in andere functies en een woord binnen een string. Dit was de enige echte.',
+      'Dit project heeft geen linter. ESLint met no-use-before-define zou deze klasse fouten voor de deploy vangen, maar dat is een eigen afweging.',
+    ],
+    files: ['src/bd/marketing-outreach.jsx'],
+    rollback: 'git revert naar v1.129.4 brengt de crash terug; niet doen. Terug naar v1.129.2 haalt de hele herinneringskolom weg.',
+    gitTag: 'v1.129.5',
+  },
   {
     version: '1.129.4',
     date: '2026-09-25T20:26:46Z',
