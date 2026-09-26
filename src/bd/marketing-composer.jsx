@@ -466,9 +466,13 @@ const VAR_LABELS = {
             Transactioneel (1-op-1)
           </label>
           {tokenModus && (
-            <span style={{ fontSize: 11, color: '#b45309' }}>
-              Deze mail bevat een token per ontvanger, dus Broadcast kan niet: Resend rendert
-              daar een body voor de hele lijst en iedereen zou dezelfde link krijgen.
+            /* Toelichting, geen foutmelding. Stond eerst in waarschuwingsoranje en
+               begon met wat er niet kan; dat las als een blokkade terwijl er niets
+               mis is. Nu eerst wat er gebeurt, dan pas waarom Broadcast afvalt. */
+            <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
+              Deze mail krijgt een eigen link per ontvanger, dus kies Transactioneel.
+              Broadcast kan dat niet: Resend maakt daar een body voor de hele lijst,
+              en dan zou iedereen dezelfde link krijgen.
             </span>
           )}
         </div>

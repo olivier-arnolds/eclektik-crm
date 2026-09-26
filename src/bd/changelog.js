@@ -19,9 +19,26 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.131.4';
+export const CURRENT_VERSION = '1.131.5';
 
 export const CHANGELOG = [
+  {
+    version: '1.131.5',
+    date: '2026-09-26T11:26:11Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Toelichting bij de tokenmodus las als een foutmelding',
+    summary:
+      'Zodra er een token in de body staat verschijnt er uitleg naast de verzendkeuze. Die stond in waarschuwingsoranje en begon met wat er niet kan, waardoor hij overkwam als een blokkade terwijl er juist niets mis is: hij verschijnt omdat de tokenmodus werkt.',
+    changes: [
+      'De tekst begint nu met wat er gebeurt (een eigen link per ontvanger, kies Transactioneel) en noemt daarna pas waarom Broadcast afvalt.',
+      'Kleur van waarschuwingsoranje naar gewone hulptekst, want het is een toelichting en geen probleem.',
+      'Er wordt bewust nog steeds niet automatisch omgeschakeld naar Transactioneel. Wie denkt een newsletter te versturen moet zien dat het een 1-op-1-verzending wordt, met een andere limiet en een ander afmeldmechanisme.',
+    ],
+    files: ['src/bd/marketing-composer.jsx'],
+    rollback: 'git revert naar v1.131.4. Puur tekst en kleur.',
+    gitTag: 'v1.131.5',
+  },
   {
     version: '1.131.4',
     date: '2026-09-26T10:31:00Z',
