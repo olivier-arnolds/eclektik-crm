@@ -1,0 +1,41 @@
+<!--
+  Knoppenblok voor de uitnodiging van de user session.
+  Vervangt het blok tussen <!-- Buttons --> en het einde van die tabel.
+
+  WAT ER MIS WAS
+  1. In de Nee-knop stond {token}} in plaats van {{token}}, een ontbrekende
+     accolade. Daardoor bleef de plaatshouder staan en was die link dood.
+     De Ja-knop was wel goed, dus bij het testen viel het niet op.
+  2. De knoppen stonden naast elkaar in een tabel van twee kolommen, met
+     class="btnwrap" en class="btn" die nergens gedefinieerd zijn: er zit
+     geen <style> in de mail. Op een telefoon werd die tabel in elkaar
+     gedrukt.
+
+  WAAROM ZE NU ONDER ELKAAR STAAN
+     Mediaqueries zijn in e-mail onbetrouwbaar; Outlook (Word-engine) en een
+     deel van Gmail negeren ze. Een vaste stapeling werkt overal hetzelfde,
+     op elk scherm, zonder CSS. Voor een ja-of-nee-keuze leest dat bovendien
+     rustiger dan twee knoppen naast elkaar.
+
+     Alles staat inline, want <style> overleeft de tocht naar de inbox niet
+     altijd.
+-->
+
+<!-- Buttons -->
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width: 100%; margin: 0 0 20px 0;">
+  <tr>
+    <td bgcolor="#DC6B3C" align="center" style="background-color: #DC6B3C; border-radius: 4px;">
+      <a href="https://www.eclectik.co/api/s/click?t={{token}}&a=yes"
+         style="display: block; padding: 15px 20px; font-family: 'Inter', Arial, sans-serif; font-size: 15px; font-weight: 600; color: #FFFFFF; text-decoration: none; border-bottom: none; text-align: center;">Yes, I am interested</a>
+    </td>
+  </tr>
+  <tr>
+    <td height="12" style="height: 12px; line-height: 12px; font-size: 0;">&nbsp;</td>
+  </tr>
+  <tr>
+    <td align="center" style="border: 1px solid #5C7091; border-radius: 4px;">
+      <a href="https://www.eclectik.co/api/s/click?t={{token}}&a=no"
+         style="display: block; padding: 14px 20px; font-family: 'Inter', Arial, sans-serif; font-size: 15px; font-weight: 600; color: #FFFFFF; text-decoration: none; border-bottom: none; text-align: center;">No, not for me</a>
+    </td>
+  </tr>
+</table>
