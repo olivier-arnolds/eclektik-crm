@@ -132,7 +132,15 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
       el.setSelectionRange(caret, caret);
     });
   };
-  const VAR_LABELS = {
+  // Moet gelijk lopen met EMAIL_COOLDOWN_DAYS in api/marketing-send.js (default 5).
+//
+// Stond hier op 3 terwijl de server 5 aanhield. Iemand die vier dagen geleden
+// gemaild was glipte daardoor langs dit venster, en werd daarna door de server
+// geweigerd zonder dat je nog ergens op 'Verzend toch' kon klikken. Doodlopend,
+// en de enige melding was een rode regel achteraf.
+const COOLDOWN_DAGEN = 5;
+
+const VAR_LABELS = {
     first_name: 'Voornaam', last_name: 'Achternaam', full_name: 'Volledige naam',
     company_name: 'Bedrijf', role: 'Functie', token: 'Uitnodigingstoken',
   };
@@ -307,13 +315,13 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
     // je bedoelt, en je ziet nergens dat het gebeurd is.
     let negeerCooldown = !!testOnly;
 
-    // Spam-preventie: check welke recipients in de afgelopen 3 dagen al een
+    // Spam-preventie: check welke recipients in de afgelopen COOLDOWN_DAGEN al een
     // campaign-mail van ons hebben gehad (status sent of delivered). Skip die
     // by-default, met override-optie. Test-sends skippen deze check (eigen mail).
     // Broadcast-modus (newsletter) slaat de check over: je stuurt daar bewust
     // naar de hele geselecteerde lijst, en Resend regelt afmeldingen zelf.
     if (!testOnly && sendMode !== 'broadcast') {
-      const threeDaysAgo = new Date(Date.now() - 3 * 86400000).toISOString();
+      const sindsISO = new Date(Date.now() - COOLDOWN_DAGEN * 86400000).toISOString();
       const contactIds = payloadRecipients.map(r => r.contact_id).filter(Boolean);
       const emails = payloadRecipients.map(r => r.email);
       const recentIds = new Set();
@@ -325,7 +333,7 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
             .select('contact_id')
             .in('contact_id', contactIds)
             .in('status', ['sent', 'delivered'])
-            .gte('sent_at', threeDaysAgo);
+            .gte('sent_at', sindsISO);
           for (const r of (data || [])) if (r.contact_id) recentIds.add(r.contact_id);
         }
         if (emails.length > 0) {
@@ -334,7 +342,7 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
             .select('recipient_email')
             .in('recipient_email', emails)
             .in('status', ['sent', 'delivered'])
-            .gte('sent_at', threeDaysAgo);
+            .gte('sent_at', sindsISO);
           for (const r of (data || [])) if (r.recipient_email) recentEmails.add(r.recipient_email.toLowerCase());
         }
       } catch (err) {
@@ -361,7 +369,7 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
         negeerCooldown = true;
       }
       if (payloadRecipients.length === 0) {
-        setResult({ ok: false, error: 'Alle geselecteerde contacten kregen in de afgelopen 3 dagen al een campaign-mail.' });
+        setResult({ ok: false, error: `Alle geselecteerde contacten kregen in de afgelopen ${COOLDOWN_DAGEN} dagen al een campaign-mail.` });
         setBusy(false);
         return;
       }
@@ -613,8 +621,8 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
           }}>
             <div style={{ fontSize: 14, fontWeight: 600 }}>Spamcheck</div>
             <div style={{ fontSize: 13, color: 'var(--text-2)', lineHeight: 1.6 }}>
-              {spamVraag.skip} van de {spamVraag.totaal} ontvanger(s) kregen in de afgelopen
-              drie dagen al een campagnemail van ons.
+              {spamVraag.skip} van de {spamVraag.totaal} ontvanger(s) kregen in de
+              afgelopen {COOLDOWN_DAGEN} dagen al een campagnemail van ons.
             </div>
             <div style={{
               fontSize: 12, color: 'var(--text-3)', background: 'var(--fill-1)',
@@ -623,9 +631,9 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
               {spamVraag.voorbeeld}
             </div>
             <div style={{ fontSize: 11, color: 'var(--text-3)', lineHeight: 1.5 }}>
-              Verzend toch stuurt naar alle {spamVraag.totaal}, en zet ook de vijfdaagse
-              cooldown aan de serverkant opzij. Zonder dat zouden dezelfde mensen daar
-              alsnog stil worden overgeslagen.
+              Verzend toch stuurt naar alle {spamVraag.totaal}, en zet ook de cooldown
+              aan de serverkant opzij. Zonder dat zouden dezelfde mensen daar alsnog
+              stil worden overgeslagen.
             </div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
               <button className="btn-ghost tiny" onClick={() => beantwoordSpam('niet')}>

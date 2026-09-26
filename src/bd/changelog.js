@@ -19,9 +19,26 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.131.3';
+export const CURRENT_VERSION = '1.131.4';
 
 export const CHANGELOG = [
+  {
+    version: '1.131.4',
+    date: '2026-09-26T10:31:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Spamcheck keek korter terug dan de server, met een doodlopend pad tot gevolg',
+    summary:
+      'De composer controleerde 3 dagen, api/marketing-send.js houdt 5 dagen aan. Wie vier dagen geleden gemaild was glipte langs het venster in de tab, kreeg dus geen keuze, en werd daarna door de server geweigerd. De enige melding was een rode regel achteraf en er was nergens meer een knop om het alsnog te doen.',
+    changes: [
+      'Beide vensters staan nu op 5 dagen, via de constante COOLDOWN_DAGEN met een comment dat hij gelijk moet lopen met EMAIL_COOLDOWN_DAYS aan de serverkant.',
+      'Daarmee komt iedereen die de server zou blokkeren eerst langs het keuzevenster, waar Verzend toch de cooldown aan beide kanten opzij zet.',
+      'De teksten in dat venster noemen nu de constante in plaats van een hard getal, zodat ze niet uit de pas lopen als de termijn ooit wijzigt.',
+    ],
+    files: ['src/bd/marketing-composer.jsx'],
+    rollback: 'git revert naar v1.131.3. Dan keert het doodlopende pad terug voor contacten tussen 3 en 5 dagen.',
+    gitTag: 'v1.131.4',
+  },
   {
     version: '1.131.3',
     date: '2026-09-26T10:28:07Z',
