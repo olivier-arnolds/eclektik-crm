@@ -11,6 +11,13 @@ import { apiFetch } from '../lib/apiFetch';
 import { SENDERS, senderNameFor, hasSignature } from '../lib/senders';
 import { addUtmToHtml, slugify, UTM_BRONNEN } from '../lib/utm';
 
+const inputStyle = {
+  width: '100%', padding: '7px 10px', borderRadius: 6,
+  border: '0.5px solid var(--sep)', background: 'var(--bg-1)',
+  fontSize: 12, fontFamily: 'inherit', outline: 'none',
+  boxSizing: 'border-box',
+};
+
 // Composer for a Marketing campaign.
 // Props:
 //   recipients: array of contact objects (already filtered/selected)
@@ -442,13 +449,6 @@ export default function MarketingComposer({ recipients, onCancel, onSent, defaul
     </div>
   );
 }
-
-const inputStyle = {
-  width: '100%', padding: '7px 10px', borderRadius: 6,
-  border: '0.5px solid var(--sep)', background: 'var(--bg-1)',
-  fontSize: 12, fontFamily: 'inherit', outline: 'none',
-  boxSizing: 'border-box',
-};
 
 function escapeHtml(s) {
   return String(s || '')
