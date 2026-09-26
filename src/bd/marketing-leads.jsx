@@ -8,6 +8,24 @@ import { fmtRelative } from './atoms';
 
 const STATUS_FILTERS = ['active', 'converted', 'archived', 'all'];
 
+// Leesbare bron per soort activiteit. first_src is bij de aanmeldingen voor
+// 6 oktober niet gevuld, dus zonder deze vertaling toont de kolom Bron enkel
+// streepjes terwijl we wel weten waar iemand vandaan komt.
+const BRON_LABEL = {
+  event_registered: 'Event 6 okt',
+};
+
+// Antwoord op de uitnodiging voor de user session. Geklikt maar niet bevestigd
+// is bewust een eigen stand: de klik zet alleen pending_answer, en pas de
+// landingspagina maakt er een antwoord van. Zo kan een linkscanner van Outlook
+// of Mimecast nooit namens iemand ja zeggen.
+function sessieAntwoord(r) {
+  if (r?.answer === 'yes') return { tekst: 'Ja', kleur: '#16a34a', vet: true };
+  if (r?.answer === 'no') return { tekst: 'Nee', kleur: '#6b7280', vet: false };
+  if (r?.pending_answer) return { tekst: `${r.pending_answer === 'yes' ? 'Ja' : 'Nee'} geklikt, niet bevestigd`, kleur: '#b45309', vet: false };
+  return { tekst: 'nog niets', kleur: 'var(--text-3)', vet: false };
+}
+
 // auth-e-mail → OWNERS-id voor de owner op de gepromoveerde sales lead.
 // ownerIdFromName in adapters.js mapt weergavenamen (geen e-mails), dus hier
 // een eigen map op e-mailprefix.
@@ -35,6 +53,14 @@ function PayloadLines({ payload }) {
 export default function MarketingLeads() {
   const [rows, setRows] = useState([]);
   const [activity, setActivity] = useState({}); // leadId -> activity rows
+  // Reacties op de uitnodiging voor de user session. Komen uit de view
+  // user_session_results en NIET uit de onderliggende tabel: die bevat het
+  // token, en wie een token heeft kan namens die persoon antwoorden.
+  const [sessie, setSessie] = useState([]);
+  // lead-id -> bron, afgeleid uit de activiteit. first_src is bij de
+  // aanmeldingen voor 6 oktober leeg, dus zonder dit toont de kolom Bron
+  // alleen streepjes terwijl we wel degelijk weten waar ze vandaan komen.
+  const [bronPerLead, setBronPerLead] = useState({});
   const [expanded, setExpanded] = useState(null);
   const [statusFilter, setStatusFilter] = useState('active');
   const [loading, setLoading] = useState(true);
@@ -53,6 +79,23 @@ export default function MarketingLeads() {
     if (seq !== loadSeq.current) return;
     if (error) alert('Laden mislukt: ' + error.message);
     setRows(data || []);
+
+    // Bron per lead uit de activiteit. Een lead heeft er meestal een.
+    const ids = (data || []).map(r => r.id);
+    if (ids.length) {
+      const { data: acts } = await supabase.from('marketing_lead_activity')
+        .select('marketing_lead_id, event').in('marketing_lead_id', ids);
+      const m = {};
+      for (const a of acts || []) if (!m[a.marketing_lead_id]) m[a.marketing_lead_id] = a.event;
+      if (seq === loadSeq.current) setBronPerLead(m);
+    } else if (seq === loadSeq.current) {
+      setBronPerLead({});
+    }
+
+    const { data: ses } = await supabase.from('user_session_results')
+      .select('*').order('submitted_at', { ascending: false, nullsFirst: false });
+    if (seq === loadSeq.current) setSessie(ses || []);
+
     setLoading(false);
   };
   useEffect(() => { load(); }, [statusFilter]);
@@ -147,6 +190,71 @@ export default function MarketingLeads() {
 
   return (
     <div>
+      {/* Reacties op de uitnodiging voor de user session. Bewust een eigen blok
+          met een eigen kop: het zijn geen website-aanmeldingen en ze horen niet
+          tussen de leads van 6 oktober te verdwijnen. */}
+      <div style={{ marginBottom: 22 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 8 }}>
+          <span style={{ fontSize: 13, fontWeight: 600 }}>Customer session</span>
+          <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
+            reacties op de uitnodiging, {sessie.filter(r => r.answer === 'yes').length} van
+            de {sessie.length} zeggen ja
+          </span>
+        </div>
+        {sessie.length === 0 ? (
+          <div style={{ fontSize: 12, color: 'var(--text-3)', border: '0.5px dashed var(--sep)', borderRadius: 6, padding: '10px 12px' }}>
+            Nog geen reacties. Ze verschijnen hier zodra iemand op Ja of Nee klikt en dat op de
+            landingspagina bevestigt.
+          </div>
+        ) : (
+          <div style={{ border: '0.5px solid var(--sep)', borderRadius: 8, overflow: 'hidden' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead style={{ background: 'var(--fill-1)' }}>
+                <tr>
+                  {['Naam', 'E-mail', 'Bedrijf', 'Antwoord', 'Voorkeursdata', 'Opmerking', 'Wanneer'].map(h => (
+                    <th key={h} style={th}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {sessie.map(r => {
+                  const a = sessieAntwoord(r);
+                  return (
+                    <tr key={r.id}>
+                      <td style={td}>
+                        {r.first_name || '-'}
+                        {r.bot_suspected && (
+                          <span title="De site vermoedde een scanner in plaats van een mens"
+                            style={{ marginLeft: 6, fontSize: 9, padding: '1px 4px', borderRadius: 3, border: '0.5px solid var(--sep)', color: '#b45309' }}>
+                            bot?
+                          </span>
+                        )}
+                      </td>
+                      <td style={td}>{r.email}</td>
+                      <td style={td}>{r.company || '-'}</td>
+                      <td style={{ ...td, color: a.kleur, fontWeight: a.vet ? 600 : 400, whiteSpace: 'nowrap' }}>
+                        {a.tekst}
+                      </td>
+                      <td style={td}>
+                        {(r.slots || []).length
+                          ? (r.slots || []).map(sl => String(sl).replace('slot-', '')).join(', ')
+                          : '-'}
+                      </td>
+                      <td style={{ ...td, maxWidth: 260 }}>{r.note || '-'}</td>
+                      <td style={{ ...td, color: 'var(--text-3)', whiteSpace: 'nowrap' }}>
+                        {r.submitted_at ? fmtRelative(r.submitted_at) : (r.pending_at ? fmtRelative(r.pending_at) : '-')}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Website-aanmeldingen</div>
+
       <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
         {STATUS_FILTERS.map(s => (
           <button key={s}
@@ -175,6 +283,7 @@ export default function MarketingLeads() {
           <tbody>
             {rows.map(lead => (
               <LeadRow key={lead.id} lead={lead}
+                bron={lead.first_src || BRON_LABEL[bronPerLead[lead.id]] || bronPerLead[lead.id] || null}
                 expanded={expanded === lead.id}
                 activityRows={activity[lead.id]}
                 busy={busyId === lead.id}
@@ -192,7 +301,7 @@ export default function MarketingLeads() {
   );
 }
 
-function LeadRow({ lead, expanded, activityRows, busy, onToggle, onPromote, onArchive, onReactivate, td }) {
+function LeadRow({ lead, bron, expanded, activityRows, busy, onToggle, onPromote, onArchive, onReactivate, td }) {
   return (
     <>
       <tr onClick={onToggle} style={{ cursor: 'pointer' }}>
@@ -201,7 +310,11 @@ function LeadRow({ lead, expanded, activityRows, busy, onToggle, onPromote, onAr
         <td style={td}>{lead.company || '-'}</td>
         <td style={td}>{lead.role || '-'}</td>
         <td style={td}>{lead.sector || '-'}</td>
-        <td style={td}>{lead.first_src || '-'}</td>
+        <td style={td}>
+          {bron
+            ? <span className="chip" style={{ fontSize: 11 }}>{bron}</span>
+            : '-'}
+        </td>
         <td style={td}>{lead.last_activity_at ? fmtRelative(lead.last_activity_at) : '-'}</td>
         <td style={td}><span className="chip" style={{ fontSize: 11 }}>{lead.status}</span></td>
         <td style={{ ...td, whiteSpace: 'nowrap' }} onClick={e => e.stopPropagation()}>

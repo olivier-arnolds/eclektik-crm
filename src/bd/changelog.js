@@ -19,9 +19,29 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.131.5';
+export const CURRENT_VERSION = '1.132.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.132.0',
+    date: '2026-09-26T12:51:18Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Reacties op de user session in de Leads-tab',
+    summary:
+      'De antwoorden op de uitnodiging stonden alleen in de database. Ze staan nu bovenaan de Leads-tab in een eigen blok, los van de website-aanmeldingen, want het zijn geen leads van de website en ze horen daar niet tussen te verdwijnen.',
+    changes: [
+      'Nieuw blok Customer session met naam, bedrijf, antwoord, voorkeursdata, opmerking en wanneer. In de kop staat hoeveel er ja zeggen.',
+      'Gelezen uit de view user_session_results en niet uit de tabel eronder. Die bevat het token, en wie een token heeft kan namens die persoon antwoorden. De view laat dat veld weg en draait met de rechten van de eigenaar, zodat het team de uitkomsten ziet zonder bij de tokens te kunnen.',
+      'Geklikt maar niet bevestigd is een eigen stand, in oranje. De klik zet alleen pending_answer; pas de landingspagina maakt er een antwoord van. Zo kan een linkscanner van Outlook of Mimecast nooit namens iemand ja zeggen, en dat verschil hoor je te zien.',
+      'Een rij waar de site een scanner vermoedde krijgt een bot-markering.',
+      'De kolom Bron toonde bij elke lead een streepje, want first_src is bij de aanmeldingen voor 6 oktober niet gevuld. De bron wordt nu afgeleid uit de activiteit, dus die negen staan nu als Event 6 okt in de lijst.',
+      'De bestaande lijst heeft een eigen kop Website-aanmeldingen gekregen, zodat de scheiding tussen beide soorten meteen zichtbaar is.',
+    ],
+    files: ['src/bd/marketing-leads.jsx'],
+    rollback: 'git revert naar v1.131.5. Puur weergave; er wordt niets geschreven.',
+    gitTag: 'v1.132.0',
+  },
   {
     version: '1.131.5',
     date: '2026-09-26T11:26:11Z',
