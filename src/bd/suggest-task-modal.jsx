@@ -5,6 +5,17 @@ import { graphGet } from '../lib/graph';
 import { useAuth } from '../lib/auth';
 import { apiFetch } from '../lib/apiFetch';
 
+const lblStyle = {
+  fontSize: 9, fontFamily: 'var(--font-mono)', textTransform: 'uppercase',
+  letterSpacing: '0.08em', color: 'var(--text-3)', marginBottom: 4,
+};
+const inputStyle = {
+  width: '100%', padding: '6px 8px', borderRadius: 5,
+  border: '0.5px solid var(--sep)', background: 'var(--fill-1)',
+  color: 'var(--text-1)', fontSize: 12, outline: 'none',
+  boxSizing: 'border-box', fontFamily: 'var(--font)',
+};
+
 // First names of CRM users (extend if more team members onboard).
 const TEAM = ['Marco', 'Olivier', 'Yarmilla'];
 
@@ -245,14 +256,3 @@ export default function SuggestTaskModal({ comm, accounts, contacts, onClose, on
     </div>
   );
 }
-
-const lblStyle = {
-  fontSize: 9, fontFamily: 'var(--font-mono)', textTransform: 'uppercase',
-  letterSpacing: '0.08em', color: 'var(--text-3)', marginBottom: 4,
-};
-const inputStyle = {
-  width: '100%', padding: '6px 8px', borderRadius: 5,
-  border: '0.5px solid var(--sep)', background: 'var(--fill-1)',
-  color: 'var(--text-1)', fontSize: 12, outline: 'none',
-  boxSizing: 'border-box', fontFamily: 'var(--font)',
-};
