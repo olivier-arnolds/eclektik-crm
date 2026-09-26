@@ -1,6 +1,15 @@
 import { useMemo, useState, useEffect } from 'react';
 import { I, fmtMoney, fmtRelative, AccountMark, ChannelIcon, OwnerDot, STAGE_TINT } from './atoms';
 
+const rowTitle = {
+  fontSize: 12, fontWeight: 500, color: 'var(--text-1)',
+  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+};
+const rowMeta = {
+  fontSize: 10, color: 'var(--text-3)', fontFamily: 'var(--font-mono)',
+  display: 'flex', gap: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+};
+
 // Slide-over panel that shows unified global search results.
 // Rendered absolutely over the right (accounts) lane when search.length >= 2.
 //
@@ -232,15 +241,6 @@ export default function SearchResultsPanel({
     </div>
   );
 }
-
-const rowTitle = {
-  fontSize: 12, fontWeight: 500, color: 'var(--text-1)',
-  overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-};
-const rowMeta = {
-  fontSize: 10, color: 'var(--text-3)', fontFamily: 'var(--font-mono)',
-  display: 'flex', gap: 4, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-};
 
 function ResultGroup({ title, count, children }) {
   if (count === 0) return null;
