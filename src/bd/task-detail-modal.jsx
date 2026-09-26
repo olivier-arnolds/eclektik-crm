@@ -2,6 +2,17 @@ import { useEffect, useMemo, useState } from 'react';
 import { I } from './atoms';
 import { supabase } from '../supabase';
 
+const fieldLabel = {
+  fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.08em',
+  color: 'var(--text-3)', fontFamily: 'var(--font-mono)', marginBottom: 4,
+};
+const fieldInput = {
+  width: '100%', padding: '6px 8px', borderRadius: 5,
+  border: '0.5px solid var(--sep)', background: 'var(--fill-1)',
+  color: 'var(--text-1)', fontSize: 12, outline: 'none',
+  fontFamily: 'var(--font)', boxSizing: 'border-box',
+};
+
 // Inline edit modal for a task. Shows title, description, due date, owner,
 // done toggle, account link, and a delete button.
 export default function TaskDetailModal({ taskId, accounts, onClose, refetch }) {
@@ -208,14 +219,3 @@ export default function TaskDetailModal({ taskId, accounts, onClose, refetch }) 
     </div>
   );
 }
-
-const fieldLabel = {
-  fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.08em',
-  color: 'var(--text-3)', fontFamily: 'var(--font-mono)', marginBottom: 4,
-};
-const fieldInput = {
-  width: '100%', padding: '6px 8px', borderRadius: 5,
-  border: '0.5px solid var(--sep)', background: 'var(--fill-1)',
-  color: 'var(--text-1)', fontSize: 12, outline: 'none',
-  fontFamily: 'var(--font)', boxSizing: 'border-box',
-};
