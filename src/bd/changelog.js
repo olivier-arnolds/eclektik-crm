@@ -19,9 +19,30 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.130.1';
+export const CURRENT_VERSION = '1.130.2';
 
 export const CHANGELOG = [
+  {
+    version: '1.130.2',
+    date: '2026-09-26T05:48:29Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'refactor',
+    title: 'Alle lintfouten opgeruimd, nul over',
+    summary:
+      'De 76 meldingen van no-use-before-define zijn weg, verdeeld over tien bestanden en tien commits. npm run lint staat nu op nul fouten. Geen enkele gedragswijziging: alles is verplaatst, niets herschreven.',
+    changes: [
+      'Het waren vrijwel allemaal stijlconstanten die onderaan een bestand stonden en in JSX erboven werden gebruikt. Bij het draaien ging dat goed, maar de regel kan dat niet onderscheiden van een echt gevaarlijk geval, en dat onderscheid handmatig blijven maken is precies hoe de crash van gisteren ontstond.',
+      'Twee gevallen vroegen een andere aanpak. In marketing-contacts.jsx hingen filtered en selected van een halve component af, dus daar zijn de negen gebruikende functies naar beneden gegaan in plaats van de declaraties omhoog. In BDApp.jsx is een gewone functie verplaatst omdat de useState niet mocht verschuiven.',
+      'In lane-accounts.jsx stond een import van supabase midden in het bestand, op regel 239. Naar het importblok bovenaan verplaatst.',
+      'Per bestand gecontroleerd dat de hook-volgorde identiek bleef, met een checksum over de reeks hook-aanroepen voor en na. Een verschoven hook geeft bij React een crash bij de eerstvolgende render, en dat is niet iets wat je op het oog wilt beoordelen.',
+      'Ook gecontroleerd dat elke commit een pure verplaatsing is: de gesorteerde regels zijn voor en na identiek.',
+      'Wat blijft: 37 waarschuwingen van react-hooks/exhaustive-deps. Die vragen om oordeel per geval en horen in een eigen ronde.',
+      'Afdwingen in de build is nog niet aangezet. Nu er nul fouten staan kan dat wel, en dat is de stap die de linter pas echt iets laat voorkomen.',
+    ],
+    files: ['10 bestanden in src/bd', 'src/bd/BDApp.jsx'],
+    rollback: 'git revert van de tien refactor-commits. Puur volgorde, geen gedrag.',
+    gitTag: 'v1.130.2',
+  },
   {
     version: '1.130.1',
     date: '2026-09-26T05:39:01Z',
