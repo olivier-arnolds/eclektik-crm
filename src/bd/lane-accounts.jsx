@@ -14,6 +14,7 @@ import TagChip from './tag-chip';
 import DuplicateContactsModal from './duplicate-contacts-modal';
 import { useLinkedInPosts } from '../hooks/useLinkedInPosts';
 import { apiFetch } from '../lib/apiFetch';
+import { supabase } from '../supabase';
 
 function PostText({ text }) {
   const [expanded, setExpanded] = useState(false);
@@ -236,7 +237,6 @@ function LaneCollapseButton({ onToggle }) {
 }
 import ExpandableRow from './expandable-row';
 import { InlineContactDetail, InlineMeetingDetail, InlineDealDetail, InlineAccountDetails, InlineTaskDetail } from './inline-details';
-import { supabase } from '../supabase';
 import { fetchAllRows } from '../hooks/usePipelineData';
 import { syncMyCalendar, getSharedEventsForAccount, buildDedupKey } from './sync-events';
 import { getChannelMessages } from '../lib/graph';
