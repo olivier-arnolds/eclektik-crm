@@ -350,87 +350,6 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
   const [surfeProgress, setSurfeProgress] = useState({ done: 0, total: 0 });
   const [showEmailSuggest, setShowEmailSuggest] = useState(false);
 
-  async function followSelected() {
-    const ids = filtered.filter(c => selected.has(c.id) && !followedContactIds.has(c.id)).map(c => c.id);
-    if (ids.length === 0) {
-      alert('Geselecteerde contacten staan al allemaal op signal-follow (🔔).');
-      return;
-    }
-    if (!confirm(`Follow ${ids.length} contact${ids.length === 1 ? '' : 'en'}? Hun LinkedIn-posts worden dagelijks gescand voor signals (cron 07:00 NL).`)) return;
-    // Twee paden: bestaande signal_subjects rows worden ge-enabled, nieuwe contact-ids krijgen een nieuwe row.
-    const { data: existing } = await supabase.from('signal_subjects')
-      .select('contact_id')
-      .in('contact_id', ids)
-      .eq('source_type', 'linkedin_user_post');
-    const existingIds = new Set((existing || []).map(r => r.contact_id));
-    if (existingIds.size > 0) {
-      const { error } = await supabase.from('signal_subjects')
-        .update({ enabled: true })
-        .in('contact_id', [...existingIds])
-        .eq('source_type', 'linkedin_user_post');
-      if (error) { alert('Follow update mislukt: ' + error.message); return; }
-    }
-    const newIds = ids.filter(id => !existingIds.has(id));
-    if (newIds.length > 0) {
-      const { error } = await supabase.from('signal_subjects')
-        .insert(newIds.map(id => ({
-          contact_id: id, source_type: 'linkedin_user_post',
-          enabled: true, auto_added: false,
-        })));
-      if (error) { alert('Follow insert mislukt: ' + error.message); return; }
-    }
-    setFollowedContactIds(prev => {
-      const next = new Set(prev);
-      for (const id of ids) next.add(id);
-      return next;
-    });
-    alert(`${ids.length} contact${ids.length === 1 ? '' : 'en'} ge-followed (🔔).`);
-  }
-
-  async function unfollowSelected() {
-    const eligible = filtered.filter(c => selected.has(c.id) && followedContactIds.has(c.id));
-    if (eligible.length === 0) {
-      alert('Geen geselecteerde contacten staan op signal-follow (🔔).');
-      return;
-    }
-    if (!confirm(`Unfollow ${eligible.length} contact${eligible.length === 1 ? '' : 'en'}? Hun LinkedIn-posts worden niet meer dagelijks gescand voor signals.`)) return;
-    const ids = eligible.map(c => c.id);
-    const { error } = await supabase.from('signal_subjects')
-      .update({ enabled: false })
-      .in('contact_id', ids)
-      .eq('source_type', 'linkedin_user_post');
-    if (error) {
-      alert('Unfollow mislukt: ' + error.message);
-      return;
-    }
-    setFollowedContactIds(prev => {
-      const next = new Set(prev);
-      for (const id of ids) next.delete(id);
-      return next;
-    });
-    alert(`${eligible.length} contact${eligible.length === 1 ? '' : 'en'} unfollowed.`);
-  }
-
-  // Bulk: zet marketing_content_opt_in aan/uit voor de geselecteerde contacten.
-  const contentOptInOf = (c) => contentOptInOverrides[c.id] !== undefined ? contentOptInOverrides[c.id] : !!c.marketing_content_opt_in;
-  async function setContentOptInForSelected(value) {
-    const ids = filtered.filter(c => selected.has(c.id) && contentOptInOf(c) !== value).map(c => c.id);
-    if (ids.length === 0) {
-      alert(value ? 'Alle geselecteerde contacten ontvangen al marketingcontent (📣).' : 'Geen geselecteerde contacten met marketingcontent aan.');
-      return;
-    }
-    if (!confirm(`Marketingcontent ${value ? 'AAN' : 'UIT'} zetten voor ${ids.length} contact${ids.length === 1 ? '' : 'en'}?`)) return;
-    // Optimistic update
-    setContentOptInOverrides(prev => { const n = { ...prev }; for (const id of ids) n[id] = value; return n; });
-    const { error } = await supabase.from('contacts').update({ marketing_content_opt_in: value }).in('id', ids);
-    if (error) {
-      setContentOptInOverrides(prev => { const n = { ...prev }; for (const id of ids) n[id] = !value; return n; });
-      alert('Marketingcontent-toggle mislukt: ' + error.message);
-      return;
-    }
-    alert(`${ids.length} contact${ids.length === 1 ? '' : 'en'} bijgewerkt (marketingcontent ${value ? 'aan' : 'uit'}).`);
-  }
-
   // Laad bestaande connectie-statussen (cache) bij mount.
   useEffect(() => {
     supabase.from('contact_connections').select('contact_id, account_id, status').then(({ data }) => {
@@ -443,46 +362,6 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
       setConnections(map);
     });
   }, []);
-
-  // Bulk: check LinkedIn-connectie voor de selectie via het gekozen account (max 25/ronde).
-  async function checkConnectionsForSelected() {
-    const acct = LINKEDIN_ACCOUNTS.find(a => a.id === connAccount);
-    const eligible = filtered.filter(c => selected.has(c.id) && c.linkedin_url);
-    if (eligible.length === 0) { alert('Geen geselecteerde contacten met een LinkedIn-URL.'); return; }
-    const MAX = 25;
-    const batch = eligible.slice(0, MAX);
-    const skipped = selected.size - eligible.length;
-    const overflow = eligible.length - batch.length;
-    const msg = `LinkedIn-connectiecheck via ${acct?.label}:\n- ${batch.length} contact${batch.length === 1 ? '' : 'en'} checken`
-      + (overflow > 0 ? `\n- ${overflow} vallen buiten deze ronde (max ${MAX})` : '')
-      + (skipped > 0 ? `\n- ${skipped} overgeslagen (geen LinkedIn-URL)` : '')
-      + `\n\nLet op: dit doet profielweergaven via het account van ${acct?.label} (LinkedIn rate-limits). Doorgaan?`;
-    if (!confirm(msg)) return;
-    setConnChecking(true);
-    try {
-      const resp = await apiFetch('/api/linkedin-connections', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ account_id: connAccount, contact_ids: batch.map(c => c.id) }),
-      });
-      const data = await resp.json();
-      setConnChecking(false);
-      if (!resp.ok) { alert('Connectiecheck fout: ' + (data.error || `HTTP ${resp.status}`)); return; }
-      setConnections(prev => {
-        const next = { ...prev };
-        for (const r of (data.results || [])) {
-          if (r.status === 'no_url') continue;
-          next[r.contact_id] = { ...(next[r.contact_id] || {}), [connAccount]: r.status };
-        }
-        return next;
-      });
-      const s = data.stats || {};
-      alert(`Connectiecheck via ${acct?.label} klaar:\n✓ ${s.connected || 0} verbonden\n– ${s.not_connected || 0} niet verbonden\n✗ ${s.errors || 0} fout`
-        + (s.skipped_time ? `\n⏱ ${s.skipped_time} niet gehaald (tijd) - draai nog een ronde` : ''));
-    } catch (err) {
-      setConnChecking(false);
-      alert('Connectiecheck mislukt: ' + err.message);
-    }
-  }
 
   // Laad de connectie-drip-wachtrij (cache) bij mount.
   useEffect(() => {
@@ -497,142 +376,6 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
     });
   }, []);
 
-  // Zet geselecteerde niet-verbonden contacten aan voor de connectie-drip.
-  // Opent een modal om het bericht (met placeholders) op te stellen.
-  function enrollForInviteDrip() {
-    const acct = LINKEDIN_ACCOUNTS.find(a => a.id === connAccount);
-    const eligible = filtered.filter(c => selected.has(c.id) && c.linkedin_url
-      && connections[c.id]?.[connAccount] !== 'connected'      // niet al verbonden
-      && inviteQueue[c.id]?.[connAccount] === undefined);       // nog niet in de rij
-    if (eligible.length === 0) {
-      alert(`Geen geschikte contacten: nodig heeft LinkedIn-URL, niet al verbonden via ${acct?.label}, en nog niet in de rij.`);
-      return;
-    }
-    setInviteModalEligible(eligible);
-  }
-
-  // Bevestig vanuit de modal: personaliseer het bericht per contact en zet ze in de rij.
-  async function confirmInviteEnroll(template) {
-    const eligible = inviteModalEligible || [];
-    setEnrolling(true);
-    const rows = eligible.map(c => ({
-      contact_id: c.id, account_id: connAccount,
-      message: template && template.trim() ? renderInviteTemplate(template, c) : null,
-      status: 'queued',
-    }));
-    const { error } = await supabase.from('linkedin_invite_queue').upsert(rows, { onConflict: 'contact_id,account_id', ignoreDuplicates: true });
-    setEnrolling(false);
-    if (error) { alert('Aanzetten mislukt: ' + error.message); return; }
-    setInviteQueue(prev => {
-      const n = { ...prev };
-      for (const c of eligible) n[c.id] = { ...(n[c.id] || {}), [connAccount]: 'queued' };
-      return n;
-    });
-    const acct = LINKEDIN_ACCOUNTS.find(a => a.id === connAccount);
-    setInviteModalEligible(null);
-    alert(`${eligible.length} contact${eligible.length === 1 ? '' : 'en'} aangezet voor de connectie-drip via ${acct?.label}.\nDe cron stuurt max ~15/dag per account, verspreid over de dag (werkdagen).`);
-  }
-
-  async function findEmailsViaSurfe() {
-    const eligible = filtered.filter(c => selected.has(c.id) && !c.email && c.linkedin_url);
-    if (eligible.length === 0) {
-      alert('Geen geselecteerde contacten zonder email en mét LinkedIn-URL.');
-      return;
-    }
-    const skipped = selected.size - eligible.length;
-    const MAX_BATCH = 25;
-    if (eligible.length > MAX_BATCH) {
-      alert(`Selecteer maximaal ${MAX_BATCH} contacten per ronde - Surfe poll-timeout is 50s. Je hebt ${eligible.length} eligible contacten geselecteerd.`);
-      return;
-    }
-    const msg = `Find emails via Surfe (waterfall over 8 providers):\n- ${eligible.length} contact${eligible.length === 1 ? '' : 'en'} te verrijken${skipped > 0 ? `\n- ${skipped} skipped (al email of geen LinkedIn-URL)` : ''}\n\nLet op: elk succes verbruikt Surfe-credits. Doorgaan?`;
-    if (!confirm(msg)) return;
-
-    setSurfeFinding(true);
-    setSurfeProgress({ done: 0, total: eligible.length });
-    try {
-      const resp = await apiFetch('/api/surfe?action=find-emails', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contact_ids: eligible.map(c => c.id) }),
-      });
-      const data = await resp.json();
-      setSurfeFinding(false);
-      if (!resp.ok) {
-        console.error('Surfe error full response:', data);
-        const detail = data.surfe_response ? `\n\nSurfe says:\n${JSON.stringify(data.surfe_response, null, 2)}` : '';
-        alert('Surfe klaar (fout): ' + (data.error || `HTTP ${resp.status}`) + detail);
-      } else {
-        alert(`Surfe klaar:\n✓ ${data.found} email gevonden\n⊘ ${data.no_email} geen email in Surfe\n✗ ${data.failed} fout`);
-      }
-      if (refetch) refetch();
-    } catch (err) {
-      setSurfeFinding(false);
-      alert('Surfe request mislukt: ' + err.message);
-    }
-  }
-
-  async function enrichSelected() {
-    const selectedContacts = filtered.filter(c => selected.has(c.id));
-    if (selectedContacts.length === 0) return;
-
-    const without = selectedContacts.filter(c => !c.linkedin_url);
-    const withUrl = selectedContacts.filter(c => c.linkedin_url);
-
-    // Skip confirm voor kleine batches (≤3) — voor grote sets bevestiging vragen om accidents te voorkomen
-    if (selectedContacts.length > 3) {
-      const planLines = [];
-      if (without.length > 0) planLines.push(`- ${without.length} zonder LinkedIn-URL → zoeken via Unipile en URL invullen`);
-      if (withUrl.length > 0) planLines.push(`- ${withUrl.length} met LinkedIn-URL → profile fetchen en title refreshen`);
-      if (!confirm(`Enrich plan voor ${selectedContacts.length} contacten:\n${planLines.join('\n')}\n\nDoorgaan? (~0.8s per contact)`)) {
-        return;
-      }
-    }
-
-    setEnriching(true);
-    setEnrichProgress({ done: 0, total: selectedContacts.length });
-    let urlFound = 0, titleRefreshed = 0, noResults = 0, noCompany = 0, failed = 0;
-
-    for (let i = 0; i < selectedContacts.length; i++) {
-      const c = selectedContacts[i];
-      const hasUrl = !!c.linkedin_url;
-      try {
-        const action = hasUrl ? 'enrich-contact' : 'find-contact-linkedin';
-        const body = hasUrl
-          ? { contact_id: c.id, linkedin_url: c.linkedin_url }
-          : { contact_id: c.id };
-        const resp = await apiFetch(`/api/unipile?action=${action}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-        });
-        const data = await resp.json();
-        if (data.success) {
-          if (hasUrl) titleRefreshed++; else urlFound++;
-        } else if (data.reason === 'no-company') {
-          noCompany++;
-        } else if (data.reason) {
-          noResults++;
-        } else {
-          failed++;
-        }
-      } catch {
-        failed++;
-      }
-      setEnrichProgress({ done: i + 1, total: selectedContacts.length });
-      if (i < selectedContacts.length - 1) await new Promise(r => setTimeout(r, 800));
-    }
-
-    setEnriching(false);
-    const lines = [];
-    if (urlFound > 0) lines.push(`✓ ${urlFound} LinkedIn-URL gevonden`);
-    if (titleRefreshed > 0) lines.push(`✓ ${titleRefreshed} title refreshed`);
-    if (noResults > 0) lines.push(`⊘ ${noResults} geen match in LinkedIn-search`);
-    if (noCompany > 0) lines.push(`⊘ ${noCompany} geen company in contact (geen veilige search)`);
-    if (failed > 0) lines.push(`✗ ${failed} fout`);
-    alert(`Enrich klaar:\n${lines.join('\n')}`);
-    if (refetch) refetch();
-  }
   const [savingEmail, setSavingEmail] = useState(false);
   // Default 'yes' (alleen actieve contacten) — gelijk aan het oude activeOnly default
   const [activeFilter, setActiveFilter] = useState('yes');
@@ -980,6 +723,264 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
       setSelected(new Set(filtered.map(c => c.id)));
     }
   };
+
+  async function followSelected() {
+    const ids = filtered.filter(c => selected.has(c.id) && !followedContactIds.has(c.id)).map(c => c.id);
+    if (ids.length === 0) {
+      alert('Geselecteerde contacten staan al allemaal op signal-follow (🔔).');
+      return;
+    }
+    if (!confirm(`Follow ${ids.length} contact${ids.length === 1 ? '' : 'en'}? Hun LinkedIn-posts worden dagelijks gescand voor signals (cron 07:00 NL).`)) return;
+    // Twee paden: bestaande signal_subjects rows worden ge-enabled, nieuwe contact-ids krijgen een nieuwe row.
+    const { data: existing } = await supabase.from('signal_subjects')
+      .select('contact_id')
+      .in('contact_id', ids)
+      .eq('source_type', 'linkedin_user_post');
+    const existingIds = new Set((existing || []).map(r => r.contact_id));
+    if (existingIds.size > 0) {
+      const { error } = await supabase.from('signal_subjects')
+        .update({ enabled: true })
+        .in('contact_id', [...existingIds])
+        .eq('source_type', 'linkedin_user_post');
+      if (error) { alert('Follow update mislukt: ' + error.message); return; }
+    }
+    const newIds = ids.filter(id => !existingIds.has(id));
+    if (newIds.length > 0) {
+      const { error } = await supabase.from('signal_subjects')
+        .insert(newIds.map(id => ({
+          contact_id: id, source_type: 'linkedin_user_post',
+          enabled: true, auto_added: false,
+        })));
+      if (error) { alert('Follow insert mislukt: ' + error.message); return; }
+    }
+    setFollowedContactIds(prev => {
+      const next = new Set(prev);
+      for (const id of ids) next.add(id);
+      return next;
+    });
+    alert(`${ids.length} contact${ids.length === 1 ? '' : 'en'} ge-followed (🔔).`);
+  }
+
+  async function unfollowSelected() {
+    const eligible = filtered.filter(c => selected.has(c.id) && followedContactIds.has(c.id));
+    if (eligible.length === 0) {
+      alert('Geen geselecteerde contacten staan op signal-follow (🔔).');
+      return;
+    }
+    if (!confirm(`Unfollow ${eligible.length} contact${eligible.length === 1 ? '' : 'en'}? Hun LinkedIn-posts worden niet meer dagelijks gescand voor signals.`)) return;
+    const ids = eligible.map(c => c.id);
+    const { error } = await supabase.from('signal_subjects')
+      .update({ enabled: false })
+      .in('contact_id', ids)
+      .eq('source_type', 'linkedin_user_post');
+    if (error) {
+      alert('Unfollow mislukt: ' + error.message);
+      return;
+    }
+    setFollowedContactIds(prev => {
+      const next = new Set(prev);
+      for (const id of ids) next.delete(id);
+      return next;
+    });
+    alert(`${eligible.length} contact${eligible.length === 1 ? '' : 'en'} unfollowed.`);
+  }
+
+  // Bulk: zet marketing_content_opt_in aan/uit voor de geselecteerde contacten.
+  const contentOptInOf = (c) => contentOptInOverrides[c.id] !== undefined ? contentOptInOverrides[c.id] : !!c.marketing_content_opt_in;
+  async function setContentOptInForSelected(value) {
+    const ids = filtered.filter(c => selected.has(c.id) && contentOptInOf(c) !== value).map(c => c.id);
+    if (ids.length === 0) {
+      alert(value ? 'Alle geselecteerde contacten ontvangen al marketingcontent (📣).' : 'Geen geselecteerde contacten met marketingcontent aan.');
+      return;
+    }
+    if (!confirm(`Marketingcontent ${value ? 'AAN' : 'UIT'} zetten voor ${ids.length} contact${ids.length === 1 ? '' : 'en'}?`)) return;
+    // Optimistic update
+    setContentOptInOverrides(prev => { const n = { ...prev }; for (const id of ids) n[id] = value; return n; });
+    const { error } = await supabase.from('contacts').update({ marketing_content_opt_in: value }).in('id', ids);
+    if (error) {
+      setContentOptInOverrides(prev => { const n = { ...prev }; for (const id of ids) n[id] = !value; return n; });
+      alert('Marketingcontent-toggle mislukt: ' + error.message);
+      return;
+    }
+    alert(`${ids.length} contact${ids.length === 1 ? '' : 'en'} bijgewerkt (marketingcontent ${value ? 'aan' : 'uit'}).`);
+  }
+
+  // Bulk: check LinkedIn-connectie voor de selectie via het gekozen account (max 25/ronde).
+  async function checkConnectionsForSelected() {
+    const acct = LINKEDIN_ACCOUNTS.find(a => a.id === connAccount);
+    const eligible = filtered.filter(c => selected.has(c.id) && c.linkedin_url);
+    if (eligible.length === 0) { alert('Geen geselecteerde contacten met een LinkedIn-URL.'); return; }
+    const MAX = 25;
+    const batch = eligible.slice(0, MAX);
+    const skipped = selected.size - eligible.length;
+    const overflow = eligible.length - batch.length;
+    const msg = `LinkedIn-connectiecheck via ${acct?.label}:\n- ${batch.length} contact${batch.length === 1 ? '' : 'en'} checken`
+      + (overflow > 0 ? `\n- ${overflow} vallen buiten deze ronde (max ${MAX})` : '')
+      + (skipped > 0 ? `\n- ${skipped} overgeslagen (geen LinkedIn-URL)` : '')
+      + `\n\nLet op: dit doet profielweergaven via het account van ${acct?.label} (LinkedIn rate-limits). Doorgaan?`;
+    if (!confirm(msg)) return;
+    setConnChecking(true);
+    try {
+      const resp = await apiFetch('/api/linkedin-connections', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ account_id: connAccount, contact_ids: batch.map(c => c.id) }),
+      });
+      const data = await resp.json();
+      setConnChecking(false);
+      if (!resp.ok) { alert('Connectiecheck fout: ' + (data.error || `HTTP ${resp.status}`)); return; }
+      setConnections(prev => {
+        const next = { ...prev };
+        for (const r of (data.results || [])) {
+          if (r.status === 'no_url') continue;
+          next[r.contact_id] = { ...(next[r.contact_id] || {}), [connAccount]: r.status };
+        }
+        return next;
+      });
+      const s = data.stats || {};
+      alert(`Connectiecheck via ${acct?.label} klaar:\n✓ ${s.connected || 0} verbonden\n– ${s.not_connected || 0} niet verbonden\n✗ ${s.errors || 0} fout`
+        + (s.skipped_time ? `\n⏱ ${s.skipped_time} niet gehaald (tijd) - draai nog een ronde` : ''));
+    } catch (err) {
+      setConnChecking(false);
+      alert('Connectiecheck mislukt: ' + err.message);
+    }
+  }
+
+  // Zet geselecteerde niet-verbonden contacten aan voor de connectie-drip.
+  // Opent een modal om het bericht (met placeholders) op te stellen.
+  function enrollForInviteDrip() {
+    const acct = LINKEDIN_ACCOUNTS.find(a => a.id === connAccount);
+    const eligible = filtered.filter(c => selected.has(c.id) && c.linkedin_url
+      && connections[c.id]?.[connAccount] !== 'connected'      // niet al verbonden
+      && inviteQueue[c.id]?.[connAccount] === undefined);       // nog niet in de rij
+    if (eligible.length === 0) {
+      alert(`Geen geschikte contacten: nodig heeft LinkedIn-URL, niet al verbonden via ${acct?.label}, en nog niet in de rij.`);
+      return;
+    }
+    setInviteModalEligible(eligible);
+  }
+
+  // Bevestig vanuit de modal: personaliseer het bericht per contact en zet ze in de rij.
+  async function confirmInviteEnroll(template) {
+    const eligible = inviteModalEligible || [];
+    setEnrolling(true);
+    const rows = eligible.map(c => ({
+      contact_id: c.id, account_id: connAccount,
+      message: template && template.trim() ? renderInviteTemplate(template, c) : null,
+      status: 'queued',
+    }));
+    const { error } = await supabase.from('linkedin_invite_queue').upsert(rows, { onConflict: 'contact_id,account_id', ignoreDuplicates: true });
+    setEnrolling(false);
+    if (error) { alert('Aanzetten mislukt: ' + error.message); return; }
+    setInviteQueue(prev => {
+      const n = { ...prev };
+      for (const c of eligible) n[c.id] = { ...(n[c.id] || {}), [connAccount]: 'queued' };
+      return n;
+    });
+    const acct = LINKEDIN_ACCOUNTS.find(a => a.id === connAccount);
+    setInviteModalEligible(null);
+    alert(`${eligible.length} contact${eligible.length === 1 ? '' : 'en'} aangezet voor de connectie-drip via ${acct?.label}.\nDe cron stuurt max ~15/dag per account, verspreid over de dag (werkdagen).`);
+  }
+
+  async function findEmailsViaSurfe() {
+    const eligible = filtered.filter(c => selected.has(c.id) && !c.email && c.linkedin_url);
+    if (eligible.length === 0) {
+      alert('Geen geselecteerde contacten zonder email en mét LinkedIn-URL.');
+      return;
+    }
+    const skipped = selected.size - eligible.length;
+    const MAX_BATCH = 25;
+    if (eligible.length > MAX_BATCH) {
+      alert(`Selecteer maximaal ${MAX_BATCH} contacten per ronde - Surfe poll-timeout is 50s. Je hebt ${eligible.length} eligible contacten geselecteerd.`);
+      return;
+    }
+    const msg = `Find emails via Surfe (waterfall over 8 providers):\n- ${eligible.length} contact${eligible.length === 1 ? '' : 'en'} te verrijken${skipped > 0 ? `\n- ${skipped} skipped (al email of geen LinkedIn-URL)` : ''}\n\nLet op: elk succes verbruikt Surfe-credits. Doorgaan?`;
+    if (!confirm(msg)) return;
+
+    setSurfeFinding(true);
+    setSurfeProgress({ done: 0, total: eligible.length });
+    try {
+      const resp = await apiFetch('/api/surfe?action=find-emails', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contact_ids: eligible.map(c => c.id) }),
+      });
+      const data = await resp.json();
+      setSurfeFinding(false);
+      if (!resp.ok) {
+        console.error('Surfe error full response:', data);
+        const detail = data.surfe_response ? `\n\nSurfe says:\n${JSON.stringify(data.surfe_response, null, 2)}` : '';
+        alert('Surfe klaar (fout): ' + (data.error || `HTTP ${resp.status}`) + detail);
+      } else {
+        alert(`Surfe klaar:\n✓ ${data.found} email gevonden\n⊘ ${data.no_email} geen email in Surfe\n✗ ${data.failed} fout`);
+      }
+      if (refetch) refetch();
+    } catch (err) {
+      setSurfeFinding(false);
+      alert('Surfe request mislukt: ' + err.message);
+    }
+  }
+
+  async function enrichSelected() {
+    const selectedContacts = filtered.filter(c => selected.has(c.id));
+    if (selectedContacts.length === 0) return;
+
+    const without = selectedContacts.filter(c => !c.linkedin_url);
+    const withUrl = selectedContacts.filter(c => c.linkedin_url);
+
+    // Skip confirm voor kleine batches (≤3) — voor grote sets bevestiging vragen om accidents te voorkomen
+    if (selectedContacts.length > 3) {
+      const planLines = [];
+      if (without.length > 0) planLines.push(`- ${without.length} zonder LinkedIn-URL → zoeken via Unipile en URL invullen`);
+      if (withUrl.length > 0) planLines.push(`- ${withUrl.length} met LinkedIn-URL → profile fetchen en title refreshen`);
+      if (!confirm(`Enrich plan voor ${selectedContacts.length} contacten:\n${planLines.join('\n')}\n\nDoorgaan? (~0.8s per contact)`)) {
+        return;
+      }
+    }
+
+    setEnriching(true);
+    setEnrichProgress({ done: 0, total: selectedContacts.length });
+    let urlFound = 0, titleRefreshed = 0, noResults = 0, noCompany = 0, failed = 0;
+
+    for (let i = 0; i < selectedContacts.length; i++) {
+      const c = selectedContacts[i];
+      const hasUrl = !!c.linkedin_url;
+      try {
+        const action = hasUrl ? 'enrich-contact' : 'find-contact-linkedin';
+        const body = hasUrl
+          ? { contact_id: c.id, linkedin_url: c.linkedin_url }
+          : { contact_id: c.id };
+        const resp = await apiFetch(`/api/unipile?action=${action}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        });
+        const data = await resp.json();
+        if (data.success) {
+          if (hasUrl) titleRefreshed++; else urlFound++;
+        } else if (data.reason === 'no-company') {
+          noCompany++;
+        } else if (data.reason) {
+          noResults++;
+        } else {
+          failed++;
+        }
+      } catch {
+        failed++;
+      }
+      setEnrichProgress({ done: i + 1, total: selectedContacts.length });
+      if (i < selectedContacts.length - 1) await new Promise(r => setTimeout(r, 800));
+    }
+
+    setEnriching(false);
+    const lines = [];
+    if (urlFound > 0) lines.push(`✓ ${urlFound} LinkedIn-URL gevonden`);
+    if (titleRefreshed > 0) lines.push(`✓ ${titleRefreshed} title refreshed`);
+    if (noResults > 0) lines.push(`⊘ ${noResults} geen match in LinkedIn-search`);
+    if (noCompany > 0) lines.push(`⊘ ${noCompany} geen company in contact (geen veilige search)`);
+    if (failed > 0) lines.push(`✗ ${failed} fout`);
+    alert(`Enrich klaar:\n${lines.join('\n')}`);
+    if (refetch) refetch();
+  }
 
   return (
     <div style={{ display: 'flex', gap: 16 }}>
