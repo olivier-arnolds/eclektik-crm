@@ -3,6 +3,9 @@ import { supabase } from '../supabase';
 import { useAuth } from '../lib/auth';
 import { apiFetch } from '../lib/apiFetch';
 
+const lbl = { fontSize: 10, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 };
+const input = { width: '100%', padding: '7px 10px', borderRadius: 6, border: '0.5px solid var(--sep)', background: 'var(--bg-1)', fontSize: 12, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' };
+
 // Submit feedback / feature request modal.
 // Anyone signed-in can submit. Anonymous-but-authenticated; submitter
 // email is captured from the session.
@@ -183,6 +186,3 @@ export default function FeedbackModal({ open, onClose, onSubmitted }) {
     </div>
   );
 }
-
-const lbl = { fontSize: 10, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 };
-const input = { width: '100%', padding: '7px 10px', borderRadius: 6, border: '0.5px solid var(--sep)', background: 'var(--bg-1)', fontSize: 12, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' };
