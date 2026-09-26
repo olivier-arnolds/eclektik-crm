@@ -71,7 +71,6 @@ export default function BDApp() {
   const [leftLane] = useLocal('bd_leftlane', 'calendar');
   const [layout, setLayout] = useLocal('bd_layout', 'fixed');
   const [search, setSearchRaw] = useState('');
-  const setSearch = (v) => { setSearchRaw(v); setSearchPanelDismissed(false); };
   const [filters, setFilters] = useState({ owners: [], types: [] });
 
   // Cross-lane state
@@ -86,6 +85,7 @@ export default function BDApp() {
   const [showOnepager, setShowOnepager] = useState(false);
   const [openContactId, setOpenContactId] = useState(null);
   const [searchPanelDismissed, setSearchPanelDismissed] = useState(false);
+  const setSearch = (v) => { setSearchRaw(v); setSearchPanelDismissed(false); };
   // Account-ids van de gefilterde contacten in de Marketing-tab. Laat de
   // accountlijst (rechterpaneel) live meebewegen. null = niet filteren.
   const [marketingAccountIds, setMarketingAccountIds] = useState(null);
