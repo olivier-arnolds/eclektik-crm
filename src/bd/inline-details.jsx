@@ -12,6 +12,13 @@ import TagPopover from './tag-popover';
 import DocLinksSection from './doc-links-section';
 import { SECTOR_OPTIONS } from './industry-breakdown';
 
+const fieldInputStyle = {
+  width: '100%', padding: '4px 6px', borderRadius: 4,
+  border: '0.5px solid var(--sep)', background: 'var(--bg-1)',
+  color: 'var(--text-1)', fontSize: 12, outline: 'none',
+  fontFamily: 'var(--font)', boxSizing: 'border-box', resize: 'vertical',
+};
+
 // Inline editable field — click to edit, blur/Enter to save.
 export function InlineField({ label, value, onSave, type = 'text', colspan, suggestions }) {
   const [editing, setEditing] = useState(false);
@@ -93,13 +100,6 @@ export function InlineField({ label, value, onSave, type = 'text', colspan, sugg
     </div>
   );
 }
-
-const fieldInputStyle = {
-  width: '100%', padding: '4px 6px', borderRadius: 4,
-  border: '0.5px solid var(--sep)', background: 'var(--bg-1)',
-  color: 'var(--text-1)', fontSize: 12, outline: 'none',
-  fontFamily: 'var(--font)', boxSizing: 'border-box', resize: 'vertical',
-};
 
 // Inline expand contents for a contact
 export function InlineContactDetail({ contactId, onCompose, refetch, allTags, onTagsChange }) {
