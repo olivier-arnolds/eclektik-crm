@@ -19,9 +19,27 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.130.2';
+export const CURRENT_VERSION = '1.130.3';
 
 export const CHANGELOG = [
+  {
+    version: '1.130.3',
+    date: '2026-09-26T05:52:26Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'De linter houdt nu daadwerkelijk tegen',
+    summary:
+      'Het build-script draait eerst eslint. Vercel gebruikt npm run build, dus een fout van deze soort komt niet meer langs een deploy. Zonder deze stap zou de linter alleen maar melden en nergens iets voorkomen.',
+    changes: [
+      'build is nu "eslint src api && vite build". Faalt de lint, dan draait vite niet eens en stopt de deploy.',
+      'Getoetst in plaats van aangenomen: met een nagebootste versie van de fout van 25 september stopt npm run build met exitcode 1 en zonder die fout met 0. Beide gemeten, niet afgeleid uit de uitvoer.',
+      'Alleen fouten blokkeren. De 37 bestaande waarschuwingen van exhaustive-deps laten de build gewoon door, want die vragen om oordeel per geval.',
+      'Op de build gezet en niet op pretest, want een pretest helpt alleen als iemand toevallig tests draait. De build is wat Vercel uitvoert en dus de enige plek die een slechte deploy echt tegenhoudt.',
+    ],
+    files: ['package.json'],
+    rollback: 'Zet build terug op "vite build". De linter blijft dan bestaan via npm run lint, maar blokkeert niets meer.',
+    gitTag: 'v1.130.3',
+  },
   {
     version: '1.130.2',
     date: '2026-09-26T05:48:29Z',

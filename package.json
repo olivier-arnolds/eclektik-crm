@@ -1,12 +1,12 @@
 {
   "name": "eclektik-crm",
-  "version": "1.130.2",
+  "version": "1.130.3",
   "description": "Eclectik BD CRM — custom React + Supabase business-development CRM",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "eslint src api && vite build",
     "preview": "vite preview",
     "test": "vitest run",
     "lint": "eslint src api"
