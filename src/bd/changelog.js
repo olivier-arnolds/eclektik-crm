@@ -19,9 +19,28 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.130.0';
+export const CURRENT_VERSION = '1.130.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.130.1',
+    date: '2026-09-26T05:39:01Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Spam-preventie in de composer werkte nooit',
+    summary:
+      'De check die waarschuwt als iemand in de afgelopen drie dagen al een campagnemail kreeg, heeft sinds 11 juni nooit gewerkt. marketing-composer.jsx gebruikt supabase maar importeerde het niet, dus de eerste aanroep gooide een ReferenceError. De catch eromheen ving die op, schreef een console.warn en ging door zonder filter.',
+    changes: [
+      'De import toegevoegd. Meer was het niet.',
+      'Gevolg van drieenhalve maand: recentIds en recentEmails bleven altijd leeg, skip.length was altijd nul, en de bevestigingsvraag "X van de Y contacten kregen al een mail" verscheen nooit. Elke verzending ging ongefilterd door.',
+      'Het enige spoor was console.warn("Recent-send check faalde, doorgaan zonder filter"). Dat is hetzelfde patroon als de hold-bug en de LinkedIn-scan: het ziet eruit alsof het werkt en het doet stil niets.',
+      'Gevonden door ESLint (no-undef) op de dag dat die werd aangezet, in de eerste run.',
+      'De tabel campaign_sends bevat 1016 verzendingen sinds 7 mei, dus de check heeft nu ook echt iets om op te zoeken.',
+    ],
+    files: ['src/bd/marketing-composer.jsx'],
+    rollback: 'git revert naar v1.130.0 zet de kapotte situatie terug; niet doen.',
+    gitTag: 'v1.130.1',
+  },
   {
     version: '1.130.0',
     date: '2026-09-26T05:05:25Z',

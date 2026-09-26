@@ -1,4 +1,10 @@
 import { useState, useMemo, useRef } from 'react';
+// Ontbrak sinds 11 juni, terwijl de spam-preventie hieronder supabase wel
+// aanroept. Die aanroep gooide dus een ReferenceError, de catch eromheen ving
+// hem op met een console.warn, en de check liep altijd door zonder filter. Er
+// is drieenhalve maand lang nooit gewaarschuwd voor een dubbele verzending.
+// Gevonden door ESLint (no-undef) op de dag dat die werd aangezet.
+import { supabase } from '../supabase';
 import { useAuth } from '../lib/auth';
 import { renderTemplate, varsForContact, KNOWN_VARS } from '../lib/template-vars';
 import { apiFetch } from '../lib/apiFetch';
