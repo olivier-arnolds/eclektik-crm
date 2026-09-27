@@ -470,3 +470,60 @@ export function hoortBijRegio(location, regio) {
   if ((REGIO_UITZONDERINGEN[regio] || []).some((f) => f(t))) return false;
   return fragmenten.some((f) => t.includes(` ${f}`));
 }
+
+// ── Klik van een mens of van een scanner ──────────────────────────────────────
+//
+// Beveiligingsdiensten zoals Barracuda, Mimecast en Defender openen elke link in
+// een bericht om te controleren waar hij heen gaat. Die kliks komen als gewone
+// kliks binnen via de Resend-webhook en zijn niet van een mens te onderscheiden,
+// tenzij je naar de tijd kijkt.
+//
+// Gemeten op de 83 kliks van de Amsterdam-campagne:
+//   19 onder de 30 seconden na verzenden
+//   19 tussen 30 seconden en 2 minuten
+//    9 tussen 2 en 10 minuten
+//   10 tussen 10 minuten en een uur
+//   26 na een uur
+//   17 kliks vielen binnen 2 seconden na de open
+//
+// Bijna de helft valt dus vlak na de verzending. Niemand leest een mail van
+// tweeduizend tekens in vier seconden, en de snelste klik in die set was er vier.
+export const KLIK_GEEN = 'geen';
+export const KLIK_MENS = 'mens';
+export const KLIK_SCANNER = 'scanner';
+export const KLIK_ONBEKEND = 'onbekend';
+
+// Twee minuten na verzenden. Een mens moet de mail nog binnenkrijgen, zien en
+// lezen; een scanner begint meteen. De grens ligt bewust royaal: liever een
+// scanner die als mens telt dan een echte lezer die je wegfiltert.
+export const KLIK_SCANNER_SECONDEN = 120;
+// Twee seconden na de open. Dezelfde scanner haalt eerst de pixel op en loopt
+// daarna de links langs, ook uren na verzending.
+export const KLIK_NA_OPEN_SECONDEN = 2;
+
+const tijd = (iso) => {
+  if (!iso) return null;
+  const t = new Date(iso).getTime();
+  return Number.isFinite(t) ? t : null;
+};
+
+/**
+ * @param {{verzondenISO?: string, geopendISO?: string, geklikItISO?: string}} arg
+ * @returns {'geen'|'mens'|'scanner'|'onbekend'}
+ */
+export function klikOordeel({ verzondenISO, geopendISO, geklikItISO } = {}) {
+  // Geen klik en een onleesbare kliktijd zijn twee verschillende dingen: in het
+  // tweede geval is er wel degelijk geklikt, we kunnen er alleen niets over
+  // zeggen. Die als 'geen klik' tellen zou de teller stil laten weglopen.
+  if (!geklikItISO) return KLIK_GEEN;
+  const klik = tijd(geklikItISO);
+  if (klik === null) return KLIK_ONBEKEND;
+
+  const open = tijd(geopendISO);
+  if (open !== null && (klik - open) / 1000 < KLIK_NA_OPEN_SECONDEN) return KLIK_SCANNER;
+
+  const verzonden = tijd(verzondenISO);
+  if (verzonden === null) return KLIK_ONBEKEND;
+
+  return (klik - verzonden) / 1000 < KLIK_SCANNER_SECONDEN ? KLIK_SCANNER : KLIK_MENS;
+}

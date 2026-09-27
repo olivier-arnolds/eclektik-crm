@@ -19,9 +19,29 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.132.0';
+export const CURRENT_VERSION = '1.133.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.133.0',
+    date: '2026-09-27T22:41:41Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Scannerkliks gescheiden van echte kliks',
+    summary:
+      'De kolom Geklikt telde alles mee wat Resend als klik doorgaf, en dat is voor meer dan de helft beveiligingssoftware. Barracuda, Mimecast en Defender openen elke link in een bericht om te zien waar hij heen gaat. Op de Amsterdam-campagne waren van de 83 kliks er 45 scanner en 38 een mens.',
+    changes: [
+      'Nieuwe pure functie klikOordeel met zeven tests. Een klik binnen twee minuten na verzenden telt als scanner, en een klik binnen twee seconden na de open ook: dat is dezelfde scanner die eerst de pixel ophaalt en daarna de links langsloopt.',
+      'Die grenzen komen uit de gemeten verdeling: 19 kliks onder de 30 seconden, 19 tussen 30 seconden en 2 minuten, en 17 binnen 2 seconden na de open. De snelste klik viel 4 seconden na verzending.',
+      'De grens ligt bewust royaal op twee minuten. Liever een scanner die als mens telt dan een echte lezer die je wegfiltert.',
+      'De kolom toont nu het aantal echte kliks, met de scannerkliks er gedempt achter als +n scan. De tooltip legt uit waarom.',
+      'De teller Geklikt en het bijbehorende filter kijken alleen nog naar echte kliks.',
+      'Een onleesbare kliktijd telt als onbekend en niet als geen klik. Dat zijn verschillende dingen: in het eerste geval is er wel geklikt en weten we alleen niet wanneer.',
+    ],
+    files: ['src/bd/outreach-match.js', 'src/bd/outreach-match.test.js', 'src/bd/marketing-outreach.jsx'],
+    rollback: 'git revert naar v1.132.0. Puur weergave; er wordt niets geschreven.',
+    gitTag: 'v1.133.0',
+  },
   {
     version: '1.132.0',
     date: '2026-09-26T12:51:18Z',

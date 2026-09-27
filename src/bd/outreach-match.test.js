@@ -4,7 +4,7 @@ import {
   matchMessage, scanInbox, statusAfterClassification,
   MATCH_SENDER, MATCH_DOMAIN, MATCH_NONE, CONFIDENCE_FLOOR, needsOurReply, matchRegistrations,
   inkomendNaVerzending, conversatieStatus, CONV_GEEN, CONV_ANTWOORD, CONV_HEEN_EN_WEER,
-  reminderAdvies, HERINNERING_KAN, HERINNERING_TE_VROEG, HERINNERING_AL, HERINNERING_NIET,
+  reminderAdvies, klikOordeel, KLIK_GEEN, KLIK_MENS, KLIK_SCANNER, KLIK_ONBEKEND, HERINNERING_KAN, HERINNERING_TE_VROEG, HERINNERING_AL, HERINNERING_NIET,
   REGIOS, hoortBijRegio,
 } from './outreach-match';
 
@@ -508,5 +508,50 @@ describe('hoortBijRegio', () => {
       expect(REGIOS[regio].length).toBeGreaterThan(0);
       expect(hoortBijRegio(REGIOS[regio][0], regio)).toBe(true);
     }
+  });
+});
+
+describe('klikOordeel', () => {
+  const S = '2026-09-01T10:00:00Z';
+
+  it('een klik binnen twee minuten na verzenden is een scanner', () => {
+    expect(klikOordeel({ verzondenISO: S, geklikItISO: '2026-09-01T10:00:04Z' })).toBe(KLIK_SCANNER);
+    expect(klikOordeel({ verzondenISO: S, geklikItISO: '2026-09-01T10:01:59Z' })).toBe(KLIK_SCANNER);
+  });
+
+  it('een klik daarna telt als mens', () => {
+    expect(klikOordeel({ verzondenISO: S, geklikItISO: '2026-09-01T10:02:30Z' })).toBe(KLIK_MENS);
+    expect(klikOordeel({ verzondenISO: S, geklikItISO: '2026-09-02T09:00:00Z' })).toBe(KLIK_MENS);
+  });
+
+  it('een klik vlak na de open is een scanner, ook als dat laat op de dag is', () => {
+    // Een scanner haalt de pixel op en loopt meteen de links langs. Een mens die
+    // opent en binnen twee seconden klikt heeft niets gelezen.
+    expect(klikOordeel({
+      verzondenISO: S,
+      geopendISO: '2026-09-01T16:00:00Z',
+      geklikItISO: '2026-09-01T16:00:01Z',
+    })).toBe(KLIK_SCANNER);
+  });
+
+  it('opent en klikt met tijd ertussen telt als mens', () => {
+    expect(klikOordeel({
+      verzondenISO: S,
+      geopendISO: '2026-09-01T16:00:00Z',
+      geklikItISO: '2026-09-01T16:00:40Z',
+    })).toBe(KLIK_MENS);
+  });
+
+  it('zonder klik geen oordeel', () => {
+    expect(klikOordeel({ verzondenISO: S })).toBe(KLIK_GEEN);
+    expect(klikOordeel({})).toBe(KLIK_GEEN);
+  });
+
+  it('zonder verzendmoment kan het niet beoordeeld worden', () => {
+    expect(klikOordeel({ geklikItISO: '2026-09-01T10:02:30Z' })).toBe(KLIK_ONBEKEND);
+  });
+
+  it('negeert onbruikbare datums', () => {
+    expect(klikOordeel({ verzondenISO: 'onzin', geklikItISO: 'ook onzin' })).toBe(KLIK_ONBEKEND);
   });
 });

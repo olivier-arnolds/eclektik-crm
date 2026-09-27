@@ -6,7 +6,7 @@ import { getFolderEmails, getMailboxFolderEmails, getMailboxMessagesSince, getMe
 import { kiesBerichttekst } from '../lib/mail-body';
 import {
   scanInbox, needsOurReply, matchRegistrations,
-  conversatieStatus, reminderAdvies,
+  conversatieStatus, reminderAdvies, klikOordeel, KLIK_MENS, KLIK_SCANNER,
   CONV_GEEN, CONV_ANTWOORD, CONV_HEEN_EN_WEER,
   HERINNERING_KAN, HERINNERING_TE_VROEG, HERINNERING_AL, HERINNERING_NIET,
   REGIOS, hoortBijRegio,
@@ -265,7 +265,7 @@ export default function MarketingOutreach() {
       try {
         const { data: msgs } = await supabase
           .from('outreach_message')
-          .select('contact_id, open_count, click_count, delivered_at, sent_or_received_at')
+          .select('contact_id, open_count, click_count, delivered_at, sent_or_received_at, first_opened_at, first_clicked_at')
           .eq('campaign_id', camp.id).eq('direction', 'outbound')
           .limit(5000);
         const m = new Map();
@@ -274,10 +274,21 @@ export default function MarketingOutreach() {
         const verzonden = new Map();
         for (const r of (msgs || [])) {
           if (!r.contact_id) continue;
-          const v = m.get(r.contact_id) || { opens: 0, clicks: 0, delivered: 0 };
+          const v = m.get(r.contact_id) || { opens: 0, clicks: 0, delivered: 0, mens: 0, scanner: 0 };
           v.opens += r.open_count || 0;
           v.clicks += r.click_count || 0;
           if (r.delivered_at) v.delivered += 1;
+          // Scannerkliks apart houden. Een beveiligingsdienst opent elke link in
+          // een bericht; die kliks komen als gewone kliks binnen en zijn alleen
+          // aan de tijd te herkennen. Zonder dit onderscheid lijkt de helft van
+          // je belangstelling te bestaan uit software.
+          const oordeel = klikOordeel({
+            verzondenISO: r.sent_or_received_at,
+            geopendISO: r.first_opened_at,
+            geklikItISO: r.first_clicked_at,
+          });
+          if (oordeel === KLIK_MENS) v.mens += 1;
+          else if (oordeel === KLIK_SCANNER) v.scanner += 1;
           m.set(r.contact_id, v);
 
           const vorige = verzonden.get(r.contact_id);
@@ -349,7 +360,7 @@ export default function MarketingOutreach() {
     c[AWAITING] = wave.filter(needsOurReply).length;
     c[REGISTERED] = wave.filter(r => aanmeldingen.has(r.id)).length;
     c[OPENED] = wave.filter(r => (betrokkenheid.get(r.id)?.opens || 0) > 0).length;
-    c[CLICKED] = wave.filter(r => (betrokkenheid.get(r.id)?.clicks || 0) > 0).length;
+    c[CLICKED] = wave.filter(r => (betrokkenheid.get(r.id)?.mens || 0) > 0).length;
     c[REMINDER_KAN] = wave.filter(r => adviesVoor(r).advies === HERINNERING_KAN).length;
     c[REMINDER_KLAAR] = wave.filter(heeftHerinnering).length;
     return c;
@@ -398,7 +409,7 @@ export default function MarketingOutreach() {
       if (statusFilter === AWAITING) { if (!needsOurReply(r)) return false; }
       else if (statusFilter === REGISTERED) { if (!aanmeldingen.has(r.id)) return false; }
       else if (statusFilter === OPENED) { if (!((betrokkenheid.get(r.id)?.opens || 0) > 0)) return false; }
-      else if (statusFilter === CLICKED) { if (!((betrokkenheid.get(r.id)?.clicks || 0) > 0)) return false; }
+      else if (statusFilter === CLICKED) { if (!((betrokkenheid.get(r.id)?.mens || 0) > 0)) return false; }
       else if (statusFilter === REMINDER_KAN) { if (adviesVoor(r).advies !== HERINNERING_KAN) return false; }
       else if (statusFilter === REMINDER_KLAAR) { if (!heeftHerinnering(r)) return false; }
       else if (statusFilter !== 'all' && r.status !== statusFilter) return false;
@@ -1405,9 +1416,24 @@ export default function MarketingOutreach() {
                         color: (betrokkenheid.get(r.id)?.opens || 0) > 0 ? '#0e7490' : 'var(--text-3)' }}>
                         {(betrokkenheid.get(r.id)?.opens || 0) > 0 ? `${betrokkenheid.get(r.id).opens}x` : '-'}
                       </td>
-                      <td style={{ padding: '6px 10px', whiteSpace: 'nowrap', fontFamily: 'var(--font-mono)',
-                        color: (betrokkenheid.get(r.id)?.clicks || 0) > 0 ? '#6d28d9' : 'var(--text-3)' }}>
-                        {(betrokkenheid.get(r.id)?.clicks || 0) > 0 ? `${betrokkenheid.get(r.id).clicks}x` : '-'}
+                      <td style={{ padding: '6px 10px', whiteSpace: 'nowrap', fontFamily: 'var(--font-mono)' }}>
+                        {(() => {
+                          const b = betrokkenheid.get(r.id);
+                          const mens = b?.mens || 0;
+                          const scanner = b?.scanner || 0;
+                          if (!mens && !scanner) return <span style={{ color: 'var(--text-3)' }}>-</span>;
+                          return (
+                            <>
+                              <span style={{ color: mens ? '#6d28d9' : 'var(--text-3)' }}>{mens}x</span>
+                              {scanner > 0 && (
+                                <span title="Klik binnen twee minuten na verzenden, of vlak na de open. Dat is een beveiligingsscanner die elke link in het bericht opent, geen lezer."
+                                  style={{ marginLeft: 5, fontSize: 10, color: 'var(--text-3)' }}>
+                                  +{scanner} scan
+                                </span>
+                              )}
+                            </>
+                          );
+                        })()}
                       </td>
                     </>
                   )}
