@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Importeert de fase 1 en fase 2 lijst in een bestaande outreach-campagne.
+Importeert de fase 1 en fase 2 lijst (xlsx of csv) in een bestaande outreach-campagne.
 
 WAAROM EEN EIGEN SCRIPT NAAST import-outreach-list.py
   Dat script verwacht het onderwerp IN de berichtkolom ('Subject: ...' op regel 1,
@@ -31,6 +31,7 @@ GEBRUIK
 """
 
 import argparse
+import csv
 import json
 import os
 import sys
@@ -125,14 +126,37 @@ def notitie_van(rij):
     return " | ".join(delen) or None
 
 
-def lees_xlsx(pad):
+VERPLICHTE_KOLOMMEN = {"Naam", "E-mail", "Onderwerp", "Bericht"}
+
+
+def _controleer_kop(kop, pad):
+    ontbreekt = VERPLICHTE_KOLOMMEN - set(k for k in kop if k)
+    if ontbreekt:
+        sys.exit(f"Kolommen ontbreken in {os.path.basename(pad)}: {', '.join(sorted(ontbreekt))}")
+
+
+def lees_bestand(pad):
+    """Leest xlsx of csv. Welke van de twee bepaalt de extensie.
+
+    Beide komen voor: de eerste ronde kwam als xlsx binnen, de herschreven
+    teksten als csv. Een tweede script ernaast zou betekenen dat een wijziging
+    in de kolomnamen op twee plekken moet, en dan loopt er een achter.
+
+    utf-8-sig, want een csv uit Excel begint met een BOM en dan heet de eerste
+    kolom '\ufeffNr' in plaats van 'Nr'.
+    """
+    if pad.lower().endswith(".csv"):
+        with open(pad, newline="", encoding="utf-8-sig") as fh:
+            rijen = [r for r in csv.DictReader(fh) if any((v or "").strip() for v in r.values())]
+        if not rijen:
+            sys.exit("Geen rijen gevonden in het csv-bestand.")
+        _controleer_kop(list(rijen[0].keys()), pad)
+        return rijen
+
     wb = openpyxl.load_workbook(pad, data_only=True)
     ws = wb.worksheets[0]
     kop = [c.value for c in ws[1]]
-    verplicht = {"Naam", "E-mail", "Onderwerp", "Bericht"}
-    ontbreekt = verplicht - set(k for k in kop if k)
-    if ontbreekt:
-        sys.exit(f"Kolommen ontbreken in het bestand: {', '.join(sorted(ontbreekt))}")
+    _controleer_kop(kop, pad)
     rijen = []
     for r in ws.iter_rows(min_row=2, values_only=True):
         if not any(r):
@@ -143,7 +167,7 @@ def lees_xlsx(pad):
 
 def main():
     ap = argparse.ArgumentParser(description="Importeer de fase 1 en 2 lijst in een outreach-campagne.")
-    ap.add_argument("--file", required=True, help="pad naar de xlsx")
+    ap.add_argument("--file", required=True, help="pad naar de xlsx of csv")
     ap.add_argument("--campaign-name", default=CAMPAGNE_STANDAARD)
     ap.add_argument("--apply", action="store_true", help="schrijf echt weg (zonder deze vlag gebeurt er niets)")
     args = ap.parse_args()
@@ -161,7 +185,7 @@ def main():
         sys.exit(f"Campagne '{args.campaign_name}' niet gevonden.")
     camp = camps[0]
 
-    rijen = lees_xlsx(args.file)
+    rijen = lees_bestand(args.file)
     bestaand = sb.select_all("outreach_contact", "id,email",
                              f"&campaign_id=eq.{camp['id']}")
     per_mail = {str(r["email"]).strip().lower(): r["id"] for r in bestaand if r.get("email")}
