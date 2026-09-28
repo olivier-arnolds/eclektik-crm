@@ -651,13 +651,25 @@ export default function MarketingOutreach() {
 
   const liAntwoordRijen = (liScanDroog?.resultaten || []).filter(r => r.uitkomst === 'antwoord');
   // Verwerken mag pas na een VOLLEDIG afgeronde droge run met antwoorden.
-  const liKanVerwerken = !!liScanDroog && liScanDroog.compleet && liAntwoordRijen.length > 0;
+  // Een AFGERONDE droge run is genoeg; er hoeven geen nieuwe antwoorden te zijn.
+  //
+  // Eerst eiste deze knop minstens een gevonden antwoord, en dat gaf een
+  // patstelling: zijn alle antwoorden al verwerkt, dan komen ze terug als 'al
+  // bekend' en niet als 'antwoord', dus verscheen de knop niet, dus werd de
+  // scantijd nooit vastgelegd, dus bleef bericht 2 geblokkeerd op 'inboxscan
+  // verouderd'. Een echte run zonder iets te verwerken is ongevaarlijk: die
+  // noteert alleen dat er gekeken is.
+  const liKanVerwerken = !!liScanDroog && liScanDroog.compleet;
 
   const liVerwerk = async () => {
     if (!campaign || !liKanVerwerken) return;
-    if (!window.confirm(liHerscan
-      ? `${liAntwoordRijen.length} antwoorden OPNIEUW beoordelen? Dit overschrijft de eerder vastgelegde tekst en classificatie, en kan de status wijzigen.`
-      : `${liAntwoordRijen.length} antwoorden verwerken en de status bijwerken?`)) return;
+    const vraag = liAntwoordRijen.length === 0
+      ? 'Er zijn geen nieuwe antwoorden. Doorgaan legt alleen vast dat de inbox gecontroleerd is, '
+        + 'en dat is nodig voordat er een herinnering uit mag. Doorgaan?'
+      : (liHerscan
+        ? `${liAntwoordRijen.length} antwoorden OPNIEUW beoordelen? Dit overschrijft de eerder vastgelegde tekst en classificatie, en kan de status wijzigen.`
+        : `${liAntwoordRijen.length} antwoorden verwerken en de status bijwerken?`);
+    if (!window.confirm(vraag)) return;
     setLiBezig(true); setLiErr(null); setLiScanEcht(null);
     try {
       const uitkomst = await liLoop(false);
@@ -920,8 +932,10 @@ export default function MarketingOutreach() {
               </button>
               {liKanVerwerken && (
                 <button className="btn-ghost tiny" disabled={liBezig} onClick={liVerwerk}
-                  title="Legt de gevonden antwoorden vast en werkt de status van die prospects bij">
-                  Verwerk deze antwoorden
+                  title="Legt de gevonden antwoorden vast, werkt de status bij, en noteert dat de inbox gecontroleerd is. Dat laatste is nodig voordat er een herinnering uit mag.">
+                  {liAntwoordRijen.length > 0
+                    ? `Verwerk deze antwoorden (${liAntwoordRijen.length})`
+                    : 'Scan vastleggen'}
                 </button>
               )}
             </div>

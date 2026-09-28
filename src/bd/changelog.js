@@ -19,9 +19,27 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.134.1';
+export const CURRENT_VERSION = '1.134.2';
 
 export const CHANGELOG = [
+  {
+    version: '1.134.2',
+    date: '2026-09-28T09:00:28Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Patstelling: zonder nieuwe antwoorden kon de scan niet vastgelegd worden',
+    summary:
+      'De reparatie van 1.134.1 legde de scantijd alleen vast bij een echte run, en die knop verscheen alleen als de droge run nieuwe antwoorden vond. Zijn alle antwoorden al verwerkt, dan komen ze terug als "al bekend" en niet als "antwoord". Dus geen knop, dus geen scantijd, dus bericht 2 bleef geblokkeerd. Een kringetje waar je niet uitkwam.',
+    changes: [
+      'Een afgeronde droge run is nu genoeg om te mogen verwerken; er hoeven geen nieuwe antwoorden te zijn. Een echte run zonder iets te verwerken is ongevaarlijk en noteert alleen dat er gekeken is.',
+      'De knop heet dan Scan vastleggen in plaats van Verwerk deze antwoorden, en de bevestiging zegt wat er gebeurt en waarom het nodig is.',
+      'Bij gevonden antwoorden staat het aantal nu in de knop.',
+      'Dit was de derde schakel in dezelfde keten: de scan die zich niet noteerde, de tab die de reden niet toonde, en nu de knop die niet verscheen. Elk onderdeel klopte op zichzelf.',
+    ],
+    files: ['src/bd/marketing-outreach.jsx'],
+    rollback: 'git revert naar v1.134.1. Dan keert de patstelling terug zodra alle antwoorden verwerkt zijn.',
+    gitTag: 'v1.134.2',
+  },
   {
     version: '1.134.1',
     date: '2026-09-28T08:56:06Z',
