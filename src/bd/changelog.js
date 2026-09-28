@@ -19,9 +19,25 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.135.1';
+export const CURRENT_VERSION = '1.135.2';
 
 export const CHANGELOG = [
+  {
+    version: '1.135.2',
+    date: '2026-09-28T12:20:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feat',
+    title: 'De kolom Herinnering zegt nu verstuurd in plaats van klaargezet',
+    summary:
+      'De tekst blijft na verzending staan, dus de cel bleef klaargezet zeggen. Dat leest als iets dat nog moet gebeuren, terwijl het bericht al bij de ander in beeld staat. Na de eerste achttien herinneringen was dat op één scherm niet meer uit elkaar te houden.',
+    changes: [
+      'Is bericht 2 verstuurd, dan staat er verstuurd in het groen in plaats van klaargezet in het blauw.',
+      'Die cel is niet meer aanklikbaar. Uitzetten zou de tekst wissen terwijl het bericht al weg is.',
+      'Het regeltje boven de tabel telt klaargezet en verstuurd apart.',
+    ],
+    files: ['src/bd/marketing-outreach.jsx'],
+    rollback: 'git revert naar v1.135.1. Dan zegt een verstuurde herinnering weer klaargezet.',
+  },
   {
     version: '1.135.1',
     date: '2026-09-28T12:05:00Z',

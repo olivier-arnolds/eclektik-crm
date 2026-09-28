@@ -95,6 +95,10 @@ const heeftHerinnering = (r) => !!String(r?.msg2_body || '').trim();
 // leest als een verzending die de helft laat liggen.
 const herinneringKanNog = (r) => heeftHerinnering(r) && r?.status === 'msg1_sent';
 
+// Verstuurd is een eindstand: de tekst blijft staan, maar er valt niets meer te
+// kiezen. Daarom apart van 'klaargezet', dat nog uit te zetten is.
+const herinneringVerstuurd = (r) => heeftHerinnering(r) && r?.status === 'msg2_sent';
+
 // Vult {{first_name}} en {{company}} in. Puur, want wat hier uitkomt wordt
 // letterlijk opgeslagen, precies zoals msg1_body dat al doet: in de database
 // staat de uitgeschreven tekst, geen plaatshouder. Een ontbrekende waarde wordt
@@ -799,6 +803,11 @@ export default function MarketingOutreach() {
     [rows, campaign],
   );
 
+  const herinneringenVerstuurd = useMemo(
+    () => (campaign?.channel === 'linkedin' ? rows.filter(herinneringVerstuurd).length : 0),
+    [rows, campaign],
+  );
+
   // Stap 2 apart aanvragen. Dezelfde caps en dezelfde batchgrootte; het enige
   // verschil is dat we uitsluitend om bericht 2 vragen.
   const verstuurHerinneringen = async () => {
@@ -965,7 +974,9 @@ export default function MarketingOutreach() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
               <span style={{ fontSize: 13, fontWeight: 600 }}>Herinnering</span>
               <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
-                {herinneringenKlaar} klaargezet · {counts[REMINDER_KAN] || 0} kunnen er een krijgen
+                {herinneringenKlaar} klaargezet
+                {herinneringenVerstuurd > 0 && <> · {herinneringenVerstuurd} verstuurd</>}
+                {' '}· {counts[REMINDER_KAN] || 0} kunnen er een krijgen
               </span>
               <button className="btn-ghost tiny" style={{ marginLeft: 'auto' }}
                 disabled={reminderBulkBezig || filtered.length === 0}
@@ -1485,20 +1496,31 @@ export default function MarketingOutreach() {
                     {(() => {
                       const a = adviesVoor(r);
                       const klaar = heeftHerinnering(r);
+                      const verstuurd = herinneringVerstuurd(r);
                       const bezig = reminderBezigId === r.id;
                       // Een gevulde tekst is de feitelijke stand en gaat voor
                       // het advies: die persoon krijgt bij stap 2 een bericht.
-                      const label = bezig ? 'bezig…' : (klaar ? 'klaargezet' : HERINNERING_LABEL[a.advies]);
+                      // Is hij al weg, dan zegt de cel dat, want 'klaargezet'
+                      // suggereert dat er nog iets moet gebeuren.
+                      const label = bezig ? 'bezig…'
+                        : verstuurd ? 'verstuurd'
+                          : klaar ? 'klaargezet' : HERINNERING_LABEL[a.advies];
                       // Aanzetten kan alleen bij LinkedIn: daar staat het
                       // sjabloon, en een e-mail heeft ook een onderwerp nodig
                       // dat deze weg niet schrijft.
-                      const klikbaar = isLinkedIn && !bezig && (klaar || a.advies === HERINNERING_KAN);
+                      // Verstuurd is niet meer aan te raken: uitzetten zou de tekst
+                      // wissen terwijl het bericht al bij de ander in beeld staat.
+                      const klikbaar = isLinkedIn && !bezig && !verstuurd
+                        && (klaar || a.advies === HERINNERING_KAN);
                       if (!klikbaar) {
                         return (
-                          <span title={klaar ? 'Tekst staat klaar voor bericht 2' : a.reden}
-                            style={klaar
-                              ? { color: '#1d4ed8', fontWeight: 500, background: 'rgba(37,99,235,0.14)', padding: '1px 6px', borderRadius: 4 }
-                              : { color: HERINNERING_COLOR[a.advies], fontWeight: a.advies === HERINNERING_KAN ? 500 : 400 }}>
+                          <span title={verstuurd ? 'Bericht 2 is verstuurd. Dit is niet terug te draaien.'
+                            : klaar ? 'Tekst staat klaar voor bericht 2' : a.reden}
+                            style={verstuurd
+                              ? { color: '#15803d', fontWeight: 500, background: 'rgba(21,128,61,0.13)', padding: '1px 6px', borderRadius: 4 }
+                              : klaar
+                                ? { color: '#1d4ed8', fontWeight: 500, background: 'rgba(37,99,235,0.14)', padding: '1px 6px', borderRadius: 4 }
+                                : { color: HERINNERING_COLOR[a.advies], fontWeight: a.advies === HERINNERING_KAN ? 500 : 400 }}>
                             {label}
                           </span>
                         );
