@@ -31,7 +31,7 @@ export const CHANGELOG = [
     summary:
       'De tekst blijft na verzending staan, dus de cel bleef klaargezet zeggen. Dat leest als iets dat nog moet gebeuren, terwijl het bericht al bij de ander in beeld staat. Na de eerste achttien herinneringen was dat op één scherm niet meer uit elkaar te houden.',
     changes: [
-      'Is bericht 2 verstuurd, dan staat er verstuurd in het groen in plaats van klaargezet in het blauw.',
+      'Is bericht 2 verstuurd, dan staat er verstuurd in grijs in plaats van klaargezet in het blauw. Grijs en niet groen, want groen is al de kleur van "kan": de stand waar je juist iets mee moet.',
       'Die cel is niet meer aanklikbaar. Uitzetten zou de tekst wissen terwijl het bericht al weg is.',
       'Het regeltje boven de tabel telt klaargezet en verstuurd apart.',
     ],

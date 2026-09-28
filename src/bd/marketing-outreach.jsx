@@ -1516,8 +1516,11 @@ export default function MarketingOutreach() {
                         return (
                           <span title={verstuurd ? 'Bericht 2 is verstuurd. Dit is niet terug te draaien.'
                             : klaar ? 'Tekst staat klaar voor bericht 2' : a.reden}
+                            // Bewust grijs en niet groen: 'kan' is al groen, en dat
+                            // is de stand waar je iets mee moet. Verstuurd is af,
+                            // dus die hoort naar de achtergrond te zakken.
                             style={verstuurd
-                              ? { color: '#15803d', fontWeight: 500, background: 'rgba(21,128,61,0.13)', padding: '1px 6px', borderRadius: 4 }
+                              ? { color: 'var(--text-3)', fontWeight: 500, background: 'rgba(120,120,128,0.16)', padding: '1px 6px', borderRadius: 4 }
                               : klaar
                                 ? { color: '#1d4ed8', fontWeight: 500, background: 'rgba(37,99,235,0.14)', padding: '1px 6px', borderRadius: 4 }
                                 : { color: HERINNERING_COLOR[a.advies], fontWeight: a.advies === HERINNERING_KAN ? 500 : 400 }}>
