@@ -19,9 +19,30 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.134.4';
+export const CURRENT_VERSION = '1.135.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.135.0',
+    date: '2026-09-28T11:55:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feat',
+    title: 'Advertenties: een upload ruimt nu dagen op die LinkedIn niet meer meldt',
+    summary:
+      'Opslaan ging met een upsert, en die overschrijft wel maar verwijdert nooit. Zolang LinkedIn een gecorrigeerde dag op nul zet gaat dat goed. Laat LinkedIn de regel helemaal weg, dan bleef het oude en hogere getal staan en telde het mee in het totaal. Niets geks te zien, alleen te veel. Aanleiding: op 23 september bracht LinkedIn een dag terug van 1162 vertoningen en 8 kliks naar 7 en 0. Dat ging goed omdat de regel bleef bestaan.',
+    changes: [
+      'Een export geldt nu als het volledige antwoord voor zijn eigen rapportperiode en zijn eigen campagnes. Dagen binnen die periode die niet in het bestand staan worden verwijderd.',
+      'Het opruimen gebeurt per bestand, niet over de hele sleep heen. Anders zou een export van campagne A over dertig dagen de week van campagne B wissen.',
+      'Een leeg rapport wist niets: zonder campagnes in het bestand is er geen uitspraak gedaan.',
+      'Het voorbeeldscherm zegt vooraf hoeveel regels er verdwijnen, dus je ziet het voor je op Opslaan drukt.',
+      'Opruimen gebeurt pas nadat de nieuwe cijfers binnen zijn; een mislukte upsert laat geen gat achter.',
+    ],
+    files: [
+      'src/lib/linkedin-ads-cleanup.js', 'src/lib/linkedin-ads-cleanup.test.js',
+      'src/bd/marketing-ads.jsx',
+    ],
+    rollback: 'git revert naar v1.134.4. Dan blijven verdwenen dagregels weer staan.',
+  },
   {
     version: '1.134.4',
     date: '2026-09-28T11:35:00Z',

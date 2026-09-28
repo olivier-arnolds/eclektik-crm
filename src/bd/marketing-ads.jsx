@@ -3,6 +3,7 @@ import { supabase } from '../supabase';
 import {
   leesBestand, totalen, perAdvertentie, perDag, LEEG, ONLEESBAAR, AGGREGAAT,
 } from '../lib/linkedin-ads-parse';
+import { opruimPlan, groepVanBestand } from '../lib/linkedin-ads-cleanup';
 
 // Advertenties-tab onder Marketing. Toont wat LinkedIn-advertenties opleveren.
 // Ontwerp: docs/superpowers/specs/2026-09-23-linkedin-ads-tab-design.md
@@ -264,11 +265,18 @@ export default function MarketingAds() {
   const verwerkBestanden = useCallback(async (bestanden) => {
     const alle = [];
     const problemen = [];
+    // Per bestand onthouden we periode plus campagnes, voor het opruimen verderop.
+    // Dat moet per bestand en niet over de hele sleep heen: zie linkedin-ads-cleanup.js.
+    const groepen = [];
     for (const f of bestanden) {
       try {
         const r = await leesBestand(f);
         if (r.fout) problemen.push({ soort: r.fout, tekst: r.melding });
-        else alle.push(...r.rijen.map(x => ({ ...x, source_file: f.name })));
+        else {
+          alle.push(...r.rijen.map(x => ({ ...x, source_file: f.name })));
+          const g = groepVanBestand(r.periode, r.rijen);
+          if (g) groepen.push(g);
+        }
       } catch (e) {
         problemen.push({ soort: ONLEESBAAR, tekst: `${f.name} kon niet gelezen worden: ${e.message}` });
       }
@@ -291,6 +299,7 @@ export default function MarketingAds() {
     const datums = uniek.map(r => r.stat_date).sort();
     setVoorbeeld({
       rijen: uniek,
+      verouderd: opruimPlan(rijen, groepen),
       nieuw,
       bijgewerkt: uniek.length - nieuw,
       van: datums[0],
@@ -305,8 +314,21 @@ export default function MarketingAds() {
     const { error } = await supabase
       .from('linkedin_ad_stats')
       .upsert(voorbeeld.rijen, { onConflict: 'stat_date,ad_id' });
+    if (error) { setBezig(false); setFout(error.message); return; }
+
+    // Pas opruimen nadat de nieuwe cijfers binnen zijn. Andersom zou een
+    // mislukte upsert een gat achterlaten in plaats van oude cijfers.
+    const perDatum = new Map();
+    for (const v of voorbeeld.verouderd || []) {
+      if (!perDatum.has(v.stat_date)) perDatum.set(v.stat_date, []);
+      perDatum.get(v.stat_date).push(v.ad_id);
+    }
+    for (const [datum, ads] of perDatum) {
+      const { error: wisFout } = await supabase
+        .from('linkedin_ad_stats').delete().eq('stat_date', datum).in('ad_id', ads);
+      if (wisFout) { setBezig(false); setFout(wisFout.message); return; }
+    }
     setBezig(false);
-    if (error) { setFout(error.message); return; }
     setVoorbeeld(null);
     setMeldingen([]);
     ophalen();
@@ -396,6 +418,12 @@ export default function MarketingAds() {
           <div style={{ fontSize: 12, color: 'var(--text-3)', marginBottom: 10 }}>
             {nf.format(voorbeeld.nieuw)} nieuw, {nf.format(voorbeeld.bijgewerkt)} wordt bijgewerkt.
             Bijwerken overschrijft; er wordt niets dubbel geteld.
+            {voorbeeld.verouderd?.length > 0 && (
+              <> {nf.format(voorbeeld.verouderd.length)} eerder opgeslagen{' '}
+                {voorbeeld.verouderd.length === 1 ? 'dagregel komt' : 'dagregels komen'} niet meer
+                voor in deze export en {voorbeeld.verouderd.length === 1 ? 'wordt' : 'worden'}{' '}
+                verwijderd, anders blijven die cijfers meetellen.</>
+            )}
           </div>
           <button className="btn-primary tiny" disabled={bezig} onClick={opslaan}>
             {bezig ? 'Bezig…' : 'Opslaan'}
