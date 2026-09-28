@@ -175,6 +175,8 @@ export default function MarketingOutreach() {
 
   const [sending, setSending] = useState(false);
   const [sendPlan, setSendPlan] = useState(null);
+  // De redenen die er voor de lezer toe doen. Zie het planblok onderaan.
+  const planRedenen = Object.entries(sendPlan?.skipped || {}).filter(([k]) => k !== 'andere stap');
   const [sendResult, setSendResult] = useState(null);
   const [sendErr, setSendErr] = useState(null);
   const [batchSize, setBatchSize] = useState(25);
@@ -1279,9 +1281,16 @@ export default function MarketingOutreach() {
                 ? ` Deze week: ${sendPlan.sent_last_7d} van weekcap ${sendPlan.weekly_cap}.`
                 : ''}
             </div>
-            {sendPlan.skipped && Object.keys(sendPlan.skipped).length > 0 && (
+            {/* 'andere stap' is geen reden maar ruis: de selector loopt de hele
+                campagne af, dus bij een herinneringsplan valt iedereen zonder
+                bericht 2 daarop af. Dat las als 'hij kijkt naar alle records'.
+                De rest zijn wel echte blokkades, en die wil je juist zien. */}
+            {planRedenen.length > 0 && (
               <div style={{ color: 'var(--text-3)' }}>
-                Overgeslagen: {Object.entries(sendPlan.skipped).map(([k, v]) => `${v} ${k}`).join(', ')}.
+                {sendPlan.would_send === 0
+                  ? 'Er gaat nu niets uit. Geblokkeerd door: '
+                  : 'Overgeslagen: '}
+                {planRedenen.map(([k, v]) => `${v} ${k}`).join(', ')}.
               </div>
             )}
           </div>

@@ -19,9 +19,24 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.134.2';
+export const CURRENT_VERSION = '1.134.3';
 
 export const CHANGELOG = [
+  {
+    version: '1.134.3',
+    date: '2026-09-28T10:20:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Het herinneringsplan las alsof het naar alle contacten keek',
+    summary:
+      'De selector loopt altijd de hele campagne af en telt per reden hoeveel contacten afvallen. Bij een herinneringsplan valt iedereen zonder bericht 2 af op "andere stap", en die telling van ruim honderd stond gewoon in beeld. Dat leest als: hij pakt alle records, terwijl er juist correct gefilterd werd.',
+    changes: [
+      '"andere stap" staat niet meer in de regel Overgeslagen. Het is geen blokkade maar het filter zelf.',
+      'Gaat er niets uit, dan staat er nu "Er gaat nu niets uit. Geblokkeerd door: ..." in plaats van een kale opsomming. De regel telt contacten per reden, niet losse records.',
+    ],
+    files: ['src/bd/marketing-outreach.jsx'],
+    rollback: 'git revert naar v1.134.2. Dan komt de ruis in het planblok terug.',
+  },
   {
     version: '1.134.2',
     date: '2026-09-28T09:00:28Z',
