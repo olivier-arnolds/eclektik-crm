@@ -281,6 +281,15 @@ DB triggers assign `companies.account_no` (ALL accounts) and a shared
 - A deal moving to `sleeping` keeps its `company_id`; it's only invisible if a
   render path forgets the `sleeping` stage (was a bug; fixed with a dedicated
   Account-360 section).
+- **LinkedIn Ads (hard-won):** Campaign Manager herziet cijfers met terugwerkende
+  kracht. Op 23-09-2026 ging een dag van 1162 vertoningen / 8 kliks / EUR 22,57
+  terug naar 7 / 0 / EUR 0,16 (ongeldig verkeer eruit, kosten terug). Een lager
+  totaal na een nieuwe upload is dus meestal geen bug. Vergelijk twee exports dag
+  voor dag voordat je in de code gaat zoeken. De campagne-ID staat in de rijen,
+  niet in de bestandsnaam: `campaign_891312023_...csv` bevat campagne 1224430733.
+  Sinds v1.135.0 ruimt een upload dagen op die binnen de rapportperiode van dat
+  bestand vallen maar er niet in staan (`src/lib/linkedin-ads-cleanup.js`), want
+  de upsert overschrijft wel maar verwijdert nooit.
 - **Content Calendar (hard-won):**
   - **Statusmodel** = afgeleide van *goedgekeurd? × heeft datum?*: `draft`
     (niet goedgekeurd) → `approved` (goedgekeurd, geen datum) → `scheduled`
