@@ -331,6 +331,26 @@ export default async function handler(req, res) {
   }
 
   const volgende = Number(offset) + BATCH;
+  const klaar = volgende >= (totaal ?? 0);
+
+  // De scan noteren, anders weet de verzendkant niet dat hij gedraaid heeft.
+  //
+  // Bericht 2 wordt geweigerd zolang de inboxscan ouder is dan STALE_HOURS, en
+  // een ontbrekende scantijd telt daar als oneindig oud. Deze scan schreef die
+  // tijd nergens weg, dus stonden er achttien klaargezette herinneringen die
+  // stuk voor stuk afvielen op 'inboxscan verouderd'. De scan werkte, het
+  // versturen werkte, maar ze wisten niets van elkaar.
+  //
+  // Alleen bij de LAATSTE portie van een echte run: anders zou een scan van
+  // veertig contacten de hele campagne als vers bestempelen. En niet bij een
+  // droge run, want die heeft niets gecontroleerd wat blijft staan.
+  if (!dryRun && klaar) {
+    const nu = new Date().toISOString();
+    const { error: syncErr } = await supabase.from('outreach_sync_state')
+      .upsert({ id: `inbox:${campaign_id}`, last_synced_at: nu, updated_at: nu });
+    if (syncErr) console.error('[outreach-linkedin-scan] scantijd vastleggen faalde', syncErr.message);
+  }
+
   return res.status(200).json({
     dry_run: dryRun,
     herscan,
@@ -340,7 +360,7 @@ export default async function handler(req, res) {
     geschreven,
     fouten,
     overgeslagen,
-    volgende_offset: volgende < (totaal ?? 0) ? volgende : null,
+    volgende_offset: klaar ? null : volgende,
     resultaten,
   });
 }

@@ -19,9 +19,27 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.134.0';
+export const CURRENT_VERSION = '1.134.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.134.1',
+    date: '2026-09-28T08:56:06Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Herinneringen gingen niet uit: de LinkedIn-scan liet geen spoor na',
+    summary:
+      'Achttien klaargezette herinneringen vielen stuk voor stuk af op "inboxscan verouderd". Bericht 2 wordt geweigerd zolang de inboxscan ouder is dan twaalf uur, en een ontbrekende scantijd telt daarbij als oneindig oud. De LinkedIn-scan schreef die tijd nergens weg, dus stond er voor die campagne geen enkele rij in outreach_sync_state.',
+    changes: [
+      'De LinkedIn-scan legt de scantijd nu vast, met dezelfde sleutel die de verzendkant leest.',
+      'Alleen bij de laatste portie van een echte run. Anders zou een scan van veertig contacten de hele campagne als vers bestempelen, en een droge run heeft niets gecontroleerd wat blijft staan.',
+      'De scan werkte en het versturen werkte; ze wisten alleen niets van elkaar. Dezelfde soort fout als de hold-bug en de ontbrekende supabase-import: twee helften die elk kloppen en elkaar niet raken.',
+      'De tab toonde na een echte verzending alleen "0 verstuurd" zonder reden, terwijl het antwoord gewoon in de response stond. Het endpoint geeft het plan altijd terug; de tab gebruikte het alleen na een droge run. Nu wordt het altijd getoond, inclusief de regel Overgeslagen met de reden per contact.',
+    ],
+    files: ['api/outreach-linkedin-scan.js', 'src/bd/marketing-outreach.jsx'],
+    rollback: 'git revert naar v1.134.0. Dan gaan er weer geen herinneringen uit.',
+    gitTag: 'v1.134.1',
+  },
   {
     version: '1.134.0',
     date: '2026-09-28T08:04:34Z',

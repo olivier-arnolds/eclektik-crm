@@ -723,7 +723,7 @@ export default function MarketingOutreach() {
   const callSend = async ({ dryRun, onlyStep = null }) => {
     if (!campaign) return;
     setSending(true); setSendErr(null); setSendResult(null);
-    if (dryRun) setSendPlan(null);
+    setSendPlan(null);
     try {
       const resp = await apiFetch('/api/outreach-send', {
         method: 'POST',
@@ -737,7 +737,11 @@ export default function MarketingOutreach() {
       });
       const data = await resp.json();
       if (!resp.ok) throw new Error(data?.error || `HTTP ${resp.status}`);
-      if (dryRun) setSendPlan(data.plan);
+      // Ook na een ECHTE verzending het plan tonen. Het endpoint geeft het
+      // altijd terug, maar de tab gebruikte het alleen bij een droge run. Ging
+      // er niets uit, dan zag je enkel '0 verstuurd' zonder reden, terwijl het
+      // antwoord ('inboxscan verouderd') gewoon in de response stond.
+      if (data.plan) setSendPlan(data.plan);
       else { setSendResult({ ...data.stats, plan: data.plan, failures: data.failures || [] }); setSendPlan(null); await load(); }
     } catch (e) {
       setSendErr(e.message);
