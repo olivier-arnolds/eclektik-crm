@@ -396,6 +396,15 @@ describe('statusAfterSend op het LinkedIn-kanaal', () => {
     expect(r.next_action_at).toBeNull();
   });
 
+  it('KRITIEK: stap 2 sluit de reeks wel af, anders komt dezelfde herinnering terug', () => {
+    // De kanaalcheck stond voor de stapcheck, dus een LinkedIn-herinnering liet
+    // de contact op msg1_sent staan. stepForStatus('msg1_sent') is 2, dus bij de
+    // volgende ronde stond diezelfde persoon er gewoon weer bij.
+    const r = statusAfterSend(2, { now: NOW, channel: 'linkedin' });
+    expect(r.status).toBe('msg2_sent');
+    expect(r.next_action_at).toBeNull();
+  });
+
   it('e-mail blijft wel opvolgen', () => {
     const r = statusAfterSend(1, { now: NOW, delayMinDays: 5, delayMaxDays: 5 });
     expect(r.next_action_at).toBe(new Date('2026-09-21T09:00:00Z').toISOString());

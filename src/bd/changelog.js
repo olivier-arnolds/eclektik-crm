@@ -19,9 +19,25 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.134.3';
+export const CURRENT_VERSION = '1.134.4';
 
 export const CHANGELOG = [
+  {
+    version: '1.134.4',
+    date: '2026-09-28T11:35:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Een verstuurde LinkedIn-herinnering sloot de reeks niet af',
+    summary:
+      'In statusAfterSend stond de kanaalcheck voor de stapcheck, nog uit de tijd dat LinkedIn maar een bericht kende. Daardoor bleef een contact na bericht 2 op msg1_sent staan, en dat is precies de status die stap 2 selecteert. Bij een volgende ronde stond dezelfde persoon weer klaar voor het bericht dat hij net had gekregen. Gevonden bij de eerste echte verzending, voordat er iets dubbel de deur uit ging.',
+    changes: [
+      'De LinkedIn-uitzondering geldt nu alleen voor bericht 1. Bericht 2 zet de status op msg2_sent, op LinkedIn net zo goed als bij e-mail.',
+      'Test toegevoegd die stap 2 op het LinkedIn-kanaal afdekt. Die was er alleen voor stap 1, daar kon dit in wegglippen.',
+      'De contacten die de herinnering al gekregen hadden zijn met de hand op msg2_sent gezet, met een back-uptabel vooraf.',
+    ],
+    files: ['api/_lib/outreach-send-lib.js', 'api/_lib/outreach-send-lib.test.js'],
+    rollback: 'git revert naar v1.134.3. Dan kan dezelfde herinnering opnieuw verstuurd worden.',
+  },
   {
     version: '1.134.3',
     date: '2026-09-28T10:20:00Z',

@@ -209,9 +209,16 @@ export function selectSendable(candidates, opts = {}) {
 
 // Statusupdate na een geslaagde verzending (handover §4).
 export function statusAfterSend(step, { now = new Date(), delayMinDays = 5, delayMaxDays = 7, channel = 'email' } = {}) {
-  // Via LinkedIn is bericht 1 ook het laatste bericht. Wel een vervolgdatum
-  // zetten zou de prospect over een week weer in de selectie laten opduiken.
-  if (channel === 'linkedin') return { status: 'msg1_sent', next_action_at: null };
+  // Via LinkedIn plant bericht 1 geen automatische opvolging: een vervolgdatum
+  // zou de prospect over een week vanzelf weer in de selectie laten opduiken,
+  // en de herinnering gaat hier met de hand de deur uit.
+  //
+  // Let op de volgorde. Deze regel stond eerst voor de stapcheck, uit de tijd
+  // dat LinkedIn maar een bericht kende. Toen bericht 2 erbij kwam bleef een
+  // verstuurde herinnering op msg1_sent staan, en stepForStatus('msg1_sent')
+  // is 2. Daarmee stond dezelfde persoon bij de volgende ronde weer klaar voor
+  // precies het bericht dat hij net had gekregen.
+  if (step === 1 && channel === 'linkedin') return { status: 'msg1_sent', next_action_at: null };
   if (step === 1) {
     const span = Math.max(0, delayMaxDays - delayMinDays);
     const days = delayMinDays + Math.floor(Math.random() * (span + 1));
