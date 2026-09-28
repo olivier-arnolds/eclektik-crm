@@ -19,9 +19,24 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.135.0';
+export const CURRENT_VERSION = '1.135.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.135.1',
+    date: '2026-09-28T12:05:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'De knop telde ook herinneringen die al verstuurd waren',
+    summary:
+      'Na het versturen blijft de klaargezette tekst gewoon staan; alleen de status verschuift naar msg2_sent. De teller keek alleen naar die tekst en bleef daarom 18 zeggen terwijl er nog 8 konden. Dat leest als een verzending die de helft laat liggen, terwijl de selectie het altijd goed had.',
+    changes: [
+      'De knop telt nu alleen contacten die nog op msg1_sent staan, dus wat er werkelijk nog uit kan.',
+      'Het filter "klaargezet" blijft alles tonen, ook het al verstuurde: daar wil je juist terug kunnen kijken.',
+    ],
+    files: ['src/bd/marketing-outreach.jsx'],
+    rollback: 'git revert naar v1.135.0. Dan telt de knop weer te hoog.',
+  },
   {
     version: '1.135.0',
     date: '2026-09-28T11:55:00Z',

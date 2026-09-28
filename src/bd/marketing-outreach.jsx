@@ -89,6 +89,12 @@ const REMINDER_SJABLOON =
 // heeft wordt door de verzender overgeslagen met de reden 'tekst ontbreekt'.
 const heeftHerinnering = (r) => !!String(r?.msg2_body || '').trim();
 
+// Klaar om te gaan is iets anders dan klaargezet. Na het versturen blijft de
+// tekst staan, dus heeftHerinnering blijft waar; alleen de status verschuift
+// naar msg2_sent. De knop telde daardoor 18 terwijl er nog 8 konden, en dat
+// leest als een verzending die de helft laat liggen.
+const herinneringKanNog = (r) => heeftHerinnering(r) && r?.status === 'msg1_sent';
+
 // Vult {{first_name}} en {{company}} in. Puur, want wat hier uitkomt wordt
 // letterlijk opgeslagen, precies zoals msg1_body dat al doet: in de database
 // staat de uitgeschreven tekst, geen plaatshouder. Een ontbrekende waarde wordt
@@ -789,7 +795,7 @@ export default function MarketingOutreach() {
   // het niet, want het is geen syntaxfout. Naar beneden verplaatsen kan niet:
   // er zitten early returns tussen en een hook mag daar niet achter.
   const herinneringenKlaar = useMemo(
-    () => (campaign?.channel === 'linkedin' ? rows.filter(heeftHerinnering).length : 0),
+    () => (campaign?.channel === 'linkedin' ? rows.filter(herinneringKanNog).length : 0),
     [rows, campaign],
   );
 
