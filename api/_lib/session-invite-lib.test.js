@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   DEFAULT_DEADLINE, deadlineAt, isClosed, looksLikeToken, normalizeSlots, normalizeNote,
-  validateRequest, clickPatch, confirmPatch, submitPatch,
+  validateRequest, clickPatch, confirmPatch, submitPatch, isRuis,
 } from './session-invite-lib.js';
 
 const VOOR = new Date('2026-10-01T12:00:00Z');   // ruim voor de deadline
@@ -175,5 +175,33 @@ describe('submitPatch', () => {
     const patch = submitPatch({ slots: ['slot-2026-10-29'], note: 'graag over eNPS' }, VOOR);
     expect(patch.answer).toBeUndefined();
     expect(patch.confirmed).toBeUndefined();
+  });
+});
+
+describe('ruisVenster', () => {
+  const AANGEMAAKT = '2026-09-28T07:32:14Z';
+
+  it('een antwoord binnen drie minuten is ruis', () => {
+    // Gemeten bij de eerste echte verzending: elf van de dertien antwoorden
+    // vielen tussen 47 en 105 seconden na verzenden, geen daarvan vulde data of
+    // een opmerking in. Daarna een gat tot 316 seconden, waar de eerste echte
+    // reactie zat. De grens ligt in dat gat.
+    expect(isRuis({ aangemaaktISO: AANGEMAAKT, antwoordISO: '2026-09-28T07:33:01Z' })).toBe(true);
+    expect(isRuis({ aangemaaktISO: AANGEMAAKT, antwoordISO: '2026-09-28T07:35:13Z' })).toBe(true);
+  });
+
+  it('een antwoord daarna telt gewoon', () => {
+    expect(isRuis({ aangemaaktISO: AANGEMAAKT, antwoordISO: '2026-09-28T07:37:30Z' })).toBe(false);
+    expect(isRuis({ aangemaaktISO: AANGEMAAKT, antwoordISO: '2026-09-29T09:00:00Z' })).toBe(false);
+  });
+
+  it('precies op de grens telt niet als ruis', () => {
+    expect(isRuis({ aangemaaktISO: AANGEMAAKT, antwoordISO: '2026-09-28T07:35:14Z' })).toBe(false);
+  });
+
+  it('zonder bruikbare tijden geen oordeel', () => {
+    expect(isRuis({})).toBe(false);
+    expect(isRuis({ aangemaaktISO: AANGEMAAKT })).toBe(false);
+    expect(isRuis({ aangemaaktISO: 'onzin', antwoordISO: 'ook onzin' })).toBe(false);
   });
 });

@@ -19,9 +19,28 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.133.1';
+export const CURRENT_VERSION = '1.134.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.134.0',
+    date: '2026-09-28T08:04:34Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Antwoorden binnen drie minuten tellen niet meer mee',
+    summary:
+      'De bevestigingsstap bleek geen bescherming tegen scanners. Defender Safe Links en Barracuda ATP openen een pagina in een echte browser met JavaScript, en doorlopen die stap dus gewoon. Bij de eerste echte verzending kwamen elf van de dertien antwoorden binnen 47 tot 105 seconden na verzenden, met afwisselend ja en nee, en geen van hen vulde een datum of opmerking in.',
+    changes: [
+      'Nieuwe regel isRuis met tests: een bevestiging binnen drie minuten na het aanmaken van de uitnodiging telt niet mee. De grens ligt in het gat dat de data laat zien: elf antwoorden onder de 105 seconden, daarna niets tot 316 seconden, waar de eerste echte reactie zat die ook een datum koos.',
+      'Het endpoint markeert zo een bevestiging voortaan zelf, met bot_suspected. Bewust markeren en niet weigeren: wie weigert, laat een snelle echte lezer de bedankpagina zien terwijl er niets wordt vastgelegd, en die antwoordt daarna nooit meer.',
+      'De elf bestaande antwoorden zijn met terugwerkende kracht gemarkeerd. Er blijven twee echte ja-zeggers over: Randi van Falck op ruim vijf minuten, die als enige ook data koos, en Mareike van Douglas op acht en een halve minuut.',
+      'Het Customer session-blok laat gemarkeerde antwoorden weg en meldt in de kop hoeveel er als ruis zijn weggelaten, zodat het verschil zichtbaar blijft.',
+      'Eerder stond in de changelog dat vier mensen op de landingspagina iets anders kozen dan de knop waarop ze klikten. Dat was een verkeerde uitleg van dezelfde data: het was een scanner die beide links opent, niet iemand die zich bedacht.',
+    ],
+    files: ['api/_lib/session-invite-lib.js', 'api/_lib/session-invite-lib.test.js', 'api/session-invite.js', 'src/bd/marketing-leads.jsx'],
+    rollback: 'git revert naar v1.133.1. De markering op de elf bestaande rijen blijft dan staan; die is te vinden via _dq_backup_session_ruis_20260928.',
+    gitTag: 'v1.134.0',
+  },
   {
     version: '1.133.1',
     date: '2026-09-28T07:53:58Z',

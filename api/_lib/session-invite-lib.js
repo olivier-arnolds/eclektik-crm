@@ -143,3 +143,28 @@ export function submitPatch({ slots, note }, now = new Date()) {
     updated_at: iso,
   };
 }
+
+// ── Antwoorden die te snel binnenkomen ────────────────────────────────────────
+//
+// Beveiligingsdiensten als Defender Safe Links en Barracuda ATP openen een
+// pagina in een echte browser MET JavaScript om te zien wat er gebeurt. De
+// bevestigingsstap houdt die dus niet tegen: ze doorlopen hem gewoon.
+//
+// Gemeten bij de eerste echte verzending van 28 september: van de dertien
+// antwoorden vielen er elf tussen 47 en 105 seconden na verzenden, met
+// afwisselend ja en nee, en geen van hen vulde een datum of opmerking in.
+// Daarna een gat tot 316 seconden, waar de eerste echte reactie zat, die wel
+// een datum koos. De grens van drie minuten ligt in dat gat.
+//
+// Bewust geen weigering maar een markering: wist je het antwoord, dan heeft een
+// snelle echte lezer de bedankpagina gezien, antwoordt nooit meer, en blijft er
+// geen spoor over. Markeren haalt ze uit beeld zonder iets te vernietigen.
+export const RUIS_SECONDEN = 180;
+
+export function isRuis({ aangemaaktISO, antwoordISO } = {}) {
+  if (!aangemaaktISO || !antwoordISO) return false;
+  const a = new Date(aangemaaktISO).getTime();
+  const b = new Date(antwoordISO).getTime();
+  if (!Number.isFinite(a) || !Number.isFinite(b)) return false;
+  return (b - a) / 1000 < RUIS_SECONDEN;
+}

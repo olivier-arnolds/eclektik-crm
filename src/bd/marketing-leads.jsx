@@ -179,13 +179,19 @@ export default function MarketingLeads() {
   // niets gedaan en zijn alleen uitgenodigd, en een nee is een antwoord maar geen
   // aanknopingspunt. De aantallen blijven wel in de kop staan, want een lijst van
   // acht zonder noemer zegt niets over hoe de uitvraag loopt.
-  const sessieJa = sessie.filter(r => r.answer === 'yes');
-  const sessieNee = sessie.filter(r => r.answer === 'no');
+  // bot_suspected dekt twee dingen: de user-agentcontrole van de site, en een
+  // antwoord dat binnen drie minuten na verzenden binnenkwam. Dat laatste bleek
+  // bij de eerste verzending elf van de dertien antwoorden te zijn, allemaal
+  // van een scanner die ook de bevestigingspagina uitvoert.
+  const echt = sessie.filter(r => !r.bot_suspected);
+  const sessieJa = echt.filter(r => r.answer === 'yes');
+  const sessieNee = echt.filter(r => r.answer === 'no');
+  const sessieRuis = sessie.filter(r => r.bot_suspected && r.answer);
   const sessieStil = sessie.filter(r => !r.answer);
   // Geklikt op Ja maar niet bevestigd. Valt anders stilzwijgend onder 'nog geen
   // antwoord', terwijl het een warm signaal kan zijn: iemand die begon en is
   // afgehaakt. Kan ook een scanner zijn, vandaar apart en niet bij de ja's.
-  const sessieHalf = sessie.filter(r => !r.answer && r.pending_answer === 'yes');
+  const sessieHalf = echt.filter(r => !r.answer && r.pending_answer === 'yes');
 
   const th = { textAlign: 'left', fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.4, color: 'var(--text-dim, #888)', padding: '6px 10px', borderBottom: '0.5px solid var(--sep)' };
   const td = { fontSize: 13, padding: '8px 10px', borderBottom: '0.5px solid var(--sep)', verticalAlign: 'top' };
@@ -201,6 +207,12 @@ export default function MarketingLeads() {
           <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
             {sessieJa.length} ja &middot; {sessieNee.length} nee &middot; {sessieStil.length} nog
             geen antwoord, van {sessie.length} uitgenodigd
+            {sessieRuis.length > 0 && (
+              <> &middot; <span title="Antwoord binnen drie minuten na verzenden, of de site vermoedde een scanner. Die tellen niet mee."
+                style={{ color: 'var(--text-3)' }}>
+                {sessieRuis.length} als ruis weggelaten
+              </span></>
+            )}
             {sessieHalf.length > 0 && (
               <> &middot; <span style={{ color: '#b45309' }}>
                 {sessieHalf.length} klikte ja zonder te bevestigen

@@ -24,7 +24,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { requireWebhookSecret } from './_lib/guard.js';
 import {
-  validateRequest, looksLikeToken, isClosed, clickPatch, confirmPatch, submitPatch,
+  validateRequest, looksLikeToken, isClosed, clickPatch, confirmPatch, submitPatch, isRuis,
 } from './_lib/session-invite-lib.js';
 
 const supabase = (process.env.VITE_SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY)
@@ -59,7 +59,7 @@ export default async function handler(req, res) {
   try {
     const { data: row, error } = await supabase
       .from(TABLE)
-      .select('id, first_name, click_count, bot_suspected')
+      .select('id, first_name, click_count, bot_suspected, created_at')
       .eq('token', body.token)
       .maybeSingle();
     if (error) throw error;
@@ -72,6 +72,14 @@ export default async function handler(req, res) {
     const patch = body.action === 'click' ? clickPatch(row, body)
       : body.action === 'confirm' ? confirmPatch(body)
         : submitPatch(body);
+
+    // Een bevestiging die te snel na het versturen binnenkomt is vrijwel zeker
+    // een scanner die de pagina uitvoert. Het antwoord wordt wel bewaard, maar
+    // gemarkeerd, zodat de tab het niet meetelt. Weigeren zou betekenen dat een
+    // snelle echte lezer de bedankpagina ziet en er niets wordt vastgelegd.
+    if (body.action === 'confirm' && isRuis({ aangemaaktISO: row.created_at, antwoordISO: patch.answer_at })) {
+      patch.bot_suspected = true;
+    }
 
     const { error: updError } = await supabase.from(TABLE).update(patch).eq('id', row.id);
     if (updError) throw updError;
