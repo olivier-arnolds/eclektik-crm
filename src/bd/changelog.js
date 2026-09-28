@@ -19,9 +19,27 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.133.0';
+export const CURRENT_VERSION = '1.133.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.133.1',
+    date: '2026-09-28T07:53:58Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Alleen de ja-zeggers in het Customer session-blok',
+    summary:
+      'Na de eerste echte verzending stonden er 87 rijen in het blok, want iedereen die een uitnodiging kreeg krijgt een rij. Daarvan hadden er 74 nog niets gedaan en 5 nee gezegd. Het blok toont nu alleen wie ja zegt; dat zijn er 8.',
+    changes: [
+      'De aantallen blijven in de kop staan (8 ja, 5 nee, 74 nog geen antwoord, van 87 uitgenodigd). Een lijst van acht zonder noemer zegt niets over hoe de uitvraag loopt.',
+      'De kolom Antwoord is weg, want daar stond per definitie Ja in.',
+      'Wie op Ja klikte maar niet bevestigde krijgt een eigen teller in de kop, en alleen als het voorkomt. Zo iemand valt anders stilzwijgend onder "nog geen antwoord" terwijl het een warm signaal kan zijn. Bewust niet bij de ja-zeggers: het kan ook een scanner zijn.',
+      'Uit de eerste verzending bleek iets dat het bevestigingsmechanisme rechtvaardigt: 4 van de 13 mensen kozen op de landingspagina iets anders dan de knop waarop ze klikten. Drie klikten Nee en zeiden Ja, een klikte Ja en zei Nee. Had de klik als antwoord geteld, dan was bijna een derde fout geweest.',
+    ],
+    files: ['src/bd/marketing-leads.jsx'],
+    rollback: 'git revert naar v1.133.0. Puur weergave.',
+    gitTag: 'v1.133.1',
+  },
   {
     version: '1.133.0',
     date: '2026-09-27T22:41:41Z',

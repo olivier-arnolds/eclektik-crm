@@ -15,16 +15,6 @@ const BRON_LABEL = {
   event_registered: 'Event 6 okt',
 };
 
-// Antwoord op de uitnodiging voor de user session. Geklikt maar niet bevestigd
-// is bewust een eigen stand: de klik zet alleen pending_answer, en pas de
-// landingspagina maakt er een antwoord van. Zo kan een linkscanner van Outlook
-// of Mimecast nooit namens iemand ja zeggen.
-function sessieAntwoord(r) {
-  if (r?.answer === 'yes') return { tekst: 'Ja', kleur: '#16a34a', vet: true };
-  if (r?.answer === 'no') return { tekst: 'Nee', kleur: '#6b7280', vet: false };
-  if (r?.pending_answer) return { tekst: `${r.pending_answer === 'yes' ? 'Ja' : 'Nee'} geklikt, niet bevestigd`, kleur: '#b45309', vet: false };
-  return { tekst: 'nog niets', kleur: 'var(--text-3)', vet: false };
-}
 
 // auth-e-mail → OWNERS-id voor de owner op de gepromoveerde sales lead.
 // ownerIdFromName in adapters.js mapt weergavenamen (geen e-mails), dus hier
@@ -185,6 +175,18 @@ export default function MarketingLeads() {
     setBusyId(null);
   };
 
+  // Alleen wie ja zegt hoort in dit blok. De rest is geen lead: 74 mensen hebben
+  // niets gedaan en zijn alleen uitgenodigd, en een nee is een antwoord maar geen
+  // aanknopingspunt. De aantallen blijven wel in de kop staan, want een lijst van
+  // acht zonder noemer zegt niets over hoe de uitvraag loopt.
+  const sessieJa = sessie.filter(r => r.answer === 'yes');
+  const sessieNee = sessie.filter(r => r.answer === 'no');
+  const sessieStil = sessie.filter(r => !r.answer);
+  // Geklikt op Ja maar niet bevestigd. Valt anders stilzwijgend onder 'nog geen
+  // antwoord', terwijl het een warm signaal kan zijn: iemand die begon en is
+  // afgehaakt. Kan ook een scanner zijn, vandaar apart en niet bij de ja's.
+  const sessieHalf = sessie.filter(r => !r.answer && r.pending_answer === 'yes');
+
   const th = { textAlign: 'left', fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.4, color: 'var(--text-dim, #888)', padding: '6px 10px', borderBottom: '0.5px solid var(--sep)' };
   const td = { fontSize: 13, padding: '8px 10px', borderBottom: '0.5px solid var(--sep)', verticalAlign: 'top' };
 
@@ -197,28 +199,33 @@ export default function MarketingLeads() {
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 8 }}>
           <span style={{ fontSize: 13, fontWeight: 600 }}>Customer session</span>
           <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
-            reacties op de uitnodiging, {sessie.filter(r => r.answer === 'yes').length} van
-            de {sessie.length} zeggen ja
+            {sessieJa.length} ja &middot; {sessieNee.length} nee &middot; {sessieStil.length} nog
+            geen antwoord, van {sessie.length} uitgenodigd
+            {sessieHalf.length > 0 && (
+              <> &middot; <span style={{ color: '#b45309' }}>
+                {sessieHalf.length} klikte ja zonder te bevestigen
+              </span></>
+            )}
           </span>
         </div>
-        {sessie.length === 0 ? (
+        {sessieJa.length === 0 ? (
           <div style={{ fontSize: 12, color: 'var(--text-3)', border: '0.5px dashed var(--sep)', borderRadius: 6, padding: '10px 12px' }}>
-            Nog geen reacties. Ze verschijnen hier zodra iemand op Ja of Nee klikt en dat op de
-            landingspagina bevestigt.
+            {sessie.length === 0
+              ? 'Nog geen reacties. Ze verschijnen hier zodra iemand op Ja klikt en dat op de landingspagina bevestigt.'
+              : `Nog niemand heeft ja gezegd. Van de ${sessie.length} uitgenodigden hebben er ${sessieNee.length} nee gezegd en ${sessieStil.length} nog niet gereageerd.`}
           </div>
         ) : (
           <div style={{ border: '0.5px solid var(--sep)', borderRadius: 8, overflow: 'hidden' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead style={{ background: 'var(--fill-1)' }}>
                 <tr>
-                  {['Naam', 'E-mail', 'Bedrijf', 'Antwoord', 'Voorkeursdata', 'Opmerking', 'Wanneer'].map(h => (
+                  {['Naam', 'E-mail', 'Bedrijf', 'Voorkeursdata', 'Opmerking', 'Wanneer'].map(h => (
                     <th key={h} style={th}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {sessie.map(r => {
-                  const a = sessieAntwoord(r);
+                {sessieJa.map(r => {
                   return (
                     <tr key={r.id}>
                       <td style={td}>
@@ -232,9 +239,6 @@ export default function MarketingLeads() {
                       </td>
                       <td style={td}>{r.email}</td>
                       <td style={td}>{r.company || '-'}</td>
-                      <td style={{ ...td, color: a.kleur, fontWeight: a.vet ? 600 : 400, whiteSpace: 'nowrap' }}>
-                        {a.tekst}
-                      </td>
                       <td style={td}>
                         {(r.slots || []).length
                           ? (r.slots || []).map(sl => String(sl).replace('slot-', '')).join(', ')
