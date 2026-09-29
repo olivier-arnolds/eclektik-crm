@@ -4,16 +4,14 @@
 // vanuit BDApp nodig.
 import { useEffect, useRef, useState } from 'react';
 import { supabase } from '../supabase';
+import { bronLabel } from '../lib/lead-bron';
 import { fmtRelative } from './atoms';
 
 const STATUS_FILTERS = ['active', 'converted', 'archived', 'all'];
 
-// Leesbare bron per soort activiteit. first_src is bij de aanmeldingen voor
-// 6 oktober niet gevuld, dus zonder deze vertaling toont de kolom Bron enkel
-// streepjes terwijl we wel weten waar iemand vandaan komt.
-const BRON_LABEL = {
-  event_registered: 'Event 6 okt',
-};
+// Het bronlabel komt uit de activiteit zelf; zie src/lib/lead-bron.js. first_src
+// is bij de eventaanmeldingen niet gevuld, dus zonder dit toont de kolom Bron
+// alleen streepjes terwijl we wel weten waar iemand vandaan komt.
 
 
 // auth-e-mail → OWNERS-id voor de owner op de gepromoveerde sales lead.
@@ -47,9 +45,7 @@ export default function MarketingLeads() {
   // user_session_results en NIET uit de onderliggende tabel: die bevat het
   // token, en wie een token heeft kan namens die persoon antwoorden.
   const [sessie, setSessie] = useState([]);
-  // lead-id -> bron, afgeleid uit de activiteit. first_src is bij de
-  // aanmeldingen voor 6 oktober leeg, dus zonder dit toont de kolom Bron
-  // alleen streepjes terwijl we wel degelijk weten waar ze vandaan komen.
+  // lead-id -> kant-en-klaar bronlabel, afgeleid uit de activiteit.
   const [bronPerLead, setBronPerLead] = useState({});
   const [expanded, setExpanded] = useState(null);
   const [statusFilter, setStatusFilter] = useState('active');
@@ -74,9 +70,11 @@ export default function MarketingLeads() {
     const ids = (data || []).map(r => r.id);
     if (ids.length) {
       const { data: acts } = await supabase.from('marketing_lead_activity')
-        .select('marketing_lead_id, event').in('marketing_lead_id', ids);
+        .select('marketing_lead_id, event, payload').in('marketing_lead_id', ids);
       const m = {};
-      for (const a of acts || []) if (!m[a.marketing_lead_id]) m[a.marketing_lead_id] = a.event;
+      for (const a of acts || []) {
+        if (!m[a.marketing_lead_id]) m[a.marketing_lead_id] = bronLabel(a.event, a.payload);
+      }
       if (seq === loadSeq.current) setBronPerLead(m);
     } else if (seq === loadSeq.current) {
       setBronPerLead({});
@@ -299,7 +297,7 @@ export default function MarketingLeads() {
           <tbody>
             {rows.map(lead => (
               <LeadRow key={lead.id} lead={lead}
-                bron={lead.first_src || BRON_LABEL[bronPerLead[lead.id]] || bronPerLead[lead.id] || null}
+                bron={lead.first_src || bronPerLead[lead.id] || null}
                 expanded={expanded === lead.id}
                 activityRows={activity[lead.id]}
                 busy={busyId === lead.id}

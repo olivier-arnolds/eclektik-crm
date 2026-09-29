@@ -19,9 +19,26 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.135.2';
+export const CURRENT_VERSION = '1.136.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.136.0',
+    date: '2026-09-29T09:15:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feat',
+    title: 'Het event is verschoven naar 12 november',
+    summary:
+      'De kolom Bron in de tab Leads zei altijd "Event 6 okt", want dat stond als vaste tekst in de code. Nu het event verschuift klopt dat voor geen enkele aanmelding meer, en bij de volgende verschuiving zou het weer misgaan. De datum staat gewoon in de aanmelding zelf, dus die draagt het label voortaan.',
+    changes: [
+      'Het bronlabel komt uit de payload van de aanmelding (src/lib/lead-bron.js, met tests). Verschuift het event nog eens, dan volgt de tab vanzelf.',
+      'De tien bestaande aanmeldingen staan nu op 12 november. De oorspronkelijke datum is bewaard als originalEventDate, dus er gaat niets verloren.',
+      'De tag heet nu "Event 12 nov aangemeld" in plaats van "Event 6 okt aangemeld".',
+      'Esther van Lunteren heeft zich opnieuw aangemeld met een ander adres. De oude aanmelding, lead en contact zijn verwijderd; het nieuwe adres staat in de contacten met de tag erbij.',
+    ],
+    files: ['src/lib/lead-bron.js', 'src/lib/lead-bron.test.js', 'src/bd/marketing-leads.jsx'],
+    rollback: 'git revert naar v1.135.2 voor de code. De data staat in _dq_backup_*_20260929.',
+  },
   {
     version: '1.135.2',
     date: '2026-09-28T12:20:00Z',
