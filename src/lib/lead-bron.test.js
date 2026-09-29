@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { bronLabel, kortDatum, uitnodiger } from './lead-bron.js';
+import { bronLabel, kortDatum, gekomenVia } from './lead-bron.js';
 
 describe('kortDatum', () => {
   it('maakt van een isodatum een korte Nederlandse datum', () => {
@@ -38,16 +38,16 @@ describe('bronLabel', () => {
   });
 });
 
-describe('uitnodiger', () => {
-  it('geeft de keuze uit het aanmeldformulier terug', () => {
-    expect(uitnodiger({ invitedBy: 'Eclectik' })).toBe('Eclectik');
-    expect(uitnodiger({ invitedBy: 'Zoom/Workvivo' })).toBe('Zoom/Workvivo');
-    expect(uitnodiger({ invitedBy: 'Other' })).toBe('Other');
+describe('gekomenVia', () => {
+  it('geeft terug wat de deelnemer zelf heeft opgegeven', () => {
+    expect(gekomenVia({ invitedBy: 'Eclectik' })).toBe('Eclectik');
+    expect(gekomenVia({ invitedBy: 'Zoom/Workvivo' })).toBe('Zoom/Workvivo');
+    expect(gekomenVia({ invitedBy: 'Other' })).toBe('Other');
   });
 
   it('geeft null als er niets ingevuld is', () => {
     for (const v of [null, undefined, {}, { invitedBy: '' }, { invitedBy: '   ' }]) {
-      expect(uitnodiger(v)).toBeNull();
+      expect(gekomenVia(v)).toBeNull();
     }
   });
 });

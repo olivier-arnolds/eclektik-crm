@@ -19,19 +19,34 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.137.0';
+export const CURRENT_VERSION = '1.137.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.137.1',
+    date: '2026-09-29T13:40:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Bron is wat de deelnemer opgeeft, niet wie de uitnodiging stuurde',
+    summary:
+      'In 1.137.0 heette dit veld in de code de uitnodiger, alsof het registreert wie de mail verstuurd heeft. Het is het omgekeerde: de deelnemer geeft in het formulier zelf aan via wie hij bij ons terecht is gekomen. Iemand kan via Zoom binnenkomen op een mail die van ons kwam. De kolom toonde het goede, de naam eromheen zou de volgende lezer op het verkeerde been zetten.',
+    changes: [
+      'De functie heet nu gekomenVia in plaats van uitnodiger, met een toelichting waarom de payloadnaam invitedBy misleidend is.',
+      'Comments en changelogtekst van 1.137.0 rechtgezet. Aan wat er in beeld staat verandert niets.',
+    ],
+    files: ['src/lib/lead-bron.js', 'src/lib/lead-bron.test.js', 'src/bd/marketing-leads.jsx'],
+    rollback: 'Alleen naamgeving en tekst; git revert naar v1.137.0 verandert niets aan het scherm.',
+  },
   {
     version: '1.137.0',
     date: '2026-09-29T13:40:00Z',
     author: 'Olivier Arnolds (via Claude)',
     type: 'feat',
-    title: 'Leads: sector vervangen door wie de uitnodiging stuurde',
+    title: 'Leads: sector vervangen door de bron die de deelnemer opgeeft',
     summary:
-      'De kolom Sector stond er wel maar was bij de eventaanmeldingen niet gevuld, dus die toonde alleen streepjes. Wie iemand heeft uitgenodigd staat wel in elke aanmelding en is bij het nakijken de vraag die ertoe doet.',
+      'De kolom Sector stond er wel maar was bij de eventaanmeldingen niet gevuld, dus die toonde alleen streepjes. Via wie iemand binnenkwam staat wel in elke aanmelding en is bij het nakijken de vraag die ertoe doet.',
     changes: [
-      'Sector is nu Bron: Eclectik, Zoom/Workvivo of Other, uit het aanmeldformulier.',
+      'Sector is nu Bron: Eclectik, Zoom/Workvivo of Other, zoals de deelnemer het zelf invult.',
       'De bestaande kolom Bron heet nu Aanmelding, want die toont iets anders (Event 12 nov). Twee kolommen met dezelfde kop leest niet.',
       'Sector blijft wel in de notitie staan bij het promoveren naar een sales lead; daar is het nog steeds context.',
     ],

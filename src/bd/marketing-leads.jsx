@@ -4,7 +4,7 @@
 // vanuit BDApp nodig.
 import { useEffect, useRef, useState } from 'react';
 import { supabase } from '../supabase';
-import { bronLabel, uitnodiger } from '../lib/lead-bron';
+import { bronLabel, gekomenVia } from '../lib/lead-bron';
 import { fmtRelative } from './atoms';
 
 const STATUS_FILTERS = ['active', 'converted', 'archived', 'all'];
@@ -47,8 +47,9 @@ export default function MarketingLeads() {
   const [sessie, setSessie] = useState([]);
   // lead-id -> kant-en-klaar bronlabel, afgeleid uit de activiteit.
   const [bronPerLead, setBronPerLead] = useState({});
-  // lead-id -> wie de uitnodiging stuurde (Eclectik / Zoom/Workvivo / Other).
-  const [uitnodigerPerLead, setUitnodigerPerLead] = useState({});
+  // lead-id -> via wie de deelnemer zegt binnengekomen te zijn
+  // (Eclectik / Zoom/Workvivo / Other), opgegeven in het aanmeldformulier.
+  const [viaPerLead, setViaPerLead] = useState({});
   const [expanded, setExpanded] = useState(null);
   const [statusFilter, setStatusFilter] = useState('active');
   const [loading, setLoading] = useState(true);
@@ -77,12 +78,12 @@ export default function MarketingLeads() {
       const u = {};
       for (const a of acts || []) {
         if (!m[a.marketing_lead_id]) m[a.marketing_lead_id] = bronLabel(a.event, a.payload);
-        if (!u[a.marketing_lead_id]) u[a.marketing_lead_id] = uitnodiger(a.payload);
+        if (!u[a.marketing_lead_id]) u[a.marketing_lead_id] = gekomenVia(a.payload);
       }
-      if (seq === loadSeq.current) { setBronPerLead(m); setUitnodigerPerLead(u); }
+      if (seq === loadSeq.current) { setBronPerLead(m); setViaPerLead(u); }
     } else if (seq === loadSeq.current) {
       setBronPerLead({});
-      setUitnodigerPerLead({});
+      setViaPerLead({});
     }
 
     const { data: ses } = await supabase.from('user_session_results')
@@ -303,7 +304,7 @@ export default function MarketingLeads() {
             {rows.map(lead => (
               <LeadRow key={lead.id} lead={lead}
                 bron={lead.first_src || bronPerLead[lead.id] || null}
-                uitnodiger={uitnodigerPerLead[lead.id] || null}
+                via={viaPerLead[lead.id] || null}
                 expanded={expanded === lead.id}
                 activityRows={activity[lead.id]}
                 busy={busyId === lead.id}
@@ -321,7 +322,7 @@ export default function MarketingLeads() {
   );
 }
 
-function LeadRow({ lead, bron, uitnodiger: uitgenodigdDoor, expanded, activityRows, busy, onToggle, onPromote, onArchive, onReactivate, td }) {
+function LeadRow({ lead, bron, via, expanded, activityRows, busy, onToggle, onPromote, onArchive, onReactivate, td }) {
   return (
     <>
       <tr onClick={onToggle} style={{ cursor: 'pointer' }}>
@@ -329,12 +330,12 @@ function LeadRow({ lead, bron, uitnodiger: uitgenodigdDoor, expanded, activityRo
         <td style={td}>{lead.email}</td>
         <td style={td}>{lead.company || '-'}</td>
         <td style={td}>{lead.role || '-'}</td>
-        {/* Bron is wie de uitnodiging stuurde; dat is bij het nakijken de vraag
-            die ertoe doet. Hier stond sector, en die was bij de
-            eventaanmeldingen niet eens gevuld. */}
+        {/* Bron is wat de deelnemer zelf opgeeft over hoe hij bij ons terecht
+            is gekomen, niet wie de uitnodiging verstuurde. Hier stond sector,
+            en die was bij de eventaanmeldingen niet eens gevuld. */}
         <td style={td}>
-          {uitgenodigdDoor
-            ? <span className="chip" style={{ fontSize: 11 }}>{uitgenodigdDoor}</span>
+          {via
+            ? <span className="chip" style={{ fontSize: 11 }}>{via}</span>
             : '-'}
         </td>
         <td style={td}>

@@ -37,13 +37,15 @@ export function kortDatum(iso) {
 }
 
 /**
- * Wie de uitnodiging stuurde, uit de payload van de aanmelding.
+ * Via wie de deelnemer bij het event terechtgekomen is, zoals hij dat zelf in
+ * het aanmeldformulier heeft opgegeven: Eclectik, Zoom/Workvivo of Other.
  *
- * Het aanmeldformulier laat de bezoeker kiezen: Eclectik, Zoom/Workvivo of
- * Other. Dat is de vraag die ertoe doet bij het nakijken van de lijst; de
- * sector die hier eerder stond werd bij de eventaanmeldingen niet eens gevuld.
+ * Let op het perspectief. Dit is de route die de deelnemer noemt, geen registratie
+ * van wie de uitnodiging verstuurd heeft. Iemand kan via Zoom binnenkomen op een
+ * mail die van ons kwam, en andersom. Het veld heet in de payload invitedBy, en
+ * juist die naam nodigt uit tot de verkeerde lezing.
  */
-export function uitnodiger(payload) {
+export function gekomenVia(payload) {
   const v = String(payload?.invitedBy ?? '').trim();
   return v || null;
 }
