@@ -19,9 +19,26 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.136.0';
+export const CURRENT_VERSION = '1.136.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.136.1',
+    date: '2026-09-29T09:25:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Alles wat nog 6 oktober zei staat nu op 12 november',
+    summary:
+      'Na het verschuiven van het event noemden de outreach-teksten, de harde stopdatums en de documentatie nog de oude datum. De stopdatums waren het risico: die stonden vlak voor 6 oktober en zouden een hervatte campagne meteen weer blokkeren.',
+    changes: [
+      'Berichtteksten: 832 eerste en 903 tweede berichten die nog open staan noemen nu 12 november.',
+      'Wie het bericht al gekregen heeft houdt de tekst die hij werkelijk gelezen heeft: 873 eerste en 470 tweede berichten blijven op 6 oktober staan. De scheidslijn is of er een verstuurd bericht bestaat, niet de status, want dat is het feit en status is de afgeleide.',
+      'Harde stopdatums 37 dagen opgeschoven, net zoveel als het event: Amsterdam 2026 naar 8 november, de LinkedIn-campagne en Glint Prioriteit A naar 11 november. De afstand tot de eventdatum blijft daarmee gelijk.',
+      'De handover, CLAUDE.md, het importscript en een verouderd comment noemen nu de nieuwe datum.',
+    ],
+    files: ['CLAUDE.md', 'docs/outreach-handover.md', 'scripts/import-linkedin-outreach.py', 'src/bd/marketing-leads.jsx'],
+    rollback: 'git revert naar v1.136.0 voor de tekst. De data staat in _dq_backup_outreach_contact_20260929 en _dq_backup_outreach_campaign_20260929.',
+  },
   {
     version: '1.136.0',
     date: '2026-09-29T09:15:00Z',

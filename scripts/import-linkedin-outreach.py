@@ -110,7 +110,7 @@ def main():
                     help="afzender als persoon; het DM-account staat in --linkedin-account")
     ap.add_argument("--linkedin-account", default=MARCO_UNIPILE, help="Unipile-account-id")
     ap.add_argument("--hard-stop", default="2026-10-05T00:00:00Z",
-                    help="na deze datum geen berichten meer (event is 6 oktober)")
+                    help="na deze datum geen berichten meer (event is 12 november)")
     ap.add_argument("--daily-cap", type=int, default=20,
                     help="LET OP: veel lager dan bij e-mail. LinkedIn beperkt accounts "
                          "die in korte tijd veel DM's sturen.")

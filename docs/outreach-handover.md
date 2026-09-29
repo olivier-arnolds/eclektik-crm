@@ -1,10 +1,10 @@
-# Handover: e-mailoutreach event Amsterdam 6 oktober 2026
+# Handover: e-mailoutreach event Amsterdam 12 november 2026
 
-Context voor het bouwen van een outreach-module in de BD-applicatie. Opgesteld na een brainstorm met Olivier op 9 september 2026. Beslissingen zijn genomen, ontwerp staat op hoofdlijnen, code moet nog geschreven worden.
+Context voor het bouwen van een outreach-module in de BD-applicatie. Opgesteld na een brainstorm met Olivier op 9 september 2026. Het event stond oorspronkelijk op 6 oktober 2026 en is op 29 september verschoven naar 12 november; datums in dit document zijn meeverschoven. Beslissingen zijn genomen, ontwerp staat op hoofdlijnen, code moet nog geschreven worden.
 
 ## 1. Wat er moet gebeuren
 
-Eclectik organiseert op 6 oktober 2026 een invite-only middag bij Zoom (Zuidas, Amsterdam) voor HR- en communicatieleiders, over de rol van HR in AI-transformatie. Programma: eclectik.co/events/amsterdam-2026. Afzender van alle mails is Marco (CSO). Marco's mailbox is al via Microsoft Graph gekoppeld aan de BD-app.
+Eclectik organiseert op 12 november 2026 een invite-only middag bij Zoom (Zuidas, Amsterdam) voor HR- en communicatieleiders, over de rol van HR in AI-transformatie. Programma: eclectik.co/events/amsterdam-2026. Afzender van alle mails is Marco (CSO). Marco's mailbox is al via Microsoft Graph gekoppeld aan de BD-app.
 
 Elke prospect krijgt maximaal twee mails:
 
@@ -29,7 +29,7 @@ Het versturen is simpel. Het lastige deel is betrouwbaar weten wie gereageerd he
 2. De agent verstuurt en volgt, maar antwoordt nooit zelf. Marco antwoordt vanuit Outlook.
 3. Verzenden in golven op prioriteit: eerst groen, dan geel, dan oranje. Als groen genoeg aanmeldingen oplevert, hoeft oranje niet.
 4. Bericht 2 gaat als reply op bericht 1 (Graph `createReply` op het verzonden bericht), zodat het bij de ontvanger één thread blijft.
-5. Harde stopdatum: na 2 oktober gaat geen bericht 2 meer uit.
+5. Harde stopdatum: na 8 november gaat geen bericht 2 meer uit.
 
 ## 4. Datamodel (Supabase)
 
@@ -48,7 +48,7 @@ Eén rij per campagne. Maakt de logica herbruikbaar zonder codewijziging.
 | followup_delay_days_min / _max | int | 5 en 7 |
 | max_per_company_per_week | int | 2 |
 | send_windows | jsonb | bijv. werkdagen 08:30, 11:30, 15:00 (Europe/Amsterdam) |
-| hard_stop_at | timestamptz | 2026-10-02 |
+| hard_stop_at | timestamptz | 2026-11-08 |
 | status | text | draft / active / paused / finished |
 
 ### outreach_contact
@@ -167,7 +167,7 @@ Systeem: je classificeert antwoorden op een persoonlijke uitnodiging voor een za
 - Bestaat er al een contacts- of companies-tabel in de BD-app? Dan `outreach_contact` daaraan koppelen via fk in plaats van velden dupliceren, en na het event de replies als activiteit op het contact laten landen.
 - Wil Marco een opt-out-regel onderaan de mail? De huidige teksten hebben er geen. Voor B2B-koude mail in NL is dat aan te raden en het houdt de deliverability gezond. Als ja: `opted_out`-status vullen bij een reply die daarom vraagt.
 - `createReply` versus een nieuw bericht met `In-Reply-To`- en `References`-headers: de eerste is makkelijker, de tweede geeft volledige controle over de body. Uitzoeken wat de Graph-koppeling het makkelijkst ondersteunt.
-- Wat gebeurt er met de 486 zonder teksten: worden die nog geschreven, en zo ja door wie en wanneer? Bepaalt of de oranje golf überhaupt haalbaar is vóór 2 oktober.
+- Wat gebeurt er met de 486 zonder teksten: worden die nog geschreven, en zo ja door wie en wanneer? Bepaalt of de oranje golf überhaupt haalbaar is vóór 8 november.
 
 ## 8. Volgorde van bouwen
 
@@ -363,7 +363,7 @@ dagelijks gebruikt ongemoeid.
 
 Migratie toegepast (`sql/schema_outreach_2026-09-09.sql`) en de lijst geïmporteerd met
 `scripts/import-outreach-list.py`. Campagne "Amsterdam 2026" aangemaakt met status
-`draft`, daily_cap 60, hard stop 2026-10-02.
+`draft`, daily_cap 60, hard stop 2026-11-08.
 
 | | |
 |---|---|

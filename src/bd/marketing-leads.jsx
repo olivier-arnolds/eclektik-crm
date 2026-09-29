@@ -198,7 +198,7 @@ export default function MarketingLeads() {
     <div>
       {/* Reacties op de uitnodiging voor de user session. Bewust een eigen blok
           met een eigen kop: het zijn geen website-aanmeldingen en ze horen niet
-          tussen de leads van 6 oktober te verdwijnen. */}
+          tussen de eventaanmeldingen te verdwijnen. */}
       <div style={{ marginBottom: 22 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 8 }}>
           <span style={{ fontSize: 13, fontWeight: 600 }}>Customer session</span>

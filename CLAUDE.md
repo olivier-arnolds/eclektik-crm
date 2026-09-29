@@ -322,7 +322,7 @@ DB triggers assign `companies.account_no` (ALL accounts) and a shared
 
 ## 9. Open queue / parked work
 
-- **E-mailoutreach event Amsterdam 6 okt 2026** (te bouwen): volledig ontwerp,
+- **E-mailoutreach event Amsterdam 12 nov 2026** (verschoven van 6 okt): volledig ontwerp,
   datamodel (3 tabellen), verzend- + inboxjob, veiligheidskleppen en bouwvolgorde
   staan in `docs/outreach-handover.md`. Lees dat eerst. Advies uit de handover:
   bouw de inboxscan (replydetectie) vóór het verzenden.
