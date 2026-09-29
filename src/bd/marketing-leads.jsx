@@ -4,7 +4,7 @@
 // vanuit BDApp nodig.
 import { useEffect, useRef, useState } from 'react';
 import { supabase } from '../supabase';
-import { bronLabel } from '../lib/lead-bron';
+import { bronLabel, uitnodiger } from '../lib/lead-bron';
 import { fmtRelative } from './atoms';
 
 const STATUS_FILTERS = ['active', 'converted', 'archived', 'all'];
@@ -47,6 +47,8 @@ export default function MarketingLeads() {
   const [sessie, setSessie] = useState([]);
   // lead-id -> kant-en-klaar bronlabel, afgeleid uit de activiteit.
   const [bronPerLead, setBronPerLead] = useState({});
+  // lead-id -> wie de uitnodiging stuurde (Eclectik / Zoom/Workvivo / Other).
+  const [uitnodigerPerLead, setUitnodigerPerLead] = useState({});
   const [expanded, setExpanded] = useState(null);
   const [statusFilter, setStatusFilter] = useState('active');
   const [loading, setLoading] = useState(true);
@@ -72,12 +74,15 @@ export default function MarketingLeads() {
       const { data: acts } = await supabase.from('marketing_lead_activity')
         .select('marketing_lead_id, event, payload').in('marketing_lead_id', ids);
       const m = {};
+      const u = {};
       for (const a of acts || []) {
         if (!m[a.marketing_lead_id]) m[a.marketing_lead_id] = bronLabel(a.event, a.payload);
+        if (!u[a.marketing_lead_id]) u[a.marketing_lead_id] = uitnodiger(a.payload);
       }
-      if (seq === loadSeq.current) setBronPerLead(m);
+      if (seq === loadSeq.current) { setBronPerLead(m); setUitnodigerPerLead(u); }
     } else if (seq === loadSeq.current) {
       setBronPerLead({});
+      setUitnodigerPerLead({});
     }
 
     const { data: ses } = await supabase.from('user_session_results')
@@ -290,7 +295,7 @@ export default function MarketingLeads() {
           <thead>
             <tr>
               <th style={th}>Naam</th><th style={th}>E-mail</th><th style={th}>Bedrijf</th>
-              <th style={th}>Rol</th><th style={th}>Sector</th><th style={th}>Bron</th>
+              <th style={th}>Rol</th><th style={th}>Bron</th><th style={th}>Aanmelding</th>
               <th style={th}>Laatste activiteit</th><th style={th}>Status</th><th style={th}></th>
             </tr>
           </thead>
@@ -298,6 +303,7 @@ export default function MarketingLeads() {
             {rows.map(lead => (
               <LeadRow key={lead.id} lead={lead}
                 bron={lead.first_src || bronPerLead[lead.id] || null}
+                uitnodiger={uitnodigerPerLead[lead.id] || null}
                 expanded={expanded === lead.id}
                 activityRows={activity[lead.id]}
                 busy={busyId === lead.id}
@@ -315,7 +321,7 @@ export default function MarketingLeads() {
   );
 }
 
-function LeadRow({ lead, bron, expanded, activityRows, busy, onToggle, onPromote, onArchive, onReactivate, td }) {
+function LeadRow({ lead, bron, uitnodiger: uitgenodigdDoor, expanded, activityRows, busy, onToggle, onPromote, onArchive, onReactivate, td }) {
   return (
     <>
       <tr onClick={onToggle} style={{ cursor: 'pointer' }}>
@@ -323,7 +329,14 @@ function LeadRow({ lead, bron, expanded, activityRows, busy, onToggle, onPromote
         <td style={td}>{lead.email}</td>
         <td style={td}>{lead.company || '-'}</td>
         <td style={td}>{lead.role || '-'}</td>
-        <td style={td}>{lead.sector || '-'}</td>
+        {/* Bron is wie de uitnodiging stuurde; dat is bij het nakijken de vraag
+            die ertoe doet. Hier stond sector, en die was bij de
+            eventaanmeldingen niet eens gevuld. */}
+        <td style={td}>
+          {uitgenodigdDoor
+            ? <span className="chip" style={{ fontSize: 11 }}>{uitgenodigdDoor}</span>
+            : '-'}
+        </td>
         <td style={td}>
           {bron
             ? <span className="chip" style={{ fontSize: 11 }}>{bron}</span>

@@ -35,3 +35,15 @@ export function kortDatum(iso) {
   if (dag < 1 || dag > 31) return null;
   return `${dag} ${MAANDEN[maand - 1]}`;
 }
+
+/**
+ * Wie de uitnodiging stuurde, uit de payload van de aanmelding.
+ *
+ * Het aanmeldformulier laat de bezoeker kiezen: Eclectik, Zoom/Workvivo of
+ * Other. Dat is de vraag die ertoe doet bij het nakijken van de lijst; de
+ * sector die hier eerder stond werd bij de eventaanmeldingen niet eens gevuld.
+ */
+export function uitnodiger(payload) {
+  const v = String(payload?.invitedBy ?? '').trim();
+  return v || null;
+}

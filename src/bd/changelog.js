@@ -19,9 +19,25 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.136.1';
+export const CURRENT_VERSION = '1.137.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.137.0',
+    date: '2026-09-29T13:40:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feat',
+    title: 'Leads: sector vervangen door wie de uitnodiging stuurde',
+    summary:
+      'De kolom Sector stond er wel maar was bij de eventaanmeldingen niet gevuld, dus die toonde alleen streepjes. Wie iemand heeft uitgenodigd staat wel in elke aanmelding en is bij het nakijken de vraag die ertoe doet.',
+    changes: [
+      'Sector is nu Bron: Eclectik, Zoom/Workvivo of Other, uit het aanmeldformulier.',
+      'De bestaande kolom Bron heet nu Aanmelding, want die toont iets anders (Event 12 nov). Twee kolommen met dezelfde kop leest niet.',
+      'Sector blijft wel in de notitie staan bij het promoveren naar een sales lead; daar is het nog steeds context.',
+    ],
+    files: ['src/lib/lead-bron.js', 'src/lib/lead-bron.test.js', 'src/bd/marketing-leads.jsx'],
+    rollback: 'git revert naar v1.136.1.',
+  },
   {
     version: '1.136.1',
     date: '2026-09-29T09:25:00Z',
