@@ -19,9 +19,31 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.138.0';
+export const CURRENT_VERSION = '1.139.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.139.0',
+    date: '2026-10-05T14:00:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feat',
+    title: 'Bevestigingspagina voor het verzette event',
+    summary:
+      'Wie zich inschreef toen het event nog op 6 oktober stond, krijgt een mail met een persoonlijke link en laat met een klik weten of de nieuwe datum schikt. De website heeft die pagina al; dit is de kant van de CRM.',
+    changes: [
+      'Nieuw endpoint /api/event-confirm met de acties lookup en answer, achter hetzelfde gedeelde geheim als de andere webhooks.',
+      'Nieuwe tabel event_confirm_invites met een token per inschrijving, plus de view event_confirm_results die de uitkomsten toont zonder dat token.',
+      'Dertien tokens aangemaakt voor de bestaande inschrijvingen voor amsterdam-2026.',
+      'De link sluit na afloop van het event, 17 november 2026 16:30 CET, te verzetten met EVENT_CONFIRM_DEADLINE. Er was geen deadline afgesproken; na het event is het moment waarop een antwoord niets meer betekent.',
+      'Een tweede antwoord overschrijft het eerste, want iemand mag zich bedenken. answer_count laat zien dat er geschoven is.',
+      'lookup schrijft niets. Linkscanners openen elke URL in een mail, dus het vastleggen zit achter een echte klik.',
+    ],
+    files: [
+      'api/event-confirm.js', 'api/_lib/event-confirm-lib.js',
+      'api/_lib/event-confirm-lib.test.js', 'sql/schema_event_confirm_2026-10-05.sql',
+    ],
+    rollback: 'git revert naar v1.138.0. De tabel mag blijven staan; de rollback-SQL staat onderaan het migratiebestand.',
+  },
   {
     version: '1.138.0',
     date: '2026-10-05T12:00:00Z',
