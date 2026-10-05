@@ -19,9 +19,25 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.140.0';
+export const CURRENT_VERSION = '1.141.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.141.0',
+    date: '2026-10-05T17:00:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feat',
+    title: 'Leads: zie wie zijn deelname aan het event bevestigd heeft',
+    summary:
+      'De bevestigingsmail was verstuurd en de antwoorden kwamen binnen, maar ze waren alleen in de database te zien. Nu staan ze bovenaan de tab Leads, want dit is op dit moment de vraag waar het om draait: wie komt er.',
+    changes: [
+      'Nieuw blok Event Amsterdam met de telling komt, kan niet, nog geen antwoord, en een regel per genodigde.',
+      'Wie zich bedacht heeft krijgt het label gewijzigd. Het laatste antwoord telt, maar dat iemand geschoven is wil je zien.',
+      'Gelezen uit de view event_confirm_results en niet uit de tabel eronder: die draagt het token, en wie een token heeft kan namens die persoon antwoorden.',
+    ],
+    files: ['src/bd/marketing-leads.jsx'],
+    rollback: 'git revert naar v1.140.0. De antwoorden blijven dan gewoon binnenkomen, je ziet ze alleen niet.',
+  },
   {
     version: '1.140.0',
     date: '2026-10-05T15:00:00Z',

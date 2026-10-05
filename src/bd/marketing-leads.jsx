@@ -45,6 +45,10 @@ export default function MarketingLeads() {
   // user_session_results en NIET uit de onderliggende tabel: die bevat het
   // token, en wie een token heeft kan namens die persoon antwoorden.
   const [sessie, setSessie] = useState([]);
+  // Bevestigingen voor het event zelf. Ook uit een view en niet uit de tabel:
+  // die draagt het token, en wie een token heeft kan namens die persoon
+  // antwoorden. Zelfde reden als bij de user session hierboven.
+  const [eventBevestiging, setEventBevestiging] = useState([]);
   // lead-id -> kant-en-klaar bronlabel, afgeleid uit de activiteit.
   const [bronPerLead, setBronPerLead] = useState({});
   // lead-id -> via wie de deelnemer zegt binnengekomen te zijn
@@ -89,6 +93,10 @@ export default function MarketingLeads() {
     const { data: ses } = await supabase.from('user_session_results')
       .select('*').order('submitted_at', { ascending: false, nullsFirst: false });
     if (seq === loadSeq.current) setSessie(ses || []);
+
+    const { data: ev } = await supabase.from('event_confirm_results')
+      .select('*').order('answered_at', { ascending: false, nullsFirst: false });
+    if (seq === loadSeq.current) setEventBevestiging(ev || []);
 
     setLoading(false);
   };
@@ -197,11 +205,72 @@ export default function MarketingLeads() {
   // afgehaakt. Kan ook een scanner zijn, vandaar apart en niet bij de ja's.
   const sessieHalf = echt.filter(r => !r.answer && r.pending_answer === 'yes');
 
+  const evJa = eventBevestiging.filter(r => r.answer === 'yes');
+  const evNee = eventBevestiging.filter(r => r.answer === 'no');
+  const evStil = eventBevestiging.filter(r => !r.answer);
+  // Wie zich bedacht heeft. Het laatste antwoord telt, maar dat iemand geschoven
+  // is wil je zien: dat is vaak het moment om even te bellen.
+  const evGeschoven = eventBevestiging.filter(r => (r.answer_count || 0) > 1);
+
   const th = { textAlign: 'left', fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.4, color: 'var(--text-dim, #888)', padding: '6px 10px', borderBottom: '0.5px solid var(--sep)' };
   const td = { fontSize: 13, padding: '8px 10px', borderBottom: '0.5px solid var(--sep)', verticalAlign: 'top' };
 
   return (
     <div>
+      {/* Bevestigingen voor het event. Eigen blok bovenaan: dit is op dit moment
+          de vraag waar het om draait, namelijk wie er daadwerkelijk komt. */}
+      {eventBevestiging.length > 0 && (
+      <div style={{ marginBottom: 22 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 8 }}>
+          <span style={{ fontSize: 13, fontWeight: 600 }}>Event Amsterdam</span>
+          <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
+            {evJa.length} komt &middot; {evNee.length} kan niet &middot; {evStil.length} nog
+            geen antwoord, van {eventBevestiging.length} gevraagd
+            {evGeschoven.length > 0 && (
+              <> &middot; <span title="Heeft het antwoord later gewijzigd. Het laatste antwoord telt."
+                style={{ color: '#b45309' }}>{evGeschoven.length} bedacht zich</span></>
+            )}
+          </span>
+        </div>
+        <div style={{ border: '0.5px solid var(--sep)', borderRadius: 8, overflow: 'hidden' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+            <thead style={{ background: 'var(--fill-1)' }}>
+              <tr>
+                {['Naam', 'E-mail', 'Antwoord', 'Wanneer'].map(h => (<th key={h} style={th}>{h}</th>))}
+              </tr>
+            </thead>
+            <tbody>
+              {eventBevestiging.map(r => (
+                <tr key={r.id}>
+                  <td style={td}>{r.first_name || '-'}</td>
+                  <td style={td}>{r.email}</td>
+                  <td style={td}>
+                    {/* Grijs voor wie nog niets zei: dat is geen uitkomst maar
+                        een lege plek, en die hoort niet de aandacht te trekken. */}
+                    <span style={{
+                      fontWeight: r.answer ? 500 : 400,
+                      color: r.answer === 'yes' ? '#15803d' : r.answer === 'no' ? '#b91c1c' : 'var(--text-3)',
+                    }}>
+                      {r.answer === 'yes' ? 'komt' : r.answer === 'no' ? 'kan niet' : 'nog niets'}
+                    </span>
+                    {(r.answer_count || 0) > 1 && (
+                      <span title={`${r.answer_count} keer geantwoord, dit is het laatste`}
+                        style={{ marginLeft: 6, fontSize: 9, padding: '1px 4px', borderRadius: 3, border: '0.5px solid var(--sep)', color: '#b45309' }}>
+                        gewijzigd
+                      </span>
+                    )}
+                  </td>
+                  <td style={{ ...td, color: 'var(--text-3)', whiteSpace: 'nowrap' }}>
+                    {r.answered_at ? fmtRelative(r.answered_at) : '-'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+      )}
+
       {/* Reacties op de uitnodiging voor de user session. Bewust een eigen blok
           met een eigen kop: het zijn geen website-aanmeldingen en ze horen niet
           tussen de eventaanmeldingen te verdwijnen. */}
