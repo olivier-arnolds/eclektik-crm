@@ -19,9 +19,32 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.137.1';
+export const CURRENT_VERSION = '1.138.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.138.0',
+    date: '2026-10-05T12:00:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feat',
+    title: 'Interne aanmelding voor de user session',
+    summary:
+      'De website heeft een pagina /s/intern gekregen waar een collega van CS of PS iemand aanmeldt die in een gesprek heeft gezegd mee te willen doen. Die aanmelding komt in dezelfde tabel als de aanmeldingen via de uitnodigingsmail, anders klopt de telling per datum niet. Dit is de enige route die een rij mag aanmaken; de publieke route doet dat nog steeds nooit.',
+    changes: [
+      'Nieuwe actie register op /api/session-invite, achter hetzelfde gedeelde geheim. Antwoordt ok, of needs_confirm met wat er nu staat.',
+      'Twee kolommen erbij: source (email_link of internal, met een check) en registered_by. De spec vroeg ook om email, maar die stond er al met een unieke index, dus geen backfill nodig.',
+      'De deadline geldt niet voor een interne aanmelding. Die bestaat om een klant te beletten vlak voor de sessie nog te antwoorden; een collega die daarna iemand aanmeldt heeft die persoon net gesproken.',
+      'Herhaald posten is idempotent. Om bevestiging wordt alleen gevraagd als er een antwoord van de klant zelf ligt, dus een tweede klik op Register vindt zijn eigen invoer en schrijft door.',
+      'confirm en submit leggen vast dat de klant zelf antwoordde. Een klik doet dat bewust niet: dat is juist de actie die linkscanners uitvoeren.',
+      'De tab toont per deelnemer of hij zich zelf aanmeldde of via welke collega.',
+    ],
+    files: [
+      'api/session-invite.js', 'api/_lib/session-invite-lib.js',
+      'api/_lib/session-invite-lib.test.js', 'src/bd/marketing-leads.jsx',
+      'sql/schema_user_session_intern_2026-10-05.sql',
+    ],
+    rollback: 'git revert naar v1.137.1. De twee kolommen mogen blijven staan; de rollback-SQL staat onderaan het migratiebestand.',
+  },
   {
     version: '1.137.1',
     date: '2026-09-29T13:40:00Z',

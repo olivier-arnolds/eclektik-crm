@@ -32,7 +32,7 @@ export function isClosed(now = new Date(), env = process.env) {
   return now.getTime() > deadlineAt(env).getTime();
 }
 
-const ACTIONS = new Set(['click', 'confirm', 'submit']);
+const ACTIONS = new Set(['click', 'confirm', 'submit', 'register']);
 const ANSWERS = new Set(['yes', 'no']);
 
 // Tokens komen uit secrets.token_urlsafe(): letters, cijfers, '-' en '_'.
@@ -47,6 +47,26 @@ const TOKEN_RE = /^[A-Za-z0-9_-]{22,128}$/;
 const SLOT_RE = /^slot-\d{4}-\d{2}-\d{2}$/;
 const MAX_SLOTS = 10;
 const MAX_NOTE = 2000;
+
+// De drie momenten, exact. Bij de acties van de klant toetst SLOT_RE alleen de
+// vorm, omdat site en app daar niet in dezelfde minuut hoeven mee te deployen.
+// Bij een interne aanmelding mag het strenger: die lijst komt uit hetzelfde
+// formulier dat wij bouwen, en een typefout in een slot-id zou stil een vierde
+// moment uitvinden waar niemand op zit te wachten.
+export const SLOTS_TOEGESTAAN = ['slot-2026-10-29', 'slot-2026-11-04', 'slot-2026-11-05'];
+
+// Een aanmelding op naam van een collega moet ook echt van een collega komen.
+// Het endpoint hangt achter een gedeeld geheim, niet achter een login, dus dit
+// is de enige plek waar dat afgedwongen wordt.
+const INTERN_DOMEIN = '@eclectik.co';
+const EMAIL_RE = /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/;
+
+export function normalizeEmail(raw) {
+  if (typeof raw !== 'string') return { error: 'Invalid email' };
+  const email = raw.trim().toLowerCase();
+  if (!email || email.length > 320 || !EMAIL_RE.test(email)) return { error: 'Invalid email' };
+  return { value: email };
+}
 
 // Vorm van het token los van de database. Een token dat er niet uitziet als een
 // van de onze staat er ook niet in, dus dat scheelt een query - en het antwoord
@@ -84,6 +104,11 @@ export function validateRequest(body) {
   if (!body || typeof body !== 'object') return { error: 'Missing body' };
   const action = typeof body.action === 'string' ? body.action.trim() : '';
   if (!ACTIONS.has(action)) return { error: 'Unsupported action' };
+
+  // register heeft geen token: de collega meldt iemand aan die de uitnodiging
+  // misschien nooit gekregen heeft. Daarom vóór de tokencontrole hieronder.
+  if (action === 'register') return validateRegister(body, action);
+
   if (typeof body.token !== 'string' || !body.token.trim()) return { error: 'Missing token' };
   const token = body.token.trim();
 
@@ -130,6 +155,11 @@ export function confirmPatch({ answer }, now = new Date()) {
     answer_at: iso,
     confirmed: true,
     confirmed_at: iso,
+    // De klant heeft zelf geantwoord, ook als een collega hem eerder intern had
+    // aangemeld. Dan is dit het verse feit en vervalt de interne herkomst; het
+    // veld registered_by hoort alleen bij source 'internal'.
+    source: 'email_link',
+    registered_by: null,
     updated_at: iso,
   };
 }
@@ -140,9 +170,17 @@ export function submitPatch({ slots, note }, now = new Date()) {
     slots,
     note,
     submitted_at: iso,
+    source: 'email_link',
+    registered_by: null,
     updated_at: iso,
   };
 }
+
+// LET OP: clickPatch zet source NIET. Een klik is geen antwoord, en het is juist
+// de actie die linkscanners uitvoeren. Zou een klik de herkomst op 'email_link'
+// zetten, dan wist de scanner van Outlook het spoor van de collega die iemand
+// een uur eerder had aangemeld. Dezelfde reden waarom click ook answer niet raakt.
+
 
 // ── Antwoorden die te snel binnenkomen ────────────────────────────────────────
 //
@@ -167,4 +205,98 @@ export function isRuis({ aangemaaktISO, antwoordISO } = {}) {
   const b = new Date(antwoordISO).getTime();
   if (!Number.isFinite(a) || !Number.isFinite(b)) return false;
   return (b - a) / 1000 < RUIS_SECONDEN;
+}
+
+
+// ── Interne aanmelding (/s/intern) ────────────────────────────────────────────
+//
+// Een collega van CS of PS meldt iemand aan die in een gesprek heeft gezegd mee
+// te willen doen. Zelfde tabel als de aanmeldingen via de mail, anders klopt de
+// telling per datum niet.
+//
+// De site normaliseert al, maar dit endpoint is publiek bereikbaar met alleen
+// het gedeelde geheim, dus hier gebeurt het nog een keer.
+
+function validateRegister(body, action) {
+  const { error: mailErr, value: email } = normalizeEmail(body.email);
+  if (mailErr) return { error: mailErr };
+
+  const { error: doorErr, value: registeredBy } = normalizeEmail(body.registeredBy);
+  if (doorErr) return { error: 'Invalid registeredBy' };
+  if (!registeredBy.endsWith(INTERN_DOMEIN)) return { error: 'Invalid registeredBy' };
+
+  const { error: slotErr, value: slots } = normalizeSlots(body.slots);
+  if (slotErr) return { error: slotErr };
+  for (const s of slots) {
+    if (!SLOTS_TOEGESTAAN.includes(s)) return { error: 'Invalid slots' };
+  }
+
+  const { error: noteErr, value: note } = normalizeNote(body.note);
+  if (noteErr) return { error: noteErr };
+
+  return {
+    value: {
+      action, email, slots, note, registeredBy,
+      // Net als botSuspected: alleen een echte boolean telt. Een string 'false'
+      // zou anders als bevestiging gelezen worden en een antwoord overschrijven.
+      confirmOverwrite: body.confirmOverwrite === true,
+    },
+  };
+}
+
+/**
+ * Wat er met deze aanmelding moet gebeuren. Puur, zodat de afweging te lezen en
+ * te toetsen is zonder database.
+ *
+ * DE KERN: wanneer moet de collega om bevestiging gevraagd worden?
+ *   Niet "er staat al een antwoord", maar "er staat al een antwoord VAN DE KLANT
+ *   ZELF". Dat verschil doet twee dingen tegelijk. Het beschermt wat de klant
+ *   zelf heeft ingevuld, en het maakt een tweede identieke aanmelding vanzelf
+ *   idempotent: die vindt zijn eigen interne antwoord van een seconde eerder en
+ *   schrijft gewoon door. De site beschermt niet tegen dubbel klikken, dus zonder
+ *   die regel zou de collega een vraag krijgen over zijn eigen invoer.
+ *
+ *   Een antwoord dat als ruis gemarkeerd staat telt niet mee. Dat komt vrijwel
+ *   zeker van een linkscanner, en daar hoeft niemand bevestiging voor te geven.
+ *
+ * @returns {{kind:'insert'|'update'|'needs_confirm', existing?:object}}
+ */
+export function registerOutcome(rij, { confirmOverwrite } = {}) {
+  if (!rij) return { kind: 'insert' };
+
+  const klantHeeftGeantwoord = !!rij.answer && rij.confirmed === true
+    && rij.source !== 'internal' && rij.bot_suspected !== true;
+
+  if (klantHeeftGeantwoord && !confirmOverwrite) {
+    return {
+      kind: 'needs_confirm',
+      existing: {
+        answer: rij.answer,
+        slots: Array.isArray(rij.slots) ? rij.slots : [],
+        note: rij.note ?? null,
+      },
+    };
+  }
+  return { kind: 'update' };
+}
+
+/** De kolommen die een interne aanmelding schrijft, voor zowel insert als update. */
+export function registerPatch({ slots, note, registeredBy }, now = new Date()) {
+  const iso = now.toISOString();
+  return {
+    answer: 'yes',
+    answer_at: iso,
+    confirmed: true,
+    confirmed_at: iso,
+    slots,
+    note,
+    submitted_at: iso,
+    source: 'internal',
+    registered_by: registeredBy,
+    // Een collega die iemand na een echt gesprek aanmeldt weet zeker dat het een
+    // mens is. Bleef een eerdere ruismarkering staan, dan viel die deelnemer uit
+    // de telling in de tab, en dat is precies de telling waar dit om begonnen is.
+    bot_suspected: false,
+    updated_at: iso,
+  };
 }

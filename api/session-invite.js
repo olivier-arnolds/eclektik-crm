@@ -10,6 +10,11 @@
 //     -> { ok:true, firstName } | { ok:false, reason }
 //   { action:'submit',  token, slots:string[], note:string|null }
 //     -> { ok:true } | { ok:false, reason }
+//   { action:'register', email, slots, note, registeredBy, confirmOverwrite }
+//     -> { ok:true } | { ok:false, reason:'needs_confirm', existing }
+//     De interne aanmeldpagina /s/intern: een collega meldt iemand aan die in een
+//     gesprek heeft gezegd mee te willen doen. Zelfde tabel, anders klopt de
+//     telling per datum niet. Dit is de enige actie die een rij mag aanmaken.
 //
 // Twee regels die de rest verklaren:
 //   1. click raakt answer nooit aan, alleen pending_answer. De linkscanners van
@@ -25,7 +30,9 @@ import { createClient } from '@supabase/supabase-js';
 import { requireWebhookSecret } from './_lib/guard.js';
 import {
   validateRequest, looksLikeToken, isClosed, clickPatch, confirmPatch, submitPatch, isRuis,
+  registerOutcome, registerPatch,
 } from './_lib/session-invite-lib.js';
+import { maakToken } from './_lib/session-invite-ensure-lib.js';
 
 const supabase = (process.env.VITE_SUPABASE_URL && process.env.SUPABASE_SERVICE_KEY)
   ? createClient(process.env.VITE_SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY)
@@ -46,6 +53,12 @@ export default async function handler(req, res) {
 
   // Voornaam in het antwoord: niet in een cache, niet in een proxy.
   res.setHeader('Cache-Control', 'no-store');
+
+  // De interne route gaat voor de deadline langs. Die deadline is er om te
+  // voorkomen dat een klant drie dagen voor de sessie nog antwoordt; een collega
+  // die daarna iemand aanmeldt heeft die persoon net aan de telefoon gehad en
+  // weet precies wat hij doet. Zie de toelichting bij handleRegister.
+  if (body.action === 'register') return handleRegister(res, body);
 
   // De deadline eerst, vóór de opzoekactie. Daardoor krijgt na sluiting iedereen
   // exact hetzelfde te zien, ook wie met verzonnen tokens zit te proberen. Zou de
@@ -94,6 +107,77 @@ export default async function handler(req, res) {
     // Geen token en geen e-mailadres in de log: die belanden anders in de
     // Vercel-runtimelogs, en met een token kun je namens iemand antwoorden.
     console.error(`[session-invite] ${body.action} failed:`, e?.message || e);
+    return res.status(500).json({ error: 'Internal error' });
+  }
+}
+
+
+// ── Interne aanmelding ────────────────────────────────────────────────────────
+//
+// TWEE KEUZES DIE DE SPEC OPENLIET
+//
+// 1. De deadline geldt hier NIET. Hij bestaat om een klant te beletten vlak voor
+//    de sessie nog te antwoorden op een mail van weken geleden. Een collega die
+//    na die datum iemand aanmeldt, doet dat na een gesprek en weet wat hij doet.
+//    Zou dit 'closed' teruggeven, dan staat de collega met lege handen terwijl de
+//    deelnemer wel komt, en klopt juist de telling niet waar dit om begonnen is.
+//
+// 2. Herhaald posten is idempotent, en dat volgt uit registerOutcome: om
+//    bevestiging wordt alleen gevraagd als er een antwoord van de KLANT ZELF
+//    ligt. Een tweede klik op Register vindt zijn eigen interne antwoord en
+//    schrijft gewoon door. Zelfde uitkomst, geen vraag aan de collega over zijn
+//    eigen invoer van een seconde eerder.
+//
+// Opzoeken gaat met een exacte vergelijking en niet met ilike: drie van de
+// adressen in de tabel bevatten een underscore, en dat is in LIKE een jokerteken
+// voor één willekeurig teken. Alle adressen staan genormaliseerd opgeslagen en de
+// unieke index user_session_invites_email_uniek staat op lower(btrim(email)),
+// dus exact vergelijken op het genormaliseerde adres vindt wat er is.
+async function handleRegister(res, body) {
+  try {
+    const { data: row, error } = await supabase
+      .from(TABLE)
+      .select('id, answer, confirmed, source, bot_suspected, slots, note')
+      .eq('email', body.email)
+      .maybeSingle();
+    if (error) throw error;
+
+    const uitkomst = registerOutcome(row, body);
+    if (uitkomst.kind === 'needs_confirm') {
+      return res.status(200).json({ ok: false, reason: 'needs_confirm', existing: uitkomst.existing });
+    }
+
+    const patch = registerPatch(body);
+
+    if (uitkomst.kind === 'update') {
+      const { error: updError } = await supabase.from(TABLE).update(patch).eq('id', row.id);
+      if (updError) throw updError;
+      return res.status(200).json({ ok: true });
+    }
+
+    // Nieuw. token is NOT NULL en uniek, dus er wordt er een aangemaakt ook al
+    // gaat er geen mail uit: dat houdt de invariant heel en laat de deelnemer
+    // later alsnog een werkende link krijgen als we die willen sturen.
+    const { error: insError } = await supabase
+      .from(TABLE)
+      .insert({ email: body.email, token: maakToken(), ...patch });
+
+    // Twee collega's die tegelijk dezelfde persoon aanmelden botsen op de unieke
+    // index. Dat is geen storing maar precies wat die index hoort te doen; de
+    // tweede werkt gewoon de rij bij die de eerste zojuist maakte.
+    if (insError) {
+      if (insError.code !== '23505') throw insError;
+      const { data: bestaand, error: leesError } = await supabase
+        .from(TABLE).select('id').eq('email', body.email).maybeSingle();
+      if (leesError) throw leesError;
+      if (!bestaand) throw insError;
+      const { error: updError } = await supabase.from(TABLE).update(patch).eq('id', bestaand.id);
+      if (updError) throw updError;
+    }
+    return res.status(200).json({ ok: true });
+  } catch (e) {
+    // Geen e-mailadres in de log: die belandt anders in de Vercel-runtimelogs.
+    console.error('[session-invite] register failed:', e?.message || e);
     return res.status(500).json({ error: 'Internal error' });
   }
 }

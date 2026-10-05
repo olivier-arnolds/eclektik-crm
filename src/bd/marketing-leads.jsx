@@ -235,7 +235,7 @@ export default function MarketingLeads() {
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead style={{ background: 'var(--fill-1)' }}>
                 <tr>
-                  {['Naam', 'E-mail', 'Bedrijf', 'Voorkeursdata', 'Opmerking', 'Wanneer'].map(h => (
+                  {['Naam', 'E-mail', 'Bedrijf', 'Voorkeursdata', 'Opmerking', 'Aangemeld door', 'Wanneer'].map(h => (
                     <th key={h} style={th}>{h}</th>
                   ))}
                 </tr>
@@ -261,6 +261,14 @@ export default function MarketingLeads() {
                           : '-'}
                       </td>
                       <td style={{ ...td, maxWidth: 260 }}>{r.note || '-'}</td>
+                      {/* Wie de aanmelding deed. 'zelf' is de klant via de link in
+                          de uitnodiging; bij een interne aanmelding staat er het
+                          adres van de collega die hem via /s/intern opgaf. */}
+                      <td style={{ ...td, color: 'var(--text-3)', whiteSpace: 'nowrap' }}>
+                        {r.source === 'internal'
+                          ? (r.registered_by || 'collega')
+                          : 'zelf'}
+                      </td>
                       <td style={{ ...td, color: 'var(--text-3)', whiteSpace: 'nowrap' }}>
                         {r.submitted_at ? fmtRelative(r.submitted_at) : (r.pending_at ? fmtRelative(r.pending_at) : '-')}
                       </td>

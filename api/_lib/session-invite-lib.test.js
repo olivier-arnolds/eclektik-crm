@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   DEFAULT_DEADLINE, deadlineAt, isClosed, looksLikeToken, normalizeSlots, normalizeNote,
   validateRequest, clickPatch, confirmPatch, submitPatch, isRuis,
+  registerOutcome, registerPatch,
 } from './session-invite-lib.js';
 
 const VOOR = new Date('2026-10-01T12:00:00Z');   // ruim voor de deadline
@@ -168,6 +169,8 @@ describe('submitPatch', () => {
     const patch = submitPatch({ slots: [], note: null }, VOOR);
     expect(patch).toEqual({
       slots: [], note: null, submitted_at: VOOR.toISOString(), updated_at: VOOR.toISOString(),
+      // Sinds de interne aanmeldroute: een submit is een antwoord van de klant zelf.
+      source: 'email_link', registered_by: null,
     });
   });
 
@@ -203,5 +206,138 @@ describe('ruisVenster', () => {
     expect(isRuis({})).toBe(false);
     expect(isRuis({ aangemaaktISO: AANGEMAAKT })).toBe(false);
     expect(isRuis({ aangemaaktISO: 'onzin', antwoordISO: 'ook onzin' })).toBe(false);
+  });
+});
+
+// ── Interne aanmelding via /s/intern ──────────────────────────────────────────
+
+describe('validateRequest bij action register', () => {
+  const basis = {
+    action: 'register', email: 'Klant@Voorbeeld.com ', slots: ['slot-2026-10-29'],
+    note: ' Wil iets over adoptie ', registeredBy: ' Collega@Eclectik.co ', confirmOverwrite: false,
+  };
+
+  it('normaliseert e-mail en opmerking en neemt de slots over', () => {
+    const { value, error } = validateRequest(basis);
+    expect(error).toBeUndefined();
+    expect(value.email).toBe('klant@voorbeeld.com');
+    expect(value.registeredBy).toBe('collega@eclectik.co');
+    expect(value.note).toBe('Wil iets over adoptie');
+    expect(value.slots).toEqual(['slot-2026-10-29']);
+    expect(value.confirmOverwrite).toBe(false);
+  });
+
+  it('accepteert een lege slotlijst, dat is een echt antwoord', () => {
+    const { value, error } = validateRequest({ ...basis, slots: [] });
+    expect(error).toBeUndefined();
+    expect(value.slots).toEqual([]);
+  });
+
+  it('weigert een adres dat geen adres is', () => {
+    for (const email of ['', '   ', 'geenadres', 'a@b', null, 42]) {
+      expect(validateRequest({ ...basis, email }).error).toBeTruthy();
+    }
+  });
+
+  it('KRITIEK: weigert een registeredBy buiten eclectik.co', () => {
+    // Het endpoint is publiek bereikbaar met alleen het gedeelde geheim. Zonder
+    // deze eis kan een aanmelding op naam van een willekeurig adres gezet worden.
+    expect(validateRequest({ ...basis, registeredBy: 'iemand@gmail.com' }).error).toBeTruthy();
+    expect(validateRequest({ ...basis, registeredBy: 'x@eclectik.co.evil.com' }).error).toBeTruthy();
+    expect(validateRequest({ ...basis, registeredBy: null }).error).toBeTruthy();
+  });
+
+  it('weigert een onbekend slot', () => {
+    expect(validateRequest({ ...basis, slots: ['slot-2026-12-01'] }).error).toBeTruthy();
+    expect(validateRequest({ ...basis, slots: ['maandag'] }).error).toBeTruthy();
+  });
+
+  it('telt alleen een echte boolean als bevestiging om te overschrijven', () => {
+    expect(validateRequest({ ...basis, confirmOverwrite: 'true' }).value.confirmOverwrite).toBe(false);
+    expect(validateRequest({ ...basis, confirmOverwrite: true }).value.confirmOverwrite).toBe(true);
+  });
+
+  it('vraagt geen token, anders dan de andere drie acties', () => {
+    expect(validateRequest(basis).error).toBeUndefined();
+  });
+});
+
+describe('registerOutcome', () => {
+  const inzending = { email: 'k@v.com', slots: ['slot-2026-11-04'], note: null, registeredBy: 'c@eclectik.co' };
+
+  it('maakt een nieuwe rij als het adres onbekend is', () => {
+    expect(registerOutcome(null, { ...inzending, confirmOverwrite: false }).kind).toBe('insert');
+  });
+
+  it('werkt een uitnodiging zonder antwoord gewoon bij', () => {
+    const rij = { id: '1', answer: null, confirmed: false, source: 'email_link' };
+    expect(registerOutcome(rij, { ...inzending, confirmOverwrite: false }).kind).toBe('update');
+  });
+
+  it('KRITIEK: vraagt om bevestiging als de klant zelf al geantwoord heeft', () => {
+    const rij = { id: '1', answer: 'no', confirmed: true, source: 'email_link', slots: ['slot-2026-10-29'], note: null };
+    const r = registerOutcome(rij, { ...inzending, confirmOverwrite: false });
+    expect(r.kind).toBe('needs_confirm');
+    expect(r.existing).toEqual({ answer: 'no', slots: ['slot-2026-10-29'], note: null });
+  });
+
+  it('schrijft wel door als de collega bevestigt', () => {
+    const rij = { id: '1', answer: 'no', confirmed: true, source: 'email_link' };
+    expect(registerOutcome(rij, { ...inzending, confirmOverwrite: true }).kind).toBe('update');
+  });
+
+  it('KRITIEK: een tweede identieke aanmelding vraagt niets, die is idempotent', () => {
+    // De website beschermt niet tegen dubbel klikken op Register. Zou een eerder
+    // intern antwoord ook needs_confirm opleveren, dan krijgt de collega bij de
+    // tweede klik een vraag over zijn eigen invoer van een seconde eerder.
+    const rij = { id: '1', answer: 'yes', confirmed: true, source: 'internal', registered_by: 'c@eclectik.co' };
+    expect(registerOutcome(rij, { ...inzending, confirmOverwrite: false }).kind).toBe('update');
+  });
+
+  it('een antwoord dat als ruis is gemarkeerd telt niet als antwoord van de klant', () => {
+    const rij = { id: '1', answer: 'no', confirmed: true, source: 'email_link', bot_suspected: true };
+    expect(registerOutcome(rij, { ...inzending, confirmOverwrite: false }).kind).toBe('update');
+  });
+
+  it('een klik zonder bevestiging houdt de aanmelding niet tegen', () => {
+    const rij = { id: '1', answer: null, confirmed: false, pending_answer: 'no', source: 'email_link' };
+    expect(registerOutcome(rij, { ...inzending, confirmOverwrite: false }).kind).toBe('update');
+  });
+});
+
+describe('registerPatch', () => {
+  const now = new Date('2026-10-05T10:00:00Z');
+
+  it('zet ja, bevestigd, en legt de collega vast', () => {
+    const p = registerPatch({ slots: ['slot-2026-11-05'], note: 'x', registeredBy: 'c@eclectik.co' }, now);
+    expect(p.answer).toBe('yes');
+    expect(p.confirmed).toBe(true);
+    expect(p.source).toBe('internal');
+    expect(p.registered_by).toBe('c@eclectik.co');
+    expect(p.submitted_at).toBe(now.toISOString());
+    expect(p.slots).toEqual(['slot-2026-11-05']);
+  });
+
+  it('KRITIEK: haalt een eerdere ruismarkering weg', () => {
+    // Een collega die iemand na een echt gesprek aanmeldt weet zeker dat het een
+    // mens is. Bleef bot_suspected staan, dan valt die deelnemer uit de telling.
+    expect(registerPatch({ slots: [], note: null, registeredBy: 'c@eclectik.co' }, now).bot_suspected).toBe(false);
+  });
+});
+
+describe('herkomst bij de acties van de klant', () => {
+  it('confirm en submit leggen vast dat de klant zelf antwoordde', () => {
+    for (const p of [confirmPatch({ answer: 'yes' }), submitPatch({ slots: [], note: null })]) {
+      expect(p.source).toBe('email_link');
+      expect(p.registered_by).toBeNull();
+    }
+  });
+
+  it('KRITIEK: een klik raakt de herkomst niet aan', () => {
+    // Linkscanners klikken. Zou een klik de herkomst omzetten, dan wist de
+    // scanner van Outlook het spoor van de collega die iemand had aangemeld.
+    const p = clickPatch({ click_count: 0 }, { answer: 'yes', botSuspected: false });
+    expect(p).not.toHaveProperty('source');
+    expect(p).not.toHaveProperty('registered_by');
   });
 });
