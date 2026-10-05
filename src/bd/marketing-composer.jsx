@@ -6,7 +6,7 @@ import { useState, useMemo, useRef, useEffect } from 'react';
 // Gevonden door ESLint (no-undef) op de dag dat die werd aangezet.
 import { supabase } from '../supabase';
 import { useAuth } from '../lib/auth';
-import { renderTemplate, varsForContact, KNOWN_VARS, bevatToken } from '../lib/template-vars';
+import { renderTemplate, varsForContact, KNOWN_VARS, bevatToken, bevatEventToken } from '../lib/template-vars';
 import { apiFetch } from '../lib/apiFetch';
 import { SENDERS, senderNameFor, hasSignature } from '../lib/senders';
 import { addUtmToHtml, slugify, UTM_BRONNEN } from '../lib/utm';
@@ -143,13 +143,28 @@ const COOLDOWN_DAGEN = 5;
 const VAR_LABELS = {
     first_name: 'Voornaam', last_name: 'Achternaam', full_name: 'Volledige naam',
     company_name: 'Bedrijf', role: 'Functie', token: 'Uitnodigingstoken',
+    event_token: 'Eventbevestiging',
   };
 
   // Tokenmodus: staat {{token}} in de body, dan krijgt elke ontvanger een eigen
   // uitnodigingslink en gelden er extra regels. Staat hij er niet in, dan
   // verandert er niets aan het bestaande gedrag; dat is een harde eis, want
   // alle andere campagnes lopen hier ook langs.
-  const tokenModus = useMemo(() => bevatToken(effectiveHtml), [effectiveHtml]);
+  // Twee soorten persoonlijke links, elk uit een eigen tabel: {{token}} voor de
+  // user session, {{event_token}} voor de bevestiging van het verzette event.
+  // De naam in de tekst bepaalt de bron, zodat er niets in te stellen valt.
+  const tokenSoort = useMemo(() => {
+    if (bevatEventToken(effectiveHtml)) return 'event';
+    if (bevatToken(effectiveHtml)) return 'session';
+    return null;
+  }, [effectiveHtml]);
+  const tokenModus = tokenSoort !== null;
+  const tokenVarNaam = tokenSoort === 'event' ? 'event_token' : 'token';
+
+  // Allebei in één mail kan niet: de preview kan er maar een tonen, en het is
+  // vrijwel zeker een vergissing. Liever hier stoppen dan een halve link sturen.
+  const tokenBotsing = useMemo(
+    () => bevatToken(effectiveHtml) && bevatEventToken(effectiveHtml), [effectiveHtml]);
 
   // Het echte token van de voorbeeldontvanger, als die er al een heeft. Wordt
   // opgehaald zodra de tokenmodus aan gaat, zodat de preview de werkelijkheid
@@ -173,13 +188,13 @@ const VAR_LABELS = {
     apiFetch('/api/session-invite-ensure', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ dry_run: true, recipients: [{ email: previewEmail }] }),
+      body: JSON.stringify({ dry_run: true, kind: tokenSoort, recipients: [{ email: previewEmail }] }),
     })
       .then(r => r.json())
       .then(d => { if (!afgebroken) setPreviewToken(d?.tokens?.[String(previewEmail).trim().toLowerCase()] || null); })
       .catch(() => { if (!afgebroken) setPreviewToken(null); });
     return () => { afgebroken = true; };
-  }, [tokenModus, previewEmail]);
+  }, [tokenModus, tokenSoort, previewEmail]);
 
   // Live preview - render with the first recipient's vars (or empty)
   const previewVars = useMemo(() => {
@@ -187,8 +202,8 @@ const VAR_LABELS = {
     if (!tokenModus) return basis;
     // Nooit een lege string bij een ontbrekend token: dan oogt de knop goed en
     // is de link dood, en dat is precies hoe de eerste testverzending mislukte.
-    return { ...basis, token: previewToken || 'TOKEN-VOLGT-BIJ-VERZENDEN' };
-  }, [recipients, tokenModus, previewToken]);
+    return { ...basis, [tokenVarNaam]: previewToken || 'TOKEN-VOLGT-BIJ-VERZENDEN' };
+  }, [recipients, tokenModus, tokenVarNaam, previewToken]);
   const previewHtml = useMemo(() => renderTemplate(effectiveHtml, previewVars), [effectiveHtml, previewVars]);
 
   const send = async (testOnly) => {
@@ -202,6 +217,15 @@ const VAR_LABELS = {
     // Bewust weigeren en niet stilletjes omschakelen: wie denkt een newsletter
     // te versturen moet weten dat het een transactionele verzending wordt, met
     // een andere limiet en een ander afmeldmechanisme.
+    if (tokenBotsing) {
+      setResult({
+        ok: false,
+        error: 'Deze mail bevat zowel {{token}} als {{event_token}}. Die komen uit verschillende '
+          + 'uitnodigingen en kunnen niet samen in een bericht. Er is niets verstuurd.',
+      });
+      return;
+    }
+
     if (tokenModus && !testOnly && sendMode === 'broadcast') {
       setResult({
         ok: false,
@@ -252,15 +276,22 @@ const VAR_LABELS = {
         const droog = await apiFetch('/api/session-invite-ensure', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ dry_run: true, recipients: lijst }),
+          body: JSON.stringify({ dry_run: true, kind: tokenSoort, recipients: lijst }),
         }).then(r => r.json());
         if (droog?.error) throw new Error(droog.error);
 
         if (droog.nieuw > 0 || droog.ongeldig?.length) {
-          const regels = [
-            `${droog.bestaand} ontvanger(s) hebben al een uitnodiging, die link blijft werken.`,
-            `${droog.nieuw} krijgen er nu een aangemaakt.`,
-          ];
+          const regels = tokenSoort === 'event'
+            ? [
+              `${droog.bestaand} ontvanger(s) hebben een bevestigingslink.`,
+              // Bij een event wordt er nooit een link aangemaakt: die hoort alleen
+              // te bestaan voor wie zich echt heeft ingeschreven.
+              `${droog.ongeldig?.length || 0} staan niet in de inschrijvingen en krijgen niets.`,
+            ]
+            : [
+              `${droog.bestaand} ontvanger(s) hebben al een uitnodiging, die link blijft werken.`,
+              `${droog.nieuw} krijgen er nu een aangemaakt.`,
+            ];
           if (droog.ongeldig?.length) {
             regels.push(`${droog.ongeldig.length} zonder bruikbaar adres worden overgeslagen.`);
           }
@@ -273,7 +304,7 @@ const VAR_LABELS = {
         const echt = await apiFetch('/api/session-invite-ensure', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ dry_run: false, recipients: lijst }),
+          body: JSON.stringify({ dry_run: false, kind: tokenSoort, recipients: lijst }),
         }).then(r => r.json());
         if (echt?.error) throw new Error(echt.error);
 
@@ -285,7 +316,7 @@ const VAR_LABELS = {
         payloadRecipients = payloadRecipients.filter((r) => {
           const t = tokens[String(r.email || '').trim().toLowerCase()];
           if (!t) { zonderToken.push(r.email); return false; }
-          r.vars = { ...r.vars, token: t };
+          r.vars = { ...r.vars, [tokenVarNaam]: t };
           return true;
         });
 

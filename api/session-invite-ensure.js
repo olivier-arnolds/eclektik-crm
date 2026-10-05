@@ -40,6 +40,11 @@ export default async function handler(req, res) {
   if (!supabase) return res.status(500).json({ error: 'Supabase not configured' });
 
   const { recipients } = req.body || {};
+  // 'session' is de uitnodiging voor de user session, 'event' de bevestiging van
+  // het verzette event. Twee tabellen, want het zijn twee uitnodigingen met een
+  // eigen levensduur; een token van de ene mag nooit op de pagina van de andere
+  // uitkomen.
+  const kind = (req.body || {}).kind === 'event' ? 'event' : 'session';
   // Schrijven moet expliciet aangezet worden, net als bij de outreach-scan.
   const dryRun = (req.body || {}).dry_run !== false;
 
@@ -51,6 +56,32 @@ export default async function handler(req, res) {
   }
 
   const adressen = [...new Set(recipients.map(r => normaliseerEmail(r?.email)).filter(Boolean))];
+
+  // De eventmodus maakt NOOIT een rij aan. Een bevestigingslink hoort alleen te
+  // bestaan voor wie zich echt heeft ingeschreven; zou de composer er een
+  // aanmaken voor een willekeurige ontvanger, dan staat er straks iemand in de
+  // deelnemerslijst die zich nooit heeft aangemeld. Wie geen token heeft valt
+  // hieronder uit en wordt door de composer overgeslagen, met melding.
+  if (kind === 'event') {
+    const gevonden = [];
+    for (let i = 0; i < adressen.length; i += 200) {
+      const { data, error } = await supabase
+        .from('event_confirm_invites')
+        .select('email,token')
+        .in('email', adressen.slice(i, i + 200));
+      if (error) return res.status(500).json({ error: 'eventtokens ophalen: ' + error.message });
+      gevonden.push(...(data || []));
+    }
+    const tokens = {};
+    for (const r of gevonden) tokens[normaliseerEmail(r.email)] = r.token;
+    const zonder = adressen.filter(a => !tokens[a]);
+    return res.status(200).json({
+      dry_run: dryRun, kind, bestaand: Object.keys(tokens).length, nieuw: 0,
+      // Geen inschrijving betekent geen link. Dat is hier geen fout maar een
+      // feit over de ontvanger, en de composer meldt het voor het verzenden.
+      ongeldig: zonder, tokens,
+    });
+  }
 
   // Bestaande rijen ophalen. De kolom email is al genormaliseerd opgeslagen
   // (het endpoint schrijft hem zo weg), dus een gewone in() volstaat.

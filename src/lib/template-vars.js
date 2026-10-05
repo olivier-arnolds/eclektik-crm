@@ -15,9 +15,10 @@
 //   werd dan ?t=&a=yes, iedereen belandde op /s/invalid, en in de preview zag
 //   de knop er gewoon goed uit. Precies de fout die de eerste testverzending
 //   onbruikbaar maakte.
-const KNOWN = ['first_name', 'last_name', 'full_name', 'company_name', 'role', 'token'];
+const KNOWN = ['first_name', 'last_name', 'full_name', 'company_name', 'role', 'token', 'event_token'];
 
 export const TOKEN_VAR = 'token';
+export const EVENT_TOKEN_VAR = 'event_token';
 
 // Staat de tokenplaatshouder in deze tekst? Bepaalt of er tokens aangemaakt
 // moeten worden en of het broadcast-pad geblokkeerd wordt. Bewust exact: een
@@ -25,6 +26,14 @@ export const TOKEN_VAR = 'token';
 export function bevatToken(body) {
   if (!body) return false;
   return /\{\{\s*token\s*\}\}/i.test(String(body));
+}
+
+// Dezelfde vraag voor de bevestigingslink van het event. Een eigen variabele en
+// geen schakelaar naast {{token}}: de naam in de tekst zegt dan zelf uit welke
+// tabel het token komt, en er valt niets verkeerd in te stellen. De twee staan
+// in gescheiden tabellen omdat het twee verschillende uitnodigingen zijn.
+export function bevatEventToken(body) {
+  return /\{\{\s*event_token\s*\}\}/i.test(String(body));
 }
 
 export function renderTemplate(body, vars) {
@@ -56,6 +65,7 @@ export function varsForContact(contact) {
     // de composer weigert dan te versturen in plaats van een dode link te
     // maken. Zie api/session-invite-ensure.js.
     token: contact.token || '',
+    event_token: contact.event_token || '',
   };
 }
 

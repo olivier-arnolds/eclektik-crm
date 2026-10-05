@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { renderTemplate, varsForContact, KNOWN_VARS, bevatToken, TOKEN_VAR } from './template-vars';
+import { renderTemplate, varsForContact, KNOWN_VARS, bevatToken, bevatEventToken, TOKEN_VAR } from './template-vars';
 
 describe('renderTemplate', () => {
   it('vult een bekende variabele in', () => {
@@ -80,5 +80,26 @@ describe('hoofdletters in een plaatshouder', () => {
 
   it('een echt onbekende naam blijft weggestreken', () => {
     expect(renderTemplate('a{{VERZONNEN}}b', {})).toBe('ab');
+  });
+});
+
+describe('event_token naast token', () => {
+  it('herkent de eigen plaatshouder van het event', () => {
+    expect(bevatEventToken('link: {{event_token}}')).toBe(true);
+    expect(bevatEventToken('{{ EVENT_TOKEN }}')).toBe(true);
+    expect(bevatEventToken('geen plaatshouder')).toBe(false);
+    expect(bevatEventToken(null)).toBe(false);
+  });
+
+  it('KRITIEK: de twee plaatshouders worden niet door elkaar gehaald', () => {
+    // Ze lezen uit verschillende tabellen. Zou {{event_token}} ook als {{token}}
+    // tellen, dan krijgt de ontvanger de link van de verkeerde uitnodiging.
+    expect(bevatToken('{{event_token}}')).toBe(false);
+    expect(bevatEventToken('{{token}}')).toBe(false);
+  });
+
+  it('vult event_token in vanuit het contact', () => {
+    expect(renderTemplate('Kom je? {{event_token}}', varsForContact({ event_token: 'abc' })))
+      .toBe('Kom je? abc');
   });
 });

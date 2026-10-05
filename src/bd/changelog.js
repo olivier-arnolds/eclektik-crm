@@ -19,9 +19,29 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.139.0';
+export const CURRENT_VERSION = '1.140.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.140.0',
+    date: '2026-10-05T15:00:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feat',
+    title: 'Composer kan de bevestigingslink van het event meesturen',
+    summary:
+      'De inschrijvers moeten vanuit de BD-app gemaild kunnen worden met een eigen link naar de bevestigingspagina. De composer kende al {{token}} voor de user session, maar die leest uit een andere tabel. Er is nu een tweede plaatshouder.',
+    changes: [
+      'Nieuwe variabele {{event_token}} naast {{token}}. De naam in de tekst bepaalt uit welke tabel het token komt, dus er valt niets verkeerd in te stellen.',
+      'Allebei in een mail wordt geweigerd: de preview kan er maar een tonen en het is vrijwel zeker een vergissing.',
+      'De eventmodus maakt nooit een rij aan. Een bevestigingslink hoort alleen te bestaan voor wie zich echt heeft ingeschreven; wie geen inschrijving heeft wordt overgeslagen met melding.',
+      'Twee inschrijvers die nog geen contact waren, Armand Rouw en Ceren Gulbudak, zijn aangemaakt en getagd, zodat de elf in een selectie passen.',
+    ],
+    files: [
+      'src/lib/template-vars.js', 'src/lib/template-vars.test.js',
+      'src/bd/marketing-composer.jsx', 'api/session-invite-ensure.js',
+    ],
+    rollback: 'git revert naar v1.139.0. {{token}} blijft dan werken zoals altijd.',
+  },
   {
     version: '1.139.0',
     date: '2026-10-05T14:00:00Z',
