@@ -1,38 +1,61 @@
 <!--
-  Bevestigingsmail voor het event in Amsterdam, verzet naar 17 november 2026.
-  Tekst van Olivier; hier alleen de knop en de persoonlijke link toegevoegd.
+  Bevestigingsmail voor het event in Amsterdam, 17 november 2026.
+  Tekst van Olivier; opmaak volgt Eclectik_Workvivo_Event_Invite_Amsterdam_17_November_2026.html.
+
+  WAAROM HET LETTERTYPE OP ELK ELEMENT STAAT EN NIET IN EEN <style>
+    De composer stuurt deze body ongewijzigd door, zonder <head>, dus een
+    <link> naar Google Fonts of een <style>-blok komt niet mee. Bovendien laden
+    Gmail en Outlook webfonts helemaal niet. De fallbackreeks doet het werk:
+    Apple Mail toont Inter, de rest valt netjes terug op de systeemfont.
+    Dezelfde reeks als in de uitnodigingstemplate.
 
   DE LINK MOET DE PERSOONLIJKE ZIJN
     https://www.eclectik.co/e/{{event_token}} geeft per ontvanger een eigen
     pagina met twee knoppen, en het antwoord landt in event_confirm_invites.
-    De algemene inschrijfpagina (/events/amsterdam-2026) lijkt hetzelfde te
-    doen maar maakt een TWEEDE inschrijving aan: je leert dan niet wie
-    bevestigd heeft en je lijst raakt vervuild met dubbele records.
+    De algemene inschrijfpagina (/events/amsterdam-2026) lijkt hetzelfde te doen
+    maar maakt een TWEEDE inschrijving aan: je leert dan niet wie bevestigd
+    heeft en je lijst raakt vervuild met dubbele records.
 
   VERZENDEN
-    Marketing > Contacten, filter op de tag van de inschrijvers, selecteer ze,
-    open de composer, plak dit, en kies Transactioneel. Broadcast kan geen link
-    per ontvanger; de composer blokkeert dat ook.
+    Marketing > Contacten, filter op de tag Event 12 nov aangemeld, selecteer de
+    elf, open de composer, plak dit, en kies Transactioneel. Broadcast kan geen
+    link per ontvanger; de composer blokkeert dat ook.
 
   Onderwerp: New date, and this one is final: Tuesday 17 November
 -->
 
-<p>Hi {{first_name}},</p>
+<p style="margin: 0 0 18px 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.7; color: #1A2332; font-weight: 500;">
+  Hi {{first_name}},
+</p>
 
-<p>Once you start moving a date, you are in trouble. In this case I was. The date I confirmed earlier turned out to be the wrong one. My bad.</p>
+<p style="margin: 0 0 18px 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.7; color: #1A2332; font-weight: 400;">
+  Once you start moving a date, you are in trouble. In this case I was. The date I confirmed earlier turned out to be the wrong one. My bad.
+</p>
 
-<p>We now have a final one, with everyone who needs to be in that room available: Tuesday 17 November, 12:15 to 16:30, at the Zoom office in Amsterdam. The clocks go back in between, so it runs on CET. The programme is unchanged.</p>
+<p style="margin: 0 0 18px 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.7; color: #1A2332; font-weight: 400;">
+  We now have a final one, with everyone who needs to be in that room available: <strong style="color:#102945; font-weight:600;">Tuesday 17 November, 12:15 to 16:30</strong>, at the Zoom office in Amsterdam. The clocks go back in between, so it runs on CET. The programme is unchanged.
+</p>
 
-<p>That leaves one thing I am not sure of, and that is you. Without you in the room we have nothing ;-) so would you let me know whether you can make it?</p>
+<p style="margin: 0 0 18px 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.7; color: #1A2332; font-weight: 400;">
+  That leaves one thing I am not sure of, and that is you. Without you in the room we have nothing ;-) so would you let me know whether you can make it?
+</p>
 
-<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width: 100%; margin: 24px 0;">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 28px 0;">
   <tr>
-    <td bgcolor="#DC6B3C" align="center" style="background-color: #DC6B3C; border-radius: 4px;">
+    <td align="center" bgcolor="#DC6B3C" style="background-color: #DC6B3C; border-radius: 4px;">
       <a href="https://www.eclectik.co/e/{{event_token}}"
-         style="display: block; padding: 15px 20px; font-family: 'Inter', Arial, sans-serif; font-size: 15px; font-weight: 600; color: #FFFFFF; text-decoration: none; border-bottom: none; text-align: center;">Confirm your place</a>
+         style="display: inline-block; padding: 16px 36px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; font-weight: 600; color: #FFFFFF; text-decoration: none; border-bottom: none; letter-spacing: 0.2px;">
+        Confirm your place &rarr;
+      </a>
     </td>
   </tr>
 </table>
 
-<p>Best,<br>
-Olivier</p>
+<p style="margin: 24px 0 6px 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.7; color: #1A2332; font-weight: 400;">
+  Best,
+</p>
+
+<p style="margin: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.7; color: #102945; font-weight: 600;">
+  Olivier Arnolds<br>
+  <span style="font-size: 14px; font-weight: 400; color: #5C6675;">Eclectik</span>
+</p>
