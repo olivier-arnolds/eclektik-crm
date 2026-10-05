@@ -10,6 +10,11 @@
 //   De registratieroute schrijft eventDate weg als 2026-11-12. Verschuift het
 //   event nog een keer, dan volgt dit label vanzelf.
 
+// De datum zoals het event er nu voor staat. Eén plek, want hij is al twee keer
+// verschoven: van 6 oktober naar 12 november naar 17 november. De lijst kleurt
+// hierop, zodat een inschrijving voor een oude datum meteen opvalt.
+export const EVENT_DATUM = '2026-11-17';
+
 const MAANDEN = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun',
   'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
 

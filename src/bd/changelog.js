@@ -19,9 +19,26 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.141.0';
+export const CURRENT_VERSION = '1.141.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.141.1',
+    date: '2026-10-05T17:30:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Eventbevestigingen in de bestaande lijst, geen tweede lijst',
+    summary:
+      'Het losse blok van 1.141.0 is er weer uit. Een inschrijving en een bevestiging zijn dezelfde persoon op twee momenten, en dan horen ze op een regel en niet in twee tabellen boven elkaar.',
+    changes: [
+      'De kolom Aanmelding toont nu 17 november. De twaalf inschrijvingen die nog op 12 november stonden zijn bijgewerkt; de datum waarop iemand zich werkelijk inschreef blijft bewaard in originalEventDate.',
+      'Staat een inschrijving op de huidige eventdatum, dan is het label groen. Wie nog op een oude datum staat valt daarmee meteen op.',
+      'Wie geantwoord heeft krijgt er komt of kan niet achter, met de aantekening gewijzigd als het antwoord later is omgezet.',
+      'De eventdatum staat nu als EVENT_DATUM op een plek in lead-bron.js. Hij is al twee keer verschoven, dus die ene regel scheelt de volgende keer zoekwerk.',
+    ],
+    files: ['src/bd/marketing-leads.jsx', 'src/lib/lead-bron.js'],
+    rollback: 'git revert naar v1.141.0 brengt het losse blok terug. De datums in de database staan los daarvan, back-up in _dq_backup_marketing_lead_activity_20261005.',
+  },
   {
     version: '1.141.0',
     date: '2026-10-05T17:00:00Z',

@@ -2,9 +2,9 @@
 // Losstaand van de sales-funnel; "Promoveer" maakt pas een leads-rij aan.
 // Data wordt hier zelf opgehaald (zoals MarketingCampaigns) — geen props
 // vanuit BDApp nodig.
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { supabase } from '../supabase';
-import { bronLabel, gekomenVia } from '../lib/lead-bron';
+import { bronLabel, gekomenVia, EVENT_DATUM } from '../lib/lead-bron';
 import { fmtRelative } from './atoms';
 
 const STATUS_FILTERS = ['active', 'converted', 'archived', 'all'];
@@ -205,72 +205,23 @@ export default function MarketingLeads() {
   // afgehaakt. Kan ook een scanner zijn, vandaar apart en niet bij de ja's.
   const sessieHalf = echt.filter(r => !r.answer && r.pending_answer === 'yes');
 
-  const evJa = eventBevestiging.filter(r => r.answer === 'yes');
-  const evNee = eventBevestiging.filter(r => r.answer === 'no');
-  const evStil = eventBevestiging.filter(r => !r.answer);
-  // Wie zich bedacht heeft. Het laatste antwoord telt, maar dat iemand geschoven
-  // is wil je zien: dat is vaak het moment om even te bellen.
-  const evGeschoven = eventBevestiging.filter(r => (r.answer_count || 0) > 1);
+  // Bevestigingen op e-mailadres, zodat ze in de bestaande lijst passen en er
+  // geen tweede lijst bij komt. Een inschrijving en een bevestiging zijn immers
+  // dezelfde persoon, alleen op twee momenten.
+  const bevestigingPerMail = useMemo(() => {
+    const m = {};
+    for (const r of eventBevestiging) m[String(r.email || '').trim().toLowerCase()] = r;
+    return m;
+  }, [eventBevestiging]);
+
+  // Het label dat hoort bij de datum zoals het event er nu voor staat.
+  const huidigBronLabel = bronLabel('event_registered', { eventDate: EVENT_DATUM });
 
   const th = { textAlign: 'left', fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.4, color: 'var(--text-dim, #888)', padding: '6px 10px', borderBottom: '0.5px solid var(--sep)' };
   const td = { fontSize: 13, padding: '8px 10px', borderBottom: '0.5px solid var(--sep)', verticalAlign: 'top' };
 
   return (
     <div>
-      {/* Bevestigingen voor het event. Eigen blok bovenaan: dit is op dit moment
-          de vraag waar het om draait, namelijk wie er daadwerkelijk komt. */}
-      {eventBevestiging.length > 0 && (
-      <div style={{ marginBottom: 22 }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 8 }}>
-          <span style={{ fontSize: 13, fontWeight: 600 }}>Event Amsterdam</span>
-          <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
-            {evJa.length} komt &middot; {evNee.length} kan niet &middot; {evStil.length} nog
-            geen antwoord, van {eventBevestiging.length} gevraagd
-            {evGeschoven.length > 0 && (
-              <> &middot; <span title="Heeft het antwoord later gewijzigd. Het laatste antwoord telt."
-                style={{ color: '#b45309' }}>{evGeschoven.length} bedacht zich</span></>
-            )}
-          </span>
-        </div>
-        <div style={{ border: '0.5px solid var(--sep)', borderRadius: 8, overflow: 'hidden' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead style={{ background: 'var(--fill-1)' }}>
-              <tr>
-                {['Naam', 'E-mail', 'Antwoord', 'Wanneer'].map(h => (<th key={h} style={th}>{h}</th>))}
-              </tr>
-            </thead>
-            <tbody>
-              {eventBevestiging.map(r => (
-                <tr key={r.id}>
-                  <td style={td}>{r.first_name || '-'}</td>
-                  <td style={td}>{r.email}</td>
-                  <td style={td}>
-                    {/* Grijs voor wie nog niets zei: dat is geen uitkomst maar
-                        een lege plek, en die hoort niet de aandacht te trekken. */}
-                    <span style={{
-                      fontWeight: r.answer ? 500 : 400,
-                      color: r.answer === 'yes' ? '#15803d' : r.answer === 'no' ? '#b91c1c' : 'var(--text-3)',
-                    }}>
-                      {r.answer === 'yes' ? 'komt' : r.answer === 'no' ? 'kan niet' : 'nog niets'}
-                    </span>
-                    {(r.answer_count || 0) > 1 && (
-                      <span title={`${r.answer_count} keer geantwoord, dit is het laatste`}
-                        style={{ marginLeft: 6, fontSize: 9, padding: '1px 4px', borderRadius: 3, border: '0.5px solid var(--sep)', color: '#b45309' }}>
-                        gewijzigd
-                      </span>
-                    )}
-                  </td>
-                  <td style={{ ...td, color: 'var(--text-3)', whiteSpace: 'nowrap' }}>
-                    {r.answered_at ? fmtRelative(r.answered_at) : '-'}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-      )}
-
       {/* Reacties op de uitnodiging voor de user session. Bewust een eigen blok
           met een eigen kop: het zijn geen website-aanmeldingen en ze horen niet
           tussen de eventaanmeldingen te verdwijnen. */}
@@ -382,6 +333,8 @@ export default function MarketingLeads() {
               <LeadRow key={lead.id} lead={lead}
                 bron={lead.first_src || bronPerLead[lead.id] || null}
                 via={viaPerLead[lead.id] || null}
+                bevestiging={bevestigingPerMail[String(lead.email || '').trim().toLowerCase()] || null}
+                huidigBronLabel={huidigBronLabel}
                 expanded={expanded === lead.id}
                 activityRows={activity[lead.id]}
                 busy={busyId === lead.id}
@@ -399,7 +352,7 @@ export default function MarketingLeads() {
   );
 }
 
-function LeadRow({ lead, bron, via, expanded, activityRows, busy, onToggle, onPromote, onArchive, onReactivate, td }) {
+function LeadRow({ lead, bron, via, bevestiging, huidigBronLabel, expanded, activityRows, busy, onToggle, onPromote, onArchive, onReactivate, td }) {
   return (
     <>
       <tr onClick={onToggle} style={{ cursor: 'pointer' }}>
@@ -417,7 +370,28 @@ function LeadRow({ lead, bron, via, expanded, activityRows, busy, onToggle, onPr
         </td>
         <td style={td}>
           {bron
-            ? <span className="chip" style={{ fontSize: 11 }}>{bron}</span>
+            ? (
+              <>
+                {/* Groen als de inschrijving op de huidige eventdatum staat. Wie
+                    nog op een oude datum staat valt daarmee meteen op. */}
+                <span className="chip" style={bron === huidigBronLabel
+                  ? { fontSize: 11, color: '#15803d', background: 'rgba(21,128,61,0.13)', fontWeight: 500 }
+                  : { fontSize: 11 }}>{bron}</span>
+                {bevestiging?.answer && (
+                  <span title={bevestiging.answer_count > 1
+                    ? `${bevestiging.answer_count} keer geantwoord, dit is het laatste`
+                    : 'Antwoord op de bevestigingsmail'}
+                    style={{
+                      marginLeft: 6, fontSize: 10, padding: '1px 5px', borderRadius: 3,
+                      border: '0.5px solid var(--sep)', whiteSpace: 'nowrap',
+                      color: bevestiging.answer === 'yes' ? '#15803d' : '#b91c1c',
+                    }}>
+                    {bevestiging.answer === 'yes' ? 'komt' : 'kan niet'}
+                    {bevestiging.answer_count > 1 ? ' (gewijzigd)' : ''}
+                  </span>
+                )}
+              </>
+            )
             : '-'}
         </td>
         <td style={td}>{lead.last_activity_at ? fmtRelative(lead.last_activity_at) : '-'}</td>
