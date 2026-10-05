@@ -1,0 +1,38 @@
+<!--
+  Bevestigingsmail voor het event in Amsterdam, verzet naar 17 november 2026.
+  Tekst van Olivier; hier alleen de knop en de persoonlijke link toegevoegd.
+
+  DE LINK MOET DE PERSOONLIJKE ZIJN
+    https://www.eclectik.co/e/{{event_token}} geeft per ontvanger een eigen
+    pagina met twee knoppen, en het antwoord landt in event_confirm_invites.
+    De algemene inschrijfpagina (/events/amsterdam-2026) lijkt hetzelfde te
+    doen maar maakt een TWEEDE inschrijving aan: je leert dan niet wie
+    bevestigd heeft en je lijst raakt vervuild met dubbele records.
+
+  VERZENDEN
+    Marketing > Contacten, filter op de tag van de inschrijvers, selecteer ze,
+    open de composer, plak dit, en kies Transactioneel. Broadcast kan geen link
+    per ontvanger; de composer blokkeert dat ook.
+
+  Onderwerp: New date, and this one is final: Tuesday 17 November
+-->
+
+<p>Hi {{first_name}},</p>
+
+<p>Once you start moving a date, you are in trouble. In this case I was. The date I confirmed earlier turned out to be the wrong one. My bad.</p>
+
+<p>We now have a final one, with everyone who needs to be in that room available: Tuesday 17 November, 12:15 to 16:30, at the Zoom office in Amsterdam. The clocks go back in between, so it runs on CET. The programme is unchanged.</p>
+
+<p>That leaves one thing I am not sure of, and that is you. Without you in the room we have nothing ;-) so would you let me know whether you can make it?</p>
+
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="width: 100%; margin: 24px 0;">
+  <tr>
+    <td bgcolor="#DC6B3C" align="center" style="background-color: #DC6B3C; border-radius: 4px;">
+      <a href="https://www.eclectik.co/e/{{event_token}}"
+         style="display: block; padding: 15px 20px; font-family: 'Inter', Arial, sans-serif; font-size: 15px; font-weight: 600; color: #FFFFFF; text-decoration: none; border-bottom: none; text-align: center;">Confirm your place</a>
+    </td>
+  </tr>
+</table>
+
+<p>Best,<br>
+Olivier</p>
