@@ -292,10 +292,23 @@ const VAR_LABELS = {
               `${droog.bestaand} ontvanger(s) hebben al een uitnodiging, die link blijft werken.`,
               `${droog.nieuw} krijgen er nu een aangemaakt.`,
             ];
-          if (droog.ongeldig?.length) {
+          // Bij een event staat de reden al in de regels hierboven: niet in de
+          // inschrijvingen. 'Zonder bruikbaar adres' zou daar onjuist zijn.
+          if (tokenSoort !== 'event' && droog.ongeldig?.length) {
             regels.push(`${droog.ongeldig.length} zonder bruikbaar adres worden overgeslagen.`);
           }
           if (!confirm(`${regels.join('\n')}\n\nDoorgaan met versturen?`)) {
+            // Nooit stil teruggaan. Op een telefoon onderdrukt Safari een tweede
+            // dialoog kort na de eerste, en dan komt hier false binnen zonder dat
+            // de gebruiker iets geweigerd heeft. Die zag dan een knop die niets
+            // deed en geen enkele uitleg.
+            setResult({
+              ok: false,
+              error: 'Afgebroken, er is niets verstuurd.'
+                + (droog.ongeldig?.length
+                  ? ` ${droog.ongeldig.length} van de ontvangers heeft geen bevestigingslink.`
+                  : ''),
+            });
             setBusy(false);
             return;
           }

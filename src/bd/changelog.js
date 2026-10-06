@@ -19,9 +19,24 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.142.1';
+export const CURRENT_VERSION = '1.142.2';
 
 export const CHANGELOG = [
+  {
+    version: '1.142.2',
+    date: '2026-10-06T13:00:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Verzenden brak stil af op een telefoon',
+    summary:
+      'Bevat de mail een persoonlijke link, dan vraagt de composer eerst om bevestiging als niet iedereen er een heeft. Dat is een tweede dialoog kort na de eerste, en Safari op een telefoon onderdrukt die. De code las dat als geweigerd en stopte zonder een woord: de knop deed niets en er stond nergens waarom.',
+    changes: [
+      'Afbreken zegt nu wat er gebeurd is, en hoeveel ontvangers geen link hebben.',
+      'Bij een eventmail stond er ten onrechte bij dat adressen onbruikbaar waren. De reden is dat ze niet in de inschrijvingen staan, en dat stond er al.',
+    ],
+    files: ['src/bd/marketing-composer.jsx'],
+    rollback: 'git revert naar v1.142.1. Dan breekt het verzenden weer stil af.',
+  },
   {
     version: '1.142.1',
     date: '2026-10-06T12:00:00Z',
