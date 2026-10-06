@@ -19,9 +19,25 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.141.1';
+export const CURRENT_VERSION = '1.142.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.142.0',
+    date: '2026-10-06T10:00:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feat',
+    title: 'Contacten: filter op het antwoord voor het event',
+    summary:
+      'Wie nog geen antwoord heeft gegeven op de bevestigingsmail was alleen te vinden via een tag die ik met de hand bijwerkte, en die veroudert zodra iemand antwoordt. Nu staat het als filter in de tab, live uit de database.',
+    changes: [
+      'Nieuw filter Event 17 nov met Komt, Kan niet en Nog niets, naast de bestaande statusfilters.',
+      'Nog niets betekent uitgenodigd en nog geen antwoord. Wie nooit een uitnodiging kreeg valt bij elke keuze af, anders zou een herinnering naar duizend mensen gaan die nergens van weten.',
+      'Gebouwd zodat de herinnering verstuurd kan worden door iemand die op dat moment alleen een telefoon heeft en niet eerst een lijst kan laten bijwerken.',
+    ],
+    files: ['src/bd/marketing-contacts.jsx'],
+    rollback: 'git revert naar v1.141.1. Dan is de tag Event 17 nov herinnering weer de enige weg.',
+  },
   {
     version: '1.141.1',
     date: '2026-10-05T17:30:00Z',

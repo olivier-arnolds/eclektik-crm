@@ -122,6 +122,42 @@ export function EmailStatusBadge({ status }) {
 
 // Status Email-filter: drie keuzes (gevonden / niet gevonden / nog niet gezocht).
 // value: 'found' | 'not_found' | 'unsearched' | null (uit).
+// Filter op het antwoord op de bevestigingsmail voor het event. Leest live uit
+// event_confirm_results, dus geen tag die veroudert zodra iemand antwoordt.
+// Bestaat omdat de herinnering verstuurd moet kunnen worden door iemand die op
+// dat moment alleen een telefoon heeft en niet eerst een lijst kan laten
+// bijwerken.
+function EventAntwoordFilter({ value, onChange }) {
+  const opts = [
+    { key: 'yes',  label: 'Komt', title: 'Heeft bevestigd te komen', on: '#dcfce7', onText: '#15803d', border: '#16a34a' },
+    { key: 'no',   label: 'Kan niet', title: 'Heeft afgezegd', on: '#fee2e2', onText: '#b91c1c', border: '#dc2626' },
+    { key: 'open', label: 'Nog niets', title: 'Uitgenodigd, nog geen antwoord. Dit is de groep voor een herinnering.', on: '#e5e7eb', onText: '#374151', border: '#9ca3af' },
+  ];
+  const btnBase = {
+    padding: '2px 12px', borderRadius: 10, fontSize: 11,
+    fontFamily: 'inherit', cursor: 'pointer', border: '0.5px solid', fontWeight: 500,
+  };
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '3px 0', flexWrap: 'wrap' }}>
+      <span style={{ fontSize: 12, width: 108, flexShrink: 0, whiteSpace: 'nowrap', color: 'var(--text-1)' }}>Event 17 nov</span>
+      {opts.map(o => {
+        const active = value === o.key;
+        return (
+          <button key={o.key} onClick={() => onChange(active ? null : o.key)}
+            title={o.title}
+            style={{
+              ...btnBase,
+              background: active ? o.on : 'transparent',
+              color: active ? o.onText : 'var(--text-3)',
+              borderColor: active ? o.border : 'var(--sep)',
+              fontWeight: active ? 600 : 400,
+            }}>{o.label}</button>
+        );
+      })}
+    </div>
+  );
+}
+
 function EmailStatusFilter({ value, onChange }) {
   const opts = [
     { key: 'found',      label: 'Yes', title: 'E-mail gevonden', on: '#dcfce7', onText: '#15803d', border: '#16a34a' },
@@ -304,6 +340,12 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
   const [linkedinFilter, setLinkedinFilter] = useState(null);
   const [titleFilter, setTitleFilter] = useState(null);
   const [followFilter, setFollowFilter] = useState(null);
+  // null | 'yes' | 'no' | 'open' — het antwoord op de bevestigingsmail.
+  const [eventFilter, setEventFilter] = useState(null);
+  // e-mailadres -> rij uit event_confirm_results. Klein (dertien rijen), dus in
+  // één keer opgehaald; koppelen gaat op adres, want de bevestiging hangt aan de
+  // inschrijving en niet aan het contactrecord.
+  const [eventAntwoorden, setEventAntwoorden] = useState({});
   const [followedContactIds, setFollowedContactIds] = useState(() => new Set());
 
   // Haal alle contact-ids op die op signal-follow staan (bell-toggle in de
@@ -360,6 +402,16 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
         map[r.contact_id][r.account_id] = r.status;
       }
       setConnections(map);
+    });
+  }, []);
+
+  // De antwoorden op de bevestigingsmail voor het event, bij mount.
+  useEffect(() => {
+    supabase.from('event_confirm_results').select('email, answer, answered_at').then(({ data }) => {
+      if (!data) return;
+      const map = {};
+      for (const r of data) map[String(r.email || '').trim().toLowerCase()] = r;
+      setEventAntwoorden(map);
     });
   }, []);
 
@@ -549,6 +601,17 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
       if (titleFilter === 'no' && c.role) return false;
       if (followFilter === 'yes' && !followedContactIds.has(c.id)) return false;
       if (followFilter === 'no' && followedContactIds.has(c.id)) return false;
+
+      if (eventFilter) {
+        const rij = eventAntwoorden[String(c.email || '').trim().toLowerCase()];
+        // Zonder uitnodiging valt een contact bij elk van de drie keuzes af. Ook
+        // bij 'Nog niets': dat betekent uitgenodigd en nog geen antwoord, niet
+        // 'nooit gevraagd'. Anders zou een herinnering naar duizend mensen gaan
+        // die nooit iets hebben gekregen.
+        if (!rij) return false;
+        if (eventFilter === 'open' && rij.answer) return false;
+        if (eventFilter !== 'open' && rij.answer !== eventFilter) return false;
+      }
       // Checked = heeft dit contact al een connectie-status voor het gekozen account?
       if (connCheckedFilter === 'yes' && connections[c.id]?.[connAccount] === undefined) return false;
       if (connCheckedFilter === 'no' && connections[c.id]?.[connAccount] !== undefined) return false;
@@ -632,7 +695,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
       if (cmp !== 0) return cmp;
       return (a.name || '').toLowerCase().localeCompare((b.name || '').toLowerCase());
     });
-  }, [contacts, activeFilter, tagFilter, emailFilter, emailStatusFilter, linkedinFilter, titleFilter, followFilter, followedContactIds, connCheckedFilter, connectedFilter, connections, connAccount, hasGlintDeal, hasAnyDeal, accountsWithGlintDeal, accountsWithAnyDeal, accountsWithActiveProposal, selectedTagIds, selectedAccountTypes, accountTypeById, selectedCompanies, selectedCountries, selectedCities, selectedIndustries, selectedEmpBuckets, accountMetaById, searchText, hiddenPairs, sortMode]);
+  }, [contacts, activeFilter, tagFilter, emailFilter, emailStatusFilter, linkedinFilter, titleFilter, followFilter, followedContactIds, eventFilter, eventAntwoorden, connCheckedFilter, connectedFilter, connections, connAccount, hasGlintDeal, hasAnyDeal, accountsWithGlintDeal, accountsWithAnyDeal, accountsWithActiveProposal, selectedTagIds, selectedAccountTypes, accountTypeById, selectedCompanies, selectedCountries, selectedCities, selectedIndustries, selectedEmpBuckets, accountMetaById, searchText, hiddenPairs, sortMode]);
 
   // Is er daadwerkelijk gefilterd? (alles behalve de standaard-staat). Drijft
   // de live accountlijst-koppeling: alleen dan versmalt het rechterpaneel mee.
@@ -641,12 +704,12 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
     selectedCompanies.size > 0 || selectedCountries.size > 0 ||
     selectedCities.size > 0 || selectedIndustries.size > 0 ||
     selectedEmpBuckets.size > 0 || hasGlintDeal || hasAnyDeal ||
-    !!emailFilter || !!linkedinFilter || !!titleFilter || !!followFilter ||
+    !!emailFilter || !!linkedinFilter || !!titleFilter || !!followFilter || !!eventFilter ||
     !!connCheckedFilter || !!connectedFilter ||
     !!tagFilter || searchText.trim() !== '' || activeFilter !== 'yes'
   ), [selectedTagIds, selectedAccountTypes, selectedCompanies, selectedCountries,
       selectedCities, selectedIndustries, selectedEmpBuckets, hasGlintDeal,
-      hasAnyDeal, emailFilter, linkedinFilter, titleFilter, followFilter,
+      hasAnyDeal, emailFilter, linkedinFilter, titleFilter, followFilter, eventFilter,
       connCheckedFilter, connectedFilter, tagFilter, searchText, activeFilter]);
 
   // Meld de gefilterde account-ids omhoog zodat de accountlijst (rechterpaneel)
@@ -1068,6 +1131,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
         <YesNoFilter label="LinkedIn" value={linkedinFilter} onChange={setLinkedinFilter} />
         <YesNoFilter label="Job Title" value={titleFilter} onChange={setTitleFilter} />
         <YesNoFilter label="Follow 🔔" value={followFilter} onChange={setFollowFilter} />
+        <EventAntwoordFilter value={eventFilter} onChange={setEventFilter} />
         <YesNoFilter label={`Checked 🔗 (${LINKEDIN_ACCOUNTS.find(a => a.id === connAccount)?.short || '?'})`} value={connCheckedFilter} onChange={setConnCheckedFilter} />
         <YesNoFilter label={`Connected 🔗 (${LINKEDIN_ACCOUNTS.find(a => a.id === connAccount)?.short || '?'})`} value={connectedFilter} onChange={setConnectedFilter} />
         <YesNoFilter label="Active" value={activeFilter} onChange={setActiveFilter} />
