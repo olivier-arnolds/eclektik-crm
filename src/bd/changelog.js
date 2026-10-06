@@ -19,9 +19,26 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.142.0';
+export const CURRENT_VERSION = '1.142.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.142.1',
+    date: '2026-10-06T12:00:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Contacten was onbruikbaar op een telefoon',
+    summary:
+      'De filterbalk is een kolom van vaste 520 pixels die nooit krimpt, met de contactenlijst ernaast. Op een telefoon is die balk alleen al breder dan het scherm: de pagina schuift naar rechts en komt niet meer terug, want de balk is sticky en houdt de scroll vast. Gemeld vanuit Kenia, waar de telefoon de enige weg naar de CRM was.',
+    changes: [
+      'Onder 900 pixels staan de filterbalk en de lijst onder elkaar in plaats van naast elkaar, en de balk is daar niet meer sticky.',
+      'De twee filterkolommen stapelen op diezelfde breedte.',
+      'De lijst mag zelf horizontaal schuiven maar sleept de pagina niet meer mee.',
+      'In css en niet in de inline stijlen: een mediaquery kan niet inline, en een resize-listener in React zou hetzelfde doen met meer bewegende delen.',
+    ],
+    files: ['src/bd/styles.css', 'src/bd/marketing-contacts.jsx'],
+    rollback: 'git revert naar v1.142.0. Dan is de tab op een telefoon weer onbruikbaar.',
+  },
   {
     version: '1.142.0',
     date: '2026-10-06T10:00:00Z',

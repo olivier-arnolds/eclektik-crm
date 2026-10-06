@@ -1186,3 +1186,30 @@ em { font-style: normal; }
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+
+/* ── Marketing > Contacten op een smal scherm ──────────────────────────────────
+ *
+ * De filterbalk is een kolom van vaste 520px die nooit krimpt, met de
+ * contactenlijst ernaast. Op een telefoon is die 520px alleen al breder dan het
+ * scherm: de pagina schuift naar rechts en komt niet meer terug, want de balk
+ * is sticky en houdt de scroll vast. Gemeld vanuit Kenia, waar de telefoon de
+ * enige weg naar de CRM was.
+ *
+ * Onder 900px stapelen in plaats van naast elkaar. Bewust in css en niet in de
+ * inline stijlen: een mediaquery kan niet inline, en een resize-listener in
+ * React zou hetzelfde doen met meer bewegende delen.
+ */
+@media (max-width: 900px) {
+  .contacten-layout { flex-direction: column !important; }
+  .contacten-filters {
+    flex: 1 1 auto !important;
+    width: 100% !important;
+    position: static !important;   /* niet meer sticky: neemt anders het halve scherm */
+    max-height: none !important;
+  }
+  /* De twee filterkolommen onder elkaar in plaats van naast elkaar. */
+  .contacten-filterkolommen { flex-direction: column !important; gap: 4px !important; }
+  /* De lijst mag zelf schuiven, maar sleept de pagina niet mee. */
+  .contacten-lijst { min-width: 0 !important; overflow-x: auto !important; }
+}

@@ -1046,11 +1046,11 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
   }
 
   return (
-    <div style={{ display: 'flex', gap: 16 }}>
+    <div className="contacten-layout" style={{ display: 'flex', gap: 16 }}>
       {/* Filter sidebar — sticky tijdens scroll. Tags bovenaan (volle breedte),
           daaronder twee kolommen: LINKS Account status + Status, RECHTS Deals +
           Account. Zo staan alle filters zonder scrollen in beeld. */}
-      <aside style={{
+      <aside className="contacten-filters" style={{
         flex: '0 0 520px',
         background: 'var(--bg-1)',
         padding: 12,
@@ -1091,7 +1091,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
         ))}
 
         {/* Twee kolommen onder Tags */}
-        <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', marginTop: 12 }}>
+        <div className="contacten-filterkolommen" style={{ display: 'flex', gap: 16, alignItems: 'flex-start', marginTop: 12 }}>
 
         {/* LINKS: Account status · Status — iets breder zodat "Nog niet" op één rij past */}
         <div style={{ flex: 1.5, minWidth: 0 }}>
@@ -1212,7 +1212,7 @@ export default function MarketingContacts({ contacts, accounts, deals, allTags, 
       </aside>
 
       {/* Contact list */}
-      <div style={{ flex: 1, minWidth: 0 }}>
+      <div className="contacten-lijst" style={{ flex: 1, minWidth: 0 }}>
         <div style={{
           position: 'sticky',
           top: 0,
