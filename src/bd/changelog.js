@@ -19,9 +19,31 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.142.2';
+export const CURRENT_VERSION = '1.143.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.143.0',
+    date: '2026-10-26T12:00:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feat',
+    title: 'Het antwoord voor het event is nu per persoon te kiezen',
+    summary:
+      'De mail met de bevestigingsknop komt slecht aan, dus mensen mailen rechtstreeks terug. Dat moest met de hand vastgelegd kunnen worden in plaats van per verzoek in de database.',
+    changes: [
+      'In de kolom Aanmelding staat per deelnemer een keuzelijst: nog niets, komt, kan niet.',
+      'Opslaan gaat via het nieuwe endpoint /api/event-confirm-set, achter een ingelogde gebruiker. De tabel staat op RLS zonder policies omdat hij per deelnemer een token draagt, dus de frontend kan er niet rechtstreeks in schrijven.',
+      'De keuzelijst springt pas om als het opslaan bevestigd is, en een mislukking staat in beeld. Optimistisch tonen zou laten zien dat iemand komt terwijl dat nergens vastligt.',
+      'Twee kolommen erbij: answer_source en answer_by. Zonder die eerste beweert de tabel dat iemand zelf op de knop heeft gedrukt terwijl hij een mail stuurde. De twee bestaande antwoorden zijn met terugwerkende kracht goed gezet.',
+      'Terugzetten naar nog niets telt niet mee als antwoord; dat is een correctie van ons en geen uitspraak van de deelnemer.',
+    ],
+    files: [
+      'api/event-confirm-set.js', 'api/_lib/event-confirm-set-lib.js',
+      'api/_lib/event-confirm-set-lib.test.js', 'src/bd/marketing-leads.jsx',
+      'sql/schema_event_confirm_answer_source_2026-10-26.sql',
+    ],
+    rollback: 'git revert naar v1.142.2. De twee kolommen mogen blijven staan.',
+  },
   {
     version: '1.142.2',
     date: '2026-10-06T13:00:00Z',

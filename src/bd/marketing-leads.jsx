@@ -6,6 +6,7 @@ import { useEffect, useRef, useState, useMemo } from 'react';
 import { supabase } from '../supabase';
 import { bronLabel, gekomenVia, EVENT_DATUM } from '../lib/lead-bron';
 import { fmtRelative } from './atoms';
+import { apiFetch } from '../lib/apiFetch';
 
 const STATUS_FILTERS = ['active', 'converted', 'archived', 'all'];
 
@@ -217,11 +218,63 @@ export default function MarketingLeads() {
   // Het label dat hoort bij de datum zoals het event er nu voor staat.
   const huidigBronLabel = bronLabel('event_registered', { eventDate: EVENT_DATUM });
 
+  // Het antwoord met de hand zetten. Nodig omdat de mail met de knop slecht
+  // aankomt: mensen mailen rechtstreeks terug en dat moet vastgelegd kunnen
+  // worden. Gaat via een endpoint, want event_confirm_invites staat op RLS
+  // zonder policies; de frontend kan er niet in schrijven.
+  const [zetBezig, setZetBezig] = useState(null);   // e-mailadres waar we op wachten
+  const [zetFout, setZetFout] = useState(null);
+  const zetAntwoord = async (email, antwoord) => {
+    const sleutel = String(email || '').trim().toLowerCase();
+    setZetBezig(sleutel);
+    setZetFout(null);
+    try {
+      const resp = await apiFetch('/api/event-confirm-set', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: sleutel, answer: antwoord }),
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok || data?.error) throw new Error(data?.error || `status ${resp.status}`);
+      // Pas na een bevestigd antwoord bijwerken. Optimistisch tonen zou een
+      // mislukte opslag laten lijken alsof hij gelukt is, en juist hier is dat
+      // erg: dan staat er in beeld dat iemand komt terwijl dat nergens vastligt.
+      setEventBevestiging(rijen => rijen.map(r => (
+        String(r.email || '').trim().toLowerCase() === sleutel
+          ? {
+            ...r,
+            answer: antwoord,
+            answered_at: antwoord ? new Date().toISOString() : null,
+            answer_count: antwoord ? (r.answer_count || 0) + 1 : r.answer_count,
+            answer_source: antwoord ? 'manual' : null,
+          }
+          : r)));
+    } catch (e) {
+      setZetFout(`Opslaan mislukte voor ${sleutel}: ${e.message}`);
+    } finally {
+      setZetBezig(null);
+    }
+  };
+
   const th = { textAlign: 'left', fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.4, color: 'var(--text-dim, #888)', padding: '6px 10px', borderBottom: '0.5px solid var(--sep)' };
   const td = { fontSize: 13, padding: '8px 10px', borderBottom: '0.5px solid var(--sep)', verticalAlign: 'top' };
 
   return (
     <div>
+      {/* Een mislukt opslaan moet je zien. Zonder deze regel zou de keuzelijst
+          terugspringen zonder uitleg, en dat leest als een hapering in plaats
+          van als een antwoord dat nergens is vastgelegd. */}
+      {zetFout && (
+        <div style={{
+          fontSize: 12, color: '#b91c1c', background: 'rgba(185,28,28,0.08)',
+          border: '0.5px solid rgba(185,28,28,0.35)', borderRadius: 6,
+          padding: '6px 10px', marginBottom: 12,
+        }}>
+          {zetFout}{' '}
+          <button className="btn-ghost tiny" onClick={() => setZetFout(null)}>sluiten</button>
+        </div>
+      )}
+
       {/* Reacties op de uitnodiging voor de user session. Bewust een eigen blok
           met een eigen kop: het zijn geen website-aanmeldingen en ze horen niet
           tussen de eventaanmeldingen te verdwijnen. */}
@@ -335,6 +388,8 @@ export default function MarketingLeads() {
                 via={viaPerLead[lead.id] || null}
                 bevestiging={bevestigingPerMail[String(lead.email || '').trim().toLowerCase()] || null}
                 huidigBronLabel={huidigBronLabel}
+                onZetAntwoord={zetAntwoord}
+                zetBezig={zetBezig === String(lead.email || '').trim().toLowerCase()}
                 expanded={expanded === lead.id}
                 activityRows={activity[lead.id]}
                 busy={busyId === lead.id}
@@ -352,7 +407,7 @@ export default function MarketingLeads() {
   );
 }
 
-function LeadRow({ lead, bron, via, bevestiging, huidigBronLabel, expanded, activityRows, busy, onToggle, onPromote, onArchive, onReactivate, td }) {
+function LeadRow({ lead, bron, via, bevestiging, huidigBronLabel, onZetAntwoord, zetBezig, expanded, activityRows, busy, onToggle, onPromote, onArchive, onReactivate, td }) {
   return (
     <>
       <tr onClick={onToggle} style={{ cursor: 'pointer' }}>
@@ -377,18 +432,40 @@ function LeadRow({ lead, bron, via, bevestiging, huidigBronLabel, expanded, acti
                 <span className="chip" style={bron === huidigBronLabel
                   ? { fontSize: 11, color: '#15803d', background: 'rgba(21,128,61,0.13)', fontWeight: 500 }
                   : { fontSize: 11 }}>{bron}</span>
-                {bevestiging?.answer && (
-                  <span title={bevestiging.answer_count > 1
-                    ? `${bevestiging.answer_count} keer geantwoord, dit is het laatste`
-                    : 'Antwoord op de bevestigingsmail'}
+                {/* Alleen wie een uitnodiging heeft kan een antwoord hebben.
+                    Een keuzelijst en geen label: de knopmail komt slecht aan,
+                    dus de antwoorden komen per mail binnen en moeten hier met
+                    de hand vastgelegd worden. */}
+                {bevestiging && (
+                  <select
+                    value={bevestiging.answer || ''}
+                    disabled={zetBezig}
+                    onClick={e => e.stopPropagation()}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      onZetAntwoord(bevestiging.email, e.target.value || null);
+                    }}
+                    title={bevestiging.answer_source === 'manual'
+                      ? `Met de hand gezet${bevestiging.answer_by ? ` door ${bevestiging.answer_by}` : ''}`
+                      : bevestiging.answer
+                        ? 'De deelnemer klikte zelf op de bevestigingspagina'
+                        : 'Nog geen antwoord'}
                     style={{
-                      marginLeft: 6, fontSize: 10, padding: '1px 5px', borderRadius: 3,
-                      border: '0.5px solid var(--sep)', whiteSpace: 'nowrap',
-                      color: bevestiging.answer === 'yes' ? '#15803d' : '#b91c1c',
+                      marginLeft: 6, fontSize: 11, fontFamily: 'inherit', padding: '1px 4px',
+                      borderRadius: 4, border: '0.5px solid var(--sep)', cursor: 'pointer',
+                      background: 'var(--bg-1)', opacity: zetBezig ? 0.5 : 1,
+                      fontWeight: bevestiging.answer ? 500 : 400,
+                      color: bevestiging.answer === 'yes' ? '#15803d'
+                        : bevestiging.answer === 'no' ? '#b91c1c' : 'var(--text-3)',
                     }}>
-                    {bevestiging.answer === 'yes' ? 'komt' : 'kan niet'}
-                    {bevestiging.answer_count > 1 ? ' (gewijzigd)' : ''}
-                  </span>
+                    <option value="">nog niets</option>
+                    <option value="yes">komt</option>
+                    <option value="no">kan niet</option>
+                  </select>
+                )}
+                {bevestiging?.answer_count > 1 && (
+                  <span title={`${bevestiging.answer_count} keer geantwoord, dit is het laatste`}
+                    style={{ marginLeft: 4, fontSize: 9, color: '#b45309' }}>gewijzigd</span>
                 )}
               </>
             )
