@@ -54,10 +54,11 @@ Hi Charlotte,
 We deliver the employee listening work at the European Training Foundation,
 which is how your name reached us. The reason I am writing is broader than ETF.
 
-Eclectik is a Microsoft partner in People Science, but the side that has grown
-fastest is AI ROI. Through Microsoft Switzerland we work with accounts like LHH,
-part of the Adecco Group, and Farmers Insurance in the Zurich Insurance Group to
-put a dollar value on what their AI strategy returns. Adoption dashboards are
+Eclectik is a Microsoft partner for CSM and PSC consulting services around
+Glint. But we have a broader offering, and the side that has grown fastest is AI
+ROI. Through Microsoft Switzerland we work with accounts like LHH, part of the
+Adecco Group, and Farmers Insurance in the Zurich Insurance Group to put a
+dollar value on what their AI strategy returns. Adoption dashboards are
 everywhere. A defensible number is not. Across 22 countries you will see where
 that sits next to AI Business Solutions far better than we can from inside one
 account.
@@ -99,7 +100,8 @@ Agents, Americas
 Hi Marie-Elena,
 
 We do the employee listening and People Science work at Draper Laboratory, which
-is how we came across your name. Eclectik is a Microsoft partner.
+is how we came across your name. Eclectik is a Microsoft partner for CSM and PSC
+consulting services around Glint.
 
 The reason I am writing sits closer to AI Workforce than to Draper. Through
 Microsoft Switzerland we run AI ROI engagements for accounts like LHH, part of
@@ -147,8 +149,8 @@ Strategic Accounts
 Hi Ryan,
 
 We work with GoDaddy and BMC Software on employee listening, so we are in the
-same two accounts from a different angle. Eclectik is a Microsoft partner in
-People Science.
+same two accounts from a different angle. Eclectik is a Microsoft partner for
+CSM and PSC consulting services around Glint.
 
 The part that probably matters more to your Workforce AI remit is the newer one.
 Through Microsoft Switzerland we run AI ROI work for accounts like LHH, part of
@@ -171,9 +173,9 @@ Accounts
 
 Hi Mary,
 
-We do the employee listening and People Science work at Trane Technologies, so we
-are in one of your strategic accounts from the inside. Eclectik is a Microsoft
-partner.
+We do the employee listening and People Science work at Trane Technologies, so
+we are in one of your strategic accounts from the inside. Eclectik is a
+Microsoft partner for CSM and PSC consulting services around Glint.
 
 What fits your national AI Workforce remit better is the other half. Through
 Microsoft Switzerland we run AI ROI engagements for accounts like LHH, part of
@@ -197,7 +199,8 @@ Manufacturing & Mobility
 Hi Jason,
 
 We run the employee listening and People Science work at Trane Technologies,
-which is how your name came up. Eclectik is a Microsoft partner.
+which is how your name came up. Eclectik is a Microsoft partner for CSM and PSC
+consulting services around Glint.
 
 The reason to speak is wider than Trane. Through Microsoft Switzerland we
 deliver AI ROI engagements for accounts like LHH, part of the Adecco Group, and
@@ -219,8 +222,9 @@ Microsoft Italy
 
 Hi Laura,
 
-We did the employee listening and People Science work at MAIRE, which is how your
-name reached us. Eclectik is a Microsoft partner.
+We did the employee listening and People Science work at MAIRE, which is how
+your name reached us. Eclectik is a Microsoft partner for CSM and PSC consulting
+services around Glint.
 
 What is probably more useful to your AI Workforce remit is the other side of
 what we do. Through Microsoft Switzerland we run AI ROI engagements for accounts
@@ -242,8 +246,9 @@ Cognex | regio Boston | Director, AI Workforce
 
 Hi Jimmy,
 
-We do the employee listening and People Science work at Cognex, so we are already
-inside one of your accounts. Eclectik is a Microsoft partner.
+We do the employee listening and People Science work at Cognex, so we are
+already inside one of your accounts. Eclectik is a Microsoft partner for CSM and
+PSC consulting services around Glint.
 
 Closer to your AI Workforce remit is the other half of our work. Through
 Microsoft Switzerland we run AI ROI engagements for accounts like LHH, part of
@@ -266,7 +271,8 @@ Platforms
 Hi Emily,
 
 We work with GoDaddy on employee listening and People Science, which puts us in
-your account from a different angle. Eclectik is a Microsoft partner.
+your account from a different angle. Eclectik is a Microsoft partner for CSM and
+PSC consulting services around Glint.
 
 The part that sits closest to AI Workforce is the newer one. Through Microsoft
 Switzerland we run AI ROI engagements for accounts like LHH, part of the Adecco
@@ -288,7 +294,8 @@ Sage Group | Dublin | AI Workforce Solution Specialist
 Hi Eoin,
 
 We do the employee listening and People Science work at Sage, so we are in your
-account already. Eclectik is a Microsoft partner.
+account already. Eclectik is a Microsoft partner for CSM and PSC consulting
+services around Glint.
 
 What fits AI Workforce more directly is our other side. Through Microsoft
 Switzerland we run AI ROI engagements for accounts like LHH, part of the Adecco
@@ -310,7 +317,8 @@ Douglas | München | Sales Manager Modern Work & Copilot
 Hi Denisa,
 
 We run the employee listening and People Science work at Douglas, which is how
-your name came up. Eclectik is a Microsoft partner.
+your name came up. Eclectik is a Microsoft partner for CSM and PSC consulting
+services around Glint.
 
 Your team sells Copilot adoption. Our newer work picks up where that lands:
 through Microsoft Switzerland we run AI ROI engagements for accounts like LHH,
@@ -333,7 +341,8 @@ Middle East & Africa
 Hi Sherif,
 
 We do the employee listening and People Science work across Pepkor, which is how
-we came across your name. Eclectik is a Microsoft partner.
+we came across your name. Eclectik is a Microsoft partner for CSM and PSC
+consulting services around Glint.
 
 The reason to speak goes beyond Pepkor. Through Microsoft Switzerland we deliver
 AI ROI engagements for accounts like LHH, part of the Adecco Group, and Farmers
@@ -356,7 +365,8 @@ Specialist
 Hi Nicolette,
 
 We do the employee listening and People Science work across Pepkor, so we are in
-your account from a different angle. Eclectik is a Microsoft partner.
+your account from a different angle. Eclectik is a Microsoft partner for CSM and
+PSC consulting services around Glint.
 
 Closer to AI Workforce is the other half of what we do. Through Microsoft
 Switzerland we run AI ROI engagements for accounts like LHH, part of the Adecco
@@ -379,7 +389,8 @@ Sciences
 Hi Klaudia,
 
 We did the employee listening and People Science work at Eppendorf, which is how
-your name reached us. Eclectik is a Microsoft partner.
+your name reached us. Eclectik is a Microsoft partner for CSM and PSC consulting
+services around Glint.
 
 What probably fits your sector focus better is our other side. Through Microsoft
 Switzerland we run AI ROI engagements for accounts like LHH, part of the Adecco
@@ -401,7 +412,8 @@ Eppendorf | Keulen | AI Workforce Specialist, Life Science
 Hi Sebastian,
 
 We did the employee listening and People Science work at Eppendorf, so we have
-been inside your account. Eclectik is a Microsoft partner.
+been inside your account. Eclectik is a Microsoft partner for CSM and PSC
+consulting services around Glint.
 
 The newer half of what we do sits close to AI Workforce. Through Microsoft
 Switzerland we run AI ROI engagements for accounts like LHH, part of the Adecco
@@ -424,7 +436,8 @@ Hi Erin,
 
 We do the employee listening and People Science work at BioMarin and North
 Mississippi Health Services, so we are in two of your accounts from a different
-angle. Eclectik is a Microsoft partner, and Viva is where we live.
+angle. Eclectik is a Microsoft partner for CSM and PSC consulting services
+around Glint.
 
 The part you may not have seen is the newer one. Through Microsoft Switzerland
 we run AI ROI engagements for accounts like LHH, part of the Adecco Group, and
@@ -445,8 +458,9 @@ BioMarin | Bellevue, Washington | Modern Work Specialist
 
 Hi Brooke,
 
-We do the employee listening and People Science work at BioMarin, which is how we
-came across your name. Eclectik is a Microsoft partner.
+We do the employee listening and People Science work at BioMarin, which is how
+we came across your name. Eclectik is a Microsoft partner for CSM and PSC
+consulting services around Glint.
 
 Alongside that we have a second line of work that sits closer to Modern Work.
 Through Microsoft Switzerland we run AI ROI engagements for accounts like LHH,
@@ -469,7 +483,8 @@ vaststellen of hij echt op TDIndustries zit voordat deze mail uitgaat.
 Hi Tim,
 
 We did the employee listening and People Science work at TDIndustries, which is
-how your name reached us. Eclectik is a Microsoft partner.
+how your name reached us. Eclectik is a Microsoft partner for CSM and PSC
+consulting services around Glint.
 
 Beyond that account we have a second line of work. Through Microsoft Switzerland
 we run AI ROI engagements for accounts like LHH, part of the Adecco Group, and
@@ -493,8 +508,9 @@ plaats van koud te mailen.
 
 Hi Niklas,
 
-We did the employee listening and People Science work at PIMCO Prime Real Estate,
-which is how your name came to us. Eclectik is a Microsoft partner.
+We did the employee listening and People Science work at PIMCO Prime Real
+Estate, which is how your name came to us. Eclectik is a Microsoft partner for
+CSM and PSC consulting services around Glint.
 
 Alongside that we run a second line of work. Through Microsoft Switzerland we
 deliver AI ROI engagements for accounts like LHH, part of the Adecco Group, and
@@ -517,7 +533,8 @@ kortere mail die de gedeelde klant noemt en verder niets claimt.
 Hi Aoife,
 
 We do the employee listening and People Science work at Warburtons, which is how
-your name reached us. Eclectik is a Microsoft partner.
+your name reached us. Eclectik is a Microsoft partner for CSM and PSC consulting
+services around Glint.
 
 I know your focus has moved to enterprise security, so this is an introduction
 rather than a pitch. Alongside People Science we run AI ROI engagements through
@@ -542,8 +559,9 @@ Overweeg hem over te slaan.
 
 Hi Eric,
 
-We did the employee listening and People Science work at MAIRE, which is how your
-name came up. Eclectik is a Microsoft partner.
+We did the employee listening and People Science work at MAIRE, which is how
+your name came up. Eclectik is a Microsoft partner for CSM and PSC consulting
+services around Glint.
 
 Your focus is security, compliance and identity, so this is an introduction
 rather than a pitch. Our newer work runs through Microsoft Switzerland: AI ROI
