@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { bronLabel, kortDatum, gekomenVia } from './lead-bron.js';
+import { bronLabel, kortDatum, gekomenVia, telefoonVan, telHref } from './lead-bron.js';
 
 describe('kortDatum', () => {
   it('maakt van een isodatum een korte Nederlandse datum', () => {
@@ -49,5 +49,33 @@ describe('gekomenVia', () => {
     for (const v of [null, undefined, {}, { invitedBy: '' }, { invitedBy: '   ' }]) {
       expect(gekomenVia(v)).toBeNull();
     }
+  });
+});
+
+describe('telefoonVan', () => {
+  it('geeft het nummer terug zoals het is ingevuld', () => {
+    expect(telefoonVan({ phone: '+31611447609' })).toBe('+31611447609');
+    expect(telefoonVan({ phone: ' 0651502701 ' })).toBe('0651502701');
+    expect(telefoonVan({ phone: '+905522477488' })).toBe('+905522477488');
+  });
+
+  it('geeft null als er niets ingevuld is', () => {
+    for (const v of [null, undefined, {}, { phone: '' }, { phone: '   ' }]) {
+      expect(telefoonVan(v)).toBeNull();
+    }
+  });
+});
+
+describe('telHref', () => {
+  it('houdt cijfers en de plus over', () => {
+    expect(telHref('+31 6 11 44 76 09')).toBe('tel:+31611447609');
+    expect(telHref('06-51502701')).toBe('tel:0651502701');
+  });
+
+  it('KRITIEK: geen link bij een nummer zonder cijfers', () => {
+    // Een lege tel-link opent de belapp met niets erin, en dat ziet eruit als
+    // een kapotte knop.
+    expect(telHref('onbekend')).toBeNull();
+    expect(telHref(null)).toBeNull();
   });
 });

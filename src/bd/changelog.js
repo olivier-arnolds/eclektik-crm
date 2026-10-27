@@ -19,9 +19,25 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.143.0';
+export const CURRENT_VERSION = '1.143.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.143.1',
+    date: '2026-10-27T10:00:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feat',
+    title: 'Telefoonnummer in de lijst met inschrijvers',
+    summary:
+      'Het nummer stond wel in de aanmelding maar nergens in beeld. Nu staat het tussen Rol en Bron, als belkoppeling, want deze lijst wordt ook vanaf een telefoon gebruikt.',
+    changes: [
+      'Nieuwe kolom Telefoon. Tien van de veertien aanmeldingen hebben er een.',
+      'Het nummer wordt getoond zoals de deelnemer het invulde. De notaties lopen uiteen van +31611447609 tot 0651502701 tot +905522477488, en zelf opschonen zou van een buitenlands nummer iets onbelbaars kunnen maken.',
+      'De belkoppeling houdt alleen cijfers en de plus over. Zonder cijfers komt er geen link, want een lege tel-link opent de belapp met niets erin.',
+    ],
+    files: ['src/lib/lead-bron.js', 'src/lib/lead-bron.test.js', 'src/bd/marketing-leads.jsx'],
+    rollback: 'git revert naar v1.143.0.',
+  },
   {
     version: '1.143.0',
     date: '2026-10-26T12:00:00Z',

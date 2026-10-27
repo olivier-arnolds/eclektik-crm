@@ -54,3 +54,22 @@ export function gekomenVia(payload) {
   const v = String(payload?.invitedBy ?? '').trim();
   return v || null;
 }
+
+/**
+ * Het telefoonnummer uit de aanmelding, zoals de deelnemer het zelf invulde.
+ *
+ * Bewust niet genormaliseerd naar een vast formaat. De invoer loopt van
+ * +31611447609 tot 0651502701 tot +905522477488, en een eigen poging tot
+ * opschonen zou van een buitenlands nummer iets onbelbaars kunnen maken. Wat de
+ * deelnemer opgaf is wat je moet bellen.
+ */
+export function telefoonVan(payload) {
+  const v = String(payload?.phone ?? '').trim();
+  return v || null;
+}
+
+/** Hetzelfde nummer als href voor een tel-link: alleen cijfers en een plus. */
+export function telHref(nummer) {
+  const schoon = String(nummer || '').replace(/[^\d+]/g, '');
+  return schoon ? `tel:${schoon}` : null;
+}

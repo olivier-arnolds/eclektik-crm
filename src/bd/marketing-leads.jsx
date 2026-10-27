@@ -4,7 +4,7 @@
 // vanuit BDApp nodig.
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { supabase } from '../supabase';
-import { bronLabel, gekomenVia, EVENT_DATUM } from '../lib/lead-bron';
+import { bronLabel, gekomenVia, telefoonVan, telHref, EVENT_DATUM } from '../lib/lead-bron';
 import { fmtRelative } from './atoms';
 import { apiFetch } from '../lib/apiFetch';
 
@@ -55,6 +55,9 @@ export default function MarketingLeads() {
   // lead-id -> via wie de deelnemer zegt binnengekomen te zijn
   // (Eclectik / Zoom/Workvivo / Other), opgegeven in het aanmeldformulier.
   const [viaPerLead, setViaPerLead] = useState({});
+  // lead-id -> telefoonnummer uit de aanmelding. Staat niet op marketing_leads
+  // maar in de payload van de activiteit, net als de bron en de eventdatum.
+  const [telPerLead, setTelPerLead] = useState({});
   const [expanded, setExpanded] = useState(null);
   const [statusFilter, setStatusFilter] = useState('active');
   const [loading, setLoading] = useState(true);
@@ -81,14 +84,17 @@ export default function MarketingLeads() {
         .select('marketing_lead_id, event, payload').in('marketing_lead_id', ids);
       const m = {};
       const u = {};
+      const tel = {};
       for (const a of acts || []) {
         if (!m[a.marketing_lead_id]) m[a.marketing_lead_id] = bronLabel(a.event, a.payload);
         if (!u[a.marketing_lead_id]) u[a.marketing_lead_id] = gekomenVia(a.payload);
+        if (!tel[a.marketing_lead_id]) tel[a.marketing_lead_id] = telefoonVan(a.payload);
       }
-      if (seq === loadSeq.current) { setBronPerLead(m); setViaPerLead(u); }
+      if (seq === loadSeq.current) { setBronPerLead(m); setViaPerLead(u); setTelPerLead(tel); }
     } else if (seq === loadSeq.current) {
       setBronPerLead({});
       setViaPerLead({});
+      setTelPerLead({});
     }
 
     const { data: ses } = await supabase.from('user_session_results')
@@ -377,7 +383,7 @@ export default function MarketingLeads() {
           <thead>
             <tr>
               <th style={th}>Naam</th><th style={th}>E-mail</th><th style={th}>Bedrijf</th>
-              <th style={th}>Rol</th><th style={th}>Bron</th><th style={th}>Aanmelding</th>
+              <th style={th}>Rol</th><th style={th}>Telefoon</th><th style={th}>Bron</th><th style={th}>Aanmelding</th>
               <th style={th}>Laatste activiteit</th><th style={th}>Status</th><th style={th}></th>
             </tr>
           </thead>
@@ -386,6 +392,7 @@ export default function MarketingLeads() {
               <LeadRow key={lead.id} lead={lead}
                 bron={lead.first_src || bronPerLead[lead.id] || null}
                 via={viaPerLead[lead.id] || null}
+                telefoon={telPerLead[lead.id] || null}
                 bevestiging={bevestigingPerMail[String(lead.email || '').trim().toLowerCase()] || null}
                 huidigBronLabel={huidigBronLabel}
                 onZetAntwoord={zetAntwoord}
@@ -407,7 +414,7 @@ export default function MarketingLeads() {
   );
 }
 
-function LeadRow({ lead, bron, via, bevestiging, huidigBronLabel, onZetAntwoord, zetBezig, expanded, activityRows, busy, onToggle, onPromote, onArchive, onReactivate, td }) {
+function LeadRow({ lead, bron, via, telefoon, bevestiging, huidigBronLabel, onZetAntwoord, zetBezig, expanded, activityRows, busy, onToggle, onPromote, onArchive, onReactivate, td }) {
   return (
     <>
       <tr onClick={onToggle} style={{ cursor: 'pointer' }}>
@@ -415,6 +422,15 @@ function LeadRow({ lead, bron, via, bevestiging, huidigBronLabel, onZetAntwoord,
         <td style={td}>{lead.email}</td>
         <td style={td}>{lead.company || '-'}</td>
         <td style={td}>{lead.role || '-'}</td>
+        {/* Telefoon komt uit de aanmelding zelf. Als belkoppeling, want deze
+            lijst wordt ook vanaf een telefoon gebruikt. */}
+        <td style={{ ...td, whiteSpace: 'nowrap' }} onClick={e => e.stopPropagation()}>
+          {telefoon
+            ? (telHref(telefoon)
+              ? <a href={telHref(telefoon)} style={{ color: 'var(--text-1)' }}>{telefoon}</a>
+              : telefoon)
+            : '-'}
+        </td>
         {/* Bron is wat de deelnemer zelf opgeeft over hoe hij bij ons terecht
             is gekomen, niet wie de uitnodiging verstuurde. Hier stond sector,
             en die was bij de eventaanmeldingen niet eens gevuld. */}
@@ -493,7 +509,7 @@ function LeadRow({ lead, bron, via, bevestiging, huidigBronLabel, onZetAntwoord,
       </tr>
       {expanded && (
         <tr>
-          <td style={{ ...td, background: 'var(--bg-subtle, rgba(0,0,0,0.03))' }} colSpan={9}>
+          <td style={{ ...td, background: 'var(--bg-subtle, rgba(0,0,0,0.03))' }} colSpan={10}>
             {!activityRows ? 'Laden…' : activityRows.length === 0 ? 'Geen activiteit.' : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 {activityRows.map(a => (
