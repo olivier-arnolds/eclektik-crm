@@ -78,6 +78,7 @@ Hi Miguel,
 
 We run the employee listening and People Science work at Breitling and Almirall,
 so we have been inside two of your accounts without the two of us ever speaking.
+Eclectik is a Microsoft partner for CSM and PSC consulting services around Glint.
 
 Worth knowing is the other half of what we do. Through Microsoft Switzerland we
 deliver AI ROI engagements for accounts like LHH, part of the Adecco Group, and
@@ -126,7 +127,8 @@ Hi Daniel,
 
 Liberty Global, Serco, Dentsu and Boskalis. We do the employee listening and
 People Science work in all four, which makes you the Microsoft name we run into
-most often without ever having spoken.
+most often without ever having spoken. Eclectik is a Microsoft partner for CSM
+and PSC consulting services around Glint.
 
 There is a second side to us that fits your remit more directly. Through
 Microsoft Switzerland we run AI ROI engagements for accounts like LHH, part of
