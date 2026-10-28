@@ -1791,7 +1791,12 @@ function ContactMailsModal({ contact, campaign, rows = [], registratie = null, o
     if (onSent) await onSent();
   };
 
-  const unsubUrl = detail?.unsubscribe_token
+  // De voorvertoning moet laten zien wat er ECHT uitgaat, dus dezelfde twee
+  // voorwaarden als in api/_lib/outreach-runner.js: een DM heeft geen
+  // afmeldregel, en een campagne met opt_out_footer uit ook niet. Zonder deze
+  // controle toont de voorvertoning een regel die de ontvanger nooit krijgt.
+  const toonAfmeldregel = !isLinkedIn && campaign?.opt_out_footer !== false;
+  const unsubUrl = toonAfmeldregel && detail?.unsubscribe_token
     ? `${window.location.origin}/api/outreach-unsubscribe?t=${detail.unsubscribe_token}`
     : null;
 

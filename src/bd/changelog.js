@@ -19,9 +19,24 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.144.0';
+export const CURRENT_VERSION = '1.144.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.144.1',
+    date: '2026-10-28T21:40:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Voorvertoning toonde een afmeldregel die niet meegaat',
+    summary:
+      'De afmeldregel staat sinds 1.144.0 per campagne uit, maar de voorvertoning in de contactkaart plakte hem er nog altijd onder. Die liet dus iets anders zien dan wat de ontvanger krijgt.',
+    changes: [
+      'De voorvertoning volgt nu dezelfde twee voorwaarden als het versturen: geen afmeldregel bij een directbericht, en geen bij een campagne met opt_out_footer uit.',
+      'Bij de Microsoft AIBS-campagne verdwijnt de regel daarmee uit beeld. Bij Amsterdam en Glint blijft hij staan, want daar gaat hij ook echt mee.',
+    ],
+    files: ['src/bd/marketing-outreach.jsx'],
+    rollback: 'git revert naar v1.144.0.',
+  },
   {
     version: '1.144.0',
     date: '2026-10-28T21:20:00Z',
