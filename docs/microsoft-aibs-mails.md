@@ -42,12 +42,14 @@ De vaste slotzin, letterlijk in elke mail:
 
 Waar in de CRM een lopend traject staat, zegt de mail "We support X". Waar alleen
 afgerond werk staat, "We have worked with X". Afgerond: Liberty Global, Serco,
-Dentsu, TDIndustries, ETF, Eppendorf, MAIRE, PIMCO Prime Real Estate. Als dat
+Dentsu, TDIndustries, ETF, Eppendorf en PIMCO Prime Real Estate. Als dat
 ergens niet klopt, is die ene zin het enige wat aangepast hoeft te worden.
 
-MAIRE staat in de CRM als "Maire ✝". Als die relatie echt beëindigd is, zijn de
-mails aan Laura D'Ambra en Eric Inch de twee om nog eens tegen het licht te
-houden.
+MAIRE is gestopt als klant. Dat raakte twee mails. Die aan Eric Inch staat op
+NIET VERSTUREN: zijn enige aanknopingspunt was MAIRE en hij zit daarnaast op
+security. Die aan Laura D'Ambra is herschreven en leunt nu op haar AI
+Workforce-rol voor heel Microsoft Italy, met MAIRE alleen nog als verklaring van
+hoe haar naam bovenkwam. Zij blijft de moeite waard, los van MAIRE.
 
 ## Verzendvolgorde
 
@@ -257,16 +259,20 @@ overlaps. Do you have time for a call?
 
 ## 8. Laura D'Ambra
 
-Maire | Milaan | AI Workforce Sales Lead, Enterprise & Public Sector, Microsoft
-Italy
+Maire (geen klant meer) | Milaan | AI Workforce Sales Lead, Enterprise & Public
+Sector, Microsoft Italy
 
-**Onderwerp:** MAIRE, and a question about Italy
+LET OP: MAIRE is gestopt als klant, dus die ingang is weg. Deze mail leunt
+daarom op Italië en haar AI Workforce-rol; MAIRE verklaart alleen nog hoe haar
+naam bovenkwam.
+
+**Onderwerp:** AI Workforce in Italy, from the partner side
 
 Hi Laura,
 
-We have worked with MAIRE on employee listening and People Science around
-Microsoft Viva Glint, which is how your name reached us. Eclectik is a Microsoft
-partner for CSM and PSC consulting services.
+Your name reached us through our Microsoft partner network and our earlier Viva
+Glint work at MAIRE. Eclectik is a Microsoft partner for CSM and PSC consulting
+services.
 
 Alongside that work we run AI ROI analyses. With your Microsoft colleagues we
 translate Copilot adoption into dollar-value outcomes, the kind of case that
@@ -641,8 +647,10 @@ out where else our work overlaps. Do you have time for a call?
 Maire | regio Detroit | Principal Solution Specialist, Security, Compliance &
 Identity
 
-LET OP: security-rol, verste van ons onderwerp. Laagste prioriteit van de 22.
-Overweeg hem over te slaan.
+LET OP: NIET VERSTUREN. MAIRE is gestopt als klant, dus de gedeelde klant waar
+deze mail op leunt bestaat niet meer. Daar bovenop zit hij op security,
+compliance en identity, het verst van ons onderwerp. Tekst blijft staan voor het
+geval je er anders over denkt.
 
 **Onderwerp:** MAIRE, and an introduction
 
