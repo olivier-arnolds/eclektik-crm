@@ -25,6 +25,13 @@ const MAANDEN = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun',
  */
 export function bronLabel(event, payload) {
   if (!event) return null;
+  // Iemand die in de outreachlijst op 'afspraak' is gezet. De campagnenaam
+  // staat in de payload, want anders leest de kolom Bron alleen 'outreach' en
+  // weet je niet uit welke actie diegene kwam.
+  if (event === 'outreach_meeting') {
+    const camp = typeof payload?.campaign === 'string' ? payload.campaign.trim() : '';
+    return camp ? `Outreach: ${camp}` : 'Outreach';
+  }
   if (event !== 'event_registered') return event;
   const datum = kortDatum(payload?.eventDate);
   return datum ? `Event ${datum}` : 'Event';

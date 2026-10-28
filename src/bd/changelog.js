@@ -19,9 +19,32 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.144.1';
+export const CURRENT_VERSION = '1.145.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.145.0',
+    date: '2026-10-28T21:50:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feat',
+    title: 'Uitkomst per outreachcontact, en een afspraak landt in Leads',
+    summary:
+      'Nieuwe kolom Uitkomst in het outreachoverzicht met een keuzelijst: afspraak of geen interesse. Bij een afspraak verschijnt de persoon ook in de tab Leads, zodat wat de campagne oplevert zichtbaar wordt op de plek waar leads al staan.',
+    changes: [
+      'Keuzelijst per regel met drie standen: leeg, Afspraak, Geen interesse. De klik erop opent niet de mailkaart.',
+      'Allebei de keuzes stoppen de reeks: status op done en geen volgende actie. De opvolgmail is voor stilte, en die is er na een antwoord niet meer.',
+      'Bij Afspraak wordt een lead aangemaakt of bijgewerkt in Marketing > Leads, met naam, bedrijf en functie uit de outreachrij. De kolom Bron leest dan "Outreach: <campagnenaam>".',
+      'Het gaat via /api/outreach-outcome en niet rechtstreeks vanuit de tab, want er worden drie tabellen geraakt en de Supabase-client kent geen transacties. Eerst de lead, dan de uitkomst: andersom zou een contact op afspraak kunnen staan zonder dat er iemand in Leads verschijnt.',
+      'Geen toestemming voor marketingmail. Een afspraak is geen opt-in, en die twee door elkaar halen zet iemand in een nieuwsbrief waar hij nooit om vroeg.',
+      'De keuze is terug te draaien. De reeks blijft dan gestopt en de lead blijft staan: hervatten is een aparte knop en een lead die stilletjes verdwijnt is erger dan een lead die niets wordt.',
+    ],
+    files: [
+      'api/outreach-outcome.js', 'api/_lib/outreach-outcome-lib.js',
+      'api/_lib/outreach-outcome-lib.test.js', 'src/bd/marketing-outreach.jsx',
+      'src/lib/lead-bron.js', 'sql/schema_outreach_outcome_2026-10-28.sql',
+    ],
+    rollback: 'git revert naar v1.144.1. De kolommen kunnen blijven staan; zonder de tab doen ze niets.',
+  },
   {
     version: '1.144.1',
     date: '2026-10-28T21:40:00Z',

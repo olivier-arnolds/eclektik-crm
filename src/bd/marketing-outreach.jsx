@@ -71,7 +71,7 @@ const HERINNERING_COLOR = {
 const CONTACT_COLS =
   'id,email,first_name,last_name,title,company,status,priority_tier,priority_label,outreach_prio,is_reserve,' +
   'next_action_at,paused_reason,last_reply_summary,contact_id,company_id,last_inbound_at,answered_at,linkedin_url,' +
-  'location,msg2_body';
+  'location,msg2_body,outcome';
 
 const AWAITING = '__awaiting__';
 const REGISTERED = '__registered__';
@@ -196,6 +196,8 @@ export default function MarketingOutreach() {
   // wordt weggeschreven, zodat alleen die ene cel 'bezig' toont.
   const [reminderSjabloon, setReminderSjabloon] = useState(REMINDER_SJABLOON);
   const [reminderBezigId, setReminderBezigId] = useState(null);
+  const [uitkomstBezigId, setUitkomstBezigId] = useState(null);
+  const [uitkomstErr, setUitkomstErr] = useState(null);
   const [reminderBulkBezig, setReminderBulkBezig] = useState(false);
   const [reminderErr, setReminderErr] = useState(null);
 
@@ -707,6 +709,35 @@ export default function MarketingOutreach() {
     setReminderBezigId(null);
     if (error) { setReminderErr('Opslaan mislukt: ' + error.message); return; }
     setRows(prev => prev.map(x => (x.id === r.id ? { ...x, msg2_body: tekst } : x)));
+  };
+
+  // De uitkomst vastleggen: 'afspraak', 'geen_interesse' of terugdraaien.
+  //
+  // Via een endpoint en niet rechtstreeks, want bij een afspraak komt de
+  // persoon ook in Marketing > Leads te staan en dat raakt drie tabellen. De
+  // Supabase-client kent geen transacties, dus een half gelukte reeks zou hier
+  // een contact op 'afspraak' zetten zonder dat er iemand in Leads verschijnt.
+  const zetUitkomst = async (r, waarde) => {
+    if (!r || uitkomstBezigId) return;
+    setUitkomstBezigId(r.id); setUitkomstErr(null);
+    try {
+      const resp = await apiFetch('/api/outreach-outcome', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: r.id, outcome: waarde || null }),
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error(data?.error || `HTTP ${resp.status}`);
+      // De server zet bij een keuze ook de status op done; hier hetzelfde doen
+      // zodat de regel niet pas na een herlaadbeurt klopt.
+      setRows(prev => prev.map(x => (x.id === r.id
+        ? { ...x, outcome: waarde || null, ...(waarde ? { status: 'done', next_action_at: null } : {}) }
+        : x)));
+    } catch (e) {
+      setUitkomstErr('Opslaan mislukt: ' + (e?.message || e));
+    } finally {
+      setUitkomstBezigId(null);
+    }
   };
 
   // Hetzelfde veld, maar voor precies wat de lijst nu toont. Wie al een tekst
@@ -1393,6 +1424,10 @@ export default function MarketingOutreach() {
         </span>
       </div>
 
+      {uitkomstErr && (
+        <div style={{ fontSize: 12, color: '#dc2626', marginBottom: 6 }}>{uitkomstErr}</div>
+      )}
+
       {/* Lijst */}
       <div style={{ border: '0.5px solid var(--sep)', borderRadius: 8, overflow: 'hidden' }}>
         <div style={{ maxHeight: 560, overflow: 'auto' }}>
@@ -1402,7 +1437,7 @@ export default function MarketingOutreach() {
                 {['#', 'Naam', 'Bedrijf', 'Prioriteit', 'Status',
                   ...(isLinkedIn ? [] : ['Geopend', 'Geklikt']),
                   'Conversatie', ...(isLinkedIn ? ['Herinnering'] : []),
-                  'Volgende actie', 'Toelichting'].map(h => (
+                  'Uitkomst', 'Volgende actie', 'Toelichting'].map(h => (
                   <th key={h} style={{ textAlign: 'left', padding: '7px 10px', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--text-3)', fontFamily: 'var(--font-mono)', borderBottom: '0.5px solid var(--sep)' }}>{h}</th>
                 ))}
               </tr>
@@ -1547,6 +1582,28 @@ export default function MarketingOutreach() {
                     })()}
                   </td>
                   )}
+                  {/* De keuzelijst stopt de klik, want een klik op de regel
+                      opent de mails van deze persoon. */}
+                  <td style={{ padding: '6px 10px', whiteSpace: 'nowrap' }}
+                    onClick={(e) => e.stopPropagation()}>
+                    <select value={r.outcome || ''} disabled={uitkomstBezigId === r.id}
+                      onChange={(e) => zetUitkomst(r, e.target.value)}
+                      title={r.outcome
+                        ? 'Gekozen uitkomst. Terugzetten op leeg draait de keuze terug; de reeks blijft gestopt.'
+                        : 'Afspraak zet deze persoon ook in de tab Leads. Allebei de keuzes stoppen de opvolgmail.'}
+                      style={{
+                        font: 'inherit', fontSize: 12, padding: '1px 4px', borderRadius: 4,
+                        border: '0.5px solid var(--sep)', cursor: 'pointer',
+                        background: r.outcome === 'afspraak' ? 'rgba(22,163,74,0.14)' : 'transparent',
+                        color: r.outcome === 'afspraak' ? '#15803d'
+                          : r.outcome === 'geen_interesse' ? 'var(--text-3)' : 'var(--text-2)',
+                        fontWeight: r.outcome === 'afspraak' ? 500 : 400,
+                      }}>
+                      <option value="">-</option>
+                      <option value="afspraak">Afspraak</option>
+                      <option value="geen_interesse">Geen interesse</option>
+                    </select>
+                  </td>
                   <td style={{ padding: '6px 10px', color: 'var(--text-3)', whiteSpace: 'nowrap' }}>
                     {r.next_action_at ? String(r.next_action_at).slice(0, 10) : '-'}
                   </td>
@@ -1556,7 +1613,7 @@ export default function MarketingOutreach() {
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={isLinkedIn ? 9 : 10} style={{ padding: 16, textAlign: 'center', color: 'var(--text-3)' }}>Niets gevonden.</td></tr>
+                <tr><td colSpan={isLinkedIn ? 10 : 11} style={{ padding: 16, textAlign: 'center', color: 'var(--text-3)' }}>Niets gevonden.</td></tr>
               )}
             </tbody>
           </table>
