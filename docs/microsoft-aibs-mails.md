@@ -6,41 +6,54 @@ Athimon) vallen af omdat daar al contact mee is.
 
 ## Opbouw van elke mail
 
-Drie stappen, steeds dezelfde volgorde:
+Drie alinea's, steeds dezelfde volgorde:
 
-1. De gedeelde klant als opening, plus wat Eclectik voor Microsoft is.
-2. Het vaste ROI-blok als eigenlijke reden, met een aanloopzin en soms een
-   afsluitende zin die per persoon verschilt.
-3. De vaste slotzin.
+1. De gedeelde klant, met Viva Glint en People Science als eerste wat er staat,
+   plus wat Eclectik voor Microsoft is.
+2. Het vaste ROI-blok als aanvulling daarop, soms met een afsluitende zin die
+   per persoon verschilt.
+3. De vaste slotzin, met een persoonlijke aanhef ervoor.
 
 Het vaste ROI-blok, letterlijk in elke mail:
 
-> We are a specialist partner on conducting ROI of AI analyses. Through Microsoft Switzerland we run international AI ROI engagements for accounts like LHH (Adecco Group) and Farmers Insurance (Zurich Insurance Group), translating AI adoption into dollar-value outcomes. That work contributed demonstrably to selling 25,000 Copilot licences. You sell the adoption. We can show what it returned.
+> Alongside that work we run AI ROI analyses. With your Microsoft colleagues we translate Copilot adoption into dollar-value outcomes, the kind of case that moves a customer from a pilot to wider rollout and higher consumption. Through Microsoft Switzerland we have run international engagements of exactly that type, for accounts like LHH (Adecco Group) and Farmers Insurance (Zurich Insurance Group).
 
 De vaste slotzin, letterlijk in elke mail:
 
-> We would like to meet in the coming weeks and find out where else our work overlaps. Do you have time for a call?
+> ... we would like to meet in the coming weeks and find out where else our work overlaps. Do you have time for a call?
 
-## Wat bewust NIET in de teksten staat
+## Verwerkte feedback
 
-- **Zurich Insurance Group als eigen referentieklant.** Farmers Insurance is een
-  Amerikaanse dochter van Zurich, dus de groepsnaam noemen klopt en staat er ook
-  zo in. Maar Zurich Insurance Group zelf staat in onze CRM als Prospect met
-  twee verloren trajecten (A-0082), net als Zurich North America (A-0178).
-  Alleen Farmers Insurance Group (A-0025) is Customer met gewonnen werk. We
-  claimen dus Farmers, met Zurich als groep eromheen, en niet Zurich zelf.
-- **LHH en Adecco als twee referenties.** Dat is één klant: LHH hoort bij de
-  Adecco Group. Daarom staat het er als LHH (Adecco Group).
-- **"Wij draaien jullie Viva Glint-programma."** Per account zie ik alleen dat
-  er een gewonnen traject staat, niet wat we er precies doen. Daarom overal
-  "we work with X on employee listening". Waar jij zeker weet dat het Glint is,
-  kan die zin concreter en dus sterker.
+- **Yarmilla: Glint en People Science nadrukkelijker.** Elke mail opent nu met
+  het Glint-werk bij de gedeelde klant. De AI ROI-propositie komt pas in de
+  tweede alinea en staat er als aanvulling, niet als hoofdzaak.
+- **Yarmilla: "You sell the adoption. We can show what it returned." te scherp.**
+  Die zin is weg. In plaats daarvan Marco's formulering, die hetzelfde zegt maar
+  dan als iets wat hun deal vooruithelpt: van pilot naar wider rollout en higher
+  consumption.
+- **Yarmilla: de claim over 25.000 Copilot-licenties.** Eruit. Niet omdat hij
+  onjuist is, maar omdat een getal dat een Microsoft-medewerker kan natrekken
+  alleen in een mail hoort als de onderbouwing klaarligt.
+- **Marco: "we know the people and the data."** Overgenomen, in elke mail waar
+  we nu daadwerkelijk in het account zitten.
+- **Referenties LHH en Farmers.** Blijven met naam genoemd; toestemming is er.
+
+## Let op bij lopende versus afgeronde trajecten
+
+Waar in de CRM een lopend traject staat, zegt de mail "We support X". Waar alleen
+afgerond werk staat, "We have worked with X". Afgerond: Liberty Global, Serco,
+Dentsu, TDIndustries, ETF, Eppendorf, MAIRE, PIMCO Prime Real Estate. Als dat
+ergens niet klopt, is die ene zin het enige wat aangepast hoeft te worden.
+
+MAIRE staat in de CRM als "Maire ✝". Als die relatie echt beëindigd is, zijn de
+mails aan Laura D'Ambra en Eric Inch de twee om nog eens tegen het licht te
+houden.
 
 ## Verzendvolgorde
 
 Verdeeld over twee dagen op wisselende tijdstippen. De volgorde hieronder is de
-voorgestelde volgorde: de drie strategische leads eerst, de twee
-security-profielen achteraan.
+voorgestelde volgorde: de strategische leads eerst, de twee security-profielen
+achteraan.
 
 
 ---
@@ -54,21 +67,21 @@ Business Solutions Sales Lead
 
 Hi Charlotte,
 
-We deliver the employee listening work at the European Training Foundation,
-which is how your name reached us. Eclectik is a Microsoft partner for CSM and
-PSC consulting services around Glint. The reason I am writing is broader than
-ETF.
+We have worked with the European Training Foundation on employee listening and
+People Science around Microsoft Viva Glint, which is how your name reached us.
+Eclectik is a Microsoft partner for CSM and PSC consulting services. The reason
+I am writing is broader than ETF.
 
-We are a specialist partner on conducting ROI of AI analyses. Through Microsoft
-Switzerland we run international AI ROI engagements for accounts like LHH
-(Adecco Group) and Farmers Insurance (Zurich Insurance Group), translating AI
-adoption into dollar-value outcomes. That work contributed demonstrably to
-selling 25,000 Copilot licences. Across 22 countries you will see where that
-sits next to AI Business Solutions far better than we can from inside one
-account. You sell the adoption. We can show what it returned.
+Alongside that work we run AI ROI analyses. With your Microsoft colleagues we
+translate Copilot adoption into dollar-value outcomes, the kind of case that
+moves a customer from a pilot to wider rollout and higher consumption. Through
+Microsoft Switzerland we have run international engagements of exactly that
+type, for accounts like LHH (Adecco Group) and Farmers Insurance (Zurich
+Insurance Group). Across 22 countries you will see where that sits next to AI
+Business Solutions far better than we can from inside one account.
 
-We would like to meet in the coming weeks and find out where else our work
-overlaps. Do you have time for a call?
+Given your remit across Europe North, we would like to meet in the coming weeks
+and find out where else our work overlaps. Do you have time for a call?
 
 
 ---
@@ -82,22 +95,21 @@ Europe
 
 Hi Miguel,
 
-We run the employee listening and People Science work at Breitling and Almirall,
-so we have been inside two of your accounts without the two of us ever speaking.
-Eclectik is a Microsoft partner for CSM and PSC consulting services around
-Glint.
+We support Breitling and Almirall with employee listening and People Science
+around Microsoft Viva Glint, so we are inside two of your accounts and we know
+the people and the data. Eclectik is a Microsoft partner for CSM and PSC
+consulting services.
 
-Worth knowing is the other half of what we do. We are a specialist partner on
-conducting ROI of AI analyses. Through Microsoft Switzerland we run
-international AI ROI engagements for accounts like LHH (Adecco Group) and
-Farmers Insurance (Zurich Insurance Group), translating AI adoption into dollar-
-value outcomes. That work contributed demonstrably to selling 25,000 Copilot
-licences. At your level across Western Europe that is probably a more useful
-conversation than any single account. You sell the adoption. We can show what it
-returned.
+Alongside that work we run AI ROI analyses. With your Microsoft colleagues we
+translate Copilot adoption into dollar-value outcomes, the kind of case that
+moves a customer from a pilot to wider rollout and higher consumption. Through
+Microsoft Switzerland we have run international engagements of exactly that
+type, for accounts like LHH (Adecco Group) and Farmers Insurance (Zurich
+Insurance Group). At your level across Western Europe that is probably a more
+useful conversation than any single account.
 
-We would like to meet in the coming weeks and find out where else our work
-overlaps. Do you have time for a call?
+Given your remit across Western Europe, we would like to meet in the coming
+weeks and find out where else our work overlaps. Do you have time for a call?
 
 
 ---
@@ -111,21 +123,21 @@ Agents, Americas
 
 Hi Marie-Elena,
 
-We do the employee listening and People Science work at Draper Laboratory, which
-is how we came across your name. Eclectik is a Microsoft partner for CSM and PSC
-consulting services around Glint.
+We work with Draper Laboratory on employee listening and People Science around
+Microsoft Viva Glint, which is how we came across your name. Eclectik is a
+Microsoft partner for CSM and PSC consulting services.
 
-The reason I am writing sits closer to AI Workforce than to Draper. We are a
-specialist partner on conducting ROI of AI analyses. Through Microsoft
-Switzerland we run international AI ROI engagements for accounts like LHH
-(Adecco Group) and Farmers Insurance (Zurich Insurance Group), translating AI
-adoption into dollar-value outcomes. That work contributed demonstrably to
-selling 25,000 Copilot licences. Adoption is measurable everywhere. Return is
-not, and that is the question your customers land on eventually. You sell the
-adoption. We can show what it returned.
+Alongside that work we run AI ROI analyses. With your Microsoft colleagues we
+translate Copilot adoption into dollar-value outcomes, the kind of case that
+moves a customer from a pilot to wider rollout and higher consumption. Through
+Microsoft Switzerland we have run international engagements of exactly that
+type, for accounts like LHH (Adecco Group) and Farmers Insurance (Zurich
+Insurance Group). Adoption is measurable everywhere. What it returned is not,
+and that is where these conversations tend to stall.
 
-We would like to meet in the coming weeks and find out where else our work
-overlaps. Do you have time for a call?
+Given your focus on AI Workforce, Copilot and agents, we would like to meet in
+the coming weeks and find out where else our work overlaps. Do you have time for
+a call?
 
 
 ---
@@ -139,21 +151,20 @@ Engineer, Western Europe
 
 Hi Daniel,
 
-Liberty Global, Serco, Dentsu and Boskalis. We do the employee listening and
-People Science work in all four, which makes you the Microsoft name we run into
-most often without ever having spoken. Eclectik is a Microsoft partner for CSM
-and PSC consulting services around Glint.
+Liberty Global, Serco, Dentsu and Boskalis. We have done the employee listening
+and People Science work around Microsoft Viva Glint in all four, which makes you
+the Microsoft name we run into most often without ever having spoken. Eclectik
+is a Microsoft partner for CSM and PSC consulting services.
 
-There is a second side to us that fits your remit more directly. We are a
-specialist partner on conducting ROI of AI analyses. Through Microsoft
-Switzerland we run international AI ROI engagements for accounts like LHH
-(Adecco Group) and Farmers Insurance (Zurich Insurance Group), translating AI
-adoption into dollar-value outcomes. That work contributed demonstrably to
-selling 25,000 Copilot licences. You sell the adoption. We can show what it
-returned.
+Alongside that work we run AI ROI analyses. With your Microsoft colleagues we
+translate Copilot adoption into dollar-value outcomes, the kind of case that
+moves a customer from a pilot to wider rollout and higher consumption. Through
+Microsoft Switzerland we have run international engagements of exactly that
+type, for accounts like LHH (Adecco Group) and Farmers Insurance (Zurich
+Insurance Group).
 
-We would like to meet in the coming weeks and find out where else our work
-overlaps. Do you have time for a call?
+Across four shared accounts, we would like to meet in the coming weeks and find
+out where else our work overlaps. Do you have time for a call?
 
 
 ---
@@ -163,25 +174,25 @@ overlaps. Do you have time for a call?
 GoDaddy, BMC Software | regio Chicago | Director Workforce AI Solutions,
 Strategic Accounts
 
-**Onderwerp:** GoDaddy and BMC, from the employee listening side
+**Onderwerp:** GoDaddy and BMC, from the Viva Glint side
 
 Hi Ryan,
 
-We work with GoDaddy and BMC Software on employee listening, so we are in the
-same two accounts from a different angle. Eclectik is a Microsoft partner for
-CSM and PSC consulting services around Glint.
+We support GoDaddy and BMC Software with employee listening and People Science
+around Microsoft Viva Glint, so we are inside two of your accounts and we know
+the people and the data. Eclectik is a Microsoft partner for CSM and PSC
+consulting services.
 
-The part that probably matters more to your Workforce AI remit is the newer one.
-We are a specialist partner on conducting ROI of AI analyses. Through Microsoft
-Switzerland we run international AI ROI engagements for accounts like LHH
-(Adecco Group) and Farmers Insurance (Zurich Insurance Group), translating AI
-adoption into dollar-value outcomes. That work contributed demonstrably to
-selling 25,000 Copilot licences. That is the number their executives keep asking
-for and the hardest one to produce. You sell the adoption. We can show what it
-returned.
+Alongside that work we run AI ROI analyses. With your Microsoft colleagues we
+translate Copilot adoption into dollar-value outcomes, the kind of case that
+moves a customer from a pilot to wider rollout and higher consumption. Through
+Microsoft Switzerland we have run international engagements of exactly that
+type, for accounts like LHH (Adecco Group) and Farmers Insurance (Zurich
+Insurance Group).
 
-We would like to meet in the coming weeks and find out where else our work
-overlaps. Do you have time for a call?
+Given your focus on Viva, employee experience and Workforce AI, we would like to
+meet in the coming weeks and find out where else our work overlaps. Do you have
+time for a call?
 
 
 ---
@@ -191,25 +202,26 @@ overlaps. Do you have time for a call?
 Trane Technologies | Raleigh-Durham | Sr. Sales Director, AI Workforce Strategic
 Accounts
 
-**Onderwerp:** Trane, and the number after adoption
+**Onderwerp:** Trane, and the case after adoption
 
 Hi Mary,
 
-We do the employee listening and People Science work at Trane Technologies, so
-we are in one of your strategic accounts from the inside. Eclectik is a
-Microsoft partner for CSM and PSC consulting services around Glint.
+We support Trane Technologies with employee listening and People Science around
+Microsoft Viva Glint, so we are inside one of your strategic accounts and we
+know the people and the data. Eclectik is a Microsoft partner for CSM and PSC
+consulting services.
 
-What fits your national AI Workforce remit better is the other half. We are a
-specialist partner on conducting ROI of AI analyses. Through Microsoft
-Switzerland we run international AI ROI engagements for accounts like LHH
-(Adecco Group) and Farmers Insurance (Zurich Insurance Group), translating AI
-adoption into dollar-value outcomes. That work contributed demonstrably to
-selling 25,000 Copilot licences. Across a portfolio of enterprise accounts that
-is usually the conversation that stalls, and the one we are built for. You sell
-the adoption. We can show what it returned.
+Alongside that work we run AI ROI analyses. With your Microsoft colleagues we
+translate Copilot adoption into dollar-value outcomes, the kind of case that
+moves a customer from a pilot to wider rollout and higher consumption. Through
+Microsoft Switzerland we have run international engagements of exactly that
+type, for accounts like LHH (Adecco Group) and Farmers Insurance (Zurich
+Insurance Group). Across a portfolio of enterprise accounts that business case
+is usually the step that stalls.
 
-We would like to meet in the coming weeks and find out where else our work
-overlaps. Do you have time for a call?
+Given your AI Workforce remit across strategic accounts, we would like to meet
+in the coming weeks and find out where else our work overlaps. Do you have time
+for a call?
 
 
 ---
@@ -219,24 +231,25 @@ overlaps. Do you have time for a call?
 Trane Technologies | Denver | Director of AI Business Solutions Sales,
 Manufacturing & Mobility
 
-**Onderwerp:** Trane, from the partner side
+**Onderwerp:** Trane, and the Copilot business case
 
 Hi Jason,
 
-We run the employee listening and People Science work at Trane Technologies,
-which is how your name came up. Eclectik is a Microsoft partner for CSM and PSC
-consulting services around Glint.
+We support Trane Technologies with employee listening and People Science around
+Microsoft Viva Glint, so we are already inside the account and we know the
+people and the data. Eclectik is a Microsoft partner for CSM and PSC consulting
+services.
 
-The reason to speak is wider than Trane. We are a specialist partner on
-conducting ROI of AI analyses. Through Microsoft Switzerland we run
-international AI ROI engagements for accounts like LHH (Adecco Group) and
-Farmers Insurance (Zurich Insurance Group), translating AI adoption into dollar-
-value outcomes. That work contributed demonstrably to selling 25,000 Copilot
-licences. In manufacturing that case tends to get made on productivity claims
-nobody can substantiate. We substantiate them. You sell the adoption. We can
-show what it returned.
+Alongside that work we run AI ROI analyses. With your Microsoft colleagues we
+translate Copilot adoption into dollar-value outcomes, the kind of case that
+moves a customer from a pilot to wider rollout and higher consumption. Through
+Microsoft Switzerland we have run international engagements of exactly that
+type, for accounts like LHH (Adecco Group) and Farmers Insurance (Zurich
+Insurance Group). In manufacturing that case tends to rest on productivity
+claims nobody can substantiate. We substantiate them.
 
-We would like to meet in the coming weeks and find out where else our work
+If a Copilot expansion anywhere in your portfolio is waiting on a business case,
+we would like to meet in the coming weeks and find out where else our work
 overlaps. Do you have time for a call?
 
 
@@ -251,21 +264,20 @@ Italy
 
 Hi Laura,
 
-We did the employee listening and People Science work at MAIRE, which is how
-your name reached us. Eclectik is a Microsoft partner for CSM and PSC consulting
-services around Glint.
+We have worked with MAIRE on employee listening and People Science around
+Microsoft Viva Glint, which is how your name reached us. Eclectik is a Microsoft
+partner for CSM and PSC consulting services.
 
-What is probably more useful to your AI Workforce remit is the other side of
-what we do. We are a specialist partner on conducting ROI of AI analyses.
-Through Microsoft Switzerland we run international AI ROI engagements for
-accounts like LHH (Adecco Group) and Farmers Insurance (Zurich Insurance Group),
-translating AI adoption into dollar-value outcomes. That work contributed
-demonstrably to selling 25,000 Copilot licences. For enterprise and public
-sector buyers in Italy that number is normally the thing standing between a
-pilot and a rollout. You sell the adoption. We can show what it returned.
+Alongside that work we run AI ROI analyses. With your Microsoft colleagues we
+translate Copilot adoption into dollar-value outcomes, the kind of case that
+moves a customer from a pilot to wider rollout and higher consumption. Through
+Microsoft Switzerland we have run international engagements of exactly that
+type, for accounts like LHH (Adecco Group) and Farmers Insurance (Zurich
+Insurance Group). For enterprise and public sector buyers in Italy that number
+is normally what stands between a pilot and a rollout.
 
-We would like to meet in the coming weeks and find out where else our work
-overlaps. Do you have time for a call?
+Given your AI Workforce remit across Italy, we would like to meet in the coming
+weeks and find out where else our work overlaps. Do you have time for a call?
 
 
 ---
@@ -278,20 +290,19 @@ Cognex | regio Boston | Director, AI Workforce
 
 Hi Jimmy,
 
-We do the employee listening and People Science work at Cognex, so we are
-already inside one of your accounts. Eclectik is a Microsoft partner for CSM and
-PSC consulting services around Glint.
+We support Cognex with employee listening and People Science around Microsoft
+Viva Glint, so we are already inside your account and we know the people and the
+data. Eclectik is a Microsoft partner for CSM and PSC consulting services.
 
-Closer to your AI Workforce remit is the other half of our work. We are a
-specialist partner on conducting ROI of AI analyses. Through Microsoft
-Switzerland we run international AI ROI engagements for accounts like LHH
-(Adecco Group) and Farmers Insurance (Zurich Insurance Group), translating AI
-adoption into dollar-value outcomes. That work contributed demonstrably to
-selling 25,000 Copilot licences. That is where most adoption programmes run out
-of evidence. You sell the adoption. We can show what it returned.
+Alongside that work we run AI ROI analyses. With your Microsoft colleagues we
+translate Copilot adoption into dollar-value outcomes, the kind of case that
+moves a customer from a pilot to wider rollout and higher consumption. Through
+Microsoft Switzerland we have run international engagements of exactly that
+type, for accounts like LHH (Adecco Group) and Farmers Insurance (Zurich
+Insurance Group).
 
-We would like to meet in the coming weeks and find out where else our work
-overlaps. Do you have time for a call?
+Given your AI Workforce remit, we would like to meet in the coming weeks and
+find out where else our work overlaps. Do you have time for a call?
 
 
 ---
@@ -301,25 +312,24 @@ overlaps. Do you have time for a call?
 GoDaddy | Phoenix | Director Specialist, AI Workforce, Software & Digital
 Platforms
 
-**Onderwerp:** GoDaddy, from the employee listening side
+**Onderwerp:** GoDaddy, from the Viva Glint side
 
 Hi Emily,
 
-We work with GoDaddy on employee listening and People Science, which puts us in
-your account from a different angle. Eclectik is a Microsoft partner for CSM and
-PSC consulting services around Glint.
+We support GoDaddy with employee listening and People Science around Microsoft
+Viva Glint, so we are inside your account and we know the people and the data.
+Eclectik is a Microsoft partner for CSM and PSC consulting services.
 
-The part that sits closest to AI Workforce is the newer one. We are a specialist
-partner on conducting ROI of AI analyses. Through Microsoft Switzerland we run
-international AI ROI engagements for accounts like LHH (Adecco Group) and
-Farmers Insurance (Zurich Insurance Group), translating AI adoption into dollar-
-value outcomes. That work contributed demonstrably to selling 25,000 Copilot
-licences. In software and digital platforms the adoption curve is rarely the
-problem. Proving what it returned usually is. You sell the adoption. We can show
-what it returned.
+Alongside that work we run AI ROI analyses. With your Microsoft colleagues we
+translate Copilot adoption into dollar-value outcomes, the kind of case that
+moves a customer from a pilot to wider rollout and higher consumption. Through
+Microsoft Switzerland we have run international engagements of exactly that
+type, for accounts like LHH (Adecco Group) and Farmers Insurance (Zurich
+Insurance Group). In software and digital platforms the adoption curve is rarely
+the problem. Proving what it returned usually is.
 
-We would like to meet in the coming weeks and find out where else our work
-overlaps. Do you have time for a call?
+Given your AI Workforce remit, we would like to meet in the coming weeks and
+find out where else our work overlaps. Do you have time for a call?
 
 
 ---
@@ -332,21 +342,20 @@ Sage Group | Dublin | AI Workforce Solution Specialist
 
 Hi Eoin,
 
-We do the employee listening and People Science work at Sage, so we are in your
-account already. Eclectik is a Microsoft partner for CSM and PSC consulting
-services around Glint.
+We support Sage with employee listening and People Science around Microsoft Viva
+Glint, so we are already inside your account and we know the people and the
+data. Eclectik is a Microsoft partner for CSM and PSC consulting services.
 
-What fits AI Workforce more directly is our other side. We are a specialist
-partner on conducting ROI of AI analyses. Through Microsoft Switzerland we run
-international AI ROI engagements for accounts like LHH (Adecco Group) and
-Farmers Insurance (Zurich Insurance Group), translating AI adoption into dollar-
-value outcomes. That work contributed demonstrably to selling 25,000 Copilot
-licences. Usage numbers are easy to produce and hard to defend in a budget
-conversation. We produce the ones that survive it. You sell the adoption. We can
-show what it returned.
+Alongside that work we run AI ROI analyses. With your Microsoft colleagues we
+translate Copilot adoption into dollar-value outcomes, the kind of case that
+moves a customer from a pilot to wider rollout and higher consumption. Through
+Microsoft Switzerland we have run international engagements of exactly that
+type, for accounts like LHH (Adecco Group) and Farmers Insurance (Zurich
+Insurance Group). Usage numbers are easy to produce and hard to defend in a
+budget conversation. These are the ones that survive it.
 
-We would like to meet in the coming weeks and find out where else our work
-overlaps. Do you have time for a call?
+Given your AI Workforce remit, we would like to meet in the coming weeks and
+find out where else our work overlaps. Do you have time for a call?
 
 
 ---
@@ -359,20 +368,21 @@ Douglas | München | Sales Manager Modern Work & Copilot
 
 Hi Denisa,
 
-We run the employee listening and People Science work at Douglas, which is how
-your name came up. Eclectik is a Microsoft partner for CSM and PSC consulting
-services around Glint.
+We support Douglas with employee listening and People Science around Microsoft
+Viva Glint, so we are already inside the account and we know the people and the
+data. Eclectik is a Microsoft partner for CSM and PSC consulting services.
 
-Your team sells Copilot adoption. Our newer work picks up where that lands. We
-are a specialist partner on conducting ROI of AI analyses. Through Microsoft
-Switzerland we run international AI ROI engagements for accounts like LHH
-(Adecco Group) and Farmers Insurance (Zurich Insurance Group), translating AI
-adoption into dollar-value outcomes. That work contributed demonstrably to
-selling 25,000 Copilot licences. That is the follow-up question your customers
-ask a quarter or two later. You sell the adoption. We can show what it returned.
+Alongside that work we run AI ROI analyses. With your Microsoft colleagues we
+translate Copilot adoption into dollar-value outcomes, the kind of case that
+moves a customer from a pilot to wider rollout and higher consumption. Through
+Microsoft Switzerland we have run international engagements of exactly that
+type, for accounts like LHH (Adecco Group) and Farmers Insurance (Zurich
+Insurance Group). That is the follow-up question your customers ask a quarter or
+two after rollout.
 
-We would like to meet in the coming weeks and find out where else our work
-overlaps. Do you have time for a call?
+Given that your team sells Modern Work and Copilot, we would like to meet in the
+coming weeks and find out where else our work overlaps. Do you have time for a
+call?
 
 
 ---
@@ -386,21 +396,20 @@ Solutions, Middle East & Africa
 
 Hi Sherif,
 
-We do the employee listening and People Science work across Pepkor, which is how
-we came across your name. Eclectik is a Microsoft partner for CSM and PSC
-consulting services around Glint.
+We support Pepkor with employee listening and People Science around Microsoft
+Viva Glint, so we are already inside the account and we know the people and the
+data. Eclectik is a Microsoft partner for CSM and PSC consulting services.
 
-The reason to speak goes beyond Pepkor. We are a specialist partner on
-conducting ROI of AI analyses. Through Microsoft Switzerland we run
-international AI ROI engagements for accounts like LHH (Adecco Group) and
-Farmers Insurance (Zurich Insurance Group), translating AI adoption into dollar-
-value outcomes. That work contributed demonstrably to selling 25,000 Copilot
-licences. At AIBS director level across Middle East and Africa that is probably
-a more useful conversation than any single account. You sell the adoption. We
-can show what it returned.
+Alongside that work we run AI ROI analyses. With your Microsoft colleagues we
+translate Copilot adoption into dollar-value outcomes, the kind of case that
+moves a customer from a pilot to wider rollout and higher consumption. Through
+Microsoft Switzerland we have run international engagements of exactly that
+type, for accounts like LHH (Adecco Group) and Farmers Insurance (Zurich
+Insurance Group). At AIBS director level across Middle East and Africa that is
+probably a more useful conversation than any single account.
 
-We would like to meet in the coming weeks and find out where else our work
-overlaps. Do you have time for a call?
+Beyond Pepkor, we would like to meet in the coming weeks and find out where else
+our work overlaps. Do you have time for a call?
 
 
 ---
@@ -410,24 +419,24 @@ overlaps. Do you have time for a call?
 PEP / Pepkor Trading, Pepkor Speciality | Kaapstad | AI Workforce Senior
 Specialist
 
-**Onderwerp:** Pepkor, from the employee listening side
+**Onderwerp:** Pepkor, and the Copilot business case
 
 Hi Nicolette,
 
-We do the employee listening and People Science work across Pepkor, so we are in
-your account from a different angle. Eclectik is a Microsoft partner for CSM and
-PSC consulting services around Glint.
+We support Pepkor with employee listening and People Science around Microsoft
+Viva Glint, so we are already inside your account and we know the people and the
+data. Eclectik is a Microsoft partner for CSM and PSC consulting services.
 
-Closer to AI Workforce is the other half of what we do. We are a specialist
-partner on conducting ROI of AI analyses. Through Microsoft Switzerland we run
-international AI ROI engagements for accounts like LHH (Adecco Group) and
-Farmers Insurance (Zurich Insurance Group), translating AI adoption into dollar-
-value outcomes. That work contributed demonstrably to selling 25,000 Copilot
-licences. Adoption and change management are where you sit. What it was worth is
-where we sit. You sell the adoption. We can show what it returned.
+Alongside that work we run AI ROI analyses. With your Microsoft colleagues we
+translate Copilot adoption into dollar-value outcomes, the kind of case that
+moves a customer from a pilot to wider rollout and higher consumption. Through
+Microsoft Switzerland we have run international engagements of exactly that
+type, for accounts like LHH (Adecco Group) and Farmers Insurance (Zurich
+Insurance Group).
 
-We would like to meet in the coming weeks and find out where else our work
-overlaps. Do you have time for a call?
+Given your focus on AI Workforce and adoption, we would like to meet in the
+coming weeks and find out where else our work overlaps. Do you have time for a
+call?
 
 
 ---
@@ -441,21 +450,21 @@ Sciences
 
 Hi Klaudia,
 
-We did the employee listening and People Science work at Eppendorf, which is how
-your name reached us. Eclectik is a Microsoft partner for CSM and PSC consulting
-services around Glint.
+We have worked with Eppendorf on employee listening and People Science around
+Microsoft Viva Glint, which is how your name reached us. Eclectik is a Microsoft
+partner for CSM and PSC consulting services.
 
-What probably fits your sector focus better is our other side. We are a
-specialist partner on conducting ROI of AI analyses. Through Microsoft
-Switzerland we run international AI ROI engagements for accounts like LHH
-(Adecco Group) and Farmers Insurance (Zurich Insurance Group), translating AI
-adoption into dollar-value outcomes. That work contributed demonstrably to
-selling 25,000 Copilot licences. In pharma and life sciences that case has to
-hold up to scrutiny, which is exactly the kind we build. You sell the adoption.
-We can show what it returned.
+Alongside that work we run AI ROI analyses. With your Microsoft colleagues we
+translate Copilot adoption into dollar-value outcomes, the kind of case that
+moves a customer from a pilot to wider rollout and higher consumption. Through
+Microsoft Switzerland we have run international engagements of exactly that
+type, for accounts like LHH (Adecco Group) and Farmers Insurance (Zurich
+Insurance Group). In pharma and life sciences that case has to hold up to
+scrutiny, which is the kind we build.
 
-We would like to meet in the coming weeks and find out where else our work
-overlaps. Do you have time for a call?
+Given your sector focus on pharma and life sciences, we would like to meet in
+the coming weeks and find out where else our work overlaps. Do you have time for
+a call?
 
 
 ---
@@ -468,19 +477,20 @@ Eppendorf | Keulen | AI Workforce Specialist, Life Science
 
 Hi Sebastian,
 
-We did the employee listening and People Science work at Eppendorf, so we have
-been inside your account. Eclectik is a Microsoft partner for CSM and PSC
-consulting services around Glint.
+We have worked with Eppendorf on employee listening and People Science around
+Microsoft Viva Glint, so we have been inside your account. Eclectik is a
+Microsoft partner for CSM and PSC consulting services.
 
-The newer half of what we do sits close to AI Workforce. We are a specialist
-partner on conducting ROI of AI analyses. Through Microsoft Switzerland we run
-international AI ROI engagements for accounts like LHH (Adecco Group) and
-Farmers Insurance (Zurich Insurance Group), translating AI adoption into dollar-
-value outcomes. That work contributed demonstrably to selling 25,000 Copilot
-licences. You sell the adoption. We can show what it returned.
+Alongside that work we run AI ROI analyses. With your Microsoft colleagues we
+translate Copilot adoption into dollar-value outcomes, the kind of case that
+moves a customer from a pilot to wider rollout and higher consumption. Through
+Microsoft Switzerland we have run international engagements of exactly that
+type, for accounts like LHH (Adecco Group) and Farmers Insurance (Zurich
+Insurance Group).
 
-We would like to meet in the coming weeks and find out where else our work
-overlaps. Do you have time for a call?
+Given your AI Workforce and life sciences focus, we would like to meet in the
+coming weeks and find out where else our work overlaps. Do you have time for a
+call?
 
 
 ---
@@ -494,22 +504,21 @@ BioMarin, North Mississippi Health Services | Dallas | Modern Work, Microsoft
 
 Hi Erin,
 
-We do the employee listening and People Science work at BioMarin and North
-Mississippi Health Services, so we are in two of your accounts from a different
-angle. Eclectik is a Microsoft partner for CSM and PSC consulting services
-around Glint.
+We support BioMarin and North Mississippi Health Services with employee
+listening and People Science around Microsoft Viva Glint, so we are inside two
+of your accounts and we know the people and the data. Eclectik is a Microsoft
+partner for CSM and PSC consulting services.
 
-The part you may not have seen is the newer one. We are a specialist partner on
-conducting ROI of AI analyses. Through Microsoft Switzerland we run
-international AI ROI engagements for accounts like LHH (Adecco Group) and
-Farmers Insurance (Zurich Insurance Group), translating AI adoption into dollar-
-value outcomes. That work contributed demonstrably to selling 25,000 Copilot
-licences. In healthcare that question arrives faster than anywhere else, because
-the budget conversation is harder. You sell the adoption. We can show what it
-returned.
+Alongside that work we run AI ROI analyses. With your Microsoft colleagues we
+translate Copilot adoption into dollar-value outcomes, the kind of case that
+moves a customer from a pilot to wider rollout and higher consumption. Through
+Microsoft Switzerland we have run international engagements of exactly that
+type, for accounts like LHH (Adecco Group) and Farmers Insurance (Zurich
+Insurance Group). In healthcare that question arrives faster than anywhere else,
+because the budget conversation is harder.
 
-We would like to meet in the coming weeks and find out where else our work
-overlaps. Do you have time for a call?
+Given your Viva and healthcare focus, we would like to meet in the coming weeks
+and find out where else our work overlaps. Do you have time for a call?
 
 
 ---
@@ -518,24 +527,23 @@ overlaps. Do you have time for a call?
 
 BioMarin | Bellevue, Washington | Modern Work Specialist
 
-**Onderwerp:** BioMarin, from the employee listening side
+**Onderwerp:** BioMarin, from the Viva Glint side
 
 Hi Brooke,
 
-We do the employee listening and People Science work at BioMarin, which is how
-we came across your name. Eclectik is a Microsoft partner for CSM and PSC
-consulting services around Glint.
+We support BioMarin with employee listening and People Science around Microsoft
+Viva Glint, so we are already inside the account and we know the people and the
+data. Eclectik is a Microsoft partner for CSM and PSC consulting services.
 
-Alongside that we have a second line of work that sits closer to Modern Work. We
-are a specialist partner on conducting ROI of AI analyses. Through Microsoft
-Switzerland we run international AI ROI engagements for accounts like LHH
-(Adecco Group) and Farmers Insurance (Zurich Insurance Group), translating AI
-adoption into dollar-value outcomes. That work contributed demonstrably to
-selling 25,000 Copilot licences. You sell the adoption. We can show what it
-returned.
+Alongside that work we run AI ROI analyses. With your Microsoft colleagues we
+translate Copilot adoption into dollar-value outcomes, the kind of case that
+moves a customer from a pilot to wider rollout and higher consumption. Through
+Microsoft Switzerland we have run international engagements of exactly that
+type, for accounts like LHH (Adecco Group) and Farmers Insurance (Zurich
+Insurance Group).
 
-We would like to meet in the coming weeks and find out where else our work
-overlaps. Do you have time for a call?
+Given your Modern Work remit, we would like to meet in the coming weeks and find
+out where else our work overlaps. Do you have time for a call?
 
 
 ---
@@ -551,20 +559,20 @@ vaststellen of hij echt op TDIndustries zit voordat deze mail uitgaat.
 
 Hi Tim,
 
-We did the employee listening and People Science work at TDIndustries, which is
-how your name reached us. Eclectik is a Microsoft partner for CSM and PSC
-consulting services around Glint.
+We have worked with TDIndustries on employee listening and People Science around
+Microsoft Viva Glint, which is how your name reached us. Eclectik is a Microsoft
+partner for CSM and PSC consulting services.
 
-Beyond that account we have a second line of work. We are a specialist partner
-on conducting ROI of AI analyses. Through Microsoft Switzerland we run
-international AI ROI engagements for accounts like LHH (Adecco Group) and
-Farmers Insurance (Zurich Insurance Group), translating AI adoption into dollar-
-value outcomes. That work contributed demonstrably to selling 25,000 Copilot
-licences. For enterprise customers weighing up a rollout that is usually the
-missing piece. You sell the adoption. We can show what it returned.
+Alongside that work we run AI ROI analyses. With your Microsoft colleagues we
+translate Copilot adoption into dollar-value outcomes, the kind of case that
+moves a customer from a pilot to wider rollout and higher consumption. Through
+Microsoft Switzerland we have run international engagements of exactly that
+type, for accounts like LHH (Adecco Group) and Farmers Insurance (Zurich
+Insurance Group). For enterprise customers weighing up a rollout that case is
+usually the missing piece.
 
-We would like to meet in the coming weeks and find out where else our work
-overlaps. Do you have time for a call?
+Across your enterprise accounts, we would like to meet in the coming weeks and
+find out where else our work overlaps. Do you have time for a call?
 
 
 ---
@@ -581,19 +589,19 @@ plaats van koud te mailen.
 
 Hi Niklas,
 
-We did the employee listening and People Science work at PIMCO Prime Real
-Estate, which is how your name came to us. Eclectik is a Microsoft partner for
-CSM and PSC consulting services around Glint.
+We have worked with PIMCO Prime Real Estate on employee listening and People
+Science around Microsoft Viva Glint, which is how your name came to us. Eclectik
+is a Microsoft partner for CSM and PSC consulting services.
 
-Alongside that we run a second line of work. We are a specialist partner on
-conducting ROI of AI analyses. Through Microsoft Switzerland we run
-international AI ROI engagements for accounts like LHH (Adecco Group) and
-Farmers Insurance (Zurich Insurance Group), translating AI adoption into dollar-
-value outcomes. That work contributed demonstrably to selling 25,000 Copilot
-licences. You sell the adoption. We can show what it returned.
+Alongside that work we run AI ROI analyses. With your Microsoft colleagues we
+translate Copilot adoption into dollar-value outcomes, the kind of case that
+moves a customer from a pilot to wider rollout and higher consumption. Through
+Microsoft Switzerland we have run international engagements of exactly that
+type, for accounts like LHH (Adecco Group) and Farmers Insurance (Zurich
+Insurance Group).
 
-We would like to meet in the coming weeks and find out where else our work
-overlaps. Do you have time for a call?
+If that is useful on your side, we would like to meet in the coming weeks and
+find out where else our work overlaps. Do you have time for a call?
 
 
 ---
@@ -603,27 +611,27 @@ overlaps. Do you have time for a call?
 Warburtons | Dublin | Sr. Enterprise Security Specialist
 
 LET OP: haar rol is sinds november 2025 security, niet Modern Work. Daarom een
-kortere mail en zonder de zin "You sell the adoption", want dat verkoopt zij
-niet.
+kortere aanloop en een voorzichtiger toon: dit is een kennismaking, geen pitch.
 
 **Onderwerp:** Warburtons, and an introduction
 
 Hi Aoife,
 
-We do the employee listening and People Science work at Warburtons, which is how
-your name reached us. Eclectik is a Microsoft partner for CSM and PSC consulting
-services around Glint.
+We support Warburtons with employee listening and People Science around
+Microsoft Viva Glint, which is how your name reached us. Eclectik is a Microsoft
+partner for CSM and PSC consulting services. I know your focus has moved to
+enterprise security, so this is an introduction rather than a pitch.
 
-I know your focus has moved to enterprise security, so this is an introduction
-rather than a pitch. We are a specialist partner on conducting ROI of AI
-analyses. Through Microsoft Switzerland we run international AI ROI engagements
-for accounts like LHH (Adecco Group) and Farmers Insurance (Zurich Insurance
-Group), translating AI adoption into dollar-value outcomes. That work
-contributed demonstrably to selling 25,000 Copilot licences. Where AI governance
-and AI value meet there may be more common ground than it first looks.
+Alongside that work we run AI ROI analyses. With your Microsoft colleagues we
+translate Copilot adoption into dollar-value outcomes, the kind of case that
+moves a customer from a pilot to wider rollout and higher consumption. Through
+Microsoft Switzerland we have run international engagements of exactly that
+type, for accounts like LHH (Adecco Group) and Farmers Insurance (Zurich
+Insurance Group). Where AI governance and AI value meet there may be more common
+ground than it first looks.
 
-We would like to meet in the coming weeks and find out where else our work
-overlaps. Do you have time for a call?
+If that is of any use to you, we would like to meet in the coming weeks and find
+out where else our work overlaps. Do you have time for a call?
 
 
 ---
@@ -633,24 +641,25 @@ overlaps. Do you have time for a call?
 Maire | regio Detroit | Principal Solution Specialist, Security, Compliance &
 Identity
 
-LET OP: security-rol, verste van ons onderwerp. Laagste prioriteit van de 22, en
-ook hier zonder de zin "You sell the adoption". Overweeg hem over te slaan.
+LET OP: security-rol, verste van ons onderwerp. Laagste prioriteit van de 22.
+Overweeg hem over te slaan.
 
 **Onderwerp:** MAIRE, and an introduction
 
 Hi Eric,
 
-We did the employee listening and People Science work at MAIRE, which is how
-your name came up. Eclectik is a Microsoft partner for CSM and PSC consulting
-services around Glint.
+We have worked with MAIRE on employee listening and People Science around
+Microsoft Viva Glint, which is how your name came up. Eclectik is a Microsoft
+partner for CSM and PSC consulting services. Your focus is security, compliance
+and identity, so this is an introduction rather than a pitch.
 
-Your focus is security, compliance and identity, so this is an introduction
-rather than a pitch. We are a specialist partner on conducting ROI of AI
-analyses. Through Microsoft Switzerland we run international AI ROI engagements
-for accounts like LHH (Adecco Group) and Farmers Insurance (Zurich Insurance
-Group), translating AI adoption into dollar-value outcomes. That work
-contributed demonstrably to selling 25,000 Copilot licences. Governance and
-value tend to end up in the same room eventually.
+Alongside that work we run AI ROI analyses. With your Microsoft colleagues we
+translate Copilot adoption into dollar-value outcomes, the kind of case that
+moves a customer from a pilot to wider rollout and higher consumption. Through
+Microsoft Switzerland we have run international engagements of exactly that
+type, for accounts like LHH (Adecco Group) and Farmers Insurance (Zurich
+Insurance Group). Governance and value tend to end up in the same room
+eventually.
 
-We would like to meet in the coming weeks and find out where else our work
-overlaps. Do you have time for a call?
+If that is of any use to you, we would like to meet in the coming weeks and find
+out where else our work overlaps. Do you have time for a call?
