@@ -19,9 +19,30 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.143.1';
+export const CURRENT_VERSION = '1.144.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.144.0',
+    date: '2026-10-28T21:20:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feat',
+    title: 'Afmeldregel kan per campagne uit, en de Microsoft-campagne staat klaar',
+    summary:
+      'Een persoonlijke mail aan een handvol mensen hoort er niet uit te zien als een mailing. De zichtbare afmeldregel is daarom per campagne uit te zetten, en de campagne voor de 22 AIBS-specialisten bij Microsoft staat als concept klaar.',
+    changes: [
+      'Nieuwe kolom outreach_campaign.opt_out_footer, standaard aan. Staat hij uit, dan gaat de mail zonder de regel "If you\'d rather not hear more about this" de deur uit.',
+      'De List-Unsubscribe-kop blijft altijd staan. Die ziet de lezer niet maar zijn mailclient wel, dus afmelden kan nog steeds en de bezorging lijdt er niet onder.',
+      'Campagne Microsoft AIBS 2026: 22 rijen, elk met een eigen onderwerp en eigen tekst, afzender Marco. Dagcap 12, dus verdeeld over twee dagen.',
+      'max_per_company_per_week op 0, want alle 22 delen het domein microsoft.com en de standaard van 2 per week zou er twee per week sturen.',
+      'Status draft en auto_send uit: de cron slaat de campagne over tot hij met de hand op actief wordt gezet.',
+    ],
+    files: [
+      'api/_lib/outreach-runner.js',
+      'sql/data_microsoft_aibs_campagne_2026-10-28.sql',
+    ],
+    rollback: 'git revert naar v1.143.1. De kolom kan blijven staan; standaard aan is het oude gedrag.',
+  },
   {
     version: '1.143.1',
     date: '2026-10-27T10:00:00Z',

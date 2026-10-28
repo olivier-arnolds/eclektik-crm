@@ -306,12 +306,20 @@ export async function runOutreachBatch({
       errStatus = dm.status || null;
     } else {
       const unsubscribeUrl = `${APP_URL}/api/outreach-unsubscribe?t=${c.unsubscribe_token}`;
+      // De zichtbare afmeldregel kan per campagne uit. Bij een persoonlijke mail
+      // aan een handvol mensen verraadt die regel dat er een machine achter zit,
+      // en dat is precies wat zo'n mail niet moet doen. De List-Unsubscribe-kop
+      // hieronder blijft altijd staan: die ziet de lezer niet, maar zijn
+      // mailclient wel, dus afmelden kan nog steeds en de bezorging lijdt er
+      // niet onder.
+      const toonAfmeldregel = camp.opt_out_footer !== false;
       const send = await rs('/emails', 'POST', {
         from: fromHeader,
         to: c.email,
         reply_to: camp.sender_mailbox,
         subject: item.subject,
-        html: outreachTextToHtml(addUtmToPlainText(item.body, utmOpts), { unsubscribeUrl }),
+        html: outreachTextToHtml(addUtmToPlainText(item.body, utmOpts),
+          toonAfmeldregel ? { unsubscribeUrl } : {}),
         headers: {
           'List-Unsubscribe': `<${unsubscribeUrl}>`,
           'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
