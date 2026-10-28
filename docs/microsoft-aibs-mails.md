@@ -18,7 +18,23 @@ Marco's layout, vier korte regels:
 
 De vaste kern:
 
-> With your Microsoft colleagues we run AI ROI analyses that translate Copilot adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption.
+> With your Microsoft colleagues we run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption.
+
+## De tweede mail
+
+Alleen voor wie niet reageert. Korter dan de eerste en met een nieuwe uitweg in
+plaats van een herhaling: wie het niet is mag doorverwijzen, en wie geen tijd
+heeft mag dat gewoon zeggen. Allebei leveren een antwoord op, en een
+doorverwijzing is vaak meer waard dan een beleefd nee.
+
+> Following up on my note about [de haak]. If that is not yours to pick up,
+> pointing me to whoever owns it helps just as much. If the timing is wrong,
+> tell me and I will leave it there.
+>
+> Worth 15 minutes?
+
+Aoife Corcoran wijkt af: zij kreeg in de eerste mail al de vraag om een
+doorverwijzing, dus haar tweede mail maakt die vraag zo klein mogelijk.
 
 ## Waarom deze opzet en niet de langere
 
@@ -64,6 +80,8 @@ achteraan. Alle 22 gaan mee.
 European Training Foundation | Brussel, Microsoft Europe North (22 landen) | AI
 Business Solutions Sales Lead
 
+### Eerste mail
+
 **Onderwerp:** Copilot business cases across Europe North
 
 Hi Charlotte,
@@ -71,12 +89,25 @@ Hi Charlotte,
 If a Copilot expansion anywhere in Europe North is waiting on a business case,
 we can help build it.
 
-With your Microsoft colleagues we run AI ROI analyses that translate Copilot
-adoption into dollar-value outcomes, used to move customers from pilot to wider
-rollout and increased consumption. We did the Viva Glint and People Science work
-inside the European Training Foundation, so there is somewhere to check us.
+With your Microsoft colleagues we run AI ROI analyses that translate Copilot and
+agent adoption into dollar-value outcomes, used to move customers from pilot to
+wider rollout and increased consumption. We did the Viva Glint and People
+Science work inside the European Training Foundation, so there is somewhere to
+check us.
 
 Is there a deal in your region where that would help? Happy to do 15 minutes.
+
+### Tweede mail, alleen bij geen reactie
+
+**Onderwerp:** Following up on Europe North
+
+Hi Charlotte,
+
+Following up on my note about Copilot business cases across Europe North. If
+that is not yours to pick up, pointing me to whoever owns it helps just as much.
+If the timing is wrong, tell me and I will leave it there.
+
+Worth 15 minutes?
 
 
 ---
@@ -86,6 +117,8 @@ Is there a deal in your region where that would help? Happy to do 15 minutes.
 Breitling, Almirall | Madrid | Senior Director AI Business Solutions, Western
 Europe
 
+### Eerste mail
+
 **Onderwerp:** Breitling, Almirall, Copilot business case
 
 Hi Miguel,
@@ -93,12 +126,24 @@ Hi Miguel,
 If a Copilot expansion at Breitling, Almirall or anywhere else in Western Europe
 is waiting on a business case, we can help build it.
 
-With your Microsoft colleagues we run AI ROI analyses that translate Copilot
-adoption into dollar-value outcomes, used to move customers from pilot to wider
-rollout and increased consumption. We already work inside Breitling and Almirall
-on Viva Glint and People Science, so we know the people and the data.
+With your Microsoft colleagues we run AI ROI analyses that translate Copilot and
+agent adoption into dollar-value outcomes, used to move customers from pilot to
+wider rollout and increased consumption. We already work inside Breitling and
+Almirall on Viva Glint and People Science, so we know the people and the data.
 
 Is there a deal in your region where that would help? Happy to do 15 minutes.
+
+### Tweede mail, alleen bij geen reactie
+
+**Onderwerp:** Following up on Breitling and Almirall
+
+Hi Miguel,
+
+Following up on my note about the Copilot business case at Breitling and
+Almirall. If that is not yours to pick up, pointing me to whoever owns it helps
+just as much. If the timing is wrong, tell me and I will leave it there.
+
+Worth 15 minutes?
 
 
 ---
@@ -108,6 +153,8 @@ Is there a deal in your region where that would help? Happy to do 15 minutes.
 Draper Laboratory | Boston, remote | Senior Director AI Workforce, Copilot &
 Agents, Americas
 
+### Eerste mail
+
 **Onderwerp:** Draper, Copilot business case
 
 Hi Marie-Elena,
@@ -115,13 +162,25 @@ Hi Marie-Elena,
 If a Copilot expansion anywhere in your Americas portfolio is waiting on a
 business case, we can help build it.
 
-With your Microsoft colleagues we run AI ROI analyses that translate Copilot
-adoption into dollar-value outcomes, used to move customers from pilot to wider
-rollout and increased consumption. We already work inside Draper Laboratory on
-Viva Glint and People Science, so we know the people and the data.
+With your Microsoft colleagues we run AI ROI analyses that translate Copilot and
+agent adoption into dollar-value outcomes, used to move customers from pilot to
+wider rollout and increased consumption. We already work inside Draper
+Laboratory on Viva Glint and People Science, so we know the people and the data.
 
 Is there a deal at Draper or elsewhere in your portfolio where that would help?
 Happy to do 15 minutes.
+
+### Tweede mail, alleen bij geen reactie
+
+**Onderwerp:** Following up on Draper
+
+Hi Marie-Elena,
+
+Following up on my note about the Copilot business case at Draper. If that is
+not yours to pick up, pointing me to whoever owns it helps just as much. If the
+timing is wrong, tell me and I will leave it there.
+
+Worth 15 minutes?
 
 
 ---
@@ -131,21 +190,34 @@ Happy to do 15 minutes.
 Liberty Global, Serco, Dentsu, Boskalis | Barcelona | AI Business Solutions
 Engineer, Western Europe
 
-**Onderwerp:** Boskalis, Liberty Global, Serco, Dentsu
+### Eerste mail
+
+**Onderwerp:** Copilot business cases across Western Europe
 
 Hi Daniel,
 
-If a Copilot expansion at Boskalis, Liberty Global, Serco or Dentsu is waiting
-on a business case, we can help build it.
+If a Copilot expansion anywhere in your Western Europe portfolio is waiting on a
+business case, we can help build it.
 
-With your Microsoft colleagues we run AI ROI analyses that translate Copilot
-adoption into dollar-value outcomes, used to move customers from pilot to wider
-rollout and increased consumption. We work inside Boskalis on Viva Glint and
-People Science and did the same at the other three, so we know the people and
-the data.
+With your Microsoft colleagues we run AI ROI analyses that translate Copilot and
+agent adoption into dollar-value outcomes, used to move customers from pilot to
+wider rollout and increased consumption. We work inside Boskalis on Viva Glint
+and People Science and did the same at Liberty Global, Serco and Dentsu, so we
+know the people and the data.
 
-Is there a deal at any of the four where that would help? Happy to do 15
-minutes.
+Is there a deal in your region where that would help? Happy to do 15 minutes.
+
+### Tweede mail, alleen bij geen reactie
+
+**Onderwerp:** Following up on Western Europe
+
+Hi Daniel,
+
+Following up on my note about Copilot business cases across your Western Europe
+portfolio. If that is not yours to pick up, pointing me to whoever owns it helps
+just as much. If the timing is wrong, tell me and I will leave it there.
+
+Worth 15 minutes?
 
 
 ---
@@ -155,6 +227,8 @@ minutes.
 GoDaddy, BMC Software | regio Chicago | Director Workforce AI Solutions,
 Strategic Accounts
 
+### Eerste mail
+
 **Onderwerp:** GoDaddy and BMC, Copilot business case
 
 Hi Ryan,
@@ -162,13 +236,25 @@ Hi Ryan,
 If a Copilot expansion at GoDaddy or BMC Software is waiting on a business case,
 we can help build it.
 
-With your Microsoft colleagues we run AI ROI analyses that translate Copilot
-adoption into dollar-value outcomes, used to move customers from pilot to wider
-rollout and increased consumption. We already work inside both on Viva Glint and
-People Science, so we know the people and the data.
+With your Microsoft colleagues we run AI ROI analyses that translate Copilot and
+agent adoption into dollar-value outcomes, used to move customers from pilot to
+wider rollout and increased consumption. We already work inside both on Viva
+Glint and People Science, so we know the people and the data.
 
 Is there a deal at either, or at another of your strategic accounts, where that
 would help? Happy to do 15 minutes.
+
+### Tweede mail, alleen bij geen reactie
+
+**Onderwerp:** Following up on GoDaddy and BMC
+
+Hi Ryan,
+
+Following up on my note about the Copilot business case at GoDaddy and BMC
+Software. If that is not yours to pick up, pointing me to whoever owns it helps
+just as much. If the timing is wrong, tell me and I will leave it there.
+
+Worth 15 minutes?
 
 
 ---
@@ -178,6 +264,8 @@ would help? Happy to do 15 minutes.
 Trane Technologies | Raleigh-Durham | Sr. Sales Director, AI Workforce Strategic
 Accounts
 
+### Eerste mail
+
 **Onderwerp:** Trane, Copilot business case
 
 Hi Mary,
@@ -185,13 +273,25 @@ Hi Mary,
 If a Copilot expansion at Trane Technologies is waiting on a business case, we
 can help build it.
 
-With your Microsoft colleagues we run AI ROI analyses that translate Copilot
-adoption into dollar-value outcomes, used to move customers from pilot to wider
-rollout and increased consumption. We already work inside Trane on Viva Glint
-and People Science, so we know the people and the data.
+With your Microsoft colleagues we run AI ROI analyses that translate Copilot and
+agent adoption into dollar-value outcomes, used to move customers from pilot to
+wider rollout and increased consumption. We already work inside Trane on Viva
+Glint and People Science, so we know the people and the data.
 
 Is there a deal at Trane or elsewhere in your strategic accounts where that
 would help? Happy to do 15 minutes.
+
+### Tweede mail, alleen bij geen reactie
+
+**Onderwerp:** Following up on Trane
+
+Hi Mary,
+
+Following up on my note about the Copilot business case at Trane Technologies.
+If that is not yours to pick up, pointing me to whoever owns it helps just as
+much. If the timing is wrong, tell me and I will leave it there.
+
+Worth 15 minutes?
 
 
 ---
@@ -201,6 +301,8 @@ would help? Happy to do 15 minutes.
 Trane Technologies | Denver | Director of AI Business Solutions Sales,
 Manufacturing & Mobility
 
+### Eerste mail
+
 **Onderwerp:** Trane, Copilot business case
 
 Hi Jason,
@@ -208,13 +310,25 @@ Hi Jason,
 If a Copilot expansion at Trane Technologies is waiting on a business case, we
 can help build it.
 
-With your Microsoft colleagues we run AI ROI analyses that translate Copilot
-adoption into dollar-value outcomes, used to move customers from pilot to wider
-rollout and increased consumption. We already work inside Trane on Viva Glint
-and People Science, so we know the people and the data.
+With your Microsoft colleagues we run AI ROI analyses that translate Copilot and
+agent adoption into dollar-value outcomes, used to move customers from pilot to
+wider rollout and increased consumption. We already work inside Trane on Viva
+Glint and People Science, so we know the people and the data.
 
 Is there a deal at Trane or another manufacturing account where that would help?
 Happy to do 15 minutes.
+
+### Tweede mail, alleen bij geen reactie
+
+**Onderwerp:** Following up on Trane
+
+Hi Jason,
+
+Following up on my note about the Copilot business case at Trane Technologies.
+If that is not yours to pick up, pointing me to whoever owns it helps just as
+much. If the timing is wrong, tell me and I will leave it there.
+
+Worth 15 minutes?
 
 
 ---
@@ -227,6 +341,8 @@ Sector, Microsoft Italy
 LET OP: MAIRE is gestopt als klant, dus de bewijsregel staat in verleden tijd en
 de openingsregel leunt op Italië in plaats van op het account.
 
+### Eerste mail
+
 **Onderwerp:** Copilot business cases in Italy
 
 Hi Laura,
@@ -234,12 +350,24 @@ Hi Laura,
 If a Copilot expansion anywhere in your Italian portfolio is waiting on a
 business case, we can help build it.
 
-With your Microsoft colleagues we run AI ROI analyses that translate Copilot
-adoption into dollar-value outcomes, used to move customers from pilot to wider
-rollout and increased consumption. We did the Viva Glint and People Science work
-inside MAIRE, which is how your name reached us.
+With your Microsoft colleagues we run AI ROI analyses that translate Copilot and
+agent adoption into dollar-value outcomes, used to move customers from pilot to
+wider rollout and increased consumption. We did the Viva Glint and People
+Science work inside MAIRE, which is how your name reached us.
 
 Is there a deal in Italy where that would help? Happy to do 15 minutes.
+
+### Tweede mail, alleen bij geen reactie
+
+**Onderwerp:** Following up on Italy
+
+Hi Laura,
+
+Following up on my note about Copilot business cases in your Italian portfolio.
+If that is not yours to pick up, pointing me to whoever owns it helps just as
+much. If the timing is wrong, tell me and I will leave it there.
+
+Worth 15 minutes?
 
 
 ---
@@ -248,6 +376,8 @@ Is there a deal in Italy where that would help? Happy to do 15 minutes.
 
 Cognex | regio Boston | Director, AI Workforce
 
+### Eerste mail
+
 **Onderwerp:** Cognex, Copilot business case
 
 Hi Jimmy,
@@ -255,13 +385,25 @@ Hi Jimmy,
 If a Copilot expansion at Cognex is waiting on a business case, we can help
 build it.
 
-With your Microsoft colleagues we run AI ROI analyses that translate Copilot
-adoption into dollar-value outcomes, used to move customers from pilot to wider
-rollout and increased consumption. We already work inside Cognex on Viva Glint
-and People Science, so we know the people and the data.
+With your Microsoft colleagues we run AI ROI analyses that translate Copilot and
+agent adoption into dollar-value outcomes, used to move customers from pilot to
+wider rollout and increased consumption. We already work inside Cognex on Viva
+Glint and People Science, so we know the people and the data.
 
 Is there a deal at Cognex or other clients where that would help? Happy to do 15
 minutes.
+
+### Tweede mail, alleen bij geen reactie
+
+**Onderwerp:** Following up on Cognex
+
+Hi Jimmy,
+
+Following up on my note about the Copilot business case at Cognex. If that is
+not yours to pick up, pointing me to whoever owns it helps just as much. If the
+timing is wrong, tell me and I will leave it there.
+
+Worth 15 minutes?
 
 
 ---
@@ -271,6 +413,8 @@ minutes.
 GoDaddy | Phoenix | Director Specialist, AI Workforce, Software & Digital
 Platforms
 
+### Eerste mail
+
 **Onderwerp:** GoDaddy, Copilot business case
 
 Hi Emily,
@@ -278,13 +422,25 @@ Hi Emily,
 If a Copilot expansion at GoDaddy is waiting on a business case, we can help
 build it.
 
-With your Microsoft colleagues we run AI ROI analyses that translate Copilot
-adoption into dollar-value outcomes, used to move customers from pilot to wider
-rollout and increased consumption. We already work inside GoDaddy on Viva Glint
-and People Science, so we know the people and the data.
+With your Microsoft colleagues we run AI ROI analyses that translate Copilot and
+agent adoption into dollar-value outcomes, used to move customers from pilot to
+wider rollout and increased consumption. We already work inside GoDaddy on Viva
+Glint and People Science, so we know the people and the data.
 
 Is there a deal at GoDaddy or elsewhere in software and digital platforms where
 that would help? Happy to do 15 minutes.
+
+### Tweede mail, alleen bij geen reactie
+
+**Onderwerp:** Following up on GoDaddy
+
+Hi Emily,
+
+Following up on my note about the Copilot business case at GoDaddy. If that is
+not yours to pick up, pointing me to whoever owns it helps just as much. If the
+timing is wrong, tell me and I will leave it there.
+
+Worth 15 minutes?
 
 
 ---
@@ -293,6 +449,8 @@ that would help? Happy to do 15 minutes.
 
 Sage Group | Dublin | AI Workforce Solution Specialist
 
+### Eerste mail
+
 **Onderwerp:** Sage, Copilot business case
 
 Hi Eoin,
@@ -300,13 +458,25 @@ Hi Eoin,
 If a Copilot expansion at Sage is waiting on a business case, we can help build
 it.
 
-With your Microsoft colleagues we run AI ROI analyses that translate Copilot
-adoption into dollar-value outcomes, used to move customers from pilot to wider
-rollout and increased consumption. We already work inside Sage on Viva Glint and
-People Science, so we know the people and the data.
+With your Microsoft colleagues we run AI ROI analyses that translate Copilot and
+agent adoption into dollar-value outcomes, used to move customers from pilot to
+wider rollout and increased consumption. We already work inside Sage on Viva
+Glint and People Science, so we know the people and the data.
 
 Is there a deal at Sage or other clients where that would help? Happy to do 15
 minutes.
+
+### Tweede mail, alleen bij geen reactie
+
+**Onderwerp:** Following up on Sage
+
+Hi Eoin,
+
+Following up on my note about the Copilot business case at Sage. If that is not
+yours to pick up, pointing me to whoever owns it helps just as much. If the
+timing is wrong, tell me and I will leave it there.
+
+Worth 15 minutes?
 
 
 ---
@@ -315,6 +485,8 @@ minutes.
 
 Douglas | München | Sales Manager Modern Work & Copilot
 
+### Eerste mail
+
 **Onderwerp:** Douglas, Copilot business case
 
 Hi Denisa,
@@ -322,13 +494,25 @@ Hi Denisa,
 If a Copilot expansion at Douglas is waiting on a business case, we can help
 build it.
 
-With your Microsoft colleagues we run AI ROI analyses that translate Copilot
-adoption into dollar-value outcomes, used to move customers from pilot to wider
-rollout and increased consumption. We already work inside Douglas on Viva Glint
-and People Science, so we know the people and the data.
+With your Microsoft colleagues we run AI ROI analyses that translate Copilot and
+agent adoption into dollar-value outcomes, used to move customers from pilot to
+wider rollout and increased consumption. We already work inside Douglas on Viva
+Glint and People Science, so we know the people and the data.
 
 Is there a deal at Douglas or elsewhere in your team's accounts where that would
 help? Happy to do 15 minutes.
+
+### Tweede mail, alleen bij geen reactie
+
+**Onderwerp:** Following up on Douglas
+
+Hi Denisa,
+
+Following up on my note about the Copilot business case at Douglas. If that is
+not yours to pick up, pointing me to whoever owns it helps just as much. If the
+timing is wrong, tell me and I will leave it there.
+
+Worth 15 minutes?
 
 
 ---
@@ -338,6 +522,8 @@ help? Happy to do 15 minutes.
 PEP / Pepkor Trading, Pepkor Speciality | Dubai | Director AI Business
 Solutions, Middle East & Africa
 
+### Eerste mail
+
 **Onderwerp:** Pepkor, Copilot business case
 
 Hi Sherif,
@@ -345,12 +531,24 @@ Hi Sherif,
 If a Copilot expansion at Pepkor or anywhere else across Middle East and Africa
 is waiting on a business case, we can help build it.
 
-With your Microsoft colleagues we run AI ROI analyses that translate Copilot
-adoption into dollar-value outcomes, used to move customers from pilot to wider
-rollout and increased consumption. We already work inside Pepkor on Viva Glint
-and People Science, so we know the people and the data.
+With your Microsoft colleagues we run AI ROI analyses that translate Copilot and
+agent adoption into dollar-value outcomes, used to move customers from pilot to
+wider rollout and increased consumption. We already work inside Pepkor on Viva
+Glint and People Science, so we know the people and the data.
 
 Is there a deal in your region where that would help? Happy to do 15 minutes.
+
+### Tweede mail, alleen bij geen reactie
+
+**Onderwerp:** Following up on Pepkor
+
+Hi Sherif,
+
+Following up on my note about the Copilot business case at Pepkor and across
+your region. If that is not yours to pick up, pointing me to whoever owns it
+helps just as much. If the timing is wrong, tell me and I will leave it there.
+
+Worth 15 minutes?
 
 
 ---
@@ -360,6 +558,8 @@ Is there a deal in your region where that would help? Happy to do 15 minutes.
 PEP / Pepkor Trading, Pepkor Speciality | Kaapstad | AI Workforce Senior
 Specialist
 
+### Eerste mail
+
 **Onderwerp:** Pepkor, Copilot business case
 
 Hi Nicolette,
@@ -367,13 +567,25 @@ Hi Nicolette,
 If a Copilot expansion at Pepkor is waiting on a business case, we can help
 build it.
 
-With your Microsoft colleagues we run AI ROI analyses that translate Copilot
-adoption into dollar-value outcomes, used to move customers from pilot to wider
-rollout and increased consumption. We already work inside Pepkor on Viva Glint
-and People Science, so we know the people and the data.
+With your Microsoft colleagues we run AI ROI analyses that translate Copilot and
+agent adoption into dollar-value outcomes, used to move customers from pilot to
+wider rollout and increased consumption. We already work inside Pepkor on Viva
+Glint and People Science, so we know the people and the data.
 
 Is there a deal at Pepkor or other clients where that would help? Happy to do 15
 minutes.
+
+### Tweede mail, alleen bij geen reactie
+
+**Onderwerp:** Following up on Pepkor
+
+Hi Nicolette,
+
+Following up on my note about the Copilot business case at Pepkor. If that is
+not yours to pick up, pointing me to whoever owns it helps just as much. If the
+timing is wrong, tell me and I will leave it there.
+
+Worth 15 minutes?
 
 
 ---
@@ -383,6 +595,8 @@ minutes.
 Eppendorf | München | Solution Specialist Modern Workplace, Pharma & Life
 Sciences
 
+### Eerste mail
+
 **Onderwerp:** Eppendorf, Copilot business case
 
 Hi Klaudia,
@@ -390,12 +604,24 @@ Hi Klaudia,
 If a Copilot expansion at Eppendorf or another pharma and life sciences account
 is waiting on a business case, we can help build it.
 
-With your Microsoft colleagues we run AI ROI analyses that translate Copilot
-adoption into dollar-value outcomes, used to move customers from pilot to wider
-rollout and increased consumption. We did the Viva Glint and People Science work
-inside Eppendorf, so we know the people and the data.
+With your Microsoft colleagues we run AI ROI analyses that translate Copilot and
+agent adoption into dollar-value outcomes, used to move customers from pilot to
+wider rollout and increased consumption. We did the Viva Glint and People
+Science work inside Eppendorf, so we know the people and the data.
 
 Is there a deal in your sector where that would help? Happy to do 15 minutes.
+
+### Tweede mail, alleen bij geen reactie
+
+**Onderwerp:** Following up on Eppendorf
+
+Hi Klaudia,
+
+Following up on my note about the Copilot business case at Eppendorf. If that is
+not yours to pick up, pointing me to whoever owns it helps just as much. If the
+timing is wrong, tell me and I will leave it there.
+
+Worth 15 minutes?
 
 
 ---
@@ -404,6 +630,8 @@ Is there a deal in your sector where that would help? Happy to do 15 minutes.
 
 Eppendorf | Keulen | AI Workforce Specialist, Life Science
 
+### Eerste mail
+
 **Onderwerp:** Eppendorf, Copilot business case
 
 Hi Sebastian,
@@ -411,12 +639,24 @@ Hi Sebastian,
 If a Copilot expansion at Eppendorf or another life sciences account is waiting
 on a business case, we can help build it.
 
-With your Microsoft colleagues we run AI ROI analyses that translate Copilot
-adoption into dollar-value outcomes, used to move customers from pilot to wider
-rollout and increased consumption. We did the Viva Glint and People Science work
-inside Eppendorf, so we know the people and the data.
+With your Microsoft colleagues we run AI ROI analyses that translate Copilot and
+agent adoption into dollar-value outcomes, used to move customers from pilot to
+wider rollout and increased consumption. We did the Viva Glint and People
+Science work inside Eppendorf, so we know the people and the data.
 
 Is there a deal in your accounts where that would help? Happy to do 15 minutes.
+
+### Tweede mail, alleen bij geen reactie
+
+**Onderwerp:** Following up on Eppendorf
+
+Hi Sebastian,
+
+Following up on my note about the Copilot business case at Eppendorf. If that is
+not yours to pick up, pointing me to whoever owns it helps just as much. If the
+timing is wrong, tell me and I will leave it there.
+
+Worth 15 minutes?
 
 
 ---
@@ -426,6 +666,8 @@ Is there a deal in your accounts where that would help? Happy to do 15 minutes.
 BioMarin, North Mississippi Health Services | Dallas | Modern Work, Microsoft
 365, Viva, Copilot, Healthcare
 
+### Eerste mail
+
 **Onderwerp:** BioMarin and North Mississippi, Copilot business case
 
 Hi Erin,
@@ -433,13 +675,25 @@ Hi Erin,
 If a Copilot expansion at BioMarin or North Mississippi Health Services is
 waiting on a business case, we can help build it.
 
-With your Microsoft colleagues we run AI ROI analyses that translate Copilot
-adoption into dollar-value outcomes, used to move customers from pilot to wider
-rollout and increased consumption. We already work inside both on Viva Glint and
-People Science, so we know the people and the data.
+With your Microsoft colleagues we run AI ROI analyses that translate Copilot and
+agent adoption into dollar-value outcomes, used to move customers from pilot to
+wider rollout and increased consumption. We already work inside both on Viva
+Glint and People Science, so we know the people and the data.
 
 Is there a deal at either, or at another healthcare account, where that would
 help? Happy to do 15 minutes.
+
+### Tweede mail, alleen bij geen reactie
+
+**Onderwerp:** Following up on BioMarin and North Mississippi
+
+Hi Erin,
+
+Following up on my note about the Copilot business case at BioMarin and North
+Mississippi. If that is not yours to pick up, pointing me to whoever owns it
+helps just as much. If the timing is wrong, tell me and I will leave it there.
+
+Worth 15 minutes?
 
 
 ---
@@ -448,6 +702,8 @@ help? Happy to do 15 minutes.
 
 BioMarin | Bellevue, Washington | Modern Work Specialist
 
+### Eerste mail
+
 **Onderwerp:** BioMarin, Copilot business case
 
 Hi Brooke,
@@ -455,13 +711,25 @@ Hi Brooke,
 If a Copilot expansion at BioMarin is waiting on a business case, we can help
 build it.
 
-With your Microsoft colleagues we run AI ROI analyses that translate Copilot
-adoption into dollar-value outcomes, used to move customers from pilot to wider
-rollout and increased consumption. We already work inside BioMarin on Viva Glint
-and People Science, so we know the people and the data.
+With your Microsoft colleagues we run AI ROI analyses that translate Copilot and
+agent adoption into dollar-value outcomes, used to move customers from pilot to
+wider rollout and increased consumption. We already work inside BioMarin on Viva
+Glint and People Science, so we know the people and the data.
 
 Is there a deal at BioMarin or other clients where that would help? Happy to do
 15 minutes.
+
+### Tweede mail, alleen bij geen reactie
+
+**Onderwerp:** Following up on BioMarin
+
+Hi Brooke,
+
+Following up on my note about the Copilot business case at BioMarin. If that is
+not yours to pick up, pointing me to whoever owns it helps just as much. If the
+timing is wrong, tell me and I will leave it there.
+
+Worth 15 minutes?
 
 
 ---
@@ -473,6 +741,8 @@ TDIndustries | Dallas | Microsoft Enterprise Sales
 LET OP: profiel onbevestigd, twee LinkedIn-profielen met deze naam. Eerst
 vaststellen of hij echt op TDIndustries zit voordat deze mail uitgaat.
 
+### Eerste mail
+
 **Onderwerp:** TDIndustries, Copilot business case
 
 Hi Tim,
@@ -480,13 +750,25 @@ Hi Tim,
 If a Copilot expansion at TDIndustries is waiting on a business case, we can
 help build it.
 
-With your Microsoft colleagues we run AI ROI analyses that translate Copilot
-adoption into dollar-value outcomes, used to move customers from pilot to wider
-rollout and increased consumption. We did the Viva Glint and People Science work
-inside TDIndustries, so we know the people and the data.
+With your Microsoft colleagues we run AI ROI analyses that translate Copilot and
+agent adoption into dollar-value outcomes, used to move customers from pilot to
+wider rollout and increased consumption. We did the Viva Glint and People
+Science work inside TDIndustries, so we know the people and the data.
 
 Is there a deal at TDIndustries or other clients where that would help? Happy to
 do 15 minutes.
+
+### Tweede mail, alleen bij geen reactie
+
+**Onderwerp:** Following up on TDIndustries
+
+Hi Tim,
+
+Following up on my note about the Copilot business case at TDIndustries. If that
+is not yours to pick up, pointing me to whoever owns it helps just as much. If
+the timing is wrong, tell me and I will leave it there.
+
+Worth 15 minutes?
 
 
 ---
@@ -499,6 +781,8 @@ LET OP: geen LinkedIn-profiel gevonden, rol niet geverifieerd. Het e-mailadres
 komt uit tabblad 1. Overweeg dit tijdens het PIMCO-gesprek na te vragen in
 plaats van koud te mailen.
 
+### Eerste mail
+
 **Onderwerp:** PIMCO Prime Real Estate, Copilot business case
 
 Hi Niklas,
@@ -506,13 +790,25 @@ Hi Niklas,
 If a Copilot expansion at PIMCO Prime Real Estate is waiting on a business case,
 we can help build it.
 
-With your Microsoft colleagues we run AI ROI analyses that translate Copilot
-adoption into dollar-value outcomes, used to move customers from pilot to wider
-rollout and increased consumption. We did the Viva Glint and People Science work
-inside PIMCO Prime Real Estate, so we know the people and the data.
+With your Microsoft colleagues we run AI ROI analyses that translate Copilot and
+agent adoption into dollar-value outcomes, used to move customers from pilot to
+wider rollout and increased consumption. We did the Viva Glint and People
+Science work inside PIMCO Prime Real Estate, so we know the people and the data.
 
 Is there a deal at PIMCO or other clients where that would help? Happy to do 15
 minutes.
+
+### Tweede mail, alleen bij geen reactie
+
+**Onderwerp:** Following up on PIMCO
+
+Hi Niklas,
+
+Following up on my note about the Copilot business case at PIMCO Prime Real
+Estate. If that is not yours to pick up, pointing me to whoever owns it helps
+just as much. If the timing is wrong, tell me and I will leave it there.
+
+Worth 15 minutes?
 
 
 ---
@@ -525,6 +821,8 @@ LET OP: zij zit sinds november 2025 op enterprise security, dus een Copilot-
 businesscase is niet haar deal. Daarom vraagt haar mail om een doorverwijzing in
 plaats van om een gesprek over haar eigen account.
 
+### Eerste mail
+
 **Onderwerp:** Warburtons, and who owns the Copilot case
 
 Hi Aoife,
@@ -532,13 +830,25 @@ Hi Aoife,
 If a Copilot expansion at Warburtons is waiting on a business case, we can help
 build it, and if that sits with a colleague of yours I would value the pointer.
 
-With your Microsoft colleagues we run AI ROI analyses that translate Copilot
-adoption into dollar-value outcomes, used to move customers from pilot to wider
-rollout and increased consumption. We already work inside Warburtons on Viva
-Glint and People Science, so we know the people and the data.
+With your Microsoft colleagues we run AI ROI analyses that translate Copilot and
+agent adoption into dollar-value outcomes, used to move customers from pilot to
+wider rollout and increased consumption. We already work inside Warburtons on
+Viva Glint and People Science, so we know the people and the data.
 
 Is there someone on your side who owns that conversation? Happy to do 15 minutes
 either way.
+
+### Tweede mail, alleen bij geen reactie
+
+**Onderwerp:** Following up on Warburtons
+
+Hi Aoife,
+
+Following up on my note about the Copilot business case at Warburtons. If that
+sits with a colleague of yours, a name is all I need. If not, no problem at all
+and I will leave it there.
+
+Worth a pointer?
 
 
 ---
@@ -552,6 +862,8 @@ LET OP: MAIRE is gestopt als klant en zijn rol is security, compliance en
 identity, dus de openingsregel vraagt breed naar zijn accounts in plaats van
 naar MAIRE. MAIRE staat alleen nog in de bewijsregel, in verleden tijd.
 
+### Eerste mail
+
 **Onderwerp:** Copilot business cases, from the partner side
 
 Hi Eric,
@@ -559,9 +871,21 @@ Hi Eric,
 If a Copilot expansion anywhere in your accounts is waiting on a business case,
 we can help build it.
 
-With your Microsoft colleagues we run AI ROI analyses that translate Copilot
-adoption into dollar-value outcomes, used to move customers from pilot to wider
-rollout and increased consumption. We did the Viva Glint and People Science work
-inside MAIRE, which is how your name came up.
+With your Microsoft colleagues we run AI ROI analyses that translate Copilot and
+agent adoption into dollar-value outcomes, used to move customers from pilot to
+wider rollout and increased consumption. We did the Viva Glint and People
+Science work inside MAIRE, which is how your name came up.
 
 Is there a deal where that would help? Happy to do 15 minutes.
+
+### Tweede mail, alleen bij geen reactie
+
+**Onderwerp:** Following up on my note
+
+Hi Eric,
+
+Following up on my note about Copilot business cases across your accounts. If
+that is not yours to pick up, pointing me to whoever owns it helps just as much.
+If the timing is wrong, tell me and I will leave it there.
+
+Worth 15 minutes?
