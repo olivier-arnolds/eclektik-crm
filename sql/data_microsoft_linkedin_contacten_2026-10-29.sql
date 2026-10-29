@@ -1,0 +1,46 @@
+-- 720 Microsoft-contacten uit de verrijkte LinkedIn-lijst, zonder account.
+--
+-- BRON
+--   linkedin_contacten (1).csv, 851 rijen, de LinkedIn-lijst van 28-10 nadat er
+--   e-mailadressen bij gezocht waren. Daadwerkelijk ingeladen met een script
+--   (supabase-js, per 100 rijen); dit bestand legt vast WAT er is gebeurd en hoe
+--   je het terugdraait.
+--
+-- WAT ER VAN DE 851 OVERBLEEF
+--   -55  zonder e-mailadres
+--   -41  adres stond al in de CRM
+--   -11  adres van een ander bedrijf terwijl de persoon nog bij Microsoft werkt
+--    -9  werkt niet meer bij Microsoft
+--    -9  persoon stond al in de CRM onder een ander Microsoft-adres
+--    -6  hetzelfde adres opgegeven voor twee verschillende personen
+--   =720
+--
+--   Die laatste twee groepen zijn het belangrijkst. De verrijking gokt een
+--   schrijfwijze (jmyers@ naast jennifer.myers@), en bij drie adressen kwam
+--   dezelfde gok twee keer boven voor twee verschillende mensen. Zonder deze
+--   filters zouden er dubbele rijen en verkeerd geadresseerde mails ontstaan.
+--
+-- GEEN ACCOUNT
+--   company_id blijft leeg, company_name is de vrije tekst 'Microsoft'. Onder
+--   welk account iemand hoort bepalen we pas als het een lead wordt. Zo blijft
+--   de accountstructuur schoon en hoeft er nu niets geraden te worden.
+--
+-- GEEN TOESTEMMING VOOR MARKETINGMAIL
+--   marketing_content_opt_in blijft false. Een koud verrijkt adres is geen
+--   opt-in, en die twee door elkaar halen zet iemand in een nieuwsbrief waar hij
+--   nooit om vroeg.
+--
+-- email_status houdt bij welke verrijker het adres vond (found_findymail, 640x;
+-- found_rocketreach 41, found_prospeo 20, found_icypeas 15, found_hunter 4).
+-- Dat is wat je wilt weten zodra er een bounce binnenkomt.
+
+-- Gemaakt voor het inladen: create table _dq_backup_contacts_20261029 as select * from contacts;
+-- 1965 rijen voor, 2685 na.
+
+-- Controle:
+-- select count(*) from contacts where source = 'Microsoft LinkedIn lijst 29-10-2026';   -- 720
+-- select count(*) from contacts where source = 'Microsoft LinkedIn lijst 29-10-2026'
+--   and (company_id is not null or marketing_content_opt_in);                            -- 0
+
+-- Terugdraaien:
+-- delete from contacts where source = 'Microsoft LinkedIn lijst 29-10-2026';
