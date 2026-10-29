@@ -42,8 +42,14 @@ values
   ('v6RAP6G-7CxjCcIl9GAg-tL9v1RctnrSKOWLGBcI9Cw', 'Alexandra.Abreu@cognex.com',
    'Alexandra', 'Cognex', 'yes', now(), true, now(), 'internal', 'olivier@eclectik.co');
 
--- Controle: 19 op ja zonder ruisvlag, zijnde de 17 van Olivier plus Roberto
--- Olivazzo en tiffanyivory@gmail.com, waarover nog een beslissing openstaat.
+-- tiffanyivory@gmail.com was door Yarmilla foutief toegevoegd. Verwijderd op
+-- verzoek van Olivier, en wel echt verwijderd en niet op nee gezet: zij is nooit
+-- uitgenodigd, dus een nee zou suggereren dat zij heeft afgezegd. De rij staat in
+-- _dq_backup_user_session_invites_20261029.
+delete from user_session_invites where lower(email) = 'tiffanyivory@gmail.com';
+
+-- Controle: 18 op ja zonder ruisvlag, zijnde de 17 van Olivier plus Roberto
+-- Olivazzo van ETF, die blijft staan.
 -- select lower(email), first_name, company, source, registered_by
 --   from user_session_results where answer = 'yes' and not bot_suspected
 --  order by company, first_name;
