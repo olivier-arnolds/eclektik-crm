@@ -48,16 +48,6 @@ values
 -- _dq_backup_user_session_invites_20261029.
 delete from user_session_invites where lower(email) = 'tiffanyivory@gmail.com';
 
--- Roberto Olivazzo staat op tentative. De lijst kent alleen ja, nee, alleen
--- geklikt en geen antwoord, dus daar is geen stand voor. Hij blijft op ja (zijn
--- rij heeft slot-2026-11-05, de sessie van die donderdag) en het staat erbij in
--- de opmerking, de kolom die in de tab als Opmerking meeloopt. Bij hem is die
--- kolom toch al onze eigen aantekening en niet zijn antwoord op de open vraag.
-update user_session_invites
-   set note = note || ' Staat per 29-10-2026 op tentative.', updated_at = now()
- where lower(email) = 'roberto.olivazzo@etf.europa.eu'
-   and note not like '%tentative%';
-
 -- Controle: 18 op ja zonder ruisvlag, zijnde de 17 van Olivier plus Roberto
 -- Olivazzo van ETF, die blijft staan.
 -- select lower(email), first_name, company, source, registered_by
