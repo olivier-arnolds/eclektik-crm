@@ -12,6 +12,7 @@ import {
   REGIOS, hoortBijRegio,
 } from './outreach-match';
 import { outreachTextToHtml, subjectForStep } from '../lib/outreach-html';
+import { signatureFor } from '../lib/signatures.js';
 
 // Outreach-tab onder Marketing. Ontwerp: docs/outreach-handover.md addendum §9.
 //
@@ -1848,20 +1849,27 @@ function ContactMailsModal({ contact, campaign, rows = [], registratie = null, o
     if (onSent) await onSent();
   };
 
-  // De voorvertoning moet laten zien wat er ECHT uitgaat, dus dezelfde twee
+  // De voorvertoning moet laten zien wat er ECHT uitgaat, dus dezelfde
   // voorwaarden als in api/_lib/outreach-runner.js: een DM heeft geen
-  // afmeldregel, en een campagne met opt_out_footer uit ook niet. Zonder deze
-  // controle toont de voorvertoning een regel die de ontvanger nooit krijgt.
+  // afmeldregel, een campagne met opt_out_footer uit ook niet, en de
+  // merkhandtekening gaat alleen mee bij een campagne met sender_signature aan.
+  // Zonder deze controles toont de voorvertoning iets anders dan wat de
+  // ontvanger krijgt.
   const toonAfmeldregel = !isLinkedIn && campaign?.opt_out_footer !== false;
   const unsubUrl = toonAfmeldregel && detail?.unsubscribe_token
     ? `${window.location.origin}/api/outreach-unsubscribe?t=${detail.unsubscribe_token}`
     : null;
+  const handtekening = !isLinkedIn && campaign?.sender_signature
+    ? signatureFor(campaign.sender_mailbox)
+    : '';
 
   const subject = tab === 1
     ? (detail?.msg1_subject || null)
     : subjectForStep({ msg1_subject: detail?.msg1_subject, msg2_subject: detail?.msg2_subject }, 2);
   const body = tab === 1 ? detail?.msg1_body : detail?.msg2_body;
-  const html = body ? outreachTextToHtml(body, { unsubscribeUrl: unsubUrl }) : null;
+  const html = body
+    ? outreachTextToHtml(body, { unsubscribeUrl: unsubUrl, signatureHtml: handtekening })
+    : null;
 
   const startEdit = () => {
     setForm({

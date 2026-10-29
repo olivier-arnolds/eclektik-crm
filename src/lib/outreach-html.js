@@ -32,20 +32,30 @@ export function linkifyBareUrls(html) {
     .join('');
 }
 
-// Bewust GEEN merkhandtekening: dit moet een persoonlijke 1-op-1-mail zijn, en
-// een gestileerde marketingfooter verraadt precies het tegendeel. De afmeldregel
-// is een gewone zin, geen banner, en Engels omdat de teksten dat zijn.
-export function outreachTextToHtml(text, { unsubscribeUrl } = {}) {
+// De merkhandtekening staat standaard UIT en gaat per campagne aan
+// (outreach_campaign.sender_signature). Een gestileerde footer onder een mail
+// van vier zinnen verraadt dat er een campagne achter zit, dus dat is geen
+// keuze om zomaar voor iedereen te maken. De afmeldregel is een gewone zin,
+// geen banner, en Engels omdat de teksten dat zijn.
+//
+// VOLGORDE: tekst, handtekening, afmeldregel. De afmeldregel hoort als laatste,
+// onderaan, zoals in elke mail; de handtekening erboven, waar een ondertekening
+// hoort. Vandaar dat de handtekening hier binnenkomt en niet achteraf met
+// appendSignature wordt aangeplakt, want die plakt hem vóór </body> en dus
+// ONDER de afmeldregel.
+export function outreachTextToHtml(text, { unsubscribeUrl, signatureHtml } = {}) {
   const paras = String(text || '')
     .split(/\n{2,}/)
     .map(p => `<p>${linkifyBareUrls(linkifyMarkdown(escapeHtml(p))).replace(/\n/g, '<br>')}</p>`)
     .join('');
 
+  const sig = signatureHtml ? `<div style="margin-top:28px">${signatureHtml}</div>` : '';
+
   const optOut = unsubscribeUrl
     ? `<p style="font-size:12px;color:#888888">If you'd rather not hear more about this, <a href="${escapeHtml(unsubscribeUrl)}" style="color:#888888">opt out here</a>.</p>`
     : '';
 
-  return `<!doctype html><html><body style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#222222">${paras}${optOut}</body></html>`;
+  return `<!doctype html><html><body style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.6;color:#222222">${paras}${sig}${optOut}</body></html>`;
 }
 
 // Onderwerp per stap. Bericht 2 gaat als "Re: " op hetzelfde onderwerp: we

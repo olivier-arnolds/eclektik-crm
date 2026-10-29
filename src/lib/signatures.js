@@ -1,5 +1,12 @@
 // E-mail-handtekeningen per afzender. Wordt bij verzending (cron + testmail)
-// onder de mail geplakt, boven de afmeldlink. E-mail-veilig: table-layout met
+// onder de mail geplakt, boven de afmeldlink.
+//
+// STAAT IN src/lib EN NIET IN api/_lib. De outreach-tab laat een voorvertoning
+// van de uitgaande mail zien, en die moet dezelfde handtekening tonen als wat er
+// echt verstuurd wordt. Server-side houden zou betekenen dat de voorvertoning
+// hem niet kan tonen, en een voorvertoning die iets anders laat zien dan de
+// ontvanger krijgt is erger dan geen voorvertoning. Zelfde reden als
+// src/lib/outreach-html.js. E-mail-veilig: table-layout met
 // inline styles, echte <a>-links (geen afbeelding nodig voor de tekst/links).
 // Het merk-logo kan later als gehoste <img> worden toegevoegd (LOGO_URL).
 

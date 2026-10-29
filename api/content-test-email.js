@@ -1,6 +1,6 @@
 import { requireUser } from './_lib/guard.js';
 import { contentTextToHtml } from './_lib/content-html.js';
-import { appendSignature } from './_lib/signatures.js';
+import { appendSignature } from '../src/lib/signatures.js';
 
 // POST /api/content-test-email
 // Body: { subject, body, to, from_email?, from_name?, channel? }

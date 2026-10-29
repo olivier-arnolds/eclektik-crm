@@ -3,6 +3,7 @@ import {
   selectSendable, statusAfterSend, outreachTextToHtml, companyKey, STALE_HOURS,
 } from './outreach-send-lib.js';
 import { senderNameFor } from '../../src/lib/senders.js';
+import { signatureFor } from '../../src/lib/signatures.js';
 import { addUtmToPlainText, slugify, UTM_BRONNEN } from '../../src/lib/utm.js';
 import { sendLinkedInDM } from './unipile-dm.js';
 
@@ -313,13 +314,21 @@ export async function runOutreachBatch({
       // mailclient wel, dus afmelden kan nog steeds en de bezorging lijdt er
       // niet onder.
       const toonAfmeldregel = camp.opt_out_footer !== false;
+      // De merkhandtekening gaat per campagne aan (sender_signature, standaard
+      // uit). signatureFor geeft een lege string voor een adres zonder
+      // handtekening, en dan valt het blok vanzelf weg.
+      const handtekening = camp.sender_signature
+        ? signatureFor(camp.sender_mailbox)
+        : '';
       const send = await rs('/emails', 'POST', {
         from: fromHeader,
         to: c.email,
         reply_to: camp.sender_mailbox,
         subject: item.subject,
-        html: outreachTextToHtml(addUtmToPlainText(item.body, utmOpts),
-          toonAfmeldregel ? { unsubscribeUrl } : {}),
+        html: outreachTextToHtml(addUtmToPlainText(item.body, utmOpts), {
+          ...(toonAfmeldregel ? { unsubscribeUrl } : {}),
+          ...(handtekening ? { signatureHtml: handtekening } : {}),
+        }),
         headers: {
           'List-Unsubscribe': `<${unsubscribeUrl}>`,
           'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',

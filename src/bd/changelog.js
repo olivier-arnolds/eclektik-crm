@@ -19,9 +19,33 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.145.1';
+export const CURRENT_VERSION = '1.146.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.146.0',
+    date: '2026-10-29T10:00:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feat',
+    title: 'Handtekening van de afzender per outreachcampagne',
+    summary:
+      'De outreachmodule stuurde nooit een handtekening mee. Dat kan nu per campagne aan, en staat aan voor Microsoft AIBS 2026. De andere campagnes veranderen niet.',
+    changes: [
+      'Nieuwe kolom outreach_campaign.sender_signature, standaard uit. Een gestileerde footer onder een mail van vier zinnen verraadt dat er een campagne achter zit, dus dat blijft het uitgangspunt; wie hem wil zet hem per campagne aan.',
+      'De handtekening komt onder de tekst en BOVEN de afmeldregel. outreachTextToHtml kreeg daarvoor een optie signatureHtml, want appendSignature plakt hem voor </body> en dus onder de afmeldregel.',
+      'signatures.js verhuisd van api/_lib naar src/lib, zodat de voorvertoning in de tab dezelfde handtekening toont als wat er echt verstuurd wordt. Een voorvertoning die iets anders laat zien dan de ontvanger krijgt is erger dan geen voorvertoning.',
+      'Let op: de eerste twaalf AIBS-mails waren al verstuurd voordat dit live stond. Die gingen zonder handtekening de deur uit; de overige tien en alle opvolgmails krijgen hem wel.',
+    ],
+    files: [
+      'src/lib/signatures.js', 'src/lib/outreach-html.js',
+      'api/_lib/outreach-runner.js', 'api/_lib/outreach-send-lib.test.js',
+      'src/bd/marketing-outreach.jsx',
+      'sql/schema_outreach_sender_signature_2026-10-29.sql',
+      'api/marketing-send.js', 'api/resend-broadcast.js',
+      'api/content-calendar-execute.js', 'api/content-test-email.js',
+    ],
+    rollback: 'git revert naar v1.145.1. De kolom kan blijven staan; zonder de code doet hij niets.',
+  },
   {
     version: '1.145.1',
     date: '2026-10-29T08:00:00Z',

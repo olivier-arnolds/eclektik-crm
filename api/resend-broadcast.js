@@ -1,6 +1,6 @@
 import { requireUser } from './_lib/guard.js';
 import { sendBroadcast } from './_lib/send-broadcast.js';
-import { appendSignature } from './_lib/signatures.js';
+import { appendSignature } from '../src/lib/signatures.js';
 
 // Newsletter-broadcast via Resend (segment = de selectie). De hard-won segment-/
 // rate-limit-logica leeft in api/_lib/send-broadcast.js zodat de content-kalender-

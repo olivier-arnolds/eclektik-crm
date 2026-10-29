@@ -3,7 +3,7 @@ import { sendBroadcast } from './_lib/send-broadcast.js';
 import { createLinkedInPost } from './_lib/unipile-post.js';
 import { sendLinkedInDM } from './_lib/unipile-dm.js';
 import { contentTextToHtml } from './_lib/content-html.js';
-import { appendSignature } from './_lib/signatures.js';
+import { appendSignature } from '../src/lib/signatures.js';
 import { excludeAlreadyReached } from '../src/bd/content-calendar-logic.js';
 import { createClient } from '@supabase/supabase-js';
 

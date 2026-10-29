@@ -3,7 +3,7 @@
 // (geen vrij tekstveld). De weergavenaam hoort bij het adres. Gedeeld door de
 // marketing-composer en de content-kalender (afzenderkeuze + testmail).
 // `signature: true` = er bestaat een persoonlijke handtekening voor dit adres
-// (api/_lib/signatures.js). Puur een UI-hint voor de default van de
+// (src/lib/signatures.js). Puur een UI-hint voor de default van de
 // handtekening-toggle; de daadwerkelijke handtekening-HTML komt server-side.
 export const SENDERS = [
   { email: 'marketing@eclectik.co', name: 'Marketing' },

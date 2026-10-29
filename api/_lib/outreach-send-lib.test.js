@@ -59,9 +59,25 @@ describe('outreachTextToHtml', () => {
     expect(outreachTextToHtml('hoi')).not.toContain('Geen berichten');
   });
 
-  it('bevat GEEN merkhandtekening of marketingfooter', () => {
+  it('bevat GEEN merkhandtekening zolang die niet wordt meegegeven', () => {
     const html = outreachTextToHtml('hoi', { unsubscribeUrl: 'https://crm/u/abc' });
     expect(html).not.toMatch(/eclectik-email-header|Unsubscribe<\/a>\.<\/p><\/body>/i);
+  });
+
+  it('zet de meegegeven handtekening BOVEN de afmeldregel', () => {
+    const html = outreachTextToHtml('hoi', {
+      unsubscribeUrl: 'https://crm/u/abc',
+      signatureHtml: '<table id="sig"></table>',
+    });
+    // De ondertekening hoort onder de tekst en boven de afmeldregel, zoals in
+    // elke mail. Zonder deze volgorde zou de handtekening onder de kleine
+    // grijze afmeldzin belanden.
+    expect(html.indexOf('<table id="sig">')).toBeGreaterThan(html.indexOf('<p>hoi</p>'));
+    expect(html.indexOf('<table id="sig">')).toBeLessThan(html.indexOf('opt out here'));
+  });
+
+  it('laat het handtekeningblok weg bij een leeg adres zonder handtekening', () => {
+    expect(outreachTextToHtml('hoi', { signatureHtml: '' })).not.toContain('margin-top:28px');
   });
 });
 

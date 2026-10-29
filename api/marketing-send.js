@@ -14,7 +14,7 @@ import { requireUser } from './_lib/guard.js';
 //   - 401/403 → abort immediately
 import { createClient } from '@supabase/supabase-js';
 import { renderTemplate } from '../src/lib/template-vars.js';
-import { appendSignature } from './_lib/signatures.js';
+import { appendSignature } from '../src/lib/signatures.js';
 
 const RESEND_API = 'https://api.resend.com/emails';
 const PER_SEND_DELAY_MS = 250;
