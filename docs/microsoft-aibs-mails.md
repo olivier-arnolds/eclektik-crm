@@ -9,8 +9,8 @@ Athimon) vallen af omdat daar al contact mee is.
 Marco's layout, vier korte regels:
 
 1. De openingsregel: als er bij deze klant een Copilot-uitbreiding op een
-   businesscase wacht, kunnen wij die bouwen. Per persoon een andere klant of
-   regio.
+   businesscase wacht, kunnen wij die bouwen. Hier staan de accounts waar deze
+   persoon volgens de bronlijst aan gerelateerd is, met naam genoemd.
 2. De vaste kern, letterlijk in elke mail.
 3. De bewijsregel: wij zitten al binnen bij die klant op Viva Glint en People
    Science, dus we kennen de mensen en de data.
@@ -59,6 +59,20 @@ scherpere vraag.
   bewijsregel doet het werk beter: niet een referentie elders, maar binnen zijn
   bij de klant waar het gesprek over gaat.
 
+## Elk account met naam genoemd
+
+Op verzoek van Marco en Yarmilla noemt elke eerste mail de accounts waar de
+persoon volgens tabblad "AIBS specialists" aan gerelateerd is, en staan ze waar
+het kan in de openingsregel in plaats van alleen in de bewijsregel. Waar iemand
+aan meer dan een account hangt gaan ze er allemaal in, dus Pepkor Trading en
+Pepkor Speciality apart en bij Daniel Marquiegui alle vier.
+
+Twee uitzonderingen, allebei om dezelfde reden. Laura D'Ambra en Eric Inch
+hangen aan MAIRE, en MAIRE is gestopt als klant. Openen met "if a Copilot
+expansion at MAIRE is waiting on a business case" zou iets beweren wat niet meer
+klopt, dus bij hen blijft de openingsregel op de regio of op hun accounts staan
+en wordt MAIRE in de bewijsregel genoemd, in verleden tijd.
+
 ## Lopend versus afgerond werk
 
 Waar in de CRM een lopend traject staat, zegt de bewijsregel "We already work
@@ -86,14 +100,13 @@ Business Solutions Sales Lead
 
 Hi Charlotte,
 
-If a Copilot expansion anywhere in Europe North is waiting on a business case,
-we can help build it.
+If a Copilot expansion at the European Training Foundation or anywhere else in
+Europe North is waiting on a business case, we can help build it.
 
 With your Microsoft colleagues we run AI ROI analyses that translate Copilot and
 agent adoption into dollar-value outcomes, used to move customers from pilot to
 wider rollout and increased consumption. We did the Viva Glint and People
-Science work inside the European Training Foundation, so there is somewhere to
-check us.
+Science work there, so there is somewhere to check us.
 
 Is there a deal in your region where that would help? Happy to do 15 minutes.
 
@@ -159,13 +172,13 @@ Agents, Americas
 
 Hi Marie-Elena,
 
-If a Copilot expansion anywhere in your Americas portfolio is waiting on a
-business case, we can help build it.
+If a Copilot expansion at Draper Laboratory or anywhere else in your Americas
+portfolio is waiting on a business case, we can help build it.
 
 With your Microsoft colleagues we run AI ROI analyses that translate Copilot and
 agent adoption into dollar-value outcomes, used to move customers from pilot to
-wider rollout and increased consumption. We already work inside Draper
-Laboratory on Viva Glint and People Science, so we know the people and the data.
+wider rollout and increased consumption. We already work inside Draper on Viva
+Glint and People Science, so we know the people and the data.
 
 Is there a deal at Draper or elsewhere in your portfolio where that would help?
 Happy to do 15 minutes.
@@ -196,14 +209,15 @@ Engineer, Western Europe
 
 Hi Daniel,
 
-If a Copilot expansion anywhere in your Western Europe portfolio is waiting on a
-business case, we can help build it.
+If a Copilot expansion at Boskalis, Liberty Global, Serco, Dentsu or anywhere
+else in your Western Europe portfolio is waiting on a business case, we can help
+build it.
 
 With your Microsoft colleagues we run AI ROI analyses that translate Copilot and
 agent adoption into dollar-value outcomes, used to move customers from pilot to
 wider rollout and increased consumption. We work inside Boskalis on Viva Glint
-and People Science and did the same at Liberty Global, Serco and Dentsu, so we
-know the people and the data.
+and People Science and did that same work at the other three, so we know the
+people and the data.
 
 Is there a deal in your region where that would help? Happy to do 15 minutes.
 
@@ -528,8 +542,9 @@ Solutions, Middle East & Africa
 
 Hi Sherif,
 
-If a Copilot expansion at Pepkor or anywhere else across Middle East and Africa
-is waiting on a business case, we can help build it.
+If a Copilot expansion at Pepkor Trading, Pepkor Speciality or anywhere else
+across Middle East and Africa is waiting on a business case, we can help build
+it.
 
 With your Microsoft colleagues we run AI ROI analyses that translate Copilot and
 agent adoption into dollar-value outcomes, used to move customers from pilot to
@@ -564,8 +579,8 @@ Specialist
 
 Hi Nicolette,
 
-If a Copilot expansion at Pepkor is waiting on a business case, we can help
-build it.
+If a Copilot expansion at Pepkor Trading or Pepkor Speciality is waiting on a
+business case, we can help build it.
 
 With your Microsoft colleagues we run AI ROI analyses that translate Copilot and
 agent adoption into dollar-value outcomes, used to move customers from pilot to

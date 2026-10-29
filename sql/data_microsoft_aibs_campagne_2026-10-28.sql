@@ -41,9 +41,9 @@ values
   ('7a3f1c84-2b65-4d0e-9a51-6c8e3f0d4b27', '810e2178-9ea3-43d3-8c9d-c8dd50ebe57a', '27900421-4d58-4821-a751-a23ddab575cc', 'Charlotte', 'Gomez-Gimeno', 'AI Business Solutions Sales Lead, Microsoft Europe North', 'charlotte.gomez@microsoft.com', 'microsoft.com', 'Microsoft BELGIUM', 'https://www.linkedin.com/in/charlottegomezgimeno/', 1, 'top', 'Microsoft AIBS lijst 20-10-2026',
    'Copilot business cases across Europe North', 'Hi Charlotte,
 
-If a Copilot expansion anywhere in Europe North is waiting on a business case, we can help build it.
+If a Copilot expansion at the European Training Foundation or anywhere else in Europe North is waiting on a business case, we can help build it.
 
-With your Microsoft colleagues we run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption. We did the Viva Glint and People Science work inside the European Training Foundation, so there is somewhere to check us.
+With your Microsoft colleagues we run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption. We did the Viva Glint and People Science work there, so there is somewhere to check us.
 
 Is there a deal in your region where that would help? Happy to do 15 minutes.
 
@@ -75,9 +75,9 @@ Marco'),
   ('7a3f1c84-2b65-4d0e-9a51-6c8e3f0d4b27', 'f85adc00-69e2-4dd7-bc7a-76a9b34d07d8', 'a941ef84-f3dd-4812-adb9-e5a3064a7aef', 'Marie-Elena', 'Inacio', 'Senior Director, AI Workforce, Copilot & Agents, Americas', 'minacio@microsoft.com', 'microsoft.com', 'Microsoft USA', null, 3, 'top', 'Microsoft AIBS lijst 20-10-2026',
    'Draper, Copilot business case', 'Hi Marie-Elena,
 
-If a Copilot expansion anywhere in your Americas portfolio is waiting on a business case, we can help build it.
+If a Copilot expansion at Draper Laboratory or anywhere else in your Americas portfolio is waiting on a business case, we can help build it.
 
-With your Microsoft colleagues we run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption. We already work inside Draper Laboratory on Viva Glint and People Science, so we know the people and the data.
+With your Microsoft colleagues we run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption. We already work inside Draper on Viva Glint and People Science, so we know the people and the data.
 
 Is there a deal at Draper or elsewhere in your portfolio where that would help? Happy to do 15 minutes.
 
@@ -92,9 +92,9 @@ Marco'),
   ('7a3f1c84-2b65-4d0e-9a51-6c8e3f0d4b27', '9b53fcc0-79d5-480d-bb8e-650a32fb93cf', '6f0dbac3-427d-4075-87b3-d34c273ecb7e', 'Daniel', 'Marquiegui', 'AI Business Solutions Engineer, Western Europe', 'danielmarq@microsoft.com', 'microsoft.com', 'Microsoft SPAIN', 'https://es.linkedin.com/in/danielmarquiegui', 4, 'top', 'Microsoft AIBS lijst 20-10-2026',
    'Copilot business cases across Western Europe', 'Hi Daniel,
 
-If a Copilot expansion anywhere in your Western Europe portfolio is waiting on a business case, we can help build it.
+If a Copilot expansion at Boskalis, Liberty Global, Serco, Dentsu or anywhere else in your Western Europe portfolio is waiting on a business case, we can help build it.
 
-With your Microsoft colleagues we run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption. We work inside Boskalis on Viva Glint and People Science and did the same at Liberty Global, Serco and Dentsu, so we know the people and the data.
+With your Microsoft colleagues we run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption. We work inside Boskalis on Viva Glint and People Science and did that same work at the other three, so we know the people and the data.
 
 Is there a deal in your region where that would help? Happy to do 15 minutes.
 
@@ -245,7 +245,7 @@ Marco'),
   ('7a3f1c84-2b65-4d0e-9a51-6c8e3f0d4b27', '508aabaa-85dc-432c-850e-a15c77090067', '74b96e77-95a5-4e27-b6d8-d2a4ff35a6d1', 'Sherif', 'Hamza', 'Director, AI Business Solutions, Middle East & Africa', 'shamza@microsoft.com', 'microsoft.com', 'Microsoft UAE', null, 13, 'top', 'Microsoft AIBS lijst 20-10-2026',
    'Pepkor, Copilot business case', 'Hi Sherif,
 
-If a Copilot expansion at Pepkor or anywhere else across Middle East and Africa is waiting on a business case, we can help build it.
+If a Copilot expansion at Pepkor Trading, Pepkor Speciality or anywhere else across Middle East and Africa is waiting on a business case, we can help build it.
 
 With your Microsoft colleagues we run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption. We already work inside Pepkor on Viva Glint and People Science, so we know the people and the data.
 
@@ -262,7 +262,7 @@ Marco'),
   ('7a3f1c84-2b65-4d0e-9a51-6c8e3f0d4b27', '297db7e8-d776-4c01-a0a2-e140d437e53e', '8e98a265-4194-4027-8b34-be2cc50c6065', 'Nicolette', 'Pringle', 'AI Workforce Senior Specialist', 'nicolette.pringle@microsoft.com', 'microsoft.com', 'Microsoft SOUTH AFRICA', 'https://za.linkedin.com/in/nicolettepringle', 14, 'top', 'Microsoft AIBS lijst 20-10-2026',
    'Pepkor, Copilot business case', 'Hi Nicolette,
 
-If a Copilot expansion at Pepkor is waiting on a business case, we can help build it.
+If a Copilot expansion at Pepkor Trading or Pepkor Speciality is waiting on a business case, we can help build it.
 
 With your Microsoft colleagues we run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption. We already work inside Pepkor on Viva Glint and People Science, so we know the people and the data.
 

@@ -19,9 +19,30 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.145.0';
+export const CURRENT_VERSION = '1.145.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.145.1',
+    date: '2026-10-29T08:00:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Microsoft AIBS-mails noemen de accounts waar iemand op zit',
+    summary:
+      'Marco en Yarmilla wilden dat elke eerste mail de klant noemt waar die persoon aan gerelateerd is, en niet alleen de regio. Vijf van de 22 mails zijn aangepast; bij de andere zeventien stond het account er al in.',
+    changes: [
+      'Charlotte Gomez-Gimeno, Marie-Elena Inacio en Daniel Marquiegui openen nu met hun accounts in plaats van met de regio. Bij Daniel gaan alle vier mee: Boskalis, Liberty Global, Serco en Dentsu.',
+      'Sherif Hamza en Nicolette Pringle noemen Pepkor Trading en Pepkor Speciality apart, zoals ze in de bronlijst staan, in plaats van het samengevatte Pepkor.',
+      'Laura D\'Ambra en Eric Inch blijven op de regio openen. Zij hangen aan MAIRE en MAIRE is gestopt als klant, dus openen met die naam zou iets beweren wat niet meer klopt. MAIRE staat bij hen in de bewijsregel, in verleden tijd.',
+      'De campagne staat nog op draft en alle 22 rijen zijn queued, dus er is geen mail met de oude tekst de deur uit.',
+    ],
+    files: [
+      'docs/microsoft-aibs-mails.md',
+      'sql/data_microsoft_aibs_mail1_accounts_2026-10-29.sql',
+      'sql/data_microsoft_aibs_campagne_2026-10-28.sql',
+    ],
+    rollback: 'De oude teksten staan in _dq_backup_outreach_contact_20261029.',
+  },
   {
     version: '1.145.0',
     date: '2026-10-28T21:50:00Z',
