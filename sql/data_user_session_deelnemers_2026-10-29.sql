@@ -48,8 +48,17 @@ values
 -- _dq_backup_user_session_invites_20261029.
 delete from user_session_invites where lower(email) = 'tiffanyivory@gmail.com';
 
--- Controle: 18 op ja zonder ruisvlag, zijnde de 17 van Olivier plus Roberto
--- Olivazzo van ETF, die blijft staan.
+-- 30-10-2026: Geraldene van Pepkor Speciality er alsnog bij. Zij was wel
+-- uitgenodigd maar had nooit geantwoord, dus dezelfde behandeling als de acht
+-- hierboven.
+update user_session_invites
+   set answer = 'yes', answer_at = now(), confirmed = true, confirmed_at = now(),
+       bot_suspected = false, source = 'internal', registered_by = 'olivier@eclectik.co',
+       updated_at = now()
+ where lower(email) = 'geralded@speciality.pepkor.co.za';
+
+-- Controle: 19 op ja zonder ruisvlag, zijnde de 17 van Olivier plus Roberto
+-- Olivazzo van ETF en Geraldene van Pepkor.
 -- select lower(email), first_name, company, source, registered_by
 --   from user_session_results where answer = 'yes' and not bot_suspected
 --  order by company, first_name;
