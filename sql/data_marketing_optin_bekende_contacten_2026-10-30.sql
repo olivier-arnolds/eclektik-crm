@@ -57,8 +57,23 @@ update contacts c
    and c.marketing_content_opt_in
    and c.stage is distinct from 'Active';
 
--- Resultaat: 695 erbij, 743 staan aan (707 Active, 32 New en 4 Inactive die de
--- vlag al hadden).
+-- MARCO'S LINKEDIN-CONNECTIES ERBIJ (aanvulling, zelfde dag)
+--   52 eerstelijns LinkedIn-connecties van Marco, allemaal op stage Active. Zij
+--   kennen hem persoonlijk, dus ze horen in dezelfde groep als de rest hierboven.
+--   47 kwamen in aanmerking; de andere 5 vielen af op een leeg adres, een
+--   afmelding, de vlag former of omdat de opt-in al aanstond.
+update contacts
+   set marketing_content_opt_in = true, updated_at = now()
+ where source = 'LinkedIn import Marco 2026-07'
+   and stage = 'Active'
+   and email is not null and email <> ''
+   and not do_not_email and not former
+   and not marketing_content_opt_in;
+
+-- De zes Surfe-verrijkingen staan allemaal op stage New en vallen daarmee onder
+-- de Active-regel hierboven. Niet aangezet; ligt terug bij Olivier.
+
+-- Resultaat: 790 contacten met de opt-in aan.
 -- Controle dat de koude lijsten uit bleven:
 -- select count(*) from contacts
 --  where source in ('Microsoft LinkedIn lijst 29-10-2026','Microsoft AIBS lijst 20-10-2026')
