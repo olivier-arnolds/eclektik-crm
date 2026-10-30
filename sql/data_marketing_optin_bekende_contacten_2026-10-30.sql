@@ -42,7 +42,23 @@ update contacts
    and stage is distinct from 'Inactive'
    and not marketing_content_opt_in;
 
--- Resultaat: 781 erbij, 828 van de 2686 staan nu aan.
+-- ALLEEN STAGE 'Active' (aanvulling, zelfde dag)
+--   De update hierboven pakte ook contacten op stage 'New' mee. Afgesproken is
+--   dat alleen Active contacten aangezet worden, dus die 86 zijn weer uit.
+--   Bewust alleen wat deze update zelf aanzette: de 36 niet-Active contacten die
+--   de vlag al hadden blijven staan. Daar zitten de tien event-aanmelders bij
+--   die op het formulier zelf het vinkje voor marketing aanzetten, en dat is
+--   echte toestemming die wij niet horen in te trekken omdat hun stage 'New' is.
+update contacts c
+   set marketing_content_opt_in = false, updated_at = now()
+  from _dq_backup_contacts_optin_20261030 b
+ where b.id = c.id
+   and not b.marketing_content_opt_in
+   and c.marketing_content_opt_in
+   and c.stage is distinct from 'Active';
+
+-- Resultaat: 695 erbij, 743 staan aan (707 Active, 32 New en 4 Inactive die de
+-- vlag al hadden).
 -- Controle dat de koude lijsten uit bleven:
 -- select count(*) from contacts
 --  where source in ('Microsoft LinkedIn lijst 29-10-2026','Microsoft AIBS lijst 20-10-2026')
