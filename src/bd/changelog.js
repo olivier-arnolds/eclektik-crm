@@ -19,9 +19,30 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.146.0';
+export const CURRENT_VERSION = '1.147.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.147.0',
+    date: '2026-10-30T10:30:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feat',
+    title: 'Telefoonnummer bewerkbaar in de Leads-tab',
+    summary:
+      'De kolom Telefoon is aanklikbaar geworden. Een nummer dat je elders opzoekt kun je er nu zelf in zetten, zonder omweg via de database.',
+    changes: [
+      'Klik naast het nummer en er verschijnt een invoerveld. Enter of ernaast klikken bewaart, Escape annuleert. Klikken op het nummer zelf belt nog steeds, want deze lijst wordt ook vanaf een telefoon gebruikt.',
+      'Het nummer gaat naar de nieuwe kolom marketing_leads.phone en niet naar de payload van de aanmelding. Die payload is het formulier zoals de deelnemer het zelf invulde, en een logregel bijwerken vervalst wat er die dag binnenkwam.',
+      'Staat er niets op de lead, dan toont de cel het nummer uit de aanmelding, precies als voorheen. Er hoefde dus niets gemigreerd te worden.',
+      'De invoer wordt niet opgeschoond. Een eigen poging tot normaliseren maakt van een buitenlands nummer zo iets onbelbaars.',
+      'Alleen Telefoon is bewerkbaar. Naam, bedrijf en rol bewust niet: daar was geen vraag naar en elk bewerkbaar veld is een veld dat per ongeluk veranderd kan worden.',
+    ],
+    files: [
+      'src/bd/marketing-leads.jsx',
+      'sql/schema_marketing_leads_phone_2026-10-30.sql',
+    ],
+    rollback: 'git revert naar v1.146.0. De kolom kan blijven staan; zonder de tab doet hij niets.',
+  },
   {
     version: '1.146.0',
     date: '2026-10-29T10:00:00Z',

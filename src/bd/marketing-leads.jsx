@@ -194,6 +194,28 @@ export default function MarketingLeads() {
     setBusyId(null);
   };
 
+  // Telefoonnummer met de hand bijwerken.
+  //
+  // SCHRIJFT NAAR marketing_leads.phone EN NIET NAAR DE AANMELDING
+  //   Het nummer dat de lijst tot nu toe toonde komt uit de payload van de
+  //   aanmelding, en dat is het formulier zoals de deelnemer het zelf invulde.
+  //   Daar overheen schrijven zou dat formulier vervalsen. Een nummer dat wij
+  //   ergens opzoeken hoort dus op de lead zelf.
+  //
+  // De invoer wordt niet opgeschoond. Een eigen poging tot normaliseren maakt
+  // van een buitenlands nummer zo iets onbelbaars; zelfde redenering als
+  // telefoonVan() in src/lib/lead-bron.js.
+  const zetTelefoon = async (lead, waarde) => {
+    const nieuw = String(waarde || '').trim() || null;
+    const { data: updated, error } = await supabase.from('marketing_leads')
+      .update({ phone: nieuw, updated_at: new Date().toISOString() })
+      .eq('id', lead.id).select('id');
+    if (error) return { ok: false, msg: error.message };
+    if (!updated?.length) return { ok: false, msg: 'Lead niet gevonden, ververs de lijst.' };
+    setRows(prev => prev.map(r => (r.id === lead.id ? { ...r, phone: nieuw } : r)));
+    return { ok: true };
+  };
+
   // Alleen wie ja zegt hoort in dit blok. De rest is geen lead: 74 mensen hebben
   // niets gedaan en zijn alleen uitgenodigd, en een nee is een antwoord maar geen
   // aanknopingspunt. De aantallen blijven wel in de kop staan, want een lijst van
@@ -392,7 +414,8 @@ export default function MarketingLeads() {
               <LeadRow key={lead.id} lead={lead}
                 bron={lead.first_src || bronPerLead[lead.id] || null}
                 via={viaPerLead[lead.id] || null}
-                telefoon={telPerLead[lead.id] || null}
+                telefoon={lead.phone || telPerLead[lead.id] || null}
+                onZetTelefoon={zetTelefoon}
                 bevestiging={bevestigingPerMail[String(lead.email || '').trim().toLowerCase()] || null}
                 huidigBronLabel={huidigBronLabel}
                 onZetAntwoord={zetAntwoord}
@@ -414,7 +437,70 @@ export default function MarketingLeads() {
   );
 }
 
-function LeadRow({ lead, bron, via, telefoon, bevestiging, huidigBronLabel, onZetAntwoord, zetBezig, expanded, activityRows, busy, onToggle, onPromote, onArchive, onReactivate, td }) {
+// De cel Telefoon: tonen, bellen en met de hand wijzigen.
+//
+// KLIKKEN OP HET NUMMER BELT, KLIKKEN ERNAAST BEWERKT
+//   Het nummer blijft een belkoppeling, want deze lijst wordt ook vanaf een
+//   telefoon gebruikt. Zou de hele cel het invoerveld openen, dan kon je niet
+//   meer bellen. De koppeling houdt de klik dus bij zich; de rest van de cel
+//   opent het invoerveld. Een lege cel heeft geen koppeling en opent overal.
+function TelefoonCel({ lead, telefoon, onZet, td }) {
+  const [bewerkt, setBewerkt] = useState(false);
+  const [waarde, setWaarde] = useState('');
+  const [bezig, setBezig] = useState(false);
+
+  const open = () => { setWaarde(telefoon || ''); setBewerkt(true); };
+
+  const bewaar = async () => {
+    if (bezig) return;
+    const nieuw = waarde.trim();
+    // Niets veranderd: sluiten zonder schrijfactie. Scheelt een rondje naar de
+    // database bij een klik die per ongeluk het veld opende.
+    if (nieuw === String(telefoon || '')) { setBewerkt(false); return; }
+    setBezig(true);
+    const res = await onZet(lead, nieuw);
+    setBezig(false);
+    if (!res?.ok) { alert('Opslaan mislukt: ' + (res?.msg || 'onbekende fout')); return; }
+    setBewerkt(false);
+  };
+
+  if (bewerkt) {
+    return (
+      <td style={{ ...td, whiteSpace: 'nowrap' }} onClick={e => e.stopPropagation()}>
+        <input
+          autoFocus
+          value={waarde}
+          disabled={bezig}
+          onChange={e => setWaarde(e.target.value)}
+          onBlur={bewaar}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') { e.preventDefault(); bewaar(); }
+            // Escape annuleert, dus het veld sluit zonder te schrijven. De blur
+            // die daarop volgt mag niet alsnog bewaren, vandaar eerst sluiten.
+            if (e.key === 'Escape') { e.preventDefault(); setBewerkt(false); }
+          }}
+          placeholder="+31 6 ..."
+          style={{ width: 130, fontSize: 12, padding: '2px 4px' }}
+        />
+      </td>
+    );
+  }
+
+  return (
+    <td style={{ ...td, whiteSpace: 'nowrap', cursor: 'text' }}
+      title="Klik naast het nummer om het te wijzigen"
+      onClick={(e) => { e.stopPropagation(); open(); }}>
+      {telefoon
+        ? (telHref(telefoon)
+          ? <a href={telHref(telefoon)} style={{ color: 'var(--text-1)' }}
+            onClick={e => e.stopPropagation()}>{telefoon}</a>
+          : telefoon)
+        : <span style={{ color: 'var(--text-3)' }}>+ nummer</span>}
+    </td>
+  );
+}
+
+function LeadRow({ lead, bron, via, telefoon, onZetTelefoon, bevestiging, huidigBronLabel, onZetAntwoord, zetBezig, expanded, activityRows, busy, onToggle, onPromote, onArchive, onReactivate, td }) {
   return (
     <>
       <tr onClick={onToggle} style={{ cursor: 'pointer' }}>
@@ -422,15 +508,10 @@ function LeadRow({ lead, bron, via, telefoon, bevestiging, huidigBronLabel, onZe
         <td style={td}>{lead.email}</td>
         <td style={td}>{lead.company || '-'}</td>
         <td style={td}>{lead.role || '-'}</td>
-        {/* Telefoon komt uit de aanmelding zelf. Als belkoppeling, want deze
-            lijst wordt ook vanaf een telefoon gebruikt. */}
-        <td style={{ ...td, whiteSpace: 'nowrap' }} onClick={e => e.stopPropagation()}>
-          {telefoon
-            ? (telHref(telefoon)
-              ? <a href={telHref(telefoon)} style={{ color: 'var(--text-1)' }}>{telefoon}</a>
-              : telefoon)
-            : '-'}
-        </td>
+        {/* Telefoon: uit de aanmelding, of het nummer dat hier met de hand is
+            ingevuld. Als belkoppeling, want deze lijst wordt ook vanaf een
+            telefoon gebruikt. */}
+        <TelefoonCel lead={lead} telefoon={telefoon} onZet={onZetTelefoon} td={td} />
         {/* Bron is wat de deelnemer zelf opgeeft over hoe hij bij ons terecht
             is gekomen, niet wie de uitnodiging verstuurde. Hier stond sector,
             en die was bij de eventaanmeldingen niet eens gevuld. */}
