@@ -28,8 +28,14 @@ export function magMailVersturen(answer) {
 }
 
 /**
- * @returns {{error}|{value:{email, answer}}} answer is 'yes', 'no' of null.
- *   null betekent terug naar 'nog geen antwoord', een correctie dus.
+ * @returns {{error}|{value:{email, answer, send_mail}}} answer is 'yes', 'no',
+ *   'confirmed' of null. null betekent terug naar 'nog geen antwoord', een
+ *   correctie dus.
+ *
+ * send_mail HOORT HIER THUIS en niet alleen in het endpoint. Deze functie geeft
+ * een schoongemaakt object terug, en het endpoint werkt daarmee verder. Een veld
+ * dat hier niet doorkomt bestaat voor de rest van de keten niet: dat was precies
+ * waarom de bevestigingsmail nooit vertrok terwijl de gebruiker wel ja klikte.
  */
 export function validateSet(body) {
   if (!body || typeof body !== 'object') return { error: 'Missing body' };
@@ -37,11 +43,16 @@ export function validateSet(body) {
   const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
   if (!email || !/^[^\s@]+@[^\s@.]+(\.[^\s@.]+)+$/.test(email)) return { error: 'Invalid email' };
 
+  // Alleen een echte true stuurt de mail. Alles anders, ook de tekst 'true' of
+  // een 1, betekent niet versturen: bij iets dat echte post de deur uit doet
+  // hoort de twijfel de kant van niet-versturen op te vallen.
+  const send_mail = body.send_mail === true;
+
   // Leeg, null of 'none' betekent allemaal: zet het terug op geen antwoord.
   const raw = body.answer === null || body.answer === undefined ? '' : String(body.answer).trim().toLowerCase();
-  if (raw === '' || raw === 'none') return { value: { email, answer: null } };
+  if (raw === '' || raw === 'none') return { value: { email, answer: null, send_mail: false } };
   if (!ANSWERS.has(raw)) return { error: 'Invalid answer' };
-  return { value: { email, answer: raw } };
+  return { value: { email, answer: raw, send_mail } };
 }
 
 /**

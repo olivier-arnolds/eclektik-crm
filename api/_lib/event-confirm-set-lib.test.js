@@ -1,15 +1,15 @@
 import { describe, it, expect } from 'vitest';
-import { validateSet, setPatch } from './event-confirm-set-lib.js';
+import { validateSet, setPatch, magMailVersturen } from './event-confirm-set-lib.js';
 
 describe('validateSet', () => {
   it('accepteert ja en nee', () => {
-    expect(validateSet({ email: 'A@B.com', answer: 'YES' }).value).toEqual({ email: 'a@b.com', answer: 'yes' });
+    expect(validateSet({ email: 'A@B.com', answer: 'YES' }).value).toEqual({ email: 'a@b.com', answer: 'yes', send_mail: false });
     expect(validateSet({ email: 'a@b.com', answer: 'no' }).value.answer).toBe('no');
   });
 
   it('leest leeg, null en none als terug naar geen antwoord', () => {
     for (const a of ['', null, undefined, 'none', '  ']) {
-      expect(validateSet({ email: 'a@b.com', answer: a }).value).toEqual({ email: 'a@b.com', answer: null });
+      expect(validateSet({ email: 'a@b.com', answer: a }).value).toEqual({ email: 'a@b.com', answer: null, send_mail: false });
     }
   });
 
@@ -57,5 +57,42 @@ describe('setPatch', () => {
   it('werkt ook zonder bekende teller', () => {
     expect(setPatch({ answer: 'yes' }, null, now).answer_count).toBe(1);
     expect(setPatch({ answer: 'yes' }, {}, now).answer_by).toBeNull();
+  });
+});
+
+describe('send_mail door de validatie heen', () => {
+  // Dit ging eerder mis: validateSet gaf een schoongemaakt object terug zonder
+  // send_mail, en het endpoint las de vlag van dat object. De gebruiker klikte
+  // ja, de mail vertrok nooit en er stond geen fout in de logs.
+  it('houdt send_mail vast bij een echt antwoord', () => {
+    expect(validateSet({ email: 'a@b.com', answer: 'confirmed', send_mail: true }).value.send_mail).toBe(true);
+  });
+
+  it('is alleen waar bij een echte true', () => {
+    for (const v of ['true', 1, 'ja', {}, [], null, undefined]) {
+      expect(validateSet({ email: 'a@b.com', answer: 'yes', send_mail: v }).value.send_mail, String(v)).toBe(false);
+    }
+  });
+
+  it('stuurt nooit een mail bij het terugzetten naar niets', () => {
+    expect(validateSet({ email: 'a@b.com', answer: null, send_mail: true }).value.send_mail).toBe(false);
+  });
+
+  it('accepteert bevestigd als antwoord', () => {
+    expect(validateSet({ email: 'a@b.com', answer: 'confirmed' }).value.answer).toBe('confirmed');
+  });
+});
+
+describe('magMailVersturen', () => {
+  it('mag bij komt en bevestigd', () => {
+    expect(magMailVersturen('yes')).toBe(true);
+    expect(magMailVersturen('confirmed')).toBe(true);
+  });
+
+  it('mag niet bij kan niet of bij geen antwoord', () => {
+    // Een bevestiging van een stoel klopt nooit bij iemand die afzegt.
+    expect(magMailVersturen('no')).toBe(false);
+    expect(magMailVersturen(null)).toBe(false);
+    expect(magMailVersturen('')).toBe(false);
   });
 });

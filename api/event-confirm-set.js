@@ -96,7 +96,7 @@ export default async function handler(req, res) {
     }
 
     const slug = reg?.event_slug || row.event_slug;
-    const wilMail = body.send_mail === true;
+    const wilMail = body.send_mail;
 
     // De mail EERST, de status DAARNA. Andersom zou een mislukte verzending een
     // rij achterlaten die zegt dat iemand bevestigd is terwijl hij niets heeft

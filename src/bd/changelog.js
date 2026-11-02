@@ -19,9 +19,29 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.148.0';
+export const CURRENT_VERSION = '1.148.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.148.1',
+    date: '2026-11-02T16:25:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Bevestigingsmail vertrok nooit, ook niet als je ja klikte',
+    summary:
+      'De status ging wel naar bevestigd, de mail ging nooit weg. Twee fouten uit 1.148.0, allebei stil: er stond geen foutmelding in beeld en geen enkele regel in de logs.',
+    changes: [
+      'validateSet gaf een schoongemaakt object terug met alleen email en answer. Het endpoint las send_mail van dat object, dus die stond altijd op undefined en de mail dus altijd uit. send_mail hoort nu bij de validatie, waar de rest van de invoer ook wordt nagekeken.',
+      'Alleen een echte true stuurt de mail. De tekst "true" of een 1 telt niet: bij iets dat echte post de deur uit doet hoort twijfel de kant van niet-versturen op te vallen.',
+      'Terugzetten naar nog niets stuurt nooit een mail, ook niet als de aanroeper send_mail meestuurt.',
+      'Daarvoor gaf de check constraint op answer al een 500 bij elke poging om iemand op bevestigd te zetten; die stond alleen yes en no toe en is bijgewerkt.',
+    ],
+    files: [
+      'api/_lib/event-confirm-set-lib.js', 'api/_lib/event-confirm-set-lib.test.js',
+      'api/event-confirm-set.js', 'sql/schema_event_confirmation_sent_2026-11-02.sql',
+    ],
+    rollback: 'git revert naar v1.148.0, maar dan werkt de bevestigingsmail weer niet.',
+  },
   {
     version: '1.148.0',
     date: '2026-11-02T15:20:00Z',
