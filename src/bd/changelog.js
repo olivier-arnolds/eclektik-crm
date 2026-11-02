@@ -19,9 +19,33 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.147.0';
+export const CURRENT_VERSION = '1.148.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.148.0',
+    date: '2026-11-02T15:20:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feat',
+    title: 'Status bevestigd, met de bevestigingsmail erachter',
+    summary:
+      'De statuskeuze in de Leads-tab heeft een vierde stand: bevestigd. Bij komt en bevestigd vraagt de tab of de bevestigingsmail mee moet, en die gaat dan direct weg vanaf olivier@eclectik.co met de tekst die bij het juiste event hoort.',
+    changes: [
+      'Vierde optie bevestigd, naast nog niets, komt en kan niet. Bij komt en bevestigd verschijnt een venster met een vraag: bevestigingsmail versturen, ja of nee. Bij kan niet en bij terugzetten naar niets niet, want een bevestiging van een stoel klopt daar nooit.',
+      'Twee teksten, een voor Amsterdam op 17 november en een voor Zurich op 1 december. Welke er uitgaat volgt uit de aanmelding zelf, dus je kunt niet de verkeerde kiezen. Een onbekend event geeft een foutmelding en nooit een standaardtekst: iemand naar de verkeerde stad sturen is erger dan niets sturen.',
+      'De keuzelijst staat nu bij iedereen. Hij hing aan de uitnodigingsrij en ontbrak daardoor juist bij wie zich net via de site had aangemeld, zoals Dennis Pekel, Rob Middendorp en Anna Jaike Stuifbergen-Hut. Het endpoint maakt die rij aan zodra je kiest, maar alleen als er echt een aanmelding ligt.',
+      'Eerst de mail, dan de status. Andersom zou een mislukte verzending een rij achterlaten die zegt dat iemand bevestigd is terwijl hij niets kreeg.',
+      'Een envelopje in de regel zodra de bevestiging echt weg is, met datum en tijd in de tooltip. Zo hoef je bij twijfel niet opnieuw te sturen.',
+      'Het event komt uit de aanmelding en niet uit de uitnodigingsrij. Die van oarnolds@me.com stond op amsterdam-2026 terwijl de aanmelding zurich-2026 was, en dan zou de bevestiging iemand naar de verkeerde stad sturen.',
+    ],
+    files: [
+      'api/_lib/event-confirmation-mails.js', 'api/_lib/event-confirmation-mails.test.js',
+      'api/_lib/event-confirm-set-lib.js', 'api/event-confirm-set.js',
+      'src/bd/marketing-leads.jsx',
+      'sql/schema_event_confirmation_sent_2026-11-02.sql',
+    ],
+    rollback: 'git revert naar v1.147.0. De kolommen kunnen blijven staan; zonder de tab doen ze niets. Rijen die al op confirmed staan tonen dan weer als nog niets.',
+  },
   {
     version: '1.147.0',
     date: '2026-10-30T10:30:00Z',

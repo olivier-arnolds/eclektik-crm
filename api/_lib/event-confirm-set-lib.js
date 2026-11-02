@@ -12,7 +12,20 @@
 //   terug, en dan moet iemand het antwoord kunnen vastleggen zonder dat de
 //   deelnemer ooit op de pagina is geweest.
 
-const ANSWERS = new Set(['yes', 'no']);
+// 'confirmed' is de stand na 'yes': de deelnemer komt EN heeft de bevestiging
+// met de details gekregen. Een eigen waarde en geen vlag ernaast, want in de
+// lijst wil je in een oogopslag zien wie nog een bevestiging moet krijgen.
+const ANSWERS = new Set(['yes', 'no', 'confirmed']);
+
+// Bij welke standen biedt de tab aan om de bevestigingsmail te sturen. Niet bij
+// 'no' (een bevestiging van een stoel klopt dan nooit) en niet bij het
+// terugzetten naar niets.
+export const MAIL_STANDEN = new Set(['yes', 'confirmed']);
+
+/** Mag er bij deze stand een bevestigingsmail mee? */
+export function magMailVersturen(answer) {
+  return MAIL_STANDEN.has(String(answer || ''));
+}
 
 /**
  * @returns {{error}|{value:{email, answer}}} answer is 'yes', 'no' of null.

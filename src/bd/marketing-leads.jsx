@@ -254,13 +254,23 @@ export default function MarketingLeads() {
   const [zetFout, setZetFout] = useState(null);
   const zetAntwoord = async (email, antwoord) => {
     const sleutel = String(email || '').trim().toLowerCase();
+
+    // Bij 'komt' en 'bevestigd' de vraag of de bevestigingsmail mee moet. Bij
+    // 'kan niet' niet: een bevestiging van een stoel klopt dan nooit. Bij het
+    // terugzetten naar niets ook niet. Geen tweede 'weet je het zeker': de
+    // afweging is al gemaakt voordat deze keuzelijst openging.
+    let stuurMail = false;
+    if (antwoord === 'yes' || antwoord === 'confirmed') {
+      stuurMail = window.confirm('Bevestigingsmail versturen vanaf olivier@eclectik.co?');
+    }
+
     setZetBezig(sleutel);
     setZetFout(null);
     try {
       const resp = await apiFetch('/api/event-confirm-set', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: sleutel, answer: antwoord }),
+        body: JSON.stringify({ email: sleutel, answer: antwoord, send_mail: stuurMail }),
       });
       const data = await resp.json().catch(() => ({}));
       if (!resp.ok || data?.error) throw new Error(data?.error || `status ${resp.status}`);
@@ -275,6 +285,8 @@ export default function MarketingLeads() {
             answered_at: antwoord ? new Date().toISOString() : null,
             answer_count: antwoord ? (r.answer_count || 0) + 1 : r.answer_count,
             answer_source: antwoord ? 'manual' : null,
+            confirmation_sent_at: data?.mail?.sent
+              ? new Date().toISOString() : r.confirmation_sent_at,
           }
           : r)));
     } catch (e) {
@@ -521,52 +533,72 @@ function LeadRow({ lead, bron, via, telefoon, onZetTelefoon, bevestiging, huidig
             : '-'}
         </td>
         <td style={td}>
+          {/* Groen als de inschrijving op de huidige eventdatum staat. Wie nog
+              op een oude datum staat valt daarmee meteen op. */}
           {bron
             ? (
+              <span className="chip" style={bron === huidigBronLabel
+                ? { fontSize: 11, color: '#15803d', background: 'rgba(21,128,61,0.13)', fontWeight: 500 }
+                : { fontSize: 11 }}>{bron}</span>
+            )
+            : <span style={{ color: 'var(--text-3)' }}>-</span>}
+          {(
               <>
-                {/* Groen als de inschrijving op de huidige eventdatum staat. Wie
-                    nog op een oude datum staat valt daarmee meteen op. */}
-                <span className="chip" style={bron === huidigBronLabel
-                  ? { fontSize: 11, color: '#15803d', background: 'rgba(21,128,61,0.13)', fontWeight: 500 }
-                  : { fontSize: 11 }}>{bron}</span>
-                {/* Alleen wie een uitnodiging heeft kan een antwoord hebben.
-                    Een keuzelijst en geen label: de knopmail komt slecht aan,
+                {/* Een keuzelijst en geen label: de knopmail komt slecht aan,
                     dus de antwoorden komen per mail binnen en moeten hier met
-                    de hand vastgelegd worden. */}
-                {bevestiging && (
-                  <select
-                    value={bevestiging.answer || ''}
-                    disabled={zetBezig}
-                    onClick={e => e.stopPropagation()}
-                    onChange={(e) => {
-                      e.stopPropagation();
-                      onZetAntwoord(bevestiging.email, e.target.value || null);
-                    }}
-                    title={bevestiging.answer_source === 'manual'
+                    de hand vastgelegd worden.
+
+                    De keuzelijst staat er ALTIJD, ook zonder uitnodigingsrij.
+                    Die stond vroeger alleen bij wie een uitnodiging had, en
+                    daardoor ontbrak hij juist bij wie zich net via de site had
+                    aangemeld. Het endpoint maakt de rij aan zodra je kiest. */}
+                <select
+                  value={bevestiging?.answer || ''}
+                  disabled={zetBezig}
+                  onClick={e => e.stopPropagation()}
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    onZetAntwoord(bevestiging?.email || lead.email, e.target.value || null);
+                  }}
+                  title={[
+                    bevestiging?.answer_source === 'manual'
                       ? `Met de hand gezet${bevestiging.answer_by ? ` door ${bevestiging.answer_by}` : ''}`
-                      : bevestiging.answer
+                      : bevestiging?.answer
                         ? 'De deelnemer klikte zelf op de bevestigingspagina'
-                        : 'Nog geen antwoord'}
-                    style={{
-                      marginLeft: 6, fontSize: 11, fontFamily: 'inherit', padding: '1px 4px',
-                      borderRadius: 4, border: '0.5px solid var(--sep)', cursor: 'pointer',
-                      background: 'var(--bg-1)', opacity: zetBezig ? 0.5 : 1,
-                      fontWeight: bevestiging.answer ? 500 : 400,
-                      color: bevestiging.answer === 'yes' ? '#15803d'
-                        : bevestiging.answer === 'no' ? '#b91c1c' : 'var(--text-3)',
-                    }}>
-                    <option value="">nog niets</option>
-                    <option value="yes">komt</option>
-                    <option value="no">kan niet</option>
-                  </select>
+                        : 'Nog geen antwoord',
+                    bevestiging?.confirmation_sent_at
+                      ? `Bevestigingsmail verstuurd op ${new Date(bevestiging.confirmation_sent_at).toLocaleString('nl-NL')}`
+                      : 'Nog geen bevestigingsmail verstuurd',
+                  ].join(' | ')}
+                  style={{
+                    marginLeft: 6, fontSize: 11, fontFamily: 'inherit', padding: '1px 4px',
+                    borderRadius: 4, border: '0.5px solid var(--sep)', cursor: 'pointer',
+                    background: 'var(--bg-1)', opacity: zetBezig ? 0.5 : 1,
+                    fontWeight: bevestiging?.answer ? 500 : 400,
+                    color: bevestiging?.answer === 'confirmed' ? '#15803d'
+                      : bevestiging?.answer === 'yes' ? '#15803d'
+                        : bevestiging?.answer === 'no' ? '#b91c1c' : 'var(--text-3)',
+                  }}>
+                  <option value="">nog niets</option>
+                  <option value="yes">komt</option>
+                  <option value="confirmed">bevestigd</option>
+                  <option value="no">kan niet</option>
+                </select>
+                {/* Een envelopje zodra de bevestiging echt weg is. Zonder dit
+                    zie je aan 'bevestigd' niet of de mail ook gestuurd is, en
+                    dat is precies waar je bij twijfel naar zoekt. */}
+                {bevestiging?.confirmation_sent_at && (
+                  <span style={{ marginLeft: 4, fontSize: 10, color: 'var(--text-3)' }}
+                    title={`Bevestigingsmail verstuurd op ${new Date(bevestiging.confirmation_sent_at).toLocaleString('nl-NL')}`}>
+                    ✉
+                  </span>
                 )}
                 {bevestiging?.answer_count > 1 && (
                   <span title={`${bevestiging.answer_count} keer geantwoord, dit is het laatste`}
                     style={{ marginLeft: 4, fontSize: 9, color: '#b45309' }}>gewijzigd</span>
                 )}
               </>
-            )
-            : '-'}
+            )}
         </td>
         <td style={td}>{lead.last_activity_at ? fmtRelative(lead.last_activity_at) : '-'}</td>
         <td style={td}><span className="chip" style={{ fontSize: 11 }}>{lead.status}</span></td>
