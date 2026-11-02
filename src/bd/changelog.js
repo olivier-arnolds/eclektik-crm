@@ -19,9 +19,28 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.148.1';
+export const CURRENT_VERSION = '1.148.2';
 
 export const CHANGELOG = [
+  {
+    version: '1.148.2',
+    date: '2026-11-02T16:40:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Keuzelijst sprong terug en verstuurde daardoor dubbele bevestigingen',
+    summary:
+      'Bij iemand zonder uitnodigingsrij sprong de statuskeuze terug naar nog niets terwijl de keuze wel was opgeslagen. Elke nieuwe poging sloeg opnieuw op en stuurde opnieuw een bevestigingsmail. Dennis Pekel kreeg er zo vier.',
+    changes: [
+      'Het endpoint geeft de bijgewerkte rij terug en de tab voegt die toe als hij hem nog niet kende. De lijst wordt bij het laden opgehaald, dus een rij die pas tijdens het klikken ontstaat zat er niet in.',
+      'De view event_confirm_results gaf confirmation_sent_at niet door, dus de tab kon niet zien of de mail al weg was. Nu wel, inclusief aan wie en door wie.',
+      'Is de bevestiging al verstuurd, dan zegt de vraag dat erbij met datum en tijd voordat je opnieuw verstuurt.',
+    ],
+    files: [
+      'api/event-confirm-set.js', 'src/bd/marketing-leads.jsx',
+      'sql/schema_event_confirm_results_sent_2026-11-02.sql',
+    ],
+    rollback: 'git revert naar v1.148.1. De view kan blijven zoals hij nu is; extra kolommen storen niet.',
+  },
   {
     version: '1.148.1',
     date: '2026-11-02T16:25:00Z',

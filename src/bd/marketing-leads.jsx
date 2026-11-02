@@ -261,7 +261,16 @@ export default function MarketingLeads() {
     // afweging is al gemaakt voordat deze keuzelijst openging.
     let stuurMail = false;
     if (antwoord === 'yes' || antwoord === 'confirmed') {
-      stuurMail = window.confirm('Bevestigingsmail versturen vanaf olivier@eclectik.co?');
+      // Staat er al een verzenddatum, dan zegt de vraag dat erbij. Dennis Pekel
+      // kreeg de bevestiging vier keer doordat de tab zijn status niet toonde en
+      // elke nieuwe poging opnieuw verstuurde; de vraag hoort te laten zien wat
+      // er al gebeurd is.
+      const al = eventBevestiging.find(
+        r => String(r.email || '').trim().toLowerCase() === sleutel)?.confirmation_sent_at;
+      stuurMail = window.confirm(al
+        ? `Let op: de bevestiging is al verstuurd op ${new Date(al).toLocaleString('nl-NL')}.`
+          + '\n\nNog een keer versturen vanaf olivier@eclectik.co?'
+        : 'Bevestigingsmail versturen vanaf olivier@eclectik.co?');
     }
 
     setZetBezig(sleutel);
@@ -277,7 +286,15 @@ export default function MarketingLeads() {
       // Pas na een bevestigd antwoord bijwerken. Optimistisch tonen zou een
       // mislukte opslag laten lijken alsof hij gelukt is, en juist hier is dat
       // erg: dan staat er in beeld dat iemand komt terwijl dat nergens vastligt.
-      setEventBevestiging(rijen => rijen.map(r => (
+      //
+      // Een rij die het endpoint NET heeft aangemaakt zit nog niet in deze lijst,
+      // want die is bij het laden opgehaald. Zonder de regel hieronder sprong de
+      // keuzelijst terug naar 'nog niets' terwijl de keuze wel was opgeslagen, en
+      // stuurde elke volgende poging opnieuw een bevestigingsmail.
+      setEventBevestiging(rijen => {
+        const bekend = rijen.some(r => String(r.email || '').trim().toLowerCase() === sleutel);
+        if (!bekend) return data?.rij ? [...rijen, data.rij] : rijen;
+        return rijen.map(r => (
         String(r.email || '').trim().toLowerCase() === sleutel
           ? {
             ...r,
@@ -288,7 +305,8 @@ export default function MarketingLeads() {
             confirmation_sent_at: data?.mail?.sent
               ? new Date().toISOString() : r.confirmation_sent_at,
           }
-          : r)));
+          : r));
+      });
     } catch (e) {
       setZetFout(`Opslaan mislukte voor ${sleutel}: ${e.message}`);
     } finally {

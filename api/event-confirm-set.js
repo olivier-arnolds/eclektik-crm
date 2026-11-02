@@ -141,10 +141,19 @@ export default async function handler(req, res) {
       patch.confirmation_sent_to = row.email;
       patch.confirmation_sent_by = authedUser.email || null;
     }
-    const { error: updError } = await supabase.from(TABLE).update(patch).eq('id', row.id);
+    const { data: bijgewerkt, error: updError } = await supabase.from(TABLE)
+      .update(patch).eq('id', row.id)
+      .select('id, marketing_lead_id, email, first_name, event_slug, answer, answered_at, '
+        + 'answer_count, answer_source, answer_by, confirmation_sent_at, confirmation_sent_to, '
+        + 'confirmation_sent_by, created_at')
+      .single();
     if (updError) throw updError;
 
-    return res.status(200).json({ ok: true, answer: body.answer, mail: mailStatus });
+    // De rij gaat mee terug. De tab haalt deze lijst bij het laden op, en een rij
+    // die PAS NU is aangemaakt zit daar niet in. Zonder deze rij zag de gebruiker
+    // zijn keuze terugspringen naar 'nog niets' terwijl het wel opgeslagen was,
+    // en klikte hij opnieuw. Dat stuurde elke keer een nieuwe bevestigingsmail.
+    return res.status(200).json({ ok: true, answer: body.answer, mail: mailStatus, rij: bijgewerkt });
   } catch (e) {
     console.error('[event-confirm-set] failed:', e?.message || e);
     return res.status(500).json({ error: 'Internal error' });
