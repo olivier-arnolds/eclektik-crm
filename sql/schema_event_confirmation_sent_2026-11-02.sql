@@ -7,8 +7,12 @@
 --   dat uit elkaar te houden zijn, en de tab zet er een envelopje bij zodra het
 --   echt verstuurd is.
 --
--- answer kreeg er een waarde bij: 'confirmed', naast 'yes' en 'no'. Geen check
--- constraint op die kolom, dus er is geen DDL voor nodig.
+-- answer kreeg er een waarde bij: 'confirmed', naast 'yes' en 'no'. Daar zat wel
+-- degelijk een check constraint op, die alleen yes en no toestond. Dat kwam pas
+-- naar boven toen de eerste poging in productie een 500 gaf; de constraint moest
+-- dus mee. De oude liet null impliciet toe doordat een check met null niet
+-- faalt; de nieuwe zegt dat expliciet, zodat terugzetten naar 'nog niets' blijft
+-- werken.
 
 alter table event_confirm_invites
   add column if not exists confirmation_sent_at timestamptz,
@@ -17,3 +21,7 @@ alter table event_confirm_invites
 
 comment on column event_confirm_invites.confirmation_sent_at is
   'Wanneer de bevestigingsmail met de eventdetails is verstuurd. Leeg = nog niet verstuurd. Staat los van answer: iemand kan op yes staan zonder dat de bevestiging al weg is.';
+
+alter table event_confirm_invites drop constraint if exists event_confirm_invites_answer_check;
+alter table event_confirm_invites add constraint event_confirm_invites_answer_check
+  check (answer is null or answer in ('yes', 'no', 'confirmed'));
