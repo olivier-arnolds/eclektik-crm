@@ -19,9 +19,24 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.148.2';
+export const CURRENT_VERSION = '1.148.3';
 
 export const CHANGELOG = [
+  {
+    version: '1.148.3',
+    date: '2026-11-02T17:05:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Venster vroeg ja of nee maar bood OK en Annuleren',
+    summary:
+      'De vraag over de bevestigingsmail stond boven de knoppen OK en Annuleren, en die namen zijn niet te veranderen. Annuleren las daardoor alsof je de hele statuswijziging afbrak, terwijl alleen de mail wegvalt.',
+    changes: [
+      'In de tekst staat nu wat elke knop doet: OK slaat de status op en verstuurt, Annuleren slaat alleen de status op.',
+      'De status wordt in beide gevallen opgeslagen. Dat was al zo, maar het venster zei het niet.',
+    ],
+    files: ['src/bd/marketing-leads.jsx'],
+    rollback: 'git revert naar v1.148.2.',
+  },
   {
     version: '1.148.2',
     date: '2026-11-02T16:40:00Z',

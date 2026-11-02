@@ -267,10 +267,16 @@ export default function MarketingLeads() {
       // er al gebeurd is.
       const al = eventBevestiging.find(
         r => String(r.email || '').trim().toLowerCase() === sleutel)?.confirmation_sent_at;
+      // De knoppen van window.confirm heten OK en Annuleren en dat is niet te
+      // veranderen. Daarom staat in de TEKST wat elke knop doet: zonder dat
+      // leest 'Annuleren' alsof je de hele statuswijziging afbreekt, terwijl
+      // alleen de mail wegvalt.
+      const uitleg = '\n\nOK = status opslaan en de mail versturen'
+        + '\nAnnuleren = alleen de status opslaan, geen mail';
       stuurMail = window.confirm(al
         ? `Let op: de bevestiging is al verstuurd op ${new Date(al).toLocaleString('nl-NL')}.`
-          + '\n\nNog een keer versturen vanaf olivier@eclectik.co?'
-        : 'Bevestigingsmail versturen vanaf olivier@eclectik.co?');
+          + '\n\nNog een keer versturen vanaf olivier@eclectik.co?' + uitleg
+        : 'Bevestigingsmail versturen vanaf olivier@eclectik.co?' + uitleg);
     }
 
     setZetBezig(sleutel);
