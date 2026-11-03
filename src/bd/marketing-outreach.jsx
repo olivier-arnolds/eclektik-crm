@@ -83,8 +83,25 @@ const REMINDER_KLAAR = '__reminder_klaar__';
 
 // Standaardtekst van de herinnering. De tekst zelf is Engels, want de campagne
 // is Engelstalig; de UI eromheen blijft Nederlands.
-const REMINDER_SJABLOON =
-  'Just a friendly reminder. Have you been able to consider attending our session on the 6th?';
+//
+// De datum staat er voluit in, niet als 'the 6th'. Het event is van 6 oktober
+// naar 17 november verschoven en toen bleef dit sjabloon op de oude dag staan.
+// Een herinnering die alleen de nieuwe datum noemt leest bovendien als
+// aandringen; door te zeggen DAT hij verzet is, is er een reden om opnieuw aan
+// te kloppen.
+const REMINDER_SJABLOON = [
+  'Hi {{first_name}},',
+  '',
+  'A quick follow up on my earlier message, with one important change. The session has moved to 17 November.',
+  '',
+  "We will be looking at HR's role in AI transformation. Not the technology side, but the part that decides whether it lands: how people actually experience the change, how you measure that, and how you steer on it.",
+  '',
+  'Full programme and registration here: https://www.eclectik.co/events/amsterdam-2026',
+  '',
+  'Does 17 November work for you?',
+  '',
+  'Marco',
+].join('\n');
 
 // Een gevulde msg2_body is de aan-stand. Er is geen apart vinkje: wie geen tekst
 // heeft wordt door de verzender overgeslagen met de reden 'tekst ontbreekt'.
@@ -1017,7 +1034,7 @@ export default function MarketingOutreach() {
                 {reminderBulkBezig ? 'Bezig…' : 'Herinnering klaarzetten voor selectie'}
               </button>
             </div>
-            <textarea value={reminderSjabloon} rows={2}
+            <textarea value={reminderSjabloon} rows={12}
               onChange={e => setReminderSjabloon(e.target.value)}
               style={{
                 width: '100%', boxSizing: 'border-box', padding: '6px 8px', borderRadius: 6,

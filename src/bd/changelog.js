@@ -19,9 +19,26 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.148.3';
+export const CURRENT_VERSION = '1.148.4';
 
 export const CHANGELOG = [
+  {
+    version: '1.148.4',
+    date: '2026-11-03T09:30:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Sjabloon van de LinkedIn-herinnering stond nog op 6 oktober',
+    summary:
+      'Het event is verzet naar 17 november, maar de standaardtekst in het herinneringsvak noemde nog "the 6th". Wie hem zou gebruiken zette een verkeerde datum klaar.',
+    changes: [
+      'Nieuwe standaardtekst met de juiste datum, die ook zegt DAT het event verzet is. Zonder die reden leest een tweede bericht als aandringen.',
+      'Een link naar de programmapagina zat er niet in en staat er nu wel in.',
+      'Het tekstvak is hoger, want de tekst past niet meer op twee regels.',
+      'Dit raakt alleen nieuwe klaarzetacties. De 122 contacten in de campagne hadden hun tekst al, en de knop slaat iedereen met een tekst over.',
+    ],
+    files: ['src/bd/marketing-outreach.jsx'],
+    rollback: 'git revert naar v1.148.3.',
+  },
   {
     version: '1.148.3',
     date: '2026-11-02T17:05:00Z',
