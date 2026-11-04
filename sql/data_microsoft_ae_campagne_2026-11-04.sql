@@ -29,7 +29,7 @@ It is my understanding that, in your role as Telco Majors Account Executive, you
 
 We are known for our Glint services, with you too I hope ;-). But with other Microsoft colleagues we also run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption.
 
-That is the conversation I would like to have, about Copilot across your wider portfolio rather than one account.
+I would like to touch base on Glint with your other customers, and on where Copilot could use a business case.
 
 Do you have 20 minutes in the next two weeks?
 
@@ -46,7 +46,7 @@ It is my understanding that, in your role as Senior Account Executive, you are r
 
 We are known for our Glint services, with you too I hope ;-). But with other Microsoft colleagues we also run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption.
 
-That is the conversation I would like to have, about Copilot across your wider portfolio rather than one account.
+I would like to touch base on Glint with your other customers, and on where Copilot could use a business case.
 
 Do you have 20 minutes in the next two weeks?
 
@@ -63,7 +63,7 @@ It is my understanding that, in your role as Senior Digital Account Executive, y
 
 We are known for our Glint services, with you too I hope ;-). But with other Microsoft colleagues we also run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption.
 
-That is the conversation I would like to have, about Copilot across your wider portfolio rather than one account.
+I would like to touch base on Glint with your other customers, and on where Copilot could use a business case.
 
 Do you have 20 minutes in the next two weeks?
 
@@ -80,7 +80,7 @@ It is my understanding that, in your role as Strategic Account Technology Lead, 
 
 We are known for our Glint services, with you too I hope ;-). But with other Microsoft colleagues we also run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption.
 
-That is the conversation I would like to have, about Copilot across your wider portfolio rather than one account.
+I would like to touch base on Glint with your other customers, and on where Copilot could use a business case.
 
 Do you have 20 minutes in the next two weeks?
 
@@ -97,7 +97,7 @@ It is my understanding that, in your role as General Manager, you are responsibl
 
 We are known for our Glint services, with you too I hope ;-). But with other Microsoft colleagues we also run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption.
 
-That is the conversation I would like to have, about Copilot across your wider portfolio rather than one account.
+I would like to touch base on Glint with your other customers, and on where Copilot could use a business case.
 
 Do you have 20 minutes in the next two weeks?
 
@@ -114,7 +114,7 @@ It is my understanding that, in your role as Senior Account Executive, you are r
 
 We are known for our Glint services, with you too I hope ;-). But with other Microsoft colleagues we also run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption.
 
-That is the conversation I would like to have, about Copilot across your wider portfolio rather than one account.
+I would like to touch base on Glint with your other customers, and on where Copilot could use a business case.
 
 Do you have 20 minutes in the next two weeks?
 
@@ -131,7 +131,7 @@ It is my understanding that, in your role as Senior Account Executive, you are r
 
 We are known for our Glint services, with you too I hope ;-). But with other Microsoft colleagues we also run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption.
 
-That is the conversation I would like to have, about Copilot across your wider portfolio rather than one account.
+I would like to touch base on Glint with your other customers, and on where Copilot could use a business case.
 
 Do you have 20 minutes in the next two weeks?
 
@@ -148,7 +148,7 @@ It is my understanding that, in your role as Global Strategic Client Director, y
 
 We are known for our Glint services, with you too I hope ;-). But with other Microsoft colleagues we also run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption.
 
-That is the conversation I would like to have, about Copilot across your wider portfolio rather than one account.
+I would like to touch base on Glint with your other customers, and on where Copilot could use a business case.
 
 Do you have 20 minutes in the next two weeks?
 
@@ -165,7 +165,7 @@ It is my understanding that, in your role as Director Major Enterprise, you are 
 
 We are known for our Glint services, with you too I hope ;-). But with other Microsoft colleagues we also run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption.
 
-That is the conversation I would like to have, about Copilot across your wider portfolio rather than one account.
+I would like to touch base on Glint with your other customers, and on where Copilot could use a business case.
 
 Do you have 20 minutes in the next two weeks?
 
@@ -182,7 +182,7 @@ It is my understanding that, in your role as Account Executive, you are responsi
 
 We are known for our Glint services, with you too I hope ;-). But with other Microsoft colleagues we also run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption.
 
-That is the conversation I would like to have, about Copilot across your wider portfolio rather than one account.
+I would like to touch base on Glint with your other customers, and on where Copilot could use a business case.
 
 Do you have 20 minutes in the next two weeks?
 
@@ -199,7 +199,7 @@ It is my understanding that, in your role as Account Executive, you are responsi
 
 We are known for our Glint services, with you too I hope ;-). But with other Microsoft colleagues we also run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption.
 
-That is the conversation I would like to have, about Copilot across your wider portfolio rather than one account.
+I would like to touch base on Glint with your other customers, and on where Copilot could use a business case.
 
 Do you have 20 minutes in the next two weeks?
 
@@ -216,7 +216,7 @@ It is my understanding that, in your role as Digital Account Executive, you are 
 
 We are known for our Glint services, with you too I hope ;-). But with other Microsoft colleagues we also run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption.
 
-That is the conversation I would like to have, about Copilot across your wider portfolio rather than one account.
+I would like to touch base on Glint with your other customers, and on where Copilot could use a business case.
 
 Do you have 20 minutes in the next two weeks?
 
@@ -233,7 +233,7 @@ It is my understanding that, in your role as Medium Enterprise Sales, you are re
 
 We are known for our Glint services, with you too I hope ;-). But with other Microsoft colleagues we also run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption.
 
-That is the conversation I would like to have, about Copilot across your wider portfolio rather than one account.
+I would like to touch base on Glint with your other customers, and on where Copilot could use a business case.
 
 Do you have 20 minutes in the next two weeks?
 
@@ -250,7 +250,7 @@ It is my understanding that, in your role as Account Executive, you are responsi
 
 We are known for our Glint services, with you too I hope ;-). But with other Microsoft colleagues we also run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption.
 
-That is the conversation I would like to have, about Copilot across your wider portfolio rather than one account.
+I would like to touch base on Glint with your other customers, and on where Copilot could use a business case.
 
 Do you have 20 minutes in the next two weeks?
 
@@ -267,7 +267,7 @@ It is my understanding that, in your role as Enterprise Account Executive, you a
 
 We are known for our Glint services, with you too I hope ;-). But with other Microsoft colleagues we also run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption.
 
-That is the conversation I would like to have, about Copilot across your wider portfolio rather than one account.
+I would like to touch base on Glint with your other customers, and on where Copilot could use a business case.
 
 Do you have 20 minutes in the next two weeks?
 
@@ -284,7 +284,7 @@ It is my understanding that, in your role as Senior Client Executive, you are re
 
 We are known for our Glint services, with you too I hope ;-). But with other Microsoft colleagues we also run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption.
 
-That is the conversation I would like to have, about Copilot across your wider portfolio rather than one account.
+I would like to touch base on Glint with your other customers, and on where Copilot could use a business case.
 
 Do you have 20 minutes in the next two weeks?
 
@@ -301,7 +301,7 @@ It is my understanding that, in your role as Senior Strategic Account Executive,
 
 We are known for our Glint services, with you too I hope ;-). But with other Microsoft colleagues we also run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption.
 
-That is the conversation I would like to have, about Copilot across your wider portfolio rather than one account.
+I would like to touch base on Glint with your other customers, and on where Copilot could use a business case.
 
 Do you have 20 minutes in the next two weeks?
 
@@ -318,7 +318,7 @@ It is my understanding that, in your role as Account Executive, you are responsi
 
 We are known for our Glint services, with you too I hope ;-). But with other Microsoft colleagues we also run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption.
 
-That is the conversation I would like to have, about Copilot across your wider portfolio rather than one account.
+I would like to touch base on Glint with your other customers, and on where Copilot could use a business case.
 
 Do you have 20 minutes in the next two weeks?
 
@@ -335,7 +335,7 @@ It is my understanding that, in your role as Global Agency Director, you are res
 
 We are known for our Glint services, with you too I hope ;-). But with other Microsoft colleagues we also run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption.
 
-That is the conversation I would like to have, about Copilot across your wider portfolio rather than one account.
+I would like to touch base on Glint with your other customers, and on where Copilot could use a business case.
 
 Do you have 20 minutes in the next two weeks?
 
@@ -352,7 +352,7 @@ It is my understanding that, in your role as Account Director, you are responsib
 
 We are known for our Glint services, with you too I hope ;-). But with other Microsoft colleagues we also run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption.
 
-That is the conversation I would like to have, about Copilot across your wider portfolio rather than one account.
+I would like to touch base on Glint with your other customers, and on where Copilot could use a business case.
 
 Do you have 20 minutes in the next two weeks?
 
@@ -369,7 +369,7 @@ It is my understanding that, in your role as Senior Account Executive, you are r
 
 We are known for our Glint services, with you too I hope ;-). But with other Microsoft colleagues we also run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption.
 
-That is the conversation I would like to have, about Copilot across your wider portfolio rather than one account.
+I would like to touch base on Glint with your other customers, and on where Copilot could use a business case.
 
 Do you have 20 minutes in the next two weeks?
 
@@ -386,7 +386,7 @@ It is my understanding that, in your role as Account Executive, you are responsi
 
 We are known for our Glint services, with you too I hope ;-). But with other Microsoft colleagues we also run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption.
 
-That is the conversation I would like to have, about Copilot across your wider portfolio rather than one account.
+I would like to touch base on Glint with your other customers, and on where Copilot could use a business case.
 
 Do you have 20 minutes in the next two weeks?
 
@@ -403,7 +403,7 @@ It is my understanding that, in your role as Senior Account Executive, you are r
 
 We are known for our Glint services, with you too I hope ;-). But with other Microsoft colleagues we also run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption.
 
-That is the conversation I would like to have, about Copilot across your wider portfolio rather than one account.
+I would like to touch base on Glint with your other customers, and on where Copilot could use a business case.
 
 Do you have 20 minutes in the next two weeks?
 
@@ -420,7 +420,7 @@ It is my understanding that, in your role as Sales & Account Executive, you are 
 
 We are known for our Glint services, with you too I hope ;-). But with other Microsoft colleagues we also run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption.
 
-That is the conversation I would like to have, about Copilot across your wider portfolio rather than one account.
+I would like to touch base on Glint with your other customers, and on where Copilot could use a business case.
 
 Do you have 20 minutes in the next two weeks?
 
@@ -437,7 +437,7 @@ It is my understanding that, in your role as Strategic Account Executive, you ar
 
 We are known for our Glint services, with you too I hope ;-). But with other Microsoft colleagues we also run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption.
 
-That is the conversation I would like to have, about Copilot across your wider portfolio rather than one account.
+I would like to touch base on Glint with your other customers, and on where Copilot could use a business case.
 
 Do you have 20 minutes in the next two weeks?
 
@@ -454,7 +454,7 @@ It is my understanding that, in your role as Client Executive, you are responsib
 
 We are known for our Glint services, with you too I hope ;-). But with other Microsoft colleagues we also run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption.
 
-That is the conversation I would like to have, about Copilot across your wider portfolio rather than one account.
+I would like to touch base on Glint with your other customers, and on where Copilot could use a business case.
 
 Do you have 20 minutes in the next two weeks?
 
@@ -471,7 +471,7 @@ It is my understanding that, in your role as Senior Account Executive, you are r
 
 We are known for our Glint services, with you too I hope ;-). But with other Microsoft colleagues we also run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption.
 
-That is the conversation I would like to have, about Copilot across your wider portfolio rather than one account.
+I would like to touch base on Glint with your other customers, and on where Copilot could use a business case.
 
 Do you have 20 minutes in the next two weeks?
 
@@ -488,7 +488,7 @@ It is my understanding that, in your role as Director, Account Executive, you ar
 
 We are known for our Glint services, with you too I hope ;-). But with other Microsoft colleagues we also run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption.
 
-That is the conversation I would like to have, about Copilot across your wider portfolio rather than one account.
+I would like to touch base on Glint with your other customers, and on where Copilot could use a business case.
 
 Do you have 20 minutes in the next two weeks?
 
@@ -505,7 +505,7 @@ It is my understanding that, in your role as Client Executive, you are responsib
 
 We are known for our Glint services, with you too I hope ;-). But with other Microsoft colleagues we also run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption.
 
-That is the conversation I would like to have, about Copilot across your wider portfolio rather than one account.
+I would like to touch base on Glint with your other customers, and on where Copilot could use a business case.
 
 Do you have 20 minutes in the next two weeks?
 
