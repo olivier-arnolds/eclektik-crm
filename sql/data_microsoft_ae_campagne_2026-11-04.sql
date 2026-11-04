@@ -1,6 +1,7 @@
 -- Campagne 'Microsoft Account Executives 2026' - 29 Account Executives
--- Bron: Eclectik_Microsoft_Account_Contacts_20-10-2026 (3).xlsx, tabblad
--- 'Microsoft Account Executive'. Functietitels zijn door Olivier nagelopen.
+-- Bron: Eclectik_Microsoft_Account_Contacts_20-10-2026 (4).xlsx, tabblad
+-- 'Microsoft Account Executive'. Functietitels en bedrijfsnamen zijn door
+-- Olivier zelf nagelopen en ingekort; dit script neemt ze letterlijk over.
 --
 -- De campagne start op handmatig (auto_send = false): Marco stuurt bericht 1
 -- zelf. Zodra iedereen bericht 1 heeft gehad gaat auto_send aan, en heeft de
@@ -23,9 +24,9 @@ insert into outreach_contact
    linkedin_url, source, outreach_prio, channel, status, msg1_subject, msg1_body,
    msg2_subject, msg2_body)
 values
-  ('3e9c7a51-8d42-4f16-b0c3-5a7e2d916f48', $m$Patrick$m$, $m$Lynch$m$, $m$Telco Majors Account Executive$m$, 'lynchpatrick@microsoft.com', 'microsoft.com', $m$Liberty Global$m$, $m$United Kingdom$m$, 'https://www.linkedin.com/in/paddylynch1/', 'Microsoft AE lijst 20-10-2026', 1, 'email', 'queued', $m$Copilot at Liberty Global$m$, $m$Hi Patrick,
+  ('3e9c7a51-8d42-4f16-b0c3-5a7e2d916f48', $m$Patrick$m$, $m$Lynch$m$, $m$Telco Majors Account Executive$m$, 'lynchpatrick@microsoft.com', 'microsoft.com', $m$Liberty Global Europe Limited$m$, $m$United Kingdom$m$, 'https://www.linkedin.com/in/paddylynch1/', 'Microsoft AE lijst 20-10-2026', 1, 'email', 'queued', $m$Copilot at Liberty Global Europe Limited$m$, $m$Hi Patrick,
 
-It is my understanding that, in your role as Telco Majors Account Executive, you are responsible for accounts including our mutual client Liberty Global.
+It is my understanding that, in your role as Telco Majors Account Executive, you are responsible for accounts including our mutual client Liberty Global Europe Limited.
 
 We are known for our Glint services, with you too I hope ;-). But with other Microsoft colleagues we also run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption.
 
@@ -33,7 +34,7 @@ I would like to touch base on Glint with your other customers, and on where Copi
 
 Do you have 20 minutes in the next two weeks?
 
-Marco$m$, $m$Re: Copilot at Liberty Global$m$, $m$Hi Patrick,
+Marco$m$, $m$Re: Copilot at Liberty Global Europe Limited$m$, $m$Hi Patrick,
 
 Following up on my note about Copilot across your accounts. If this sits with someone else on your team, pointing me there helps just as much.
 
@@ -57,9 +58,9 @@ Following up on my note about Copilot across your accounts. If this sits with so
 Worth 20 minutes?
 
 Marco$m$),
-  ('3e9c7a51-8d42-4f16-b0c3-5a7e2d916f48', $m$Gabriel$m$, $m$Moreno$m$, $m$Senior Digital Account Executive$m$, 'Gabriel.Moreno@microsoft.com', 'microsoft.com', $m$SoFi$m$, $m$United States$m$, 'https://www.linkedin.com/in/gabrielmorenomicrosoft/', 'Microsoft AE lijst 20-10-2026', 3, 'email', 'queued', $m$Copilot at SoFi$m$, $m$Hi Gabriel,
+  ('3e9c7a51-8d42-4f16-b0c3-5a7e2d916f48', $m$Gabriel$m$, $m$Moreno$m$, $m$Senior Digital Account Executive$m$, 'Gabriel.Moreno@microsoft.com', 'microsoft.com', $m$SoFi Technologies$m$, $m$United States$m$, 'https://www.linkedin.com/in/gabrielmorenomicrosoft/', 'Microsoft AE lijst 20-10-2026', 3, 'email', 'queued', $m$Copilot at SoFi Technologies$m$, $m$Hi Gabriel,
 
-It is my understanding that, in your role as Senior Digital Account Executive, you are responsible for accounts including our mutual client SoFi.
+It is my understanding that, in your role as Senior Digital Account Executive, you are responsible for accounts including our mutual client SoFi Technologies.
 
 We are known for our Glint services, with you too I hope ;-). But with other Microsoft colleagues we also run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption.
 
@@ -67,16 +68,16 @@ I would like to touch base on Glint with your other customers, and on where Copi
 
 Do you have 20 minutes in the next two weeks?
 
-Marco$m$, $m$Re: Copilot at SoFi$m$, $m$Hi Gabriel,
+Marco$m$, $m$Re: Copilot at SoFi Technologies$m$, $m$Hi Gabriel,
 
 Following up on my note about Copilot across your accounts. If this sits with someone else on your team, pointing me there helps just as much.
 
 Worth 20 minutes?
 
 Marco$m$),
-  ('3e9c7a51-8d42-4f16-b0c3-5a7e2d916f48', $m$Uri$m$, $m$Brown$m$, $m$Strategic Account Technology Lead$m$, 'uribrown@microsoft.com', 'microsoft.com', $m$Chugai Pharma$m$, $m$Switzerland$m$, 'https://www.linkedin.com/in/uribrown/', 'Microsoft AE lijst 20-10-2026', 4, 'email', 'queued', $m$Copilot at Chugai Pharma$m$, $m$Hi Uri,
+  ('3e9c7a51-8d42-4f16-b0c3-5a7e2d916f48', $m$Uri$m$, $m$Brown$m$, $m$Strategic Account Technology Lead$m$, 'uribrown@microsoft.com', 'microsoft.com', $m$Chugai Pharma Europe$m$, $m$Switzerland$m$, 'https://www.linkedin.com/in/uribrown/', 'Microsoft AE lijst 20-10-2026', 4, 'email', 'queued', $m$Copilot at Chugai Pharma Europe$m$, $m$Hi Uri,
 
-It is my understanding that, in your role as Strategic Account Technology Lead, you are responsible for accounts including our mutual client Chugai Pharma.
+It is my understanding that, in your role as Strategic Account Technology Lead, you are responsible for accounts including our mutual client Chugai Pharma Europe.
 
 We are known for our Glint services, with you too I hope ;-). But with other Microsoft colleagues we also run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption.
 
@@ -84,16 +85,16 @@ I would like to touch base on Glint with your other customers, and on where Copi
 
 Do you have 20 minutes in the next two weeks?
 
-Marco$m$, $m$Re: Copilot at Chugai Pharma$m$, $m$Hi Uri,
+Marco$m$, $m$Re: Copilot at Chugai Pharma Europe$m$, $m$Hi Uri,
 
 Following up on my note about Copilot across your accounts. If this sits with someone else on your team, pointing me there helps just as much.
 
 Worth 20 minutes?
 
 Marco$m$),
-  ('3e9c7a51-8d42-4f16-b0c3-5a7e2d916f48', $m$Rob$m$, $m$Williamson$m$, $m$General Manager$m$, 'rwilliamson@microsoft.com', 'microsoft.com', $m$PEP and Pepkor Speciality$m$, $m$South Afrika$m$, 'https://www.linkedin.com/in/robert-williamson-9b39912/?skipRedirect=true', 'Microsoft AE lijst 20-10-2026', 5, 'email', 'queued', $m$Copilot at PEP and Pepkor$m$, $m$Hi Rob,
+  ('3e9c7a51-8d42-4f16-b0c3-5a7e2d916f48', $m$Rob$m$, $m$Williamson$m$, $m$General Manager$m$, 'rwilliamson@microsoft.com', 'microsoft.com', $m$PEP & Pepkor Speciality$m$, $m$South Afrika$m$, 'https://www.linkedin.com/in/robert-williamson-9b39912/?skipRedirect=true', 'Microsoft AE lijst 20-10-2026', 5, 'email', 'queued', $m$Copilot at PEP & Pepkor Speciality$m$, $m$Hi Rob,
 
-It is my understanding that, in your role as General Manager, you are responsible for accounts including our mutual clients PEP and Pepkor Speciality.
+It is my understanding that, in your role as General Manager, you are responsible for accounts including our mutual clients PEP & Pepkor Speciality.
 
 We are known for our Glint services, with you too I hope ;-). But with other Microsoft colleagues we also run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption.
 
@@ -101,16 +102,16 @@ I would like to touch base on Glint with your other customers, and on where Copi
 
 Do you have 20 minutes in the next two weeks?
 
-Marco$m$, $m$Re: Copilot at PEP and Pepkor$m$, $m$Hi Rob,
+Marco$m$, $m$Re: Copilot at PEP & Pepkor Speciality$m$, $m$Hi Rob,
 
 Following up on my note about Copilot across your accounts. If this sits with someone else on your team, pointing me there helps just as much.
 
 Worth 20 minutes?
 
 Marco$m$),
-  ('3e9c7a51-8d42-4f16-b0c3-5a7e2d916f48', $m$Vasily$m$, $m$Fomin$m$, $m$Senior Account Executive$m$, 'vasilyfomyn@microsoft.com', 'microsoft.com', $m$Westfalen$m$, $m$Soain$m$, 'https://www.linkedin.com/in/vasily-fomin/', 'Microsoft AE lijst 20-10-2026', 6, 'email', 'queued', $m$Copilot at Westfalen$m$, $m$Hi Vasily,
+  ('3e9c7a51-8d42-4f16-b0c3-5a7e2d916f48', $m$Vasily$m$, $m$Fomin$m$, $m$Senior Account Executive$m$, 'vasilyfomyn@microsoft.com', 'microsoft.com', $m$Westfalen AG$m$, $m$Soain$m$, 'https://www.linkedin.com/in/vasily-fomin/', 'Microsoft AE lijst 20-10-2026', 6, 'email', 'queued', $m$Copilot at Westfalen AG$m$, $m$Hi Vasily,
 
-It is my understanding that, in your role as Senior Account Executive, you are responsible for accounts including our mutual client Westfalen.
+It is my understanding that, in your role as Senior Account Executive, you are responsible for accounts including our mutual client Westfalen AG.
 
 We are known for our Glint services, with you too I hope ;-). But with other Microsoft colleagues we also run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption.
 
@@ -118,7 +119,7 @@ I would like to touch base on Glint with your other customers, and on where Copi
 
 Do you have 20 minutes in the next two weeks?
 
-Marco$m$, $m$Re: Copilot at Westfalen$m$, $m$Hi Vasily,
+Marco$m$, $m$Re: Copilot at Westfalen AG$m$, $m$Hi Vasily,
 
 Following up on my note about Copilot across your accounts. If this sits with someone else on your team, pointing me there helps just as much.
 
@@ -142,9 +143,9 @@ Following up on my note about Copilot across your accounts. If this sits with so
 Worth 20 minutes?
 
 Marco$m$),
-  ('3e9c7a51-8d42-4f16-b0c3-5a7e2d916f48', $m$Lisa$m$, $m$Kennedy Smith$m$, $m$Global Strategic Client Director$m$, 'Lisa.Smith@microsoft.com', 'microsoft.com', $m$Sage$m$, $m$United States$m$, 'https://www.linkedin.com/in/lisa-kennedy-smith-660764/', 'Microsoft AE lijst 20-10-2026', 8, 'email', 'queued', $m$Copilot at Sage$m$, $m$Hi Lisa,
+  ('3e9c7a51-8d42-4f16-b0c3-5a7e2d916f48', $m$Lisa$m$, $m$Kennedy Smith$m$, $m$Global Strategic Client Director$m$, 'Lisa.Smith@microsoft.com', 'microsoft.com', $m$SAGE Global Services$m$, $m$United States$m$, 'https://www.linkedin.com/in/lisa-kennedy-smith-660764/', 'Microsoft AE lijst 20-10-2026', 8, 'email', 'queued', $m$Copilot at SAGE Global Services$m$, $m$Hi Lisa,
 
-It is my understanding that, in your role as Global Strategic Client Director, you are responsible for accounts including our mutual client Sage.
+It is my understanding that, in your role as Global Strategic Client Director, you are responsible for accounts including our mutual client SAGE Global Services.
 
 We are known for our Glint services, with you too I hope ;-). But with other Microsoft colleagues we also run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption.
 
@@ -152,16 +153,16 @@ I would like to touch base on Glint with your other customers, and on where Copi
 
 Do you have 20 minutes in the next two weeks?
 
-Marco$m$, $m$Re: Copilot at Sage$m$, $m$Hi Lisa,
+Marco$m$, $m$Re: Copilot at SAGE Global Services$m$, $m$Hi Lisa,
 
 Following up on my note about Copilot across your accounts. If this sits with someone else on your team, pointing me there helps just as much.
 
 Worth 20 minutes?
 
 Marco$m$),
-  ('3e9c7a51-8d42-4f16-b0c3-5a7e2d916f48', $m$Kirkland$m$, $m$Jue$m$, $m$Director Major Enterprise$m$, 'Kirkland.Jue@microsoft.com', 'microsoft.com', $m$GoDaddy$m$, $m$United States$m$, 'https://www.linkedin.com/in/kirklandjue/', 'Microsoft AE lijst 20-10-2026', 9, 'email', 'queued', $m$Copilot at GoDaddy$m$, $m$Hi Kirkland,
+  ('3e9c7a51-8d42-4f16-b0c3-5a7e2d916f48', $m$Kirkland$m$, $m$Jue$m$, $m$Director Major Enterprise$m$, 'Kirkland.Jue@microsoft.com', 'microsoft.com', $m$GoDaddy.com$m$, $m$United States$m$, 'https://www.linkedin.com/in/kirklandjue/', 'Microsoft AE lijst 20-10-2026', 9, 'email', 'queued', $m$Copilot at GoDaddy.com$m$, $m$Hi Kirkland,
 
-It is my understanding that, in your role as Director Major Enterprise, you are responsible for accounts including our mutual client GoDaddy.
+It is my understanding that, in your role as Director Major Enterprise, you are responsible for accounts including our mutual client GoDaddy.com.
 
 We are known for our Glint services, with you too I hope ;-). But with other Microsoft colleagues we also run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption.
 
@@ -169,7 +170,7 @@ I would like to touch base on Glint with your other customers, and on where Copi
 
 Do you have 20 minutes in the next two weeks?
 
-Marco$m$, $m$Re: Copilot at GoDaddy$m$, $m$Hi Kirkland,
+Marco$m$, $m$Re: Copilot at GoDaddy.com$m$, $m$Hi Kirkland,
 
 Following up on my note about Copilot across your accounts. If this sits with someone else on your team, pointing me there helps just as much.
 
@@ -244,7 +245,7 @@ Following up on my note about Copilot across your accounts. If this sits with so
 Worth 20 minutes?
 
 Marco$m$),
-  ('3e9c7a51-8d42-4f16-b0c3-5a7e2d916f48', $m$Sierra$m$, $m$Brandenburg$m$, $m$Account Executive$m$, 'Sierra.Brandenburg@microsoft.com', 'microsoft.com', $m$Boston Red Sox$m$, $m$United States$m$, 'https://www.linkedin.com/in/sierra-brandenburg/', 'Microsoft AE lijst 20-10-2026', 14, 'email', 'queued', $m$Copilot at Red Sox$m$, $m$Hi Sierra,
+  ('3e9c7a51-8d42-4f16-b0c3-5a7e2d916f48', $m$Sierra$m$, $m$Brandenburg$m$, $m$Account Executive$m$, 'Sierra.Brandenburg@microsoft.com', 'microsoft.com', $m$Boston Red Sox$m$, $m$United States$m$, 'https://www.linkedin.com/in/sierra-brandenburg/', 'Microsoft AE lijst 20-10-2026', 14, 'email', 'queued', $m$Copilot at Boston Red Sox$m$, $m$Hi Sierra,
 
 It is my understanding that, in your role as Account Executive, you are responsible for accounts including our mutual client Boston Red Sox.
 
@@ -254,7 +255,7 @@ I would like to touch base on Glint with your other customers, and on where Copi
 
 Do you have 20 minutes in the next two weeks?
 
-Marco$m$, $m$Re: Copilot at Red Sox$m$, $m$Hi Sierra,
+Marco$m$, $m$Re: Copilot at Boston Red Sox$m$, $m$Hi Sierra,
 
 Following up on my note about Copilot across your accounts. If this sits with someone else on your team, pointing me there helps just as much.
 
@@ -278,9 +279,9 @@ Following up on my note about Copilot across your accounts. If this sits with so
 Worth 20 minutes?
 
 Marco$m$),
-  ('3e9c7a51-8d42-4f16-b0c3-5a7e2d916f48', $m$Sarah$m$, $m$Wilde$m$, $m$Senior Client Executive$m$, 'sarahwilde@microsoft.com', 'microsoft.com', $m$Serco$m$, $m$United Kingdom$m$, 'https://www.linkedin.com/in/sarah-e-wilde/', 'Microsoft AE lijst 20-10-2026', 16, 'email', 'queued', $m$Copilot at Serco$m$, $m$Hi Sarah,
+  ('3e9c7a51-8d42-4f16-b0c3-5a7e2d916f48', $m$Sarah$m$, $m$Wilde$m$, $m$Senior Client Executive$m$, 'sarahwilde@microsoft.com', 'microsoft.com', $m$Serco Group$m$, $m$United Kingdom$m$, 'https://www.linkedin.com/in/sarah-e-wilde/', 'Microsoft AE lijst 20-10-2026', 16, 'email', 'queued', $m$Copilot at Serco Group$m$, $m$Hi Sarah,
 
-It is my understanding that, in your role as Senior Client Executive, you are responsible for accounts including our mutual client Serco.
+It is my understanding that, in your role as Senior Client Executive, you are responsible for accounts including our mutual client Serco Group.
 
 We are known for our Glint services, with you too I hope ;-). But with other Microsoft colleagues we also run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption.
 
@@ -288,14 +289,14 @@ I would like to touch base on Glint with your other customers, and on where Copi
 
 Do you have 20 minutes in the next two weeks?
 
-Marco$m$, $m$Re: Copilot at Serco$m$, $m$Hi Sarah,
+Marco$m$, $m$Re: Copilot at Serco Group$m$, $m$Hi Sarah,
 
 Following up on my note about Copilot across your accounts. If this sits with someone else on your team, pointing me there helps just as much.
 
 Worth 20 minutes?
 
 Marco$m$),
-  ('3e9c7a51-8d42-4f16-b0c3-5a7e2d916f48', $m$Manfredo$m$, $m$Santopinto$m$, $m$Senior Strategic Account Executive$m$, 'Manfredo.Santopinto@microsoft.com', 'microsoft.com', $m$European Training Foundation$m$, $m$Belgium$m$, 'https://www.linkedin.com/in/manfredo-santopinto/', 'Microsoft AE lijst 20-10-2026', 17, 'email', 'queued', $m$Copilot at ETF$m$, $m$Hi Manfredo,
+  ('3e9c7a51-8d42-4f16-b0c3-5a7e2d916f48', $m$Manfredo$m$, $m$Santopinto$m$, $m$Senior Strategic Account Executive$m$, 'Manfredo.Santopinto@microsoft.com', 'microsoft.com', $m$European Training Foundation$m$, $m$Belgium$m$, 'https://www.linkedin.com/in/manfredo-santopinto/', 'Microsoft AE lijst 20-10-2026', 17, 'email', 'queued', $m$Copilot at European Training Foundation$m$, $m$Hi Manfredo,
 
 It is my understanding that, in your role as Senior Strategic Account Executive, you are responsible for accounts including our mutual client European Training Foundation.
 
@@ -305,7 +306,7 @@ I would like to touch base on Glint with your other customers, and on where Copi
 
 Do you have 20 minutes in the next two weeks?
 
-Marco$m$, $m$Re: Copilot at ETF$m$, $m$Hi Manfredo,
+Marco$m$, $m$Re: Copilot at European Training Foundation$m$, $m$Hi Manfredo,
 
 Following up on my note about Copilot across your accounts. If this sits with someone else on your team, pointing me there helps just as much.
 
@@ -329,9 +330,9 @@ Following up on my note about Copilot across your accounts. If this sits with so
 Worth 20 minutes?
 
 Marco$m$),
-  ('3e9c7a51-8d42-4f16-b0c3-5a7e2d916f48', $m$Samia$m$, $m$Kesseiri$m$, $m$Global Agency Director$m$, 'Samia.Kesseiri@microsoft.com', 'microsoft.com', $m$Dentsu$m$, $m$United Kingdom$m$, 'https://www.linkedin.com/in/samiakesseiri/', 'Microsoft AE lijst 20-10-2026', 19, 'email', 'queued', $m$Copilot at Dentsu$m$, $m$Hi Samia,
+  ('3e9c7a51-8d42-4f16-b0c3-5a7e2d916f48', $m$Samia$m$, $m$Kesseiri$m$, $m$Global Agency Director$m$, 'Samia.Kesseiri@microsoft.com', 'microsoft.com', $m$Dentsu International$m$, $m$United Kingdom$m$, 'https://www.linkedin.com/in/samiakesseiri/', 'Microsoft AE lijst 20-10-2026', 19, 'email', 'queued', $m$Copilot at Dentsu International$m$, $m$Hi Samia,
 
-It is my understanding that, in your role as Global Agency Director, you are responsible for accounts including our mutual client Dentsu.
+It is my understanding that, in your role as Global Agency Director, you are responsible for accounts including our mutual client Dentsu International.
 
 We are known for our Glint services, with you too I hope ;-). But with other Microsoft colleagues we also run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption.
 
@@ -339,7 +340,7 @@ I would like to touch base on Glint with your other customers, and on where Copi
 
 Do you have 20 minutes in the next two weeks?
 
-Marco$m$, $m$Re: Copilot at Dentsu$m$, $m$Hi Samia,
+Marco$m$, $m$Re: Copilot at Dentsu International$m$, $m$Hi Samia,
 
 Following up on my note about Copilot across your accounts. If this sits with someone else on your team, pointing me there helps just as much.
 
@@ -397,9 +398,9 @@ Following up on my note about Copilot across your accounts. If this sits with so
 Worth 20 minutes?
 
 Marco$m$),
-  ('3e9c7a51-8d42-4f16-b0c3-5a7e2d916f48', $m$Jens$m$, $m$Mikosch$m$, $m$Senior Account Executive$m$, 'Jens.Mikosch@microsoft.com', 'microsoft.com', $m$Douglas$m$, $m$Germany$m$, 'https://www.linkedin.com/in/jens-mikosch/', 'Microsoft AE lijst 20-10-2026', 23, 'email', 'queued', $m$Copilot at Douglas$m$, $m$Hi Jens,
+  ('3e9c7a51-8d42-4f16-b0c3-5a7e2d916f48', $m$Jens$m$, $m$Mikosch$m$, $m$Senior Account Executive$m$, 'Jens.Mikosch@microsoft.com', 'microsoft.com', $m$DOUGLAS$m$, $m$Germany$m$, 'https://www.linkedin.com/in/jens-mikosch/', 'Microsoft AE lijst 20-10-2026', 23, 'email', 'queued', $m$Copilot at DOUGLAS$m$, $m$Hi Jens,
 
-It is my understanding that, in your role as Senior Account Executive, you are responsible for accounts including our mutual client Douglas.
+It is my understanding that, in your role as Senior Account Executive, you are responsible for accounts including our mutual client DOUGLAS.
 
 We are known for our Glint services, with you too I hope ;-). But with other Microsoft colleagues we also run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption.
 
@@ -407,7 +408,7 @@ I would like to touch base on Glint with your other customers, and on where Copi
 
 Do you have 20 minutes in the next two weeks?
 
-Marco$m$, $m$Re: Copilot at Douglas$m$, $m$Hi Jens,
+Marco$m$, $m$Re: Copilot at DOUGLAS$m$, $m$Hi Jens,
 
 Following up on my note about Copilot across your accounts. If this sits with someone else on your team, pointing me there helps just as much.
 
@@ -431,26 +432,9 @@ Following up on my note about Copilot across your accounts. If this sits with so
 Worth 20 minutes?
 
 Marco$m$),
-  ('3e9c7a51-8d42-4f16-b0c3-5a7e2d916f48', $m$Renee$m$, $m$Johnson$m$, $m$Strategic Account Executive$m$, 'reneejohnson@microsoft.com', 'microsoft.com', $m$BioMarin$m$, $m$United States$m$, 'https://www.linkedin.com/in/reneesjohnson/', 'Microsoft AE lijst 20-10-2026', 25, 'email', 'queued', $m$Copilot at BioMarin$m$, $m$Hi Renee,
+  ('3e9c7a51-8d42-4f16-b0c3-5a7e2d916f48', $m$Renee$m$, $m$Johnson$m$, $m$Strategic Account Executive$m$, 'reneejohnson@microsoft.com', 'microsoft.com', $m$BioMarin Pharmaceutical$m$, $m$United States$m$, 'https://www.linkedin.com/in/reneesjohnson/', 'Microsoft AE lijst 20-10-2026', 25, 'email', 'queued', $m$Copilot at BioMarin Pharmaceutical$m$, $m$Hi Renee,
 
-It is my understanding that, in your role as Strategic Account Executive, you are responsible for accounts including our mutual client BioMarin.
-
-We are known for our Glint services, with you too I hope ;-). But with other Microsoft colleagues we also run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption.
-
-I would like to touch base on Glint with your other customers, and on where Copilot could use a business case.
-
-Do you have 20 minutes in the next two weeks?
-
-Marco$m$, $m$Re: Copilot at BioMarin$m$, $m$Hi Renee,
-
-Following up on my note about Copilot across your accounts. If this sits with someone else on your team, pointing me there helps just as much.
-
-Worth 20 minutes?
-
-Marco$m$),
-  ('3e9c7a51-8d42-4f16-b0c3-5a7e2d916f48', $m$Tom$m$, $m$Salerno$m$, $m$Client Executive$m$, 'Tom.Salerno@microsoft.com', 'microsoft.com', $m$Trane$m$, $m$United States$m$, 'https://www.linkedin.com/in/tomsalerno/', 'Microsoft AE lijst 20-10-2026', 26, 'email', 'queued', $m$Copilot at Trane$m$, $m$Hi Tom,
-
-It is my understanding that, in your role as Client Executive, you are responsible for accounts including our mutual client Trane.
+It is my understanding that, in your role as Strategic Account Executive, you are responsible for accounts including our mutual client BioMarin Pharmaceutical.
 
 We are known for our Glint services, with you too I hope ;-). But with other Microsoft colleagues we also run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption.
 
@@ -458,14 +442,31 @@ I would like to touch base on Glint with your other customers, and on where Copi
 
 Do you have 20 minutes in the next two weeks?
 
-Marco$m$, $m$Re: Copilot at Trane$m$, $m$Hi Tom,
+Marco$m$, $m$Re: Copilot at BioMarin Pharmaceutical$m$, $m$Hi Renee,
 
 Following up on my note about Copilot across your accounts. If this sits with someone else on your team, pointing me there helps just as much.
 
 Worth 20 minutes?
 
 Marco$m$),
-  ('3e9c7a51-8d42-4f16-b0c3-5a7e2d916f48', $m$Jason$m$, $m$Wingenbach$m$, $m$Senior Account Executive$m$, 'Jason.Wingenbach@microsoft.com', 'microsoft.com', $m$North Mississippi Health Services$m$, $m$United States$m$, 'https://www.linkedin.com/in/jwingenbach/', 'Microsoft AE lijst 20-10-2026', 27, 'email', 'queued', $m$Copilot at North Mississippi$m$, $m$Hi Jason,
+  ('3e9c7a51-8d42-4f16-b0c3-5a7e2d916f48', $m$Tom$m$, $m$Salerno$m$, $m$Client Executive$m$, 'Tom.Salerno@microsoft.com', 'microsoft.com', $m$Trane Technologies$m$, $m$United States$m$, 'https://www.linkedin.com/in/tomsalerno/', 'Microsoft AE lijst 20-10-2026', 26, 'email', 'queued', $m$Copilot at Trane Technologies$m$, $m$Hi Tom,
+
+It is my understanding that, in your role as Client Executive, you are responsible for accounts including our mutual client Trane Technologies.
+
+We are known for our Glint services, with you too I hope ;-). But with other Microsoft colleagues we also run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption.
+
+I would like to touch base on Glint with your other customers, and on where Copilot could use a business case.
+
+Do you have 20 minutes in the next two weeks?
+
+Marco$m$, $m$Re: Copilot at Trane Technologies$m$, $m$Hi Tom,
+
+Following up on my note about Copilot across your accounts. If this sits with someone else on your team, pointing me there helps just as much.
+
+Worth 20 minutes?
+
+Marco$m$),
+  ('3e9c7a51-8d42-4f16-b0c3-5a7e2d916f48', $m$Jason$m$, $m$Wingenbach$m$, $m$Senior Account Executive$m$, 'Jason.Wingenbach@microsoft.com', 'microsoft.com', $m$North Mississippi Health Services$m$, $m$United States$m$, 'https://www.linkedin.com/in/jwingenbach/', 'Microsoft AE lijst 20-10-2026', 27, 'email', 'queued', $m$Copilot at North Mississippi Health Services$m$, $m$Hi Jason,
 
 It is my understanding that, in your role as Senior Account Executive, you are responsible for accounts including our mutual client North Mississippi Health Services.
 
@@ -475,16 +476,16 @@ I would like to touch base on Glint with your other customers, and on where Copi
 
 Do you have 20 minutes in the next two weeks?
 
-Marco$m$, $m$Re: Copilot at North Mississippi$m$, $m$Hi Jason,
+Marco$m$, $m$Re: Copilot at North Mississippi Health Services$m$, $m$Hi Jason,
 
 Following up on my note about Copilot across your accounts. If this sits with someone else on your team, pointing me there helps just as much.
 
 Worth 20 minutes?
 
 Marco$m$),
-  ('3e9c7a51-8d42-4f16-b0c3-5a7e2d916f48', $m$Wendy$m$, $m$Li$m$, $m$Director, Account Executive$m$, 'wendyli@microsoft.com', 'microsoft.com', $m$BMC$m$, $m$United States$m$, 'https://www.linkedin.com/in/wendy-li-529a353/', 'Microsoft AE lijst 20-10-2026', 28, 'email', 'queued', $m$Copilot at BMC$m$, $m$Hi Wendy,
+  ('3e9c7a51-8d42-4f16-b0c3-5a7e2d916f48', $m$Wendy$m$, $m$Li$m$, $m$Director, Account Executive$m$, 'wendyli@microsoft.com', 'microsoft.com', $m$BMC Software$m$, $m$United States$m$, 'https://www.linkedin.com/in/wendy-li-529a353/', 'Microsoft AE lijst 20-10-2026', 28, 'email', 'queued', $m$Copilot at BMC Software$m$, $m$Hi Wendy,
 
-It is my understanding that, in your role as Director, Account Executive, you are responsible for accounts including our mutual client BMC.
+It is my understanding that, in your role as Director, Account Executive, you are responsible for accounts including our mutual client BMC Software.
 
 We are known for our Glint services, with you too I hope ;-). But with other Microsoft colleagues we also run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption.
 
@@ -492,7 +493,7 @@ I would like to touch base on Glint with your other customers, and on where Copi
 
 Do you have 20 minutes in the next two weeks?
 
-Marco$m$, $m$Re: Copilot at BMC$m$, $m$Hi Wendy,
+Marco$m$, $m$Re: Copilot at BMC Software$m$, $m$Hi Wendy,
 
 Following up on my note about Copilot across your accounts. If this sits with someone else on your team, pointing me there helps just as much.
 
