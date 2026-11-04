@@ -244,7 +244,7 @@ Following up on my note about Copilot across your accounts. If this sits with so
 Worth 20 minutes?
 
 Marco$m$),
-  ('3e9c7a51-8d42-4f16-b0c3-5a7e2d916f48', $m$Sierra$m$, $m$Brandenburg$m$, $m$Account Executive$m$, 'Sierra.Brandenburg@microsoft.com', 'microsoft.com', $m$Boston Red Sox$m$, $m$United States$m$, 'https://www.linkedin.com/in/sierra-brandenburg/', 'Microsoft AE lijst 20-10-2026', 14, 'email', 'queued', $m$Copilot at the Red Sox$m$, $m$Hi Sierra,
+  ('3e9c7a51-8d42-4f16-b0c3-5a7e2d916f48', $m$Sierra$m$, $m$Brandenburg$m$, $m$Account Executive$m$, 'Sierra.Brandenburg@microsoft.com', 'microsoft.com', $m$Boston Red Sox$m$, $m$United States$m$, 'https://www.linkedin.com/in/sierra-brandenburg/', 'Microsoft AE lijst 20-10-2026', 14, 'email', 'queued', $m$Copilot at Red Sox$m$, $m$Hi Sierra,
 
 It is my understanding that, in your role as Account Executive, you are responsible for accounts including our mutual client Boston Red Sox.
 
@@ -254,7 +254,7 @@ I would like to touch base on Glint with your other customers, and on where Copi
 
 Do you have 20 minutes in the next two weeks?
 
-Marco$m$, $m$Re: Copilot at the Red Sox$m$, $m$Hi Sierra,
+Marco$m$, $m$Re: Copilot at Red Sox$m$, $m$Hi Sierra,
 
 Following up on my note about Copilot across your accounts. If this sits with someone else on your team, pointing me there helps just as much.
 
@@ -295,7 +295,7 @@ Following up on my note about Copilot across your accounts. If this sits with so
 Worth 20 minutes?
 
 Marco$m$),
-  ('3e9c7a51-8d42-4f16-b0c3-5a7e2d916f48', $m$Manfredo$m$, $m$Santopinto$m$, $m$Senior Strategic Account Executive$m$, 'Manfredo.Santopinto@microsoft.com', 'microsoft.com', $m$European Training Foundation$m$, $m$Belgium$m$, 'https://www.linkedin.com/in/manfredo-santopinto/', 'Microsoft AE lijst 20-10-2026', 17, 'email', 'queued', $m$Copilot at the ETF$m$, $m$Hi Manfredo,
+  ('3e9c7a51-8d42-4f16-b0c3-5a7e2d916f48', $m$Manfredo$m$, $m$Santopinto$m$, $m$Senior Strategic Account Executive$m$, 'Manfredo.Santopinto@microsoft.com', 'microsoft.com', $m$European Training Foundation$m$, $m$Belgium$m$, 'https://www.linkedin.com/in/manfredo-santopinto/', 'Microsoft AE lijst 20-10-2026', 17, 'email', 'queued', $m$Copilot at ETF$m$, $m$Hi Manfredo,
 
 It is my understanding that, in your role as Senior Strategic Account Executive, you are responsible for accounts including our mutual client European Training Foundation.
 
@@ -305,7 +305,7 @@ I would like to touch base on Glint with your other customers, and on where Copi
 
 Do you have 20 minutes in the next two weeks?
 
-Marco$m$, $m$Re: Copilot at the ETF$m$, $m$Hi Manfredo,
+Marco$m$, $m$Re: Copilot at ETF$m$, $m$Hi Manfredo,
 
 Following up on my note about Copilot across your accounts. If this sits with someone else on your team, pointing me there helps just as much.
 
