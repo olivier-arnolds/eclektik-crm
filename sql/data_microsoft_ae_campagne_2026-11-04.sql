@@ -244,9 +244,9 @@ Following up on my note about Copilot across your accounts. If this sits with so
 Worth 20 minutes?
 
 Marco$m$),
-  ('3e9c7a51-8d42-4f16-b0c3-5a7e2d916f48', $m$Sierra$m$, $m$Brandenburg$m$, $m$Account Executive$m$, 'Sierra.Brandenburg@microsoft.com', 'microsoft.com', $m$the Boston Red Sox$m$, $m$United States$m$, 'https://www.linkedin.com/in/sierra-brandenburg/', 'Microsoft AE lijst 20-10-2026', 14, 'email', 'queued', $m$Copilot at the Red Sox$m$, $m$Hi Sierra,
+  ('3e9c7a51-8d42-4f16-b0c3-5a7e2d916f48', $m$Sierra$m$, $m$Brandenburg$m$, $m$Account Executive$m$, 'Sierra.Brandenburg@microsoft.com', 'microsoft.com', $m$Boston Red Sox$m$, $m$United States$m$, 'https://www.linkedin.com/in/sierra-brandenburg/', 'Microsoft AE lijst 20-10-2026', 14, 'email', 'queued', $m$Copilot at the Red Sox$m$, $m$Hi Sierra,
 
-It is my understanding that, in your role as Account Executive, you are responsible for accounts including our mutual client the Boston Red Sox.
+It is my understanding that, in your role as Account Executive, you are responsible for accounts including our mutual client Boston Red Sox.
 
 We are known for our Glint services, with you too I hope ;-). But with other Microsoft colleagues we also run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption.
 
@@ -295,9 +295,9 @@ Following up on my note about Copilot across your accounts. If this sits with so
 Worth 20 minutes?
 
 Marco$m$),
-  ('3e9c7a51-8d42-4f16-b0c3-5a7e2d916f48', $m$Manfredo$m$, $m$Santopinto$m$, $m$Senior Strategic Account Executive$m$, 'Manfredo.Santopinto@microsoft.com', 'microsoft.com', $m$the European Training Foundation$m$, $m$Belgium$m$, 'https://www.linkedin.com/in/manfredo-santopinto/', 'Microsoft AE lijst 20-10-2026', 17, 'email', 'queued', $m$Copilot at the ETF$m$, $m$Hi Manfredo,
+  ('3e9c7a51-8d42-4f16-b0c3-5a7e2d916f48', $m$Manfredo$m$, $m$Santopinto$m$, $m$Senior Strategic Account Executive$m$, 'Manfredo.Santopinto@microsoft.com', 'microsoft.com', $m$European Training Foundation$m$, $m$Belgium$m$, 'https://www.linkedin.com/in/manfredo-santopinto/', 'Microsoft AE lijst 20-10-2026', 17, 'email', 'queued', $m$Copilot at the ETF$m$, $m$Hi Manfredo,
 
-It is my understanding that, in your role as Senior Strategic Account Executive, you are responsible for accounts including our mutual client the European Training Foundation.
+It is my understanding that, in your role as Senior Strategic Account Executive, you are responsible for accounts including our mutual client European Training Foundation.
 
 We are known for our Glint services, with you too I hope ;-). But with other Microsoft colleagues we also run AI ROI analyses that translate Copilot and agent adoption into dollar-value outcomes, used to move customers from pilot to wider rollout and increased consumption.
 
