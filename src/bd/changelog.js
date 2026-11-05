@@ -19,9 +19,25 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.152.0';
+export const CURRENT_VERSION = '1.152.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.152.1',
+    date: '2026-11-05T09:28:13Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Bevestigingen weer zichtbaar in de lijst',
+    summary:
+      'Met de keuzelijst verdween ook het antwoord zelf uit de kolom Aanmelding. Negen bevestigingen, een komt en drie afzeggingen waren met de hand verwerkt en stonden ineens achter een klik.',
+    changes: [
+      'Het vastgelegde antwoord staat weer in de kolom, als label: komt, bevestigd of kan niet, met het envelopje als de bevestigingsmail verstuurd is.',
+      'Alleen de keuzelijst blijft in de uitklapregel. Lezen doe je in de lijst, wijzigen door de rij open te klikken.',
+      'Wie niets heeft geantwoord krijgt geen label, zodat de kolom niet volloopt met lege waarden.',
+    ],
+    files: ['src/bd/marketing-leads.jsx'],
+    rollback: 'git revert naar v1.152.0.',
+  },
   {
     version: '1.152.0',
     date: '2026-11-05T09:27:02Z',

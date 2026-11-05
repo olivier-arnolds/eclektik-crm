@@ -845,6 +845,42 @@ function BevestigingKeuze({ lead, bevestiging, onZetAntwoord, zetBezig }) {
   );
 }
 
+// Het vastgelegde antwoord op de vraag of iemand komt, als label.
+//
+// LEZEN HIER, WIJZIGEN IN DE UITKLAPREGEL
+//   De keuzelijst nam ruimte in de kolom en stond naast de outreachstatus,
+//   twee dingen die niets met elkaar te maken hebben. Maar het ANTWOORD moet
+//   wel zichtbaar blijven: negen bevestigingen, een komt en drie afzeggingen
+//   zijn met de hand verwerkt, en die achter een klik verstoppen maakt dat
+//   werk onvindbaar.
+const BEVESTIGING_LABEL = { yes: 'komt', confirmed: 'bevestigd', no: 'kan niet' };
+const BEVESTIGING_KLEUR = { yes: '#15803d', confirmed: '#15803d', no: '#b91c1c' };
+
+function BevestigingLabel({ bevestiging }) {
+  const antwoord = bevestiging?.answer;
+  if (!antwoord) return null;
+  return (
+    <span className="chip"
+      style={{
+        marginLeft: 6, fontSize: 11, fontWeight: 500,
+        color: BEVESTIGING_KLEUR[antwoord] || 'var(--text-2)',
+      }}
+      title={[
+        bevestiging?.answer_source === 'manual'
+          ? `Met de hand gezet${bevestiging.answer_by ? ` door ${bevestiging.answer_by}` : ''}`
+          : 'De deelnemer klikte zelf op de bevestigingspagina',
+        bevestiging?.confirmation_sent_at
+          ? `Bevestigingsmail verstuurd op ${new Date(bevestiging.confirmation_sent_at).toLocaleString('nl-NL')}`
+          : 'Nog geen bevestigingsmail verstuurd',
+        'Wijzigen kan door de rij open te klikken',
+      ].join(' | ')}>
+      {BEVESTIGING_LABEL[antwoord] || antwoord}
+      {bevestiging?.confirmation_sent_at ? ' ✉' : ''}
+      {bevestiging?.answer_count > 1 ? ' ·' : ''}
+    </span>
+  );
+}
+
 // De status van deze persoon in de outreachcampagnes waar hij in zit.
 //
 // ALLE CAMPAGNES, NIET EEN
@@ -916,9 +952,12 @@ function LeadRow({ lead, bron, datumActueel, via, campagnes, outreachStatussen, 
                 : { fontSize: 11 }}>{bron}</span>
             )
             : <span style={{ color: 'var(--text-3)' }}>-</span>}
-          {/* De status uit de outreachcampagne. Hier stond de keuzelijst
-              waarmee je vastlegde of iemand komt; die is naar de uitklapregel
-              verhuisd, zodat deze kolom één ding zegt in plaats van twee. */}
+          {/* Wat er over het komen is vastgelegd, als label. Alleen de
+              KEUZELIJST is naar de uitklapregel gegaan, het antwoord zelf
+              hoort hier te staan: dat is met de hand verwerkt werk en dat mag
+              niet achter een klik verdwijnen. */}
+          <BevestigingLabel bevestiging={bevestiging} />
+          {/* De status uit de outreachcampagne. */}
           <OutreachStatusChips statussen={outreachStatussen} />
         </td>
         <td style={td}>{lead.last_activity_at ? fmtRelative(lead.last_activity_at) : '-'}</td>
