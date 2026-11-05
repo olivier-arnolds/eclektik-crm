@@ -59,10 +59,40 @@ export function statusKort(status) {
 //   beschrijft wat eruit kwam ('afspraak'). Als iemand de uitkomst heeft
 //   ingevuld is dat het antwoord op de vraag die je stelt als je naar de lijst
 //   kijkt, en dan is 'geantwoord' alleen nog ruis.
+// HET LABEL HANGT AAN HET DOEL VAN DE CAMPAGNE
+//   Bij een campagne die naar een event uitnodigt is 'afspraak' het verkeerde
+//   woord: daar meld je je aan, je plant geen gesprek. De opgeslagen waarde
+//   blijft wel 'afspraak', zodat er niets te migreren valt en de validatie aan
+//   de serverkant onveranderd blijft. outreach_campaign.doel zegt dus hoe je
+//   die waarde moet lezen, niet wat er staat.
 export const OUTCOME_KORT = {
   afspraak: 'afspraak',
   geen_interesse: 'geen interesse',
 };
+
+export const OUTCOME_KORT_AANMELDING = {
+  afspraak: 'aangemeld',
+  geen_interesse: 'geen interesse',
+};
+
+export const OUTCOME_LABEL = {
+  afspraak: 'Afspraak',
+  geen_interesse: 'Geen interesse',
+};
+
+export const OUTCOME_LABEL_AANMELDING = {
+  afspraak: 'Aangemeld',
+  geen_interesse: 'Geen interesse',
+};
+
+/** De keuzes voor de uitkomstlijst, in de woorden die bij het doel horen. */
+export function uitkomstKeuzes(doel) {
+  const labels = doel === 'aanmelding' ? OUTCOME_LABEL_AANMELDING : OUTCOME_LABEL;
+  return [
+    { waarde: 'afspraak', label: labels.afspraak },
+    { waarde: 'geen_interesse', label: labels.geen_interesse },
+  ];
+}
 
 export const OUTCOME_KLEUR = {
   afspraak: '#15803d',
@@ -73,14 +103,15 @@ export const OUTCOME_KLEUR = {
  * Wat er van een prospect in een lijst getoond wordt: de uitkomst als die er
  * is, anders de status.
  *
- * @param {object} rij  { status, outcome }
+ * @param {object} rij  { status, outcome, doel }
  * @returns {{tekst: string|null, kleur: string, isUitkomst: boolean}}
  */
 export function weergaveVanProspect(rij) {
   const outcome = String(rij?.outcome || '').trim();
   if (outcome) {
+    const kort = rij?.doel === 'aanmelding' ? OUTCOME_KORT_AANMELDING : OUTCOME_KORT;
     return {
-      tekst: OUTCOME_KORT[outcome] || outcome,
+      tekst: kort[outcome] || outcome,
       kleur: OUTCOME_KLEUR[outcome] || '#6b7280',
       isUitkomst: true,
     };

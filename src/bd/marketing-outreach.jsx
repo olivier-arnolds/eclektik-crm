@@ -15,7 +15,7 @@ import { outreachTextToHtml, subjectForStep } from '../lib/outreach-html';
 import { signatureFor } from '../lib/signatures.js';
 import { dagcapVanaf } from '../lib/verzenddag.js';
 // Gedeeld met de Leads-tab, zodat een status daar niet anders heet dan hier.
-import { STATUS_LABEL, STATUS_COLOR } from '../lib/outreach-status.js';
+import { STATUS_LABEL, STATUS_COLOR, uitkomstKeuzes } from '../lib/outreach-status.js';
 import { fetchAllRows } from '../hooks/usePipelineData';
 
 // Outreach-tab onder Marketing. Ontwerp: docs/outreach-handover.md addendum §9.
@@ -1650,7 +1650,8 @@ export default function MarketingOutreach() {
                       onChange={(e) => zetUitkomst(r, e.target.value)}
                       title={r.outcome
                         ? 'Gekozen uitkomst. Terugzetten op leeg draait de keuze terug; de reeks blijft gestopt.'
-                        : 'Afspraak zet deze persoon ook in de tab Leads. Allebei de keuzes stoppen de opvolgmail.'}
+                        : `${uitkomstKeuzes(campaign.doel)[0].label} zet deze persoon ook in de tab Leads. `
+                          + 'Allebei de keuzes stoppen de opvolgmail.'}
                       style={{
                         font: 'inherit', fontSize: 12, padding: '1px 4px', borderRadius: 4,
                         border: '0.5px solid var(--sep)', cursor: 'pointer',
@@ -1660,8 +1661,12 @@ export default function MarketingOutreach() {
                         fontWeight: r.outcome === 'afspraak' ? 500 : 400,
                       }}>
                       <option value="">-</option>
-                      <option value="afspraak">Afspraak</option>
-                      <option value="geen_interesse">Geen interesse</option>
+                      {/* De woorden hangen aan het doel van de campagne: bij een
+                          event meld je je aan, je plant geen gesprek. De
+                          opgeslagen waarde is in allebei de gevallen dezelfde. */}
+                      {uitkomstKeuzes(campaign.doel).map(k => (
+                        <option key={k.waarde} value={k.waarde}>{k.label}</option>
+                      ))}
                     </select>
                   </td>
                   <td style={{ padding: '6px 10px', color: 'var(--text-3)', whiteSpace: 'nowrap' }}>

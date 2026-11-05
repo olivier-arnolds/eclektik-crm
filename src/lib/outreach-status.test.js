@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  STATUS_LABEL, STATUS_KORT, statusLabel, statusKleur, statusKort, weergaveVanProspect,
+  STATUS_LABEL, STATUS_KORT, statusLabel, statusKleur, statusKort, weergaveVanProspect, uitkomstKeuzes,
 } from './outreach-status.js';
 
 describe('statusLabel', () => {
@@ -67,5 +67,31 @@ describe('weergaveVanProspect', () => {
   it('gaat om met lege invoer', () => {
     expect(weergaveVanProspect({}).tekst).toBeNull();
     expect(weergaveVanProspect(null).tekst).toBeNull();
+  });
+});
+
+describe('uitkomstKeuzes', () => {
+  it('KRITIEK: een eventcampagne zegt aangemeld, geen afspraak', () => {
+    // Bij een uitnodiging voor een event plan je geen gesprek, je meldt je aan.
+    expect(uitkomstKeuzes('aanmelding').map(k => k.label)).toEqual(['Aangemeld', 'Geen interesse']);
+  });
+
+  it('een gewone campagne zegt afspraak', () => {
+    expect(uitkomstKeuzes('afspraak').map(k => k.label)).toEqual(['Afspraak', 'Geen interesse']);
+    expect(uitkomstKeuzes(null).map(k => k.label)).toEqual(['Afspraak', 'Geen interesse']);
+  });
+
+  it('de opgeslagen waarde verandert niet mee', () => {
+    // Anders zou er gemigreerd moeten worden en zou de validatie aan de
+    // serverkant een onbekende uitkomst zien.
+    for (const doel of ['aanmelding', 'afspraak', null]) {
+      expect(uitkomstKeuzes(doel).map(k => k.waarde)).toEqual(['afspraak', 'geen_interesse']);
+    }
+  });
+
+  it('weergaveVanProspect volgt hetzelfde doel', () => {
+    expect(weergaveVanProspect({ outcome: 'afspraak', doel: 'aanmelding' }).tekst).toBe('aangemeld');
+    expect(weergaveVanProspect({ outcome: 'afspraak', doel: 'afspraak' }).tekst).toBe('afspraak');
+    expect(weergaveVanProspect({ outcome: 'geen_interesse', doel: 'aanmelding' }).tekst).toBe('geen interesse');
   });
 });

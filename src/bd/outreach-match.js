@@ -321,7 +321,7 @@ export function matchRegistrations(contacts, registrations) {
  *
  * @param {Array} aanmeldingen [{ id, email, full_name }]
  * @param {Array} contacts     outreach_contact-rijen met campagnenaam
- * @returns {Map} aanmelding-id -> [{ campaignId, campaign, method, status, outcome }]
+ * @returns {Map} aanmelding-id -> [{ campaignId, campaign, method, status, outcome, doel }]
  */
 export function matchAanmeldingCampagnes(aanmeldingen, contacts) {
   const normNaam = (v) => String(v || '').toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -338,6 +338,9 @@ export function matchAanmeldingCampagnes(aanmeldingen, contacts) {
       || null;
     const waarde = {
       campaignId, campaign: naam, status: c?.status || null, outcome: c?.outcome || null,
+      // Het doel van de campagne bepaalt of 'afspraak' als afspraak of als
+      // aanmelding gelezen moet worden; zie uitkomstKeuzes in outreach-status.js.
+      doel: c?.doel || c?.outreach_campaign?.doel || null,
     };
     const e = normEmail(c?.email);
     if (e) {
@@ -362,7 +365,7 @@ export function matchAanmeldingCampagnes(aanmeldingen, contacts) {
         if (!gevonden.has(r.campaignId)) {
           gevonden.set(r.campaignId, {
             campaignId: r.campaignId, campaign: r.campaign, method,
-            status: r.status, outcome: r.outcome,
+            status: r.status, outcome: r.outcome, doel: r.doel,
           });
         }
       }

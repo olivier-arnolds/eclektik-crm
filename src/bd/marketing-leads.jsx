@@ -142,7 +142,7 @@ export default function MarketingLeads() {
         // Greg Mills en Natalie Viskozki stonden daardoor op 'niet benaderd'
         // terwijl ze in de outreach op afspraak stonden.
         const cts = await fetchAllRows(() => supabase.from('outreach_contact')
-          .select('campaign_id, status, outcome, email, first_name, last_name, outreach_campaign(name)')
+          .select('campaign_id, status, outcome, email, first_name, last_name, outreach_campaign(name, doel)')
           .order('id', { ascending: true }));
         if (seq === loadSeq.current) {
           setCampagnesPerAanmelding(matchAanmeldingCampagnes(aanmeldingen, cts));

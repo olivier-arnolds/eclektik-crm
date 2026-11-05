@@ -567,7 +567,7 @@ describe('matchAanmeldingCampagnes', () => {
   it('koppelt op e-mailadres, hoofdletters maken niet uit', () => {
     const m = matchAanmeldingCampagnes([{ id: 'a', email: 'Bart@VanLeeuwen.nl' }], contacts);
     expect(m.get('a')).toEqual([
-      { campaignId: 'c1', campaign: 'Microsoft AIBS 2026', method: 'email', status: 'msg1_sent', outcome: null },
+      { campaignId: 'c1', campaign: 'Microsoft AIBS 2026', method: 'email', status: 'msg1_sent', outcome: null, doel: null },
     ]);
   });
 
@@ -575,7 +575,7 @@ describe('matchAanmeldingCampagnes', () => {
     const m = matchAanmeldingCampagnes(
       [{ id: 'b', email: 'esther@eigenbedrijf.nl', full_name: 'Esther van Lunteren' }], contacts);
     expect(m.get('b')).toEqual([
-      { campaignId: 'c2', campaign: 'Amsterdam 2026', method: 'naam', status: null, outcome: null },
+      { campaignId: 'c2', campaign: 'Amsterdam 2026', method: 'naam', status: null, outcome: null, doel: null },
     ]);
   });
 
@@ -623,5 +623,22 @@ describe('matchAanmeldingCampagnes', () => {
     expect(matchAanmeldingCampagnes(
       [{ id: 'g', email: 'los@contact.nl' }],
       [{ campaign_id: null, email: 'los@contact.nl' }]).size).toBe(0);
+  });
+});
+
+describe('matchAanmeldingCampagnes en het doel van de campagne', () => {
+  it('neemt doel mee, zodat afspraak als aanmelding gelezen kan worden', () => {
+    const m = matchAanmeldingCampagnes(
+      [{ id: 'j', email: 'bart@x.nl' }],
+      [{ campaign_id: 'c7', email: 'bart@x.nl', status: 'replied', outcome: 'afspraak',
+        outreach_campaign: { name: 'Amsterdam 2026', doel: 'aanmelding' } }]);
+    expect(m.get('j')[0]).toMatchObject({ campaign: 'Amsterdam 2026', doel: 'aanmelding' });
+  });
+
+  it('geeft null als het doel ontbreekt, en valt dan terug op afspraak', () => {
+    const m = matchAanmeldingCampagnes(
+      [{ id: 'k', email: 'bart@x.nl' }],
+      [{ campaign_id: 'c8', email: 'bart@x.nl', status: 'replied', outcome: 'afspraak' }]);
+    expect(m.get('k')[0].doel).toBeNull();
   });
 });

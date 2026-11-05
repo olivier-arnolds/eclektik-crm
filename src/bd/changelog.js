@@ -19,9 +19,32 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.156.0';
+export const CURRENT_VERSION = '1.157.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.157.0',
+    date: '2026-11-05T12:09:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Eventcampagnes zeggen Aangemeld in plaats van Afspraak',
+    summary:
+      'De uitkomstkeuze bood Afspraak of Geen interesse. Bij een uitnodiging voor een event plan je geen gesprek, je meldt je aan.',
+    changes: [
+      'Nieuw veld outreach_campaign.doel met twee waarden: afspraak of aanmelding. De twee Amsterdam-campagnes staan op aanmelding, de vier Microsoft- en Glint-campagnes op afspraak.',
+      'De keuzelijst in de Outreach-tab toont nu Aangemeld of Afspraak, afhankelijk van dat veld. De tekst die uitlegt wat de keuze doet volgt mee.',
+      'De chip in de Leads-tab zegt hetzelfde: aangemeld bij een eventcampagne, afspraak bij de rest.',
+      'De OPGESLAGEN waarde blijft in beide gevallen afspraak. Zo hoeft er niets gemigreerd te worden en blijft de validatie aan de serverkant onveranderd. Het veld zegt dus hoe je de waarde moet lezen, niet wat er staat.',
+      'De labels staan op een plek, in uitkomstKeuzes() in src/lib/outreach-status.js, zodat de twee schermen niet uit elkaar lopen.',
+    ],
+    files: [
+      'sql/schema_outreach_campaign_doel_2026-11-05.sql',
+      'src/lib/outreach-status.js', 'src/lib/outreach-status.test.js',
+      'src/bd/outreach-match.js', 'src/bd/outreach-match.test.js',
+      'src/bd/marketing-outreach.jsx', 'src/bd/marketing-leads.jsx',
+    ],
+    rollback: 'git revert naar v1.156.0. De kolom doel mag blijven staan; zonder deze code wordt hij niet gelezen.',
+  },
   {
     version: '1.156.0',
     date: '2026-11-05T12:00:17Z',
