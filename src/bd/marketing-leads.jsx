@@ -664,10 +664,22 @@ function AanmeldingenBlok({
                   // nieuwste van de lead: in het Amsterdam-blok hoort de
                   // Amsterdam-datum te staan, ook als iemand zich daarna voor
                   // Zürich aanmeldde.
-                  bron={a.event === 'event_registered' || a.event === 'outreach_meeting'
-                    ? bronLabel(a.event, a.payload)
-                    : (lead.first_src || bronPerLead[lead.id] || null)}
-                  datumActueel={blok.soort === BLOK_EVENT && datumIsActueel(blok.slug, a.payload)}
+                  // In een eventblok staat de datum al in de kop, dus een
+                  // label 'Event 17 nov' op elke rij herhaalt alleen wat je
+                  // net gelezen hebt. Alleen als een aanmelding op een ANDERE
+                  // datum staat zegt het nog iets, en dan valt hij op tussen
+                  // de rijen die niets tonen. Buiten de eventblokken blijft
+                  // het label staan: daar zegt geen kop waar iemand vandaan
+                  // komt.
+                  bron={blok.soort === BLOK_EVENT && datumIsActueel(blok.slug, a.payload)
+                    ? null
+                    : (a.event === 'event_registered' || a.event === 'outreach_meeting'
+                      ? bronLabel(a.event, a.payload)
+                      : (lead.first_src || bronPerLead[lead.id] || null))}
+                  // Staat er wel een label in een eventblok, dan klopt de
+                  // datum dus niet. Oranje, want dat is precies het geval dat
+                  // je wilt zien.
+                  datumWijktAf={blok.soort === BLOK_EVENT}
                   via={gekomenVia(a.payload) || viaPerLead[lead.id] || null}
                   campagnes={toonCampagne ? (campagnesPerAanmelding.get(a.id) || []) : null}
                   // De status uit de outreachcampagne. Bij meerdere campagnes
@@ -918,7 +930,7 @@ function OutreachStatusChips({ statussen }) {
   );
 }
 
-function LeadRow({ lead, bron, datumActueel, via, campagnes, outreachStatussen, kolomAantal, telefoon, onZetTelefoon, bevestiging, onZetAntwoord, zetBezig, expanded, activityRows, busy, onToggle, onPromote, onArchive, onReactivate, onVoegContactToe, td }) {
+function LeadRow({ lead, bron, datumWijktAf, via, campagnes, outreachStatussen, kolomAantal, telefoon, onZetTelefoon, bevestiging, onZetAntwoord, zetBezig, expanded, activityRows, busy, onToggle, onPromote, onArchive, onReactivate, onVoegContactToe, td }) {
   return (
     <>
       <tr onClick={onToggle} style={{ cursor: 'pointer' }}>
@@ -941,17 +953,18 @@ function LeadRow({ lead, bron, datumActueel, via, campagnes, outreachStatussen, 
         </td>
         {campagnes && <td style={td}><CampagneChips campagnes={campagnes} /></td>}
         <td style={td}>
-          {/* Groen als de inschrijving op de datum staat waarop dit event nu
-              gepland staat. Wie nog op een verschoven datum staat valt daarmee
-              meteen op. Per event, want Amsterdam en Zürich hebben elk hun
-              eigen datum. */}
-          {bron
-            ? (
-              <span className="chip" style={datumActueel
-                ? { fontSize: 11, color: '#15803d', background: 'rgba(21,128,61,0.13)', fontWeight: 500 }
-                : { fontSize: 11 }}>{bron}</span>
-            )
-            : <span style={{ color: 'var(--text-3)' }}>-</span>}
+          {/* In een eventblok staat hier alleen iets als de aanmelding op een
+              andere datum staat dan het event nu, en dan oranje: dat is het
+              geval dat je moet zien. Buiten de eventblokken is het gewoon het
+              bronlabel. Geen streepje als er niets is: de kop zegt het al. */}
+          {bron ? (
+            <span className="chip" style={datumWijktAf
+              ? { fontSize: 11, color: '#b45309', background: 'rgba(180,83,9,0.13)', fontWeight: 500 }
+              : { fontSize: 11 }}
+              title={datumWijktAf
+                ? 'Deze aanmelding staat op een andere datum dan waarop het event nu gepland staat'
+                : undefined}>{bron}</span>
+          ) : null}
           {/* Wat er over het komen is vastgelegd, als label. Alleen de
               KEUZELIJST is naar de uitklapregel gegaan, het antwoord zelf
               hoort hier te staan: dat is met de hand verwerkt werk en dat mag

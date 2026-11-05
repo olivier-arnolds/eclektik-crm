@@ -19,9 +19,25 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.152.1';
+export const CURRENT_VERSION = '1.152.2';
 
 export const CHANGELOG = [
+  {
+    version: '1.152.2',
+    date: '2026-11-05T09:43:58Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Geen "Event 17 nov" meer op elke rij',
+    summary:
+      'De kop van het blok zegt al om welk event het gaat, dus het label op elke rij herhaalde dat alleen maar.',
+    changes: [
+      'In een eventblok staat er nu niets meer in de kolom Aanmelding als de aanmelding op de datum staat waarop het event gepland staat. Dat is het normale geval en hoeft geen label.',
+      'Staat een aanmelding op een ANDERE datum, bijvoorbeeld nog op 6 oktober na de verschuiving, dan verschijnt het label wel en in oranje. Juist omdat de rest niets toont valt zo\'n rij nu meteen op, waar hij eerst tussen de groene labels verdween.',
+      'Buiten de eventblokken blijft het label staan. Bij Afspraken uit outreach en Overig zegt geen kop waar iemand vandaan komt.',
+    ],
+    files: ['src/bd/marketing-leads.jsx'],
+    rollback: 'git revert naar v1.152.1.',
+  },
   {
     version: '1.152.1',
     date: '2026-11-05T09:28:13Z',
