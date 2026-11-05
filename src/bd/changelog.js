@@ -19,9 +19,36 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.148.4';
+export const CURRENT_VERSION = '1.149.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.149.0',
+    date: '2026-11-05T07:40:26Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Leads-tab per event in blokken, met de campagne erbij',
+    summary:
+      'Eén tabel "Website-aanmeldingen" verborg waar iemand zich voor aanmeldde. De aanmeldingen staan nu per event in een eigen blok, met daarachter de afspraken uit outreach en een restblok.',
+    changes: [
+      'Blokken op volgorde: de customer session blijft bovenaan, dan een tabel per event (Amsterdam 17 nov, Zürich 1 dec), dan Afspraken uit outreach, dan Overig voor waitlist en scorecard. Overig blijft weg als het leeg is.',
+      'Gegroepeerd op aanmelding en niet op persoon. Wie zich voor twee events aanmeldt staat in beide blokken, en dat is de bedoeling. Binnen één blok telt iemand maar één keer: na de datumverschuiving hebben een paar mensen zich opnieuw aangemeld, en dan wint de nieuwste. De koppen tellen daarom aanmeldingen, geen mensen.',
+      'Groeperen gaat op de slug van het event en niet op de datum, want Amsterdam is al twee keer verschoven en oude aanmeldingen dragen de oude datum nog bij zich.',
+      'Nieuwe kolom Uit campagne in de eventtabellen: uit welke outreachcampagne een aanmelding lijkt te komen. Meerdere campagnes geven meerdere chips, want iemand kan in de mail- en de LinkedIn-campagne zitten en één kiezen vertekent de vraag welk kanaal werkt. Een koppeling op naam krijgt een vraagteken, want die is waarschijnlijk en niet zeker.',
+      'De kolom Bron heet nu Zegt via, zodat het verschil met Uit campagne leesbaar is: wat de deelnemer zelf opgaf tegenover wat wij weten.',
+      'De statusknoppen staan één keer bovenaan en werken over alle blokken.',
+      'De eventdatum stond als één constante in lead-bron.js en klopte alleen voor Amsterdam, waardoor Zürich nooit groen kon kleuren. Het is nu een map per event, die meteen de kopjes levert.',
+      'De indeling in blokken staat als pure logica in src/bd/leads-blokken.js met eigen tests, zodat de regels niet in een renderfunctie verdwijnen.',
+      'De activiteitenquery haalde op zonder sortering en nam de eerste de beste rij. Bij iemand met twee activiteiten bepaalde het toeval wat er in de kolom Bron stond. Hij sorteert nu op tijd en de nieuwste eventaanmelding wint.',
+      'Bekend en niet meeveranderd: de bevestigingskeuzelijst hangt aan het e-mailadres en niet aan het event, dus wie zich voor beide events aanmeldt ziet in beide blokken dezelfde keuze. Dat was al zo, het valt alleen op nu de blokken naast elkaar staan.',
+    ],
+    files: [
+      'src/bd/marketing-leads.jsx', 'src/bd/leads-blokken.js', 'src/bd/leads-blokken.test.js',
+      'src/lib/lead-bron.js', 'src/lib/lead-bron.test.js',
+      'src/bd/outreach-match.js', 'src/bd/outreach-match.test.js',
+    ],
+    rollback: 'git revert naar v1.148.4.',
+  },
   {
     version: '1.148.4',
     date: '2026-11-03T09:30:00Z',

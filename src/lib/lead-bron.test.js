@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { bronLabel, kortDatum, gekomenVia, telefoonVan, telHref } from './lead-bron.js';
+import {
+  bronLabel, kortDatum, gekomenVia, telefoonVan, telHref,
+  EVENTS, eventInfo, eventLabel, datumIsActueel,
+} from './lead-bron.js';
 
 describe('kortDatum', () => {
   it('maakt van een isodatum een korte Nederlandse datum', () => {
@@ -77,5 +80,59 @@ describe('telHref', () => {
     // een kapotte knop.
     expect(telHref('onbekend')).toBeNull();
     expect(telHref(null)).toBeNull();
+  });
+});
+
+describe('eventLabel', () => {
+  it('maakt van een slug een leesbaar kopje met datum', () => {
+    expect(eventLabel('amsterdam-2026')).toBe('Amsterdam 17 nov');
+    expect(eventLabel('zurich-2026')).toBe('Zürich 1 dec');
+  });
+
+  it('valt terug op de slug zelf bij een event dat we niet kennen', () => {
+    expect(eventLabel('berlijn-2027')).toBe('berlijn-2027');
+    expect(eventLabel('')).toBe('Zonder event');
+    expect(eventLabel(null)).toBe('Zonder event');
+  });
+});
+
+describe('eventInfo', () => {
+  it('geeft naam en datum terug', () => {
+    expect(eventInfo('zurich-2026')).toEqual({ naam: 'Zürich', datum: '2026-12-01' });
+  });
+
+  it('geeft null bij een onbekende of lege slug', () => {
+    for (const v of [null, undefined, '', '  ', 'berlijn-2027']) expect(eventInfo(v)).toBeNull();
+  });
+});
+
+describe('datumIsActueel', () => {
+  // KRITIEK: dit stond als één EVENT_DATUM in de code en klopte alleen voor
+  // Amsterdam, waardoor Zürich nooit groen kon kleuren.
+  it('vergelijkt per event, niet tegen één vaste datum', () => {
+    expect(datumIsActueel('amsterdam-2026', { eventDate: '2026-11-17' })).toBe(true);
+    expect(datumIsActueel('zurich-2026', { eventDate: '2026-12-01' })).toBe(true);
+    expect(datumIsActueel('zurich-2026', { eventDate: '2026-11-17' })).toBe(false);
+  });
+
+  it('ziet een aanmelding op een verschoven datum', () => {
+    expect(datumIsActueel('amsterdam-2026', { eventDate: '2026-10-06' })).toBe(false);
+    expect(datumIsActueel('amsterdam-2026', { eventDate: '2026-11-12' })).toBe(false);
+  });
+
+  it('doet geen uitspraak zonder datum of bij een onbekend event', () => {
+    expect(datumIsActueel('amsterdam-2026', {})).toBe(false);
+    expect(datumIsActueel('amsterdam-2026', null)).toBe(false);
+    expect(datumIsActueel('berlijn-2027', { eventDate: '2027-01-01' })).toBe(false);
+  });
+});
+
+describe('EVENTS', () => {
+  it('heeft voor elk event een naam en een geldige datum', () => {
+    for (const [slug, info] of Object.entries(EVENTS)) {
+      expect(slug).toMatch(/^[a-z0-9-]+$/);
+      expect(info.naam).toBeTruthy();
+      expect(kortDatum(info.datum)).not.toBeNull();
+    }
   });
 });

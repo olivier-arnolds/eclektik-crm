@@ -3,6 +3,7 @@ import {
   domainOf, isBounceMessage, looksLikeAutoReply, buildIndex, findContactEmailIn,
   matchMessage, scanInbox, statusAfterClassification,
   MATCH_SENDER, MATCH_DOMAIN, MATCH_NONE, CONFIDENCE_FLOOR, needsOurReply, matchRegistrations,
+  matchAanmeldingCampagnes,
   inkomendNaVerzending, conversatieStatus, CONV_GEEN, CONV_ANTWOORD, CONV_HEEN_EN_WEER,
   reminderAdvies, klikOordeel, KLIK_GEEN, KLIK_MENS, KLIK_SCANNER, KLIK_ONBEKEND, HERINNERING_KAN, HERINNERING_TE_VROEG, HERINNERING_AL, HERINNERING_NIET,
   REGIOS, hoortBijRegio,
@@ -553,5 +554,62 @@ describe('klikOordeel', () => {
 
   it('negeert onbruikbare datums', () => {
     expect(klikOordeel({ verzondenISO: 'onzin', geklikItISO: 'ook onzin' })).toBe(KLIK_ONBEKEND);
+  });
+});
+
+describe('matchAanmeldingCampagnes', () => {
+  const contacts = [
+    { campaign_id: 'c1', campaign: 'Microsoft AIBS 2026', email: 'bart@vanleeuwen.nl', first_name: 'Bart', last_name: 'Looije' },
+    { campaign_id: 'c2', campaign: 'Amsterdam 2026', email: null, first_name: 'Esther', last_name: 'van Lunteren' },
+    { campaign_id: 'c3', campaign: 'LinkedIn najaar', email: null, first_name: 'Bart', last_name: 'Looije' },
+  ];
+
+  it('koppelt op e-mailadres, hoofdletters maken niet uit', () => {
+    const m = matchAanmeldingCampagnes([{ id: 'a', email: 'Bart@VanLeeuwen.nl' }], contacts);
+    expect(m.get('a')).toEqual([
+      { campaignId: 'c1', campaign: 'Microsoft AIBS 2026', method: 'email' },
+    ]);
+  });
+
+  it('koppelt op naam als het adres niets oplevert', () => {
+    const m = matchAanmeldingCampagnes(
+      [{ id: 'b', email: 'esther@eigenbedrijf.nl', full_name: 'Esther van Lunteren' }], contacts);
+    expect(m.get('b')).toEqual([
+      { campaignId: 'c2', campaign: 'Amsterdam 2026', method: 'naam' },
+    ]);
+  });
+
+  it('KRITIEK: geeft alle campagnes terug, niet een willekeurige', () => {
+    // Iemand kan in de mail- en de LinkedIn-campagne zitten. Eén kiezen zou de
+    // vraag vertekenen welk kanaal werkt.
+    const m = matchAanmeldingCampagnes(
+      [{ id: 'c', email: 'bart@vanleeuwen.nl', full_name: 'Bart Looije' }], contacts);
+    expect(m.get('c')).toHaveLength(2);
+    expect(m.get('c').map(r => r.campaignId).sort()).toEqual(['c1', 'c3']);
+  });
+
+  it('het adres wint van de naam bij dezelfde campagne', () => {
+    const m = matchAanmeldingCampagnes(
+      [{ id: 'd', email: 'bart@vanleeuwen.nl', full_name: 'Bart Looije' }], contacts);
+    expect(m.get('d').find(r => r.campaignId === 'c1').method).toBe('email');
+  });
+
+  it('leest de campagnenaam ook uit een genest outreach_campaign-object', () => {
+    const m = matchAanmeldingCampagnes(
+      [{ id: 'e', email: 'x@y.nl' }],
+      [{ campaign_id: 'c9', outreach_campaign: { name: 'Via join' }, email: 'x@y.nl' }]);
+    expect(m.get('e')[0].campaign).toBe('Via join');
+  });
+
+  it('geeft niets terug zonder treffer, en gaat om met lege invoer', () => {
+    expect(matchAanmeldingCampagnes([{ id: 'f', email: 'niemand@nergens.nl' }], contacts).size).toBe(0);
+    expect(matchAanmeldingCampagnes(null, null).size).toBe(0);
+    expect(matchAanmeldingCampagnes([{ email: 'bart@vanleeuwen.nl' }], contacts).size).toBe(0);
+  });
+
+  it('slaat contacten zonder campagne over', () => {
+    expect(matchAanmeldingCampagnes(
+      [{ id: 'g', email: 'los@contact.nl' }],
+      [{ campaign_id: null, email: 'los@contact.nl' }]).size).toBe(0);
   });
 });

@@ -303,6 +303,77 @@ export function matchRegistrations(contacts, registrations) {
 }
 
 /**
+ * De andere kant van matchRegistrations: uit welke campagnes komt een
+ * aanmelding?
+ *
+ * WAAROM EEN ZUSTERFUNCTIE EN GEEN OMKERING VAN DE MAP
+ *   matchRegistrations loopt van prospect naar aanmelding en houdt per prospect
+ *   één treffer over. Dat is goed voor de Outreach-tab, waar de vraag is of
+ *   déze prospect zich heeft aangemeld. De Leads-tab stelt de omgekeerde vraag,
+ *   en daar hoort een ander antwoord bij: iemand kan in meerdere campagnes
+ *   zitten, bijvoorbeeld in de mail- en de LinkedIn-variant. Eén campagne
+ *   kiezen zou precies de vraag vertekenen waarvoor de kolom bedoeld is, welk
+ *   kanaal werkt.
+ *
+ *   De semantiek is wel dezelfde en dat moet zo blijven: koppeling op
+ *   e-mailadres is zeker, op naam waarschijnlijk. Vindt een aanmelding dezelfde
+ *   campagne op allebei, dan wint het adres.
+ *
+ * @param {Array} aanmeldingen [{ id, email, full_name }]
+ * @param {Array} contacts     outreach_contact-rijen met campagnenaam
+ * @returns {Map} aanmelding-id -> [{ campaignId, campaign, method }]
+ */
+export function matchAanmeldingCampagnes(aanmeldingen, contacts) {
+  const normNaam = (v) => String(v || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+  // Per campagne de adressen en namen die erin zitten.
+  const perEmail = new Map();
+  const perNaam = new Map();
+  for (const c of (contacts || [])) {
+    const campaignId = c?.campaign_id || null;
+    if (!campaignId) continue;
+    const naam = c?.campaign
+      || c?.campaign_name
+      || c?.outreach_campaign?.name
+      || null;
+    const waarde = { campaignId, campaign: naam };
+    const e = normEmail(c?.email);
+    if (e) {
+      if (!perEmail.has(e)) perEmail.set(e, []);
+      perEmail.get(e).push(waarde);
+    }
+    const n = normNaam([c?.first_name, c?.last_name].filter(Boolean).join(' '));
+    if (n) {
+      if (!perNaam.has(n)) perNaam.set(n, []);
+      perNaam.get(n).push(waarde);
+    }
+  }
+
+  const uit = new Map();
+  for (const a of (aanmeldingen || [])) {
+    if (!a?.id) continue;
+    // Volgorde doet ertoe: eerst de zekere koppelingen, zodat een campagne die
+    // op allebei matcht als 'email' blijft staan.
+    const gevonden = new Map();
+    const voegToe = (rijen, method) => {
+      for (const r of (rijen || [])) {
+        if (!gevonden.has(r.campaignId)) {
+          gevonden.set(r.campaignId, { campaignId: r.campaignId, campaign: r.campaign, method });
+        }
+      }
+    };
+    voegToe(perEmail.get(normEmail(a?.email)), 'email');
+    voegToe(perNaam.get(normNaam(a?.full_name)), 'naam');
+    if (gevonden.size) {
+      // Een vaste volgorde, anders springen de chips van rij tot rij.
+      uit.set(a.id, [...gevonden.values()].sort(
+        (x, y) => String(x.campaign || '').localeCompare(String(y.campaign || ''))));
+    }
+  }
+  return uit;
+}
+
+/**
  * Kiest uit een Unipile-chat de berichten die als antwoord tellen: inkomend, en
  * van NA onze eigen laatste verzending.
  *

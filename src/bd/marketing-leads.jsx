@@ -4,7 +4,12 @@
 // vanuit BDApp nodig.
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { supabase } from '../supabase';
-import { bronLabel, gekomenVia, telefoonVan, telHref, EVENT_DATUM } from '../lib/lead-bron';
+import {
+  bronLabel, gekomenVia, telefoonVan, telHref,
+  datumIsActueel,
+} from '../lib/lead-bron';
+import { matchAanmeldingCampagnes } from './outreach-match';
+import { maakBlokken, BLOK_EVENT } from './leads-blokken';
 import { fmtRelative } from './atoms';
 import { apiFetch } from '../lib/apiFetch';
 
@@ -58,6 +63,13 @@ export default function MarketingLeads() {
   // lead-id -> telefoonnummer uit de aanmelding. Staat niet op marketing_leads
   // maar in de payload van de activiteit, net als de bron en de eventdatum.
   const [telPerLead, setTelPerLead] = useState({});
+  // De activiteiten zelf, want de lijst is per blok gegroepeerd op activiteit
+  // en niet op lead. Iemand die zich voor twee events aanmeldt hoort in beide
+  // tabellen te staan.
+  const [activiteiten, setActiviteiten] = useState([]);
+  // activiteit-id -> de outreachcampagnes waar die aanmelding uit lijkt te
+  // komen. Zie matchAanmeldingCampagnes in outreach-match.js.
+  const [campagnesPerAanmelding, setCampagnesPerAanmelding] = useState(new Map());
   const [expanded, setExpanded] = useState(null);
   const [statusFilter, setStatusFilter] = useState('active');
   const [loading, setLoading] = useState(true);
@@ -77,24 +89,68 @@ export default function MarketingLeads() {
     if (error) alert('Laden mislukt: ' + error.message);
     setRows(data || []);
 
-    // Bron per lead uit de activiteit. Een lead heeft er meestal een.
+    // Bron per lead uit de activiteit.
+    //
+    // GESORTEERD OPHALEN, EN BEWUST KIEZEN WELKE WINT
+    //   Dit haalde op zonder sortering en nam de eerste de beste rij. Bij
+    //   iemand met twee activiteiten bepaalde het toeval dus wat er in de
+    //   kolom Bron stond, en met de blokken erbij zou het toeval ook gaan
+    //   bepalen waar diegene landt. De nieuwste eventaanmelding wint; is er
+    //   geen eventaanmelding, dan de nieuwste activiteit die er wel is.
     const ids = (data || []).map(r => r.id);
     if (ids.length) {
       const { data: acts } = await supabase.from('marketing_lead_activity')
-        .select('marketing_lead_id, event, payload').in('marketing_lead_id', ids);
+        .select('id, marketing_lead_id, event, payload, occurred_at')
+        .in('marketing_lead_id', ids)
+        .order('occurred_at', { ascending: false, nullsFirst: false });
+      const rijen = acts || [];
       const m = {};
       const u = {};
       const tel = {};
-      for (const a of acts || []) {
-        if (!m[a.marketing_lead_id]) m[a.marketing_lead_id] = bronLabel(a.event, a.payload);
-        if (!u[a.marketing_lead_id]) u[a.marketing_lead_id] = gekomenVia(a.payload);
-        if (!tel[a.marketing_lead_id]) tel[a.marketing_lead_id] = telefoonVan(a.payload);
+      const isEvent = {};
+      for (const a of rijen) {
+        const lead = a.marketing_lead_id;
+        const eventRij = a.event === 'event_registered';
+        // Een eventaanmelding verdringt een eerder gekozen niet-event.
+        if (!(lead in m) || (eventRij && !isEvent[lead])) {
+          m[lead] = bronLabel(a.event, a.payload);
+          u[lead] = gekomenVia(a.payload);
+          tel[lead] = telefoonVan(a.payload);
+          isEvent[lead] = eventRij;
+        }
       }
-      if (seq === loadSeq.current) { setBronPerLead(m); setViaPerLead(u); setTelPerLead(tel); }
+      if (seq === loadSeq.current) {
+        setBronPerLead(m); setViaPerLead(u); setTelPerLead(tel); setActiviteiten(rijen);
+      }
+
+      // De campagnes erbij. Losse query en in de browser koppelen, want er is
+      // geen sleutelrelatie tussen een aanmelding en een outreachprospect:
+      // iemand meldt zich aan met het adres dat hij zelf kiest. Zelfde
+      // redenering als in de Outreach-tab, en daarom ook dezelfde semantiek.
+      try {
+        const leadById = Object.fromEntries((data || []).map(l => [l.id, l]));
+        const aanmeldingen = rijen.map(a => ({
+          id: a.id,
+          email: leadById[a.marketing_lead_id]?.email || null,
+          full_name: leadById[a.marketing_lead_id]?.full_name || null,
+        }));
+        const { data: cts } = await supabase.from('outreach_contact')
+          .select('campaign_id, email, first_name, last_name, outreach_campaign(name)')
+          .limit(5000);
+        if (seq === loadSeq.current) {
+          setCampagnesPerAanmelding(matchAanmeldingCampagnes(aanmeldingen, cts || []));
+        }
+      } catch {
+        // Geen campagnes kunnen ophalen is niet fataal: de rest van de tab
+        // werkt gewoon, er ontbreekt alleen een chip.
+        if (seq === loadSeq.current) setCampagnesPerAanmelding(new Map());
+      }
     } else if (seq === loadSeq.current) {
       setBronPerLead({});
       setViaPerLead({});
       setTelPerLead({});
+      setActiviteiten([]);
+      setCampagnesPerAanmelding(new Map());
     }
 
     const { data: ses } = await supabase.from('user_session_results')
@@ -243,8 +299,16 @@ export default function MarketingLeads() {
     return m;
   }, [eventBevestiging]);
 
-  // Het label dat hoort bij de datum zoals het event er nu voor staat.
-  const huidigBronLabel = bronLabel('event_registered', { eventDate: EVENT_DATUM });
+  // De leads die door het statusfilter komen, op id. Dit is meteen de filter
+  // die maakBlokken gebruikt: een activiteit van een lead die er niet in zit
+  // hoort nergens te verschijnen.
+  const leadById = useMemo(() => new Map(rows.map(r => [r.id, r])), [rows]);
+
+  // De lijst in blokken. De regels staan in leads-blokken.js, met tests:
+  // wie waar hoort is een beslissing met uitzonderingen en die hoort niet in
+  // een renderfunctie te verdwijnen.
+  const blokken = useMemo(
+    () => maakBlokken(activiteiten, leadById), [activiteiten, leadById]);
 
   // Het antwoord met de hand zetten. Nodig omdat de mail met de knop slecht
   // aankomt: mensen mailen rechtstreeks terug en dat moet vastgelegd kunnen
@@ -418,9 +482,10 @@ export default function MarketingLeads() {
         )}
       </div>
 
-      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Website-aanmeldingen</div>
-
-      <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+      {/* Het statusfilter hoort één keer bovenaan en werkt over alle blokken.
+          Per blok een eigen stel knoppen zou vier keer dezelfde vraag stellen
+          en de blokken uit de pas kunnen laten lopen. */}
+      <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
         {STATUS_FILTERS.map(s => (
           <button key={s}
             className={statusFilter === s ? 'btn-primary tiny' : 'btn-ghost tiny'}
@@ -436,40 +501,128 @@ export default function MarketingLeads() {
         <div style={{ fontSize: 13, color: 'var(--text-dim, #888)' }}>
           Geen marketing leads{statusFilter !== 'all' ? ` met status "${statusFilter}"` : ''}.
         </div>
+      ) : blokken.map(blok => (
+        <AanmeldingenBlok key={blok.sleutel} blok={blok} statusFilter={statusFilter}
+          leadById={leadById}
+          bronPerLead={bronPerLead} viaPerLead={viaPerLead} telPerLead={telPerLead}
+          campagnesPerAanmelding={campagnesPerAanmelding}
+          bevestigingPerMail={bevestigingPerMail}
+          onZetTelefoon={zetTelefoon} onZetAntwoord={zetAntwoord} zetBezig={zetBezig}
+          expanded={expanded} activity={activity} busyId={busyId}
+          onToggle={toggleExpand} onPromote={promote} onArchive={archive}
+          onReactivate={reactivate}
+          th={th} td={td}
+        />
+      ))}
+    </div>
+  );
+}
+
+// Eén blok: een kop met het aantal aanmeldingen en daaronder de tabel.
+//
+// DE KOP TELT AANMELDINGEN EN GEEN MENSEN
+//   De blokken zijn op activiteit gegroepeerd, dus iemand die zich voor twee
+//   events aanmeldt telt in allebei mee. 'leads' zou dan een optelsom
+//   suggereren die niet klopt.
+function AanmeldingenBlok({
+  blok, statusFilter, leadById, bronPerLead, viaPerLead, telPerLead,
+  campagnesPerAanmelding, bevestigingPerMail, onZetTelefoon, onZetAntwoord, zetBezig,
+  expanded, activity, busyId, onToggle, onPromote, onArchive, onReactivate, th, td,
+}) {
+  // De campagnechip hoort bij de eventtabellen. Bij een afspraak uit outreach
+  // staat de campagne al in de kolom Aanmelding, en bij waitlist en scorecard
+  // is er geen aanmelding om aan te koppelen.
+  const toonCampagne = blok.soort === BLOK_EVENT;
+  const kolommen = ['Naam', 'E-mail', 'Bedrijf', 'Rol', 'Telefoon', 'Zegt via',
+    ...(toonCampagne ? ['Uit campagne'] : []),
+    'Aanmelding', 'Laatste activiteit', 'Status', ''];
+
+  return (
+    <div style={{ marginBottom: 26 }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 8 }}>
+        <span style={{ fontSize: 13, fontWeight: 600 }}>{blok.titel}</span>
+        <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
+          {blok.rijen.length} {blok.rijen.length === 1 ? 'aanmelding' : 'aanmeldingen'}
+        </span>
+      </div>
+
+      {blok.rijen.length === 0 ? (
+        <div style={{
+          fontSize: 12, color: 'var(--text-3)', border: '0.5px dashed var(--sep)',
+          borderRadius: 6, padding: '10px 12px',
+        }}>
+          Nog geen aanmeldingen{statusFilter !== 'all' ? ` met status "${statusFilter}"` : ''}.
+        </div>
       ) : (
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr>
-              <th style={th}>Naam</th><th style={th}>E-mail</th><th style={th}>Bedrijf</th>
-              <th style={th}>Rol</th><th style={th}>Telefoon</th><th style={th}>Bron</th><th style={th}>Aanmelding</th>
-              <th style={th}>Laatste activiteit</th><th style={th}>Status</th><th style={th}></th>
+              {kolommen.map((h, i) => <th key={`${h}-${i}`} style={th}>{h}</th>)}
             </tr>
           </thead>
           <tbody>
-            {rows.map(lead => (
-              <LeadRow key={lead.id} lead={lead}
-                bron={lead.first_src || bronPerLead[lead.id] || null}
-                via={viaPerLead[lead.id] || null}
-                telefoon={lead.phone || telPerLead[lead.id] || null}
-                onZetTelefoon={zetTelefoon}
-                bevestiging={bevestigingPerMail[String(lead.email || '').trim().toLowerCase()] || null}
-                huidigBronLabel={huidigBronLabel}
-                onZetAntwoord={zetAntwoord}
-                zetBezig={zetBezig === String(lead.email || '').trim().toLowerCase()}
-                expanded={expanded === lead.id}
-                activityRows={activity[lead.id]}
-                busy={busyId === lead.id}
-                onToggle={() => toggleExpand(lead)}
-                onPromote={() => promote(lead)}
-                onArchive={() => archive(lead)}
-                onReactivate={() => reactivate(lead)}
-                td={td}
-              />
-            ))}
+            {blok.rijen.map(a => {
+              const lead = leadById.get(a.marketing_lead_id);
+              if (!lead) return null;
+              const sleutel = String(lead.email || '').trim().toLowerCase();
+              return (
+                <LeadRow key={a.id} lead={lead} aanmelding={a}
+                  // Het bronlabel komt uit DEZE aanmelding en niet uit de
+                  // nieuwste van de lead: in het Amsterdam-blok hoort de
+                  // Amsterdam-datum te staan, ook als iemand zich daarna voor
+                  // Zürich aanmeldde.
+                  bron={a.event === 'event_registered' || a.event === 'outreach_meeting'
+                    ? bronLabel(a.event, a.payload)
+                    : (lead.first_src || bronPerLead[lead.id] || null)}
+                  datumActueel={blok.soort === BLOK_EVENT && datumIsActueel(blok.slug, a.payload)}
+                  via={gekomenVia(a.payload) || viaPerLead[lead.id] || null}
+                  campagnes={toonCampagne ? (campagnesPerAanmelding.get(a.id) || []) : null}
+                  kolomAantal={kolommen.length}
+                  telefoon={lead.phone || telefoonVan(a.payload) || telPerLead[lead.id] || null}
+                  onZetTelefoon={onZetTelefoon}
+                  bevestiging={bevestigingPerMail[sleutel] || null}
+                  onZetAntwoord={onZetAntwoord}
+                  zetBezig={zetBezig === sleutel}
+                  expanded={expanded === lead.id}
+                  activityRows={activity[lead.id]}
+                  busy={busyId === lead.id}
+                  onToggle={() => onToggle(lead)}
+                  onPromote={() => onPromote(lead)}
+                  onArchive={() => onArchive(lead)}
+                  onReactivate={() => onReactivate(lead)}
+                  td={td}
+                />
+              );
+            })}
           </tbody>
         </table>
       )}
     </div>
+  );
+}
+
+// De campagnes waar een aanmelding uit lijkt te komen.
+//
+// EEN VRAAGTEKEN IS GEEN VERSIERING
+//   Koppeling op e-mailadres is zeker, op naam waarschijnlijk. Dat onderscheid
+//   komt uit matchAanmeldingCampagnes en moet zichtbaar blijven, anders leest
+//   een gok als een feit. Geen campagne is een streepje: dat is de organische
+//   stroom, en die telt net zo goed.
+function CampagneChips({ campagnes }) {
+  if (!campagnes?.length) {
+    return <span style={{ color: 'var(--text-3)' }} title="Geen koppeling met een outreachcampagne gevonden; deze aanmelding kwam organisch binnen">-</span>;
+  }
+  return (
+    <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 4 }}>
+      {campagnes.map(c => (
+        <span key={c.campaignId} className="chip" style={{ fontSize: 11 }}
+          title={c.method === 'email'
+            ? 'Gekoppeld op e-mailadres'
+            : 'Gekoppeld op naam, niet op adres. Waarschijnlijk dezelfde persoon, zeker is het niet.'}>
+          {c.campaign || 'campagne'}{c.method === 'naam' ? '?' : ''}
+        </span>
+      ))}
+    </span>
   );
 }
 
@@ -536,7 +689,7 @@ function TelefoonCel({ lead, telefoon, onZet, td }) {
   );
 }
 
-function LeadRow({ lead, bron, via, telefoon, onZetTelefoon, bevestiging, huidigBronLabel, onZetAntwoord, zetBezig, expanded, activityRows, busy, onToggle, onPromote, onArchive, onReactivate, td }) {
+function LeadRow({ lead, bron, datumActueel, via, campagnes, kolomAantal, telefoon, onZetTelefoon, bevestiging, onZetAntwoord, zetBezig, expanded, activityRows, busy, onToggle, onPromote, onArchive, onReactivate, td }) {
   return (
     <>
       <tr onClick={onToggle} style={{ cursor: 'pointer' }}>
@@ -548,20 +701,24 @@ function LeadRow({ lead, bron, via, telefoon, onZetTelefoon, bevestiging, huidig
             ingevuld. Als belkoppeling, want deze lijst wordt ook vanaf een
             telefoon gebruikt. */}
         <TelefoonCel lead={lead} telefoon={telefoon} onZet={onZetTelefoon} td={td} />
-        {/* Bron is wat de deelnemer zelf opgeeft over hoe hij bij ons terecht
-            is gekomen, niet wie de uitnodiging verstuurde. Hier stond sector,
-            en die was bij de eventaanmeldingen niet eens gevuld. */}
+        {/* 'Zegt via' is wat de deelnemer zelf opgaf over hoe hij bij ons
+            terecht is gekomen (Eclectik, Zoom/Workvivo, Other), niet wie de
+            uitnodiging verstuurde. Let op het verschil met 'Uit campagne'
+            hiernaast: dat is wat wij weten, dit is wat hij zegt. */}
         <td style={td}>
           {via
             ? <span className="chip" style={{ fontSize: 11 }}>{via}</span>
             : '-'}
         </td>
+        {campagnes && <td style={td}><CampagneChips campagnes={campagnes} /></td>}
         <td style={td}>
-          {/* Groen als de inschrijving op de huidige eventdatum staat. Wie nog
-              op een oude datum staat valt daarmee meteen op. */}
+          {/* Groen als de inschrijving op de datum staat waarop dit event nu
+              gepland staat. Wie nog op een verschoven datum staat valt daarmee
+              meteen op. Per event, want Amsterdam en Zürich hebben elk hun
+              eigen datum. */}
           {bron
             ? (
-              <span className="chip" style={bron === huidigBronLabel
+              <span className="chip" style={datumActueel
                 ? { fontSize: 11, color: '#15803d', background: 'rgba(21,128,61,0.13)', fontWeight: 500 }
                 : { fontSize: 11 }}>{bron}</span>
             )
@@ -646,7 +803,7 @@ function LeadRow({ lead, bron, via, telefoon, onZetTelefoon, bevestiging, huidig
       </tr>
       {expanded && (
         <tr>
-          <td style={{ ...td, background: 'var(--bg-subtle, rgba(0,0,0,0.03))' }} colSpan={10}>
+          <td style={{ ...td, background: 'var(--bg-subtle, rgba(0,0,0,0.03))' }} colSpan={kolomAantal}>
             {!activityRows ? 'Laden…' : activityRows.length === 0 ? 'Geen activiteit.' : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 {activityRows.map(a => (

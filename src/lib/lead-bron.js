@@ -10,10 +10,53 @@
 //   De registratieroute schrijft eventDate weg als 2026-11-12. Verschuift het
 //   event nog een keer, dan volgt dit label vanzelf.
 
-// De datum zoals het event er nu voor staat. Eén plek, want hij is al twee keer
-// verschoven: van 6 oktober naar 12 november naar 17 november. De lijst kleurt
-// hierop, zodat een inschrijving voor een oude datum meteen opvalt.
-export const EVENT_DATUM = '2026-11-17';
+// De events waarvoor mensen zich kunnen aanmelden, op slug.
+//
+// WAAROM EEN MAP EN NIET EEN DATUM
+//   Dit was één constante EVENT_DATUM, en die klopte alleen voor Amsterdam.
+//   Zodra Zürich erbij kwam stond elke Zürich-aanmelding op een 'verkeerde'
+//   datum en kleurde hij nooit groen. Een event is meer dan een datum, dus
+//   staat het hier als wat het is.
+//
+//   De slug is de sleutel en niet de datum: Amsterdam is al twee keer
+//   verschoven (6 oktober, 12 november, 17 november) en oude aanmeldingen
+//   dragen de datum van toen nog in hun payload. De slug verschuift niet.
+export const EVENTS = {
+  'amsterdam-2026': { naam: 'Amsterdam', datum: '2026-11-17' },
+  'zurich-2026': { naam: 'Zürich', datum: '2026-12-01' },
+};
+
+/** Het event bij een slug, of null bij een slug die we niet kennen. */
+export function eventInfo(slug) {
+  const s = String(slug || '').trim();
+  return (s && EVENTS[s]) || null;
+}
+
+/**
+ * Het kopje boven een eventblok: 'Amsterdam 17 nov'. Een onbekende slug levert
+ * de slug zelf op, want die zegt nog altijd meer dan 'Onbekend event'.
+ */
+export function eventLabel(slug) {
+  const info = eventInfo(slug);
+  if (!info) return String(slug || '').trim() || 'Zonder event';
+  const datum = kortDatum(info.datum);
+  return datum ? `${info.naam} ${datum}` : info.naam;
+}
+
+/**
+ * Staat deze aanmelding op de datum waarop het event nu gepland staat?
+ *
+ * Alleen false als we het event kennen én de aanmelding een andere datum
+ * draagt. Bij een onbekend event of een aanmelding zonder datum valt er niets
+ * te vergelijken, en dan is 'wijkt af' een hardere uitspraak dan we kunnen doen.
+ */
+export function datumIsActueel(slug, payload) {
+  const info = eventInfo(slug);
+  if (!info) return false;
+  const opgegeven = String(payload?.eventDate || '').trim();
+  if (!opgegeven) return false;
+  return opgegeven === info.datum;
+}
 
 const MAANDEN = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun',
   'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
