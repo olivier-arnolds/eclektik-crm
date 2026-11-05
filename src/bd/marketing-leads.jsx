@@ -12,6 +12,7 @@ import { matchAanmeldingCampagnes } from './outreach-match';
 import { contactVanLead, aanvullingenVoorContact, zoekBedrijf, normMail } from '../lib/contact-van-lead';
 import { maakBlokken, BLOK_EVENT } from './leads-blokken';
 import { statusKort, statusKleur } from '../lib/outreach-status';
+import { fetchAllRows } from '../hooks/usePipelineData';
 import { fmtRelative } from './atoms';
 import { apiFetch } from '../lib/apiFetch';
 
@@ -136,11 +137,15 @@ export default function MarketingLeads() {
           email: leadById[a.marketing_lead_id]?.email || null,
           full_name: leadById[a.marketing_lead_id]?.full_name || null,
         }));
-        const { data: cts } = await supabase.from('outreach_contact')
+        // Alle rijen, niet de eerste duizend. PostgREST kapt stil af op 1000
+        // en een hogere .limit() verandert dat niet; zie fetchAllRows in usePipelineData.js.
+        // Greg Mills en Natalie Viskozki stonden daardoor op 'niet benaderd'
+        // terwijl ze in de outreach op afspraak stonden.
+        const cts = await fetchAllRows(() => supabase.from('outreach_contact')
           .select('campaign_id, status, email, first_name, last_name, outreach_campaign(name)')
-          .limit(5000);
+          .order('id', { ascending: true }));
         if (seq === loadSeq.current) {
-          setCampagnesPerAanmelding(matchAanmeldingCampagnes(aanmeldingen, cts || []));
+          setCampagnesPerAanmelding(matchAanmeldingCampagnes(aanmeldingen, cts));
         }
       } catch {
         // Geen campagnes kunnen ophalen is niet fataal: de rest van de tab

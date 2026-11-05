@@ -16,6 +16,7 @@ import { signatureFor } from '../lib/signatures.js';
 import { dagcapVanaf } from '../lib/verzenddag.js';
 // Gedeeld met de Leads-tab, zodat een status daar niet anders heet dan hier.
 import { STATUS_LABEL, STATUS_COLOR } from '../lib/outreach-status.js';
+import { fetchAllRows } from '../hooks/usePipelineData';
 
 // Outreach-tab onder Marketing. Ontwerp: docs/outreach-handover.md addendum §9.
 //
@@ -241,14 +242,20 @@ export default function MarketingOutreach() {
       if (camp && camp.id !== selectedId) setSelectedId(camp.id);
       if (!camp) { setRows([]); setLoading(false); return; }
 
-      const { data: cts, error: rErr } = await supabase
+      // Alle prospects, ook boven de 1000. De .limit(2000) die hier stond
+      // hielp niet: PostgREST kapt stil af op 1000 rijen. Amsterdam 2026 heeft
+      // er 1813, dus die tab toonde er 813 niet, en de tellers boven de lijst
+      // telden ze dus ook niet mee. Zie fetchAllRows in src/hooks/usePipelineData.js.
+      //
+      // De sortering eindigt op id, want pagineren zonder unieke sleutel kan
+      // dezelfde rij twee keer geven of een rij overslaan.
+      const cts = await fetchAllRows(() => supabase
         .from('outreach_contact').select(CONTACT_COLS)
         .eq('campaign_id', camp.id)
         .order('is_reserve', { ascending: true })
         .order('outreach_prio', { ascending: true, nullsFirst: false })
-        .limit(2000);
-      if (rErr) throw rErr;
-      setRows(cts || []);
+        .order('id', { ascending: true }));
+      setRows(cts);
 
       // Scantijd PER CAMPAGNE. Een gedeelde sleutel zou fataal zijn: een scan met
       // campagne A geselecteerd matcht alleen tegen A's contacten, maar zou dan
@@ -289,16 +296,19 @@ export default function MarketingOutreach() {
 
       // Opens en kliks per prospect.
       try {
-        const { data: msgs } = await supabase
+        // Ook hier pagineren: Amsterdam 2026 heeft 2346 uitgaande berichten en
+        // de .limit(5000) die hier stond leverde er stil 1000 op. De opens en
+        // kliks van de rest telden dus niet mee.
+        const msgs = await fetchAllRows(() => supabase
           .from('outreach_message')
           .select('contact_id, open_count, click_count, delivered_at, sent_or_received_at, first_opened_at, first_clicked_at')
           .eq('campaign_id', camp.id).eq('direction', 'outbound')
-          .limit(5000);
+          .order('id', { ascending: true }));
         const m = new Map();
         // Onze laatste uitgaande datum per contact, in dezelfde lus. Nodig voor
         // reminderAdvies; outreach_contact heeft geen last_sent_at-kolom.
         const verzonden = new Map();
-        for (const r of (msgs || [])) {
+        for (const r of msgs) {
           if (!r.contact_id) continue;
           const v = m.get(r.contact_id) || { opens: 0, clicks: 0, delivered: 0, mens: 0, scanner: 0 };
           v.opens += r.open_count || 0;

@@ -19,9 +19,31 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.151.2';
+export const CURRENT_VERSION = '1.152.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.152.0',
+    date: '2026-11-05T09:27:02Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Lijsten boven de 1000 rijen werden stil afgekapt',
+    summary:
+      'Greg Mills en Natalie Viskozki stonden in de Leads-tab op "niet benaderd" terwijl ze in de outreach op afspraak staan. Hun rij zat voorbij de duizendste, en PostgREST kapt elk antwoord daar af zonder iets te zeggen.',
+    changes: [
+      'De oorzaak: PostgREST geeft nooit meer dan 1000 rijen terug (db-max-rows) en een hogere .limit() verandert daar niets aan. Je vraagt er 5000, je krijgt er 1000, en er komt geen foutmelding. De code rekent dus gewoon door met een deel van de gegevens.',
+      'De Leads-tab haalde alle outreachprospects op om de campagne en status te kunnen tonen. Daarvan zag hij er 1000 van de 2754, in willekeurige volgorde. Wie buiten die duizend viel kreeg "niet benaderd".',
+      'Dezelfde fout zat in de Outreach-tab: de prospectlijst van een campagne stond op .limit(2000), maar Amsterdam 2026 heeft er 1813 en daarvan werden er 813 niet geladen. De tellers boven de lijst telden die mensen dus ook niet mee.',
+      'En in de opens- en kliklijst van diezelfde tab: Amsterdam 2026 heeft 2346 uitgaande berichten, waarvan er 1346 niet meetelden.',
+      'Alle drie gebruiken nu fetchAllRows, de helper die met .range() doorpagineert. Die bestond al en wordt elders in de app ook gebruikt; hij had alleen nog geen tests, en die zijn er nu wel, want aan deze functie hangt of een lijst compleet is.',
+      'Elke gepagineerde query sorteert nu op id als laatste sleutel. Zonder unieke sortering mag de database dezelfde rij in twee pagina\'s teruggeven of een rij overslaan.',
+    ],
+    files: [
+      'src/bd/marketing-leads.jsx', 'src/bd/marketing-outreach.jsx',
+      'src/lib/fetch-all-rows.test.js',
+    ],
+    rollback: 'git revert naar v1.151.2.',
+  },
   {
     version: '1.151.2',
     date: '2026-11-05T09:21:39Z',
