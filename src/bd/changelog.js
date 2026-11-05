@@ -19,9 +19,24 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.151.0';
+export const CURRENT_VERSION = '1.151.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.151.1',
+    date: '2026-11-05T09:16:06Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Knop Promoveer heet nu Add to funnel',
+    summary:
+      'Promoveren zei niet waar iemand terechtkomt. De twee knoppen naast elkaar zeggen nu allebei waar je iemand aan toevoegt: Add to funnel en Add to BD.',
+    changes: [
+      'De knop Promoveer heet Add to funnel. Hij doet hetzelfde als altijd: een rij in de sales-funnel, en de marketing lead gaat naar converted.',
+      'Het bevestigingsvenster vraagt nu "toevoegen aan de funnel?" in plaats van "promoveren naar sales lead?".',
+    ],
+    files: ['src/bd/marketing-leads.jsx'],
+    rollback: 'git revert naar v1.151.0.',
+  },
   {
     version: '1.151.0',
     date: '2026-11-05T09:15:31Z',

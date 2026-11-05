@@ -1,5 +1,5 @@
 // Marketing → Leads: website-aanmeldingen (marketing_leads tabel).
-// Losstaand van de sales-funnel; "Promoveer" maakt pas een leads-rij aan.
+// Losstaand van de sales-funnel; "Add to funnel" maakt pas een leads-rij aan.
 // Data wordt hier zelf opgehaald (zoals MarketingCampaigns) — geen props
 // vanuit BDApp nodig.
 import { useEffect, useRef, useState, useMemo } from 'react';
@@ -180,7 +180,7 @@ export default function MarketingLeads() {
 
   const promote = async (lead) => {
     const ok = window.confirm(
-      `${lead.full_name || lead.email} promoveren naar sales lead?\n` +
+      `${lead.full_name || lead.email} toevoegen aan de funnel?\n` +
       'Er wordt een rij in de sales-funnel aangemaakt en deze marketing lead krijgt status "converted".'
     );
     if (!ok) return;
@@ -922,7 +922,7 @@ function LeadRow({ lead, bron, datumActueel, via, campagnes, outreachStatussen, 
           {lead.status === 'active' && (
             <>
               <button className="btn-primary tiny" disabled={busy} onClick={onPromote}>
-                Promoveer
+                Add to funnel
               </button>{' '}
               {/* Toevoegen aan de contacten maakt GEEN sales lead. Staat het
                   contact er al, dan is de knop een merkteken en niet opnieuw
