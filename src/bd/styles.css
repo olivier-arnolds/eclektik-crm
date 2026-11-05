@@ -226,6 +226,17 @@ em { font-style: normal; }
 .btn-primary.tiny { padding: 3px 8px; font-size: 11px; }
 .btn-primary.compose-regen { margin-top: 4px; justify-content: center; width: 100%; padding: 8px; }
 .btn-primary[disabled] { opacity: 0.6; cursor: not-allowed; }
+/* Oranje knop, voor een actie die naast de hoofdactie staat en niet eronder.
+   De kleur zit in de achtergrond met witte letters erop, niet in de tekst:
+   oranje tekst op wit leest slecht. */
+.btn-warn {
+  padding: 6px 12px; border-radius: 6px; font-size: 12px;
+  background: #b45309; color: white; font-weight: 500;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.btn-warn:hover { background: #92400e; }
+.btn-warn.tiny { padding: 3px 8px; font-size: 11px; }
+.btn-warn[disabled] { opacity: 0.6; cursor: not-allowed; }
 
 /* ---------- Chips ---------- */
 .chip {

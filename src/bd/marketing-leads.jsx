@@ -934,7 +934,7 @@ function LeadRow({ lead, bron, datumActueel, via, campagnes, outreachStatussen, 
                   toegevoegd aan BD
                 </span>
               ) : (
-                <button className="btn-ghost tiny" disabled={busy} onClick={onVoegContactToe}
+                <button className="btn-warn tiny" disabled={busy} onClick={onVoegContactToe}
                   title="Zet deze persoon in de contactendatabase, zonder een sales lead aan te maken">
                   Add to BD
                 </button>

@@ -19,9 +19,23 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.151.1';
+export const CURRENT_VERSION = '1.151.2';
 
 export const CHANGELOG = [
+  {
+    version: '1.151.2',
+    date: '2026-11-05T09:21:39Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Add to BD is oranje',
+    summary:
+      'Twee knoppen die allebei als hoofdactie lazen. Add to funnel blijft blauw, Add to BD is nu oranje, zodat je ziet dat het twee verschillende bestemmingen zijn.',
+    changes: [
+      'Nieuwe knopstijl btn-warn in src/bd/styles.css: oranje achtergrond met witte letters. De kleur zit in de achtergrond en niet in de tekst, want oranje tekst op wit leest slecht.',
+    ],
+    files: ['src/bd/styles.css', 'src/bd/marketing-leads.jsx'],
+    rollback: 'git revert naar v1.151.1.',
+  },
   {
     version: '1.151.1',
     date: '2026-11-05T09:16:06Z',
