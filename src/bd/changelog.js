@@ -19,9 +19,33 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.154.0';
+export const CURRENT_VERSION = '1.155.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.155.0',
+    date: '2026-11-05T11:42:21Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'LinkedIn-inboxscan draait nu elke ochtend vanzelf',
+    summary:
+      'Bericht 2 wordt geweigerd zolang de inboxscan ouder is dan twaalf uur, en die scan hing aan een knop. Daardoor stond de campagne elke ochtend stil tot iemand eraan dacht.',
+    changes: [
+      'Nieuwe cron op 06:00 UTC op werkdagen, dus 07:00 in de winter en 08:00 in de zomer. Allebei ruim voor het verzendvenster dat om 09:00 opengaat, en met de twaalfuursgrens is zo\'n scan geldig tot 19:00.',
+      'De scan had nooit een ingelogde gebruiker nodig: Unipile, Claude en Supabase draaien alle drie op serversleutels. Alleen het slot op de deur stond op requireUser.',
+      'De batchlogica staat nu in api/_lib/outreach-linkedin-scan-lib.js, gedeeld door de knop in de tab en de cron. De code is ongewijzigd verhuisd; alleen de drie foutmeldingen geven nu een waarde terug in plaats van een HTTP-antwoord.',
+      'De cron loopt door de porties van veertig met een tijdsbudget van vier minuten. Wat blijft liggen is er de volgende ochtend nog, en de knop blijft gewoon werken.',
+      'De scantijd wordt alleen bij de laatste portie vastgelegd. Een half afgemaakte ronde bestempelt de campagne dus niet als vers, en dat is de goede kant om op te falen: liever een dag niet versturen dan een herinnering naar iemand die al geantwoord heeft.',
+      'Gepauzeerde campagnes en campagnes voorbij hun stopdatum worden overgeslagen: er gaat toch niets uit, en elke chat is een aanroep naar Unipile.',
+      'Dit werkt alleen voor LinkedIn. De mailboxscan leest Marco\'s Outlook in de browser met zijn eigen Microsoft-token en kan pas automatisch als de app-only Graph-koppeling er is.',
+    ],
+    files: [
+      'api/outreach-linkedin-scan-cron.js', 'api/_lib/outreach-linkedin-scan-lib.js',
+      'api/_lib/outreach-linkedin-scan-lib.test.js', 'api/outreach-linkedin-scan.js',
+      'vercel.json',
+    ],
+    rollback: 'git revert naar v1.154.0. De cron verdwijnt dan uit vercel.json bij de volgende deploy.',
+  },
   {
     version: '1.154.0',
     date: '2026-11-05T11:28:39Z',
