@@ -475,6 +475,34 @@ export default function MarketingLeads() {
     }
   };
 
+  // De aanwezigheid bij de user session vastleggen. Gaat via een endpoint, want
+  // user_session_invites staat op RLS zonder policies: de tabel draagt per
+  // genodigde een token. De frontend leest de view en kan niet schrijven.
+  const [aanwezigBezig, setAanwezigBezig] = useState(null); // id waar we op wachten
+  const [aanwezigFout, setAanwezigFout] = useState(null);
+  const zetAanwezigheid = async (id, waarde) => {
+    setAanwezigBezig(id);
+    setAanwezigFout(null);
+    try {
+      const resp = await apiFetch('/api/session-attendance-set', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, attendance: waarde || null }),
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok || data?.error) throw new Error(data?.error || `status ${resp.status}`);
+      // Pas bijwerken na een bevestigde opslag. Optimistisch tonen zou een
+      // mislukte schrijfactie laten lijken alsof hij gelukt is, en dan staat er
+      // 'aanwezig' in beeld terwijl dat nergens vastligt.
+      setSessie(rijen => rijen.map(r => (r.id === id
+        ? { ...r, attendance: data?.rij?.attendance ?? null } : r)));
+    } catch (e) {
+      setAanwezigFout(`Aanwezigheid opslaan mislukte: ${e.message}`);
+    } finally {
+      setAanwezigBezig(null);
+    }
+  };
+
   const th = { textAlign: 'left', fontSize: 11, textTransform: 'uppercase', letterSpacing: 0.4, color: 'var(--text-dim, #888)', padding: '6px 10px', borderBottom: '0.5px solid var(--sep)' };
   const td = { fontSize: 13, padding: '8px 10px', borderBottom: '0.5px solid var(--sep)', verticalAlign: 'top' };
 
@@ -491,6 +519,16 @@ export default function MarketingLeads() {
         }}>
           {zetFout}{' '}
           <button className="btn-ghost tiny" onClick={() => setZetFout(null)}>sluiten</button>
+        </div>
+      )}
+      {aanwezigFout && (
+        <div style={{
+          fontSize: 12, color: '#b91c1c', background: 'rgba(185,28,28,0.08)',
+          border: '0.5px solid rgba(185,28,28,0.35)', borderRadius: 6,
+          padding: '6px 10px', marginBottom: 12,
+        }}>
+          {aanwezigFout}{' '}
+          <button className="btn-ghost tiny" onClick={() => setAanwezigFout(null)}>sluiten</button>
         </div>
       )}
 
@@ -527,7 +565,7 @@ export default function MarketingLeads() {
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead style={{ background: 'var(--fill-1)' }}>
                 <tr>
-                  {['Naam', 'E-mail', 'Bedrijf', 'Voorkeursdata', 'Opmerking', 'Aangemeld door', 'Wanneer'].map(h => (
+                  {['Naam', 'E-mail', 'Bedrijf', 'Aanwezigheid', 'Opmerking', 'Aangemeld door', 'Wanneer'].map(h => (
                     <th key={h} style={th}>{h}</th>
                   ))}
                 </tr>
@@ -548,9 +586,8 @@ export default function MarketingLeads() {
                       <td style={td}>{r.email}</td>
                       <td style={td}>{r.company || '-'}</td>
                       <td style={td}>
-                        {(r.slots || []).length
-                          ? (r.slots || []).map(sl => String(sl).replace('slot-', '')).join(', ')
-                          : '-'}
+                        <AanwezigheidKeuze rij={r} onZet={zetAanwezigheid}
+                          bezig={aanwezigBezig === r.id} />
                       </td>
                       <td style={{ ...td, maxWidth: 260 }}>{r.note || '-'}</td>
                       {/* Wie de aanmelding deed. 'zelf' is de klant via de link in
@@ -879,6 +916,39 @@ function BevestigingKeuze({ lead, bevestiging, onZetAntwoord, zetBezig }) {
           style={{ fontSize: 9, color: '#b45309' }}>gewijzigd</span>
       )}
     </>
+  );
+}
+
+// Aanwezigheid bij de user session: aangemeld, aanwezig of afwezig.
+//
+// AANGEMELD IS DE LEGE WAARDE
+//   Iedereen in dit blok heeft ja gezegd, dus elke rij begint op aangemeld. Een
+//   lege keuzelijst met 'nog niets' zou een vraag stellen die al beantwoord is.
+//   Terugzetten naar aangemeld maakt de kolom weer leeg; zie
+//   api/_lib/session-attendance-lib.js.
+function AanwezigheidKeuze({ rij, onZet, bezig }) {
+  const waarde = rij.attendance || 'aangemeld';
+  return (
+    <select
+      value={waarde}
+      disabled={bezig}
+      onChange={e => onZet(rij.id, e.target.value)}
+      title={rij.attendance_at
+        ? `Vastgelegd op ${new Date(rij.attendance_at).toLocaleString('nl-NL')}`
+          + (rij.attendance_by ? ` door ${rij.attendance_by}` : '')
+        : 'Aangemeld, nog niets waargenomen'}
+      style={{
+        fontSize: 11, fontFamily: 'inherit', padding: '1px 4px',
+        borderRadius: 4, border: '0.5px solid var(--sep)', cursor: 'pointer',
+        background: 'var(--bg-1)', opacity: bezig ? 0.5 : 1,
+        fontWeight: rij.attendance ? 500 : 400,
+        color: rij.attendance === 'aanwezig' ? '#15803d'
+          : rij.attendance === 'afwezig' ? '#b91c1c' : 'var(--text-3)',
+      }}>
+      <option value="aangemeld">aangemeld</option>
+      <option value="aanwezig">aanwezig</option>
+      <option value="afwezig">afwezig</option>
+    </select>
   );
 }
 

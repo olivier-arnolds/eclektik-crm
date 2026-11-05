@@ -23,6 +23,28 @@ export const CURRENT_VERSION = '1.159.1';
 
 export const CHANGELOG = [
   {
+    version: '1.160.0',
+    date: '2026-11-05T14:18:29Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Aanwezigheid bijhouden in het Customer session-blok',
+    summary:
+      'De kolom Voorkeursdata is vervangen door een keuzelijst aangemeld / aanwezig / afwezig, zoals bij de eventaanmeldingen.',
+    changes: [
+      'Aangemeld is de begintoestand: iedereen in dit blok heeft ja gezegd. Terugzetten naar aangemeld maakt de waarneming weer leeg.',
+      'Aanwezigheid staat in een eigen kolom en niet in answer, zodat afwezig het eerdere ja niet uitwist.',
+      'Schrijven gaat via een endpoint achter een ingelogde gebruiker: user_session_invites staat op RLS zonder policies, want de tabel draagt per genodigde een token.',
+    ],
+    files: [
+      'src/bd/marketing-leads.jsx',
+      'api/session-attendance-set.js',
+      'api/_lib/session-attendance-lib.js',
+      'api/_lib/session-attendance-lib.test.js',
+      'sql/schema_user_session_aanwezigheid_2026-11-05.sql',
+    ],
+    rollback: 'git revert naar v1.159.1; de drie kolommen op user_session_invites mogen blijven staan.',
+  },
+  {
     version: '1.159.1',
     date: '2026-11-05T13:05:35Z',
     author: 'Olivier Arnolds (via Claude)',
