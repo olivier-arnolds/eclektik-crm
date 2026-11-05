@@ -836,7 +836,11 @@ function BevestigingKeuze({ lead, bevestiging, onZetAntwoord, zetBezig }) {
       <select
         value={bevestiging?.answer || ''}
         disabled={zetBezig}
-        onChange={(e) => onZetAntwoord(bevestiging?.email || lead.email, e.target.value || null)}
+        onClick={e => e.stopPropagation()}
+        onChange={(e) => {
+          e.stopPropagation();
+          onZetAntwoord(bevestiging?.email || lead.email, e.target.value || null);
+        }}
         title={[
           bevestiging?.answer_source === 'manual'
             ? `Met de hand gezet${bevestiging.answer_by ? ` door ${bevestiging.answer_by}` : ''}`
@@ -848,7 +852,7 @@ function BevestigingKeuze({ lead, bevestiging, onZetAntwoord, zetBezig }) {
             : 'Nog geen bevestigingsmail verstuurd',
         ].join(' | ')}
         style={{
-          fontSize: 11, fontFamily: 'inherit', padding: '1px 4px',
+          marginLeft: 6, fontSize: 11, fontFamily: 'inherit', padding: '1px 4px',
           borderRadius: 4, border: '0.5px solid var(--sep)', cursor: 'pointer',
           background: 'var(--bg-1)', opacity: zetBezig ? 0.5 : 1,
           fontWeight: bevestiging?.answer ? 500 : 400,
@@ -875,42 +879,6 @@ function BevestigingKeuze({ lead, bevestiging, onZetAntwoord, zetBezig }) {
           style={{ fontSize: 9, color: '#b45309' }}>gewijzigd</span>
       )}
     </>
-  );
-}
-
-// Het vastgelegde antwoord op de vraag of iemand komt, als label.
-//
-// LEZEN HIER, WIJZIGEN IN DE UITKLAPREGEL
-//   De keuzelijst nam ruimte in de kolom en stond naast de outreachstatus,
-//   twee dingen die niets met elkaar te maken hebben. Maar het ANTWOORD moet
-//   wel zichtbaar blijven: negen bevestigingen, een komt en drie afzeggingen
-//   zijn met de hand verwerkt, en die achter een klik verstoppen maakt dat
-//   werk onvindbaar.
-const BEVESTIGING_LABEL = { yes: 'komt', confirmed: 'bevestigd', no: 'kan niet' };
-const BEVESTIGING_KLEUR = { yes: '#15803d', confirmed: '#15803d', no: '#b91c1c' };
-
-function BevestigingLabel({ bevestiging }) {
-  const antwoord = bevestiging?.answer;
-  if (!antwoord) return null;
-  return (
-    <span className="chip"
-      style={{
-        marginLeft: 6, fontSize: 11, fontWeight: 500,
-        color: BEVESTIGING_KLEUR[antwoord] || 'var(--text-2)',
-      }}
-      title={[
-        bevestiging?.answer_source === 'manual'
-          ? `Met de hand gezet${bevestiging.answer_by ? ` door ${bevestiging.answer_by}` : ''}`
-          : 'De deelnemer klikte zelf op de bevestigingspagina',
-        bevestiging?.confirmation_sent_at
-          ? `Bevestigingsmail verstuurd op ${new Date(bevestiging.confirmation_sent_at).toLocaleString('nl-NL')}`
-          : 'Nog geen bevestigingsmail verstuurd',
-        'Wijzigen kan door de rij open te klikken',
-      ].join(' | ')}>
-      {BEVESTIGING_LABEL[antwoord] || antwoord}
-      {bevestiging?.confirmation_sent_at ? ' ✉' : ''}
-      {bevestiging?.answer_count > 1 ? ' ·' : ''}
-    </span>
   );
 }
 
@@ -986,11 +954,12 @@ function LeadRow({ lead, bron, datumWijktAf, via, campagnes, outreachStatussen, 
                 ? 'Deze aanmelding staat op een andere datum dan waarop het event nu gepland staat'
                 : undefined}>{bron}</span>
           ) : null}
-          {/* Wat er over het komen is vastgelegd, als label. Alleen de
-              KEUZELIJST is naar de uitklapregel gegaan, het antwoord zelf
-              hoort hier te staan: dat is met de hand verwerkt werk en dat mag
-              niet achter een klik verdwijnen. */}
-          <BevestigingLabel bevestiging={bevestiging} />
+          {/* Komt deze persoon naar het event? Lezen en wijzigen op dezelfde
+              plek: dit is de kolom waar je ernaar kijkt, dus een klik extra om
+              het te kunnen zetten is er een te veel. De outreachstatus staat
+              bij de campagnechip, dus hier botsen ze niet meer. */}
+          <BevestigingKeuze lead={lead} bevestiging={bevestiging}
+            onZetAntwoord={onZetAntwoord} zetBezig={zetBezig} />
           {/* De status uit de outreachcampagne. */}
           <OutreachStatusChips statussen={outreachStatussen} />
         </td>
@@ -1032,16 +1001,6 @@ function LeadRow({ lead, bron, datumWijktAf, via, campagnes, outreachStatussen, 
       {expanded && (
         <tr>
           <td style={{ ...td, background: 'var(--bg-subtle, rgba(0,0,0,0.03))' }} colSpan={kolomAantal}>
-            {/* Komt deze persoon naar het event? Stond in de kolom Aanmelding,
-                maar daar staat nu de outreachstatus. Vastleggen moet wel
-                mogelijk blijven: de mail met de knop komt slecht aan, dus veel
-                antwoorden komen per mail binnen en worden hier met de hand
-                gezet. */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 12, fontWeight: 600 }}>Komt naar het event?</span>
-              <BevestigingKeuze lead={lead} bevestiging={bevestiging}
-                onZetAntwoord={onZetAntwoord} zetBezig={zetBezig} />
-            </div>
             {!activityRows ? 'Laden…' : activityRows.length === 0 ? 'Geen activiteit.' : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 {activityRows.map(a => (

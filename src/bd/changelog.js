@@ -19,9 +19,25 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.153.2';
+export const CURRENT_VERSION = '1.153.3';
 
 export const CHANGELOG = [
+  {
+    version: '1.153.3',
+    date: '2026-11-05T10:35:42Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Keuzelijst komt-of-niet terug in de kolom Aanmelding',
+    summary:
+      'Die was naar de uitklapregel verhuisd om ruimte te maken voor de outreachstatus. Nu die status bij de campagnechip staat, kan de keuzelijst terug waar hij hoort.',
+    changes: [
+      'Lezen en wijzigen weer op dezelfde plek: dit is de kolom waar je ernaar kijkt, dus een klik extra om het te kunnen zetten is er een te veel.',
+      'Het envelopje en de aantekening gewijzigd staan er weer naast.',
+      'De uitklapregel toont weer alleen de activiteiten.',
+    ],
+    files: ['src/bd/marketing-leads.jsx'],
+    rollback: 'git revert naar v1.153.2.',
+  },
   {
     version: '1.153.2',
     date: '2026-11-05T10:32:00Z',
