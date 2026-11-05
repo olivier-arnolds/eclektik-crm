@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '../supabase';
 import { apiFetch } from '../lib/apiFetch';
 import { useAuth } from '../lib/auth';
@@ -229,8 +229,10 @@ export default function MarketingOutreach() {
   const [showReserve, setShowReserve] = useState(false);
   const [q, setQ] = useState('');
 
-  const load = useCallback(async () => {
-    setLoading(true);
+  // stil: verversen zonder het laadscherm. Een achtergrondronde mag de lijst
+  // niet laten knipperen; je bent er misschien net iets aan het lezen.
+  const load = useCallback(async ({ stil = false } = {}) => {
+    if (!stil) setLoading(true);
     try {
       const { data: camps, error: cErr } = await supabase
         .from('outreach_campaign').select('*').order('created_at', { ascending: true });
@@ -379,6 +381,41 @@ export default function MarketingOutreach() {
   }, [selectedId]);
 
   useEffect(() => { load(); }, [load]);
+
+  // De tab ververst zichzelf elke minuut.
+  //
+  // WAAROM
+  //   De cron verstuurt elke twintig minuten een paar berichten, maar de tab
+  //   haalde zijn gegevens alleen op bij het openen. Je zag dus '0 van 30'
+  //   terwijl er net drie herinneringen waren vertrokken, en dat leest als een
+  //   campagne die stilstaat.
+  //
+  // WANNEER NIET
+  //   Een achtergrondronde vervangt rows, en dat mag niet gebeuren terwijl er
+  //   iets loopt of terwijl je naar iets kijkt dat eronder vandaan zou
+  //   schuiven. Vandaar de kleppen hieronder. Ze staan in een ref zodat het
+  //   interval niet bij elke statuswijziging opnieuw opgebouwd wordt.
+  const bezigRef = useRef(false);
+  bezigRef.current = Boolean(
+    scanning || liBezig || sending || herstelBezig || busyStatus
+    || reminderBulkBezig || reminderBezigId || uitkomstBezigId
+    // Een open detailpaneel of een verzendplan in beeld is iets waar je naar
+    // kijkt; dat laten we met rust tot je het zelf sluit.
+    || openContact || sendPlan || sendResult || scanResult || liScanDroog || liScanEcht,
+  );
+
+  useEffect(() => {
+    if (!selectedId) return undefined;
+    const tik = setInterval(() => {
+      // Een verborgen tabblad hoeft niets op te halen. Scheelt zinloze
+      // queries op een scherm dat niemand ziet, en bij terugkomen staat er
+      // binnen een minuut weer verse informatie.
+      if (typeof document !== 'undefined' && document.hidden) return;
+      if (bezigRef.current) return;
+      load({ stil: true });
+    }, 60000);
+    return () => clearInterval(tik);
+  }, [selectedId, load]);
 
   // Het herinneringsadvies van een rij. Op één plek, want de kolom, de tellers
   // en het filter moeten hetzelfde antwoord geven.

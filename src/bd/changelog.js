@@ -19,9 +19,26 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.155.0';
+export const CURRENT_VERSION = '1.156.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.156.0',
+    date: '2026-11-05T12:00:17Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Outreach-tab ververst zichzelf elke minuut',
+    summary:
+      'De cron verstuurt elke twintig minuten, maar de tab haalde zijn gegevens alleen op bij het openen. Je zag "vandaag 0 van 30" terwijl er net drie herinneringen waren vertrokken.',
+    changes: [
+      'Elke minuut een stille ronde: de lijst, de tellers en de caps worden bijgewerkt zonder het laadscherm, zodat er niets knippert terwijl je leest.',
+      'Niet terwijl er iets loopt. Een verzending, een scan, een herstelactie of een herinnering die wordt weggeschreven houdt het verversen tegen, want de lijst mag niet onder je handen vandaan vervangen worden.',
+      'Ook niet terwijl je naar iets kijkt: een open detailpaneel, een verzendplan of een scanrapport blijft staan tot je het zelf sluit.',
+      'Een verborgen tabblad haalt niets op. Bij terugkomen staat er binnen een minuut weer verse informatie.',
+    ],
+    files: ['src/bd/marketing-outreach.jsx'],
+    rollback: 'git revert naar v1.155.0.',
+  },
   {
     version: '1.155.0',
     date: '2026-11-05T11:42:21Z',
