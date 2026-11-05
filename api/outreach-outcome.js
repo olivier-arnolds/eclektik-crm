@@ -2,9 +2,13 @@
 // vanuit Marketing > Outreach: 'afspraak', 'aanmelding', 'geen_interesse' of
 // terugdraaien.
 //
-// Bij 'afspraak' en 'aanmelding' komt de persoon ook in Marketing > Leads te
-// staan. Dat raakt drie tabellen, en de Supabase-client in de frontend kent
-// geen transacties, dus dit hoort server-side. Zie CLAUDE.md §8.
+// Bij 'afspraak' komt de persoon ook in Marketing > Leads te staan. Dat raakt
+// drie tabellen, en de Supabase-client in de frontend kent geen transacties,
+// dus dit hoort server-side. Zie CLAUDE.md §8.
+//
+// Een 'aanmelding' doet dat bewust NIET: die tab is de lijst van mensen die
+// zich via de website hebben aangemeld, en wie jij hier met de hand op
+// aanmelding zet heb je zelf al binnengekregen.
 //
 // ZONDER E-MAILADRES WEL DE UITKOMST, GEEN LEAD
 //   marketing_leads.email is NOT NULL en de hele vind-of-maak draait op dat
@@ -53,7 +57,7 @@ export default async function handler(req, res) {
     let leadId = rij.marketing_lead_id || null;
     let leadOvergeslagen = null;
     if (UITKOMSTEN_MET_LEAD.has(body.outcome)) {
-      const lead = leadUitContact(rij, rij.campaign?.name, body.outcome);
+      const lead = leadUitContact(rij, rij.campaign?.name);
       if (lead) {
         leadId = await upsertMarketingLead(supabase, lead.fields, lead.activity);
         patch.marketing_lead_id = leadId;

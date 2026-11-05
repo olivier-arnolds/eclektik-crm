@@ -62,9 +62,9 @@ export function maakBlokken(activiteiten, zichtbareLeads) {
       if (!perSlug.has(slug)) perSlug.set(slug, []);
       perSlug.get(slug).push(a);
     } else if (a.event === 'outreach_meeting') {
-      // Alleen geplande gesprekken. Een aanmelding uit een eventcampagne
-      // (outreach_signup) hoort hier niet: dat is geen afspraak, en dit blok
-      // is de lijst van gesprekken die er aankomen. Die valt in Overig.
+      // Alleen geplande gesprekken; dit blok is de lijst van gesprekken die er
+      // aankomen. Een aanmelding in een eventcampagne levert geen activiteit
+      // op: die zet je met de hand omdat je de aanmelding al binnen hebt.
       afspraken.push(a);
     } else {
       overig.push(a);

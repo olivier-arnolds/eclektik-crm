@@ -78,15 +78,16 @@ describe('maakBlokken', () => {
     expect(blok.rijen).toHaveLength(1);
   });
 
-  it('KRITIEK: alleen afspraken, een aanmelding uit outreach hoort hier niet', () => {
-    // Dit blok is de lijst van gesprekken die eraan komen. Een aanmelding voor
-    // een event is iets anders en valt in Overig.
+  it('KRITIEK: alleen activiteiten van het soort outreach_meeting', () => {
+    // Dit blok is de lijst van gesprekken die eraan komen. Een aanmelding in
+    // een eventcampagne levert geen activiteit op, dus hier hoort niets anders
+    // in te belanden.
     const blokken = maakBlokken([
-      { id: 's1', marketing_lead_id: 'lead1', event: 'outreach_signup', payload: { campaign: 'Amsterdam 2026' } },
+      { id: 'w1', marketing_lead_id: 'lead1', event: 'waitlist_joined', payload: {} },
       { id: 'm1', marketing_lead_id: 'lead2', event: 'outreach_meeting', payload: { campaign: 'AIBS' } },
     ], new Set(['lead1', 'lead2']));
     expect(blokken.find(b => b.soort === BLOK_OUTREACH).rijen.map(r => r.id)).toEqual(['m1']);
-    expect(blokken.find(b => b.soort === BLOK_OVERIG).rijen.map(r => r.id)).toEqual(['s1']);
+    expect(blokken.find(b => b.soort === BLOK_OVERIG).rijen.map(r => r.id)).toEqual(['w1']);
   });
 
   it('vangt waitlist en scorecard op in Overig, en laat dat blok weg als het leeg is', () => {

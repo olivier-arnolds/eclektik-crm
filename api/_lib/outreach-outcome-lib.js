@@ -9,7 +9,7 @@
 //   aanbiedt staat in outreach_campaign.doel.
 //
 // WAAROM DIT EEN ENDPOINT IS EN GEEN UPDATE VANUIT DE TAB
-//   Bij 'afspraak' en 'aanmelding' raken we twee tabellen: outreach_contact en marketing_leads
+//   Bij 'afspraak' raken we twee tabellen: outreach_contact en marketing_leads
 //   (plus de activiteit eronder). De Supabase-client in de frontend kent geen
 //   transacties, dus een half gelukte reeks zou een contact op 'afspraak' zetten
 //   zonder dat er iemand in de tab Leads verschijnt. Zie CLAUDE.md §8.
@@ -21,9 +21,15 @@
 
 export const UITKOMSTEN = new Set(['afspraak', 'aanmelding', 'geen_interesse']);
 
-// De uitkomsten die iemand in Marketing > Leads zetten. 'geen_interesse' niet:
-// daar valt niets mee te doen.
-export const UITKOMSTEN_MET_LEAD = new Set(['afspraak', 'aanmelding']);
+// Alleen een afspraak zet iemand in Marketing > Leads.
+//
+// EEN AANMELDING NIET, EN DAT IS EEN KEUZE
+//   Die tab is de lijst van mensen die zich via de website hebben aangemeld.
+//   Zet jij in de outreach iemand op 'aanmelding', dan heb je die aanmelding
+//   zelf al binnengekregen en weet je dus wie het is; een tweede rij in Leads
+//   voegt daar niets aan toe en zou de website-aanmeldingen vervuilen.
+//   'geen_interesse' valt om de voor de hand liggende reden af.
+export const UITKOMSTEN_MET_LEAD = new Set(['afspraak']);
 
 /**
  * @returns {{error}|{value:{id, outcome}}} outcome is 'afspraak',
@@ -77,7 +83,7 @@ export function outcomePatch({ outcome, door }, now = new Date()) {
  *
  * @returns {null|{fields, activity}} null als er geen e-mailadres is.
  */
-export function leadUitContact(rij, campagneNaam, outcome = 'afspraak') {
+export function leadUitContact(rij, campagneNaam) {
   const email = String(rij?.email || '').trim().toLowerCase();
   if (!email) return null;
   const naam = [rij?.first_name, rij?.last_name].filter(Boolean).join(' ') || null;
@@ -90,10 +96,7 @@ export function leadUitContact(rij, campagneNaam, outcome = 'afspraak') {
       src: 'outreach',
     },
     activity: {
-      // Een aanmelding is geen afspraak, ook niet in de activiteitenlijst. De
-      // Leads-tab groepeert hierop, dus dit bepaalt onder welk kopje iemand
-      // terechtkomt.
-      event: outcome === 'aanmelding' ? 'outreach_signup' : 'outreach_meeting',
+      event: 'outreach_meeting',
       src: 'outreach',
       payload: {
         campaign: campagneNaam || null,

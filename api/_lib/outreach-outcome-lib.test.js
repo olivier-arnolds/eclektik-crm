@@ -82,34 +82,35 @@ describe('aanmelding als eigen uitkomst', () => {
       .toEqual({ value: { id: '11111111-1111-1111-1111-111111111111', outcome: 'aanmelding' } });
   });
 
-  it('een aanmelding zet iemand ook in Leads, een afwijzing niet', () => {
-    expect(UITKOMSTEN_MET_LEAD.has('aanmelding')).toBe(true);
+  it('KRITIEK: alleen een afspraak zet iemand in Marketing > Leads', () => {
+    // Die tab is de lijst van mensen die zich via de website hebben
+    // aangemeld. Wie je in de outreach met de hand op aanmelding zet heb je
+    // zelf al binnengekregen; een tweede rij daar voegt niets toe.
     expect(UITKOMSTEN_MET_LEAD.has('afspraak')).toBe(true);
+    expect(UITKOMSTEN_MET_LEAD.has('aanmelding')).toBe(false);
     expect(UITKOMSTEN_MET_LEAD.has('geen_interesse')).toBe(false);
   });
 
-  it('de activiteit heet signup bij een aanmelding en meeting bij een afspraak', () => {
-    const rij = { email: 'a@b.nl', first_name: 'Ann', last_name: 'Bos' };
-    expect(leadUitContact(rij, 'Amsterdam 2026', 'aanmelding').activity.event).toBe('outreach_signup');
-    expect(leadUitContact(rij, 'AIBS', 'afspraak').activity.event).toBe('outreach_meeting');
-    expect(leadUitContact(rij, 'AIBS').activity.event).toBe('outreach_meeting');
+  it('de activiteit bij een afspraak heet outreach_meeting', () => {
+    expect(leadUitContact({ email: 'a@b.nl', first_name: 'Ann' }, 'AIBS').activity.event)
+      .toBe('outreach_meeting');
   });
 });
 
 describe('een prospect zonder e-mailadres', () => {
   it('KRITIEK: levert geen lead op, maar dat mag de uitkomst niet tegenhouden', () => {
-    // LinkedIn-prospects hebben geen adres: van de 154 in Amsterdam 2026
-    // LinkedIn heeft er geen een. Dat gaf een harde fout, waardoor je niet
-    // eens kon vastleggen dat iemand zich had aangemeld. leadUitContact geeft
-    // null terug; het endpoint slaat de lead dan over en bewaart de uitkomst.
-    expect(leadUitContact({ first_name: 'Ann', last_name: 'Bos' }, 'Amsterdam 2026 LinkedIn', 'aanmelding'))
+    // Speelt bij een afspraak met een LinkedIn-prospect: die hebben geen
+    // adres. Dat gaf een harde fout, waardoor de uitkomst niet eens vastgelegd
+    // kon worden. leadUitContact geeft null terug; het endpoint slaat de lead
+    // dan over en bewaart de uitkomst.
+    expect(leadUitContact({ first_name: 'Ann', last_name: 'Bos' }, 'Amsterdam 2026 LinkedIn'))
       .toBeNull();
-    expect(leadUitContact({ email: '   ' }, 'x', 'aanmelding')).toBeNull();
+    expect(leadUitContact({ email: '   ' }, 'x')).toBeNull();
   });
 
   it('met een adres komt de lead er gewoon', () => {
-    const lead = leadUitContact({ email: 'A@B.nl', first_name: 'Ann' }, 'Amsterdam 2026', 'aanmelding');
+    const lead = leadUitContact({ email: 'A@B.nl', first_name: 'Ann' }, 'AIBS');
     expect(lead.fields.email).toBe('a@b.nl');
-    expect(lead.activity.event).toBe('outreach_signup');
+    expect(lead.activity.event).toBe('outreach_meeting');
   });
 });

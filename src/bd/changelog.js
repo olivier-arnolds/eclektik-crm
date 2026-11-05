@@ -19,9 +19,30 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.158.2';
+export const CURRENT_VERSION = '1.159.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.159.0',
+    date: '2026-11-05T13:00:14Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Een aanmelding maakt geen lead meer aan',
+    summary:
+      'Sinds 1.158.0 zette de uitkomst aanmelding iemand ook in Marketing > Leads. Dat hoort daar niet: die tab is de lijst van mensen die zich via de website hebben aangemeld.',
+    changes: [
+      'Wie jij in de outreach met de hand op aanmelding zet, heb je die aanmelding zelf al binnengekregen. Een tweede rij in Leads voegt daar niets aan toe en zou de website-aanmeldingen vervuilen.',
+      'Alleen een afspraak maakt nog een lead aan, net als voor 1.158.0. De uitkomst aanmelding wordt gewoon vastgelegd en stopt de reeks.',
+      'De activiteit outreach_signup bestaat daarmee niet meer; dat soort is weer uit de code verdwenen.',
+      'Het blok Afspraken uit outreach bevat dus alleen nog echte afspraken, en er komt niets meer in Overig terecht uit een eventcampagne.',
+    ],
+    files: [
+      'api/_lib/outreach-outcome-lib.js', 'api/_lib/outreach-outcome-lib.test.js',
+      'api/outreach-outcome.js', 'src/lib/lead-bron.js',
+      'src/bd/leads-blokken.js', 'src/bd/leads-blokken.test.js', 'src/bd/marketing-leads.jsx',
+    ],
+    rollback: 'git revert naar v1.158.2.',
+  },
   {
     version: '1.158.2',
     date: '2026-11-05T12:52:22Z',
