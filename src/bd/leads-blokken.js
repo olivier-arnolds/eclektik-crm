@@ -79,6 +79,9 @@ export function maakBlokken(activiteiten, zichtbareLeads) {
       soort: BLOK_EVENT,
       slug,
       rijen: nieuwstePerLead(perSlug.get(slug) || []),
+      // Een eventblok telt aanmeldingen: dezelfde persoon kan zich voor twee
+      // events aanmelden en telt dan in allebei de koppen mee.
+      eenheid: ['aanmelding', 'aanmeldingen'],
     }))
     .sort((a, b) => String(EVENTS[a.slug]?.datum || '9999-99-99')
       .localeCompare(String(EVENTS[b.slug]?.datum || '9999-99-99')));
@@ -90,12 +93,16 @@ export function maakBlokken(activiteiten, zichtbareLeads) {
       titel: 'Afspraken uit outreach',
       soort: BLOK_OUTREACH,
       rijen: nieuwstePerLead(afspraken),
+      // Hier is niemand zich voor iets komen aanmelden: dit zijn leads die uit
+      // een gesprek zijn gekomen.
+      eenheid: ['lead', 'leads'],
     },
     {
       sleutel: BLOK_OVERIG,
       titel: 'Overig',
       soort: BLOK_OVERIG,
       rijen: nieuwstePerLead(overig),
+      eenheid: ['lead', 'leads'],
     },
     // Waitlist en scorecard: een leeg restblok zegt niets en gaat weg. Bij een
     // event zegt nul aanmeldingen juist wel iets, dus dat blok blijft staan.

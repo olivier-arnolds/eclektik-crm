@@ -51,3 +51,39 @@ export function statusKort(status) {
   if (!s) return null;
   return STATUS_KORT[s] || s;
 }
+
+// De uitkomst die met de hand is gekozen: afspraak of geen interesse.
+//
+// DIE WINT VAN DE STATUS
+//   Status beschrijft waar de reeks is gebleven ('heeft geantwoord'), uitkomst
+//   beschrijft wat eruit kwam ('afspraak'). Als iemand de uitkomst heeft
+//   ingevuld is dat het antwoord op de vraag die je stelt als je naar de lijst
+//   kijkt, en dan is 'geantwoord' alleen nog ruis.
+export const OUTCOME_KORT = {
+  afspraak: 'afspraak',
+  geen_interesse: 'geen interesse',
+};
+
+export const OUTCOME_KLEUR = {
+  afspraak: '#15803d',
+  geen_interesse: '#6b7280',
+};
+
+/**
+ * Wat er van een prospect in een lijst getoond wordt: de uitkomst als die er
+ * is, anders de status.
+ *
+ * @param {object} rij  { status, outcome }
+ * @returns {{tekst: string|null, kleur: string, isUitkomst: boolean}}
+ */
+export function weergaveVanProspect(rij) {
+  const outcome = String(rij?.outcome || '').trim();
+  if (outcome) {
+    return {
+      tekst: OUTCOME_KORT[outcome] || outcome,
+      kleur: OUTCOME_KLEUR[outcome] || '#6b7280',
+      isUitkomst: true,
+    };
+  }
+  return { tekst: statusKort(rij?.status), kleur: statusKleur(rij?.status), isUitkomst: false };
+}

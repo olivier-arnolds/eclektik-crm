@@ -567,7 +567,7 @@ describe('matchAanmeldingCampagnes', () => {
   it('koppelt op e-mailadres, hoofdletters maken niet uit', () => {
     const m = matchAanmeldingCampagnes([{ id: 'a', email: 'Bart@VanLeeuwen.nl' }], contacts);
     expect(m.get('a')).toEqual([
-      { campaignId: 'c1', campaign: 'Microsoft AIBS 2026', method: 'email', status: 'msg1_sent' },
+      { campaignId: 'c1', campaign: 'Microsoft AIBS 2026', method: 'email', status: 'msg1_sent', outcome: null },
     ]);
   });
 
@@ -575,7 +575,7 @@ describe('matchAanmeldingCampagnes', () => {
     const m = matchAanmeldingCampagnes(
       [{ id: 'b', email: 'esther@eigenbedrijf.nl', full_name: 'Esther van Lunteren' }], contacts);
     expect(m.get('b')).toEqual([
-      { campaignId: 'c2', campaign: 'Amsterdam 2026', method: 'naam', status: null },
+      { campaignId: 'c2', campaign: 'Amsterdam 2026', method: 'naam', status: null, outcome: null },
     ]);
   });
 
@@ -592,6 +592,13 @@ describe('matchAanmeldingCampagnes', () => {
     const m = matchAanmeldingCampagnes(
       [{ id: 'd', email: 'bart@vanleeuwen.nl', full_name: 'Bart Looije' }], contacts);
     expect(m.get('d').find(r => r.campaignId === 'c1').method).toBe('email');
+  });
+
+  it('neemt de uitkomst mee, want die wint van de status in de weergave', () => {
+    const m = matchAanmeldingCampagnes(
+      [{ id: 'i', email: 'greg@x.nl' }],
+      [{ campaign_id: 'c5', campaign: 'AE 2026', email: 'greg@x.nl', status: 'replied', outcome: 'afspraak' }]);
+    expect(m.get('i')[0]).toMatchObject({ status: 'replied', outcome: 'afspraak' });
   });
 
   it('neemt de status van de prospect mee', () => {

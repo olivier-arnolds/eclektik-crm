@@ -19,9 +19,30 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.152.2';
+export const CURRENT_VERSION = '1.153.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.153.0',
+    date: '2026-11-05T09:46:03Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Uitkomst afspraak staat nu in de lijst, en het blok telt leads',
+    summary:
+      'Greg Mills en Natalie Viskozki stonden op "geantwoord" terwijl er met de hand een afspraak was vastgelegd. De uitkomst wint nu van de status.',
+    changes: [
+      'Status zegt waar de berichtenreeks gebleven is, uitkomst zegt wat eruit gekomen is. Staat er een uitkomst, dan is dat het antwoord dat je zoekt en toont de lijst "afspraak" of "geen interesse" in plaats van "geantwoord".',
+      'De keuze staat in een tooltip als met de hand vastgelegde uitkomst, zodat het verschil met een automatisch bepaalde status zichtbaar blijft.',
+      'Het blok Afspraken uit outreach telt nu leads en niet aanmeldingen: daar heeft niemand zich voor iets aangemeld. Overig telt om dezelfde reden ook leads. De eventblokken blijven aanmeldingen tellen, want dezelfde persoon kan zich voor twee events aanmelden.',
+    ],
+    files: [
+      'src/lib/outreach-status.js', 'src/lib/outreach-status.test.js',
+      'src/bd/outreach-match.js', 'src/bd/outreach-match.test.js',
+      'src/bd/leads-blokken.js', 'src/bd/leads-blokken.test.js',
+      'src/bd/marketing-leads.jsx',
+    ],
+    rollback: 'git revert naar v1.152.2.',
+  },
   {
     version: '1.152.2',
     date: '2026-11-05T09:43:58Z',

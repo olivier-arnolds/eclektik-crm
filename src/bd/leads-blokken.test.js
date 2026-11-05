@@ -123,3 +123,22 @@ describe('maakBlokken', () => {
     expect(maakBlokken(null, null).every(b => b.rijen.length === 0)).toBe(true);
   });
 });
+
+describe('de eenheid in de kop', () => {
+  const zichtbaar = new Set(['lead1']);
+
+  it('eventblokken tellen aanmeldingen, de andere tellen leads', () => {
+    const blokken = maakBlokken([
+      { id: 'm1', marketing_lead_id: 'lead1', event: 'outreach_meeting', payload: {} },
+    ], zichtbaar);
+    expect(blokken.find(b => b.soort === BLOK_EVENT).eenheid).toEqual(['aanmelding', 'aanmeldingen']);
+    expect(blokken.find(b => b.soort === BLOK_OUTREACH).eenheid).toEqual(['lead', 'leads']);
+  });
+
+  it('Overig telt ook leads, want daar meldt niemand zich voor iets aan', () => {
+    const blokken = maakBlokken([
+      { id: 'w1', marketing_lead_id: 'lead1', event: 'waitlist_joined', payload: {} },
+    ], zichtbaar);
+    expect(blokken.find(b => b.soort === BLOK_OVERIG).eenheid).toEqual(['lead', 'leads']);
+  });
+});

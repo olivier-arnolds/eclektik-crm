@@ -11,7 +11,7 @@ import {
 import { matchAanmeldingCampagnes } from './outreach-match';
 import { contactVanLead, aanvullingenVoorContact, zoekBedrijf, normMail } from '../lib/contact-van-lead';
 import { maakBlokken, BLOK_EVENT } from './leads-blokken';
-import { statusKort, statusKleur } from '../lib/outreach-status';
+import { weergaveVanProspect } from '../lib/outreach-status';
 import { fetchAllRows } from '../hooks/usePipelineData';
 import { fmtRelative } from './atoms';
 import { apiFetch } from '../lib/apiFetch';
@@ -142,7 +142,7 @@ export default function MarketingLeads() {
         // Greg Mills en Natalie Viskozki stonden daardoor op 'niet benaderd'
         // terwijl ze in de outreach op afspraak stonden.
         const cts = await fetchAllRows(() => supabase.from('outreach_contact')
-          .select('campaign_id, status, email, first_name, last_name, outreach_campaign(name)')
+          .select('campaign_id, status, outcome, email, first_name, last_name, outreach_campaign(name)')
           .order('id', { ascending: true }));
         if (seq === loadSeq.current) {
           setCampagnesPerAanmelding(matchAanmeldingCampagnes(aanmeldingen, cts));
@@ -635,7 +635,8 @@ function AanmeldingenBlok({
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 8 }}>
         <span style={{ fontSize: 13, fontWeight: 600 }}>{blok.titel}</span>
         <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
-          {blok.rijen.length} {blok.rijen.length === 1 ? 'aanmelding' : 'aanmeldingen'}
+          {blok.rijen.length}{' '}
+          {(blok.eenheid || ['aanmelding', 'aanmeldingen'])[blok.rijen.length === 1 ? 0 : 1]}
         </span>
       </div>
 
@@ -644,7 +645,8 @@ function AanmeldingenBlok({
           fontSize: 12, color: 'var(--text-3)', border: '0.5px dashed var(--sep)',
           borderRadius: 6, padding: '10px 12px',
         }}>
-          Nog geen aanmeldingen{statusFilter !== 'all' ? ` met status "${statusFilter}"` : ''}.
+          Nog geen {(blok.eenheid || ['aanmelding', 'aanmeldingen'])[1]}
+          {statusFilter !== 'all' ? ` met status "${statusFilter}"` : ''}.
         </div>
       ) : (
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -914,15 +916,18 @@ function OutreachStatusChips({ statussen }) {
   return (
     <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 4, marginLeft: 6 }}>
       {statussen.map(c => {
-        const kort = statusKort(c.status);
-        if (!kort) return null;
+        // De uitkomst wint van de status: wie op afspraak staat hoeft niet te
+        // lezen dat hij ook geantwoord heeft.
+        const { tekst, kleur, isUitkomst } = weergaveVanProspect(c);
+        if (!tekst) return null;
         return (
           <span key={c.campaignId} className="chip"
-            style={{ fontSize: 11, color: statusKleur(c.status), fontWeight: 500 }}
-            title={`${c.campaign || 'campagne'}: ${kort}${c.method === 'naam'
+            style={{ fontSize: 11, color: kleur, fontWeight: 500 }}
+            title={`${c.campaign || 'campagne'}: ${tekst}${isUitkomst
+              ? ' (met de hand vastgelegde uitkomst)' : ''}${c.method === 'naam'
               ? '. Gekoppeld op naam, niet op adres, dus waarschijnlijk maar niet zeker dezelfde persoon.'
               : ''}`}>
-            {kort}{c.method === 'naam' ? '?' : ''}
+            {tekst}{c.method === 'naam' ? '?' : ''}
           </span>
         );
       })}

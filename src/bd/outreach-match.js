@@ -321,7 +321,7 @@ export function matchRegistrations(contacts, registrations) {
  *
  * @param {Array} aanmeldingen [{ id, email, full_name }]
  * @param {Array} contacts     outreach_contact-rijen met campagnenaam
- * @returns {Map} aanmelding-id -> [{ campaignId, campaign, method, status }]
+ * @returns {Map} aanmelding-id -> [{ campaignId, campaign, method, status, outcome }]
  */
 export function matchAanmeldingCampagnes(aanmeldingen, contacts) {
   const normNaam = (v) => String(v || '').toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -336,7 +336,9 @@ export function matchAanmeldingCampagnes(aanmeldingen, contacts) {
       || c?.campaign_name
       || c?.outreach_campaign?.name
       || null;
-    const waarde = { campaignId, campaign: naam, status: c?.status || null };
+    const waarde = {
+      campaignId, campaign: naam, status: c?.status || null, outcome: c?.outcome || null,
+    };
     const e = normEmail(c?.email);
     if (e) {
       if (!perEmail.has(e)) perEmail.set(e, []);
@@ -359,7 +361,8 @@ export function matchAanmeldingCampagnes(aanmeldingen, contacts) {
       for (const r of (rijen || [])) {
         if (!gevonden.has(r.campaignId)) {
           gevonden.set(r.campaignId, {
-            campaignId: r.campaignId, campaign: r.campaign, method, status: r.status,
+            campaignId: r.campaignId, campaign: r.campaign, method,
+            status: r.status, outcome: r.outcome,
           });
         }
       }

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  STATUS_LABEL, STATUS_KORT, statusLabel, statusKleur, statusKort,
+  STATUS_LABEL, STATUS_KORT, statusLabel, statusKleur, statusKort, weergaveVanProspect,
 } from './outreach-status.js';
 
 describe('statusLabel', () => {
@@ -42,5 +42,30 @@ describe('statusKleur', () => {
 describe('de twee lijsten', () => {
   it('dekken dezelfde statussen, anders mist er een label', () => {
     expect(Object.keys(STATUS_KORT).sort()).toEqual(Object.keys(STATUS_LABEL).sort());
+  });
+});
+
+describe('weergaveVanProspect', () => {
+  it('KRITIEK: de uitkomst wint van de status', () => {
+    // Status zegt waar de reeks bleef, uitkomst zegt wat eruit kwam. Greg Mills
+    // stond op 'geantwoord' terwijl er een afspraak uit was gekomen.
+    expect(weergaveVanProspect({ status: 'replied', outcome: 'afspraak' }))
+      .toEqual({ tekst: 'afspraak', kleur: '#15803d', isUitkomst: true });
+    expect(weergaveVanProspect({ status: 'done', outcome: 'geen_interesse' }))
+      .toEqual({ tekst: 'geen interesse', kleur: '#6b7280', isUitkomst: true });
+  });
+
+  it('valt terug op de status als er geen uitkomst is', () => {
+    expect(weergaveVanProspect({ status: 'msg1_sent' }))
+      .toEqual({ tekst: 'bericht 1', kleur: '#d97706', isUitkomst: false });
+    expect(weergaveVanProspect({ status: 'replied', outcome: null }).tekst)
+      .toBe('geantwoord');
+    expect(weergaveVanProspect({ status: 'replied', outcome: '  ' }).tekst)
+      .toBe('geantwoord');
+  });
+
+  it('gaat om met lege invoer', () => {
+    expect(weergaveVanProspect({}).tekst).toBeNull();
+    expect(weergaveVanProspect(null).tekst).toBeNull();
   });
 });
