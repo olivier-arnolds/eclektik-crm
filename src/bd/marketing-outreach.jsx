@@ -213,6 +213,9 @@ export default function MarketingOutreach() {
   const [reminderBezigId, setReminderBezigId] = useState(null);
   const [uitkomstBezigId, setUitkomstBezigId] = useState(null);
   const [uitkomstErr, setUitkomstErr] = useState(null);
+  // Een melding die GEEN fout is: de uitkomst is opgeslagen, alleen de lead
+  // viel weg. Rood zou hier liegen over wat er gebeurd is.
+  const [uitkomstMelding, setUitkomstMelding] = useState(null);
   const [reminderBulkBezig, setReminderBulkBezig] = useState(false);
   const [reminderErr, setReminderErr] = useState(null);
 
@@ -781,7 +784,7 @@ export default function MarketingOutreach() {
   // een contact op 'afspraak' zetten zonder dat er iemand in Leads verschijnt.
   const zetUitkomst = async (r, waarde) => {
     if (!r || uitkomstBezigId) return;
-    setUitkomstBezigId(r.id); setUitkomstErr(null);
+    setUitkomstBezigId(r.id); setUitkomstErr(null); setUitkomstMelding(null);
     try {
       const resp = await apiFetch('/api/outreach-outcome', {
         method: 'POST',
@@ -790,6 +793,16 @@ export default function MarketingOutreach() {
       });
       const data = await resp.json().catch(() => ({}));
       if (!resp.ok) throw new Error(data?.error || `HTTP ${resp.status}`);
+      // Zonder e-mailadres is er geen lead aangemaakt. Dat is geen fout, maar
+      // je moet het wel weten: deze persoon staat dus niet in Marketing >
+      // Leads en krijgt langs die weg geen bevestiging.
+      if (data?.lead_overgeslagen) {
+        const naam = [r.first_name, r.last_name].filter(Boolean).join(' ') || 'deze prospect';
+        setUitkomstMelding(`Uitkomst opgeslagen. ${naam} heeft geen e-mailadres, `
+          + 'dus er is geen lead in Marketing > Leads aangemaakt.');
+      } else {
+        setUitkomstMelding(null);
+      }
       // De server zet bij een keuze ook de status op done; hier hetzelfde doen
       // zodat de regel niet pas na een herlaadbeurt klopt.
       setRows(prev => prev.map(x => (x.id === r.id
@@ -1489,6 +1502,16 @@ export default function MarketingOutreach() {
 
       {uitkomstErr && (
         <div style={{ fontSize: 12, color: '#dc2626', marginBottom: 6 }}>{uitkomstErr}</div>
+      )}
+      {uitkomstMelding && (
+        <div style={{
+          fontSize: 12, color: '#b45309', background: 'rgba(180,83,9,0.08)',
+          border: '0.5px solid rgba(180,83,9,0.3)', borderRadius: 6,
+          padding: '6px 10px', marginBottom: 6,
+        }}>
+          {uitkomstMelding}{' '}
+          <button className="btn-ghost tiny" onClick={() => setUitkomstMelding(null)}>sluiten</button>
+        </div>
       )}
 
       {/* Lijst */}

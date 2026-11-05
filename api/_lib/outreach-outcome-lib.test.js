@@ -95,3 +95,21 @@ describe('aanmelding als eigen uitkomst', () => {
     expect(leadUitContact(rij, 'AIBS').activity.event).toBe('outreach_meeting');
   });
 });
+
+describe('een prospect zonder e-mailadres', () => {
+  it('KRITIEK: levert geen lead op, maar dat mag de uitkomst niet tegenhouden', () => {
+    // LinkedIn-prospects hebben geen adres: van de 154 in Amsterdam 2026
+    // LinkedIn heeft er geen een. Dat gaf een harde fout, waardoor je niet
+    // eens kon vastleggen dat iemand zich had aangemeld. leadUitContact geeft
+    // null terug; het endpoint slaat de lead dan over en bewaart de uitkomst.
+    expect(leadUitContact({ first_name: 'Ann', last_name: 'Bos' }, 'Amsterdam 2026 LinkedIn', 'aanmelding'))
+      .toBeNull();
+    expect(leadUitContact({ email: '   ' }, 'x', 'aanmelding')).toBeNull();
+  });
+
+  it('met een adres komt de lead er gewoon', () => {
+    const lead = leadUitContact({ email: 'A@B.nl', first_name: 'Ann' }, 'Amsterdam 2026', 'aanmelding');
+    expect(lead.fields.email).toBe('a@b.nl');
+    expect(lead.activity.event).toBe('outreach_signup');
+  });
+});

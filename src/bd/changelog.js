@@ -19,9 +19,29 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.158.0';
+export const CURRENT_VERSION = '1.158.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.158.1',
+    date: '2026-11-05T12:28:28Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Aangemeld kon niet bij LinkedIn-prospects',
+    summary:
+      'De keuze gaf "Geen e-mailadres, dus geen lead" en sloeg niets op. LinkedIn-prospects hebben geen adres: van de 154 in Amsterdam 2026 LinkedIn geen een.',
+    changes: [
+      'Een lead in Marketing > Leads kan niet zonder e-mailadres; die tabel is er helemaal op gebouwd. Maar dat mocht het vastleggen van de uitkomst niet tegenhouden, want dat is het belangrijkste feit.',
+      'De uitkomst wordt nu gewoon opgeslagen en de reeks stopt. Alleen de lead blijft achterwege.',
+      'Je krijgt daar een melding over, in oranje en niet in rood: het opslaan is gelukt, er ontbreekt alleen iets. Deze persoon staat dus niet in Marketing > Leads en krijgt langs die weg geen bevestiging.',
+      'Bij een prospect met een adres verandert er niets: die komt zoals altijd in Leads te staan.',
+    ],
+    files: [
+      'api/outreach-outcome.js', 'api/_lib/outreach-outcome-lib.test.js',
+      'src/bd/marketing-outreach.jsx',
+    ],
+    rollback: 'git revert naar v1.158.0.',
+  },
   {
     version: '1.158.0',
     date: '2026-11-05T12:17:48Z',

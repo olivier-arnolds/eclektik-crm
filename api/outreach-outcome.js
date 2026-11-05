@@ -3,9 +3,17 @@
 // terugdraaien.
 //
 // Bij 'afspraak' en 'aanmelding' komt de persoon ook in Marketing > Leads te
-// staan. Dat raakt
-// drie tabellen, en de Supabase-client in de frontend kent geen transacties,
-// dus dit hoort server-side. Zie CLAUDE.md §8.
+// staan. Dat raakt drie tabellen, en de Supabase-client in de frontend kent
+// geen transacties, dus dit hoort server-side. Zie CLAUDE.md §8.
+//
+// ZONDER E-MAILADRES WEL DE UITKOMST, GEEN LEAD
+//   marketing_leads.email is NOT NULL en de hele vind-of-maak draait op dat
+//   adres. LinkedIn-prospects hebben er geen: van de 154 in Amsterdam 2026
+//   LinkedIn heeft er niet een een adres in de campagne. Dat gaf een harde
+//   fout, en daarmee kon je niet eens vastleggen dat iemand zich had
+//   aangemeld. De uitkomst is het belangrijkste feit, dus die wordt nu
+//   opgeslagen en de lead blijft achterwege. Het antwoord zegt met
+//   lead_overgeslagen waarom, zodat de tab dat kan tonen.
 //
 // ACHTER EEN INGELOGDE GEBRUIKER. Dit is een beheerfunctie, geen webhook.
 import { createClient } from '@supabase/supabase-js';
@@ -43,18 +51,27 @@ export default async function handler(req, res) {
     // kijkt. Mislukt de lead, dan verandert er niets en ziet de gebruiker een
     // fout.
     let leadId = rij.marketing_lead_id || null;
+    let leadOvergeslagen = null;
     if (UITKOMSTEN_MET_LEAD.has(body.outcome)) {
       const lead = leadUitContact(rij, rij.campaign?.name, body.outcome);
-      if (!lead) return res.status(400).json({ error: 'Geen e-mailadres, dus geen lead' });
-      leadId = await upsertMarketingLead(supabase, lead.fields, lead.activity);
-      patch.marketing_lead_id = leadId;
+      if (lead) {
+        leadId = await upsertMarketingLead(supabase, lead.fields, lead.activity);
+        patch.marketing_lead_id = leadId;
+      } else {
+        leadOvergeslagen = 'geen e-mailadres';
+      }
     }
 
     const { error: updError } = await supabase
       .from('outreach_contact').update(patch).eq('id', rij.id);
     if (updError) throw updError;
 
-    return res.status(200).json({ ok: true, outcome: body.outcome, marketing_lead_id: leadId });
+    return res.status(200).json({
+      ok: true,
+      outcome: body.outcome,
+      marketing_lead_id: leadId,
+      ...(leadOvergeslagen ? { lead_overgeslagen: leadOvergeslagen } : {}),
+    });
   } catch (e) {
     console.error('[outreach-outcome] failed:', e?.message || e);
     return res.status(500).json({ error: 'Internal error' });
