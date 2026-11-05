@@ -9,6 +9,7 @@ import {
   datumIsActueel,
 } from '../lib/lead-bron';
 import { matchAanmeldingCampagnes } from './outreach-match';
+import { contactVanLead, aanvullingenVoorContact, zoekBedrijf, normMail } from '../lib/contact-van-lead';
 import { maakBlokken, BLOK_EVENT } from './leads-blokken';
 import { fmtRelative } from './atoms';
 import { apiFetch } from '../lib/apiFetch';
@@ -219,6 +220,90 @@ export default function MarketingLeads() {
       await load();
     } catch (e) {
       alert('Promoveren mislukt: ' + (e?.message || e));
+    } finally {
+      setBusyId(null);
+    }
+  };
+
+  // Toevoegen aan de contactendatabase ZONDER een sales lead te maken.
+  //
+  // WAAROM NAAST PROMOVEREN
+  //   Promoveren maakt een rij in de funnel, en daarmee de belofte dat er een
+  //   deal in zit. Dat geldt niet voor iedereen die zich voor een event
+  //   aanmeldt. Zo iemand hoort wel in contacts, zodat hij mee kan in de
+  //   marketing, maar niet in de funnel. De regels staan in
+  //   src/lib/contact-van-lead.js, met tests.
+  const voegContactToe = async (lead) => {
+    const ok = window.confirm(
+      `${lead.full_name || lead.email} toevoegen aan de contacten?\n` +
+      'Er komt een rij in de contactendatabase. Er wordt GEEN sales lead aangemaakt.'
+    );
+    if (!ok) return;
+    setBusyId(lead.id);
+    try {
+      const { data: auth } = await supabase.auth.getUser();
+      // De nieuwste aanmelding levert telefoon, land en het marketingvinkje.
+      const payload = activiteiten.find(
+        a => a.marketing_lead_id === lead.id && a.event === 'event_registered')?.payload
+        || activiteiten.find(a => a.marketing_lead_id === lead.id)?.payload
+        || {};
+
+      // Bedrijf alleen bij een exacte naam; zie zoekBedrijf.
+      let companyId = null;
+      if (lead.company) {
+        const { data: bedrijven } = await supabase.from('companies')
+          .select('id, name').ilike('name', lead.company.trim());
+        companyId = zoekBedrijf(lead.company, bedrijven)?.id || null;
+      }
+
+      const nieuw = contactVanLead(lead, payload, {
+        owner: ownerFromEmail(auth?.user?.email), companyId,
+      });
+
+      // Bestaat dit adres al? Dan koppelen in plaats van een tweede rij maken.
+      // Dat is hier de regel en niet de uitzondering: veel aanmelders staan al
+      // in de marketingdatabase, en een dubbel contact is precies de rommel die
+      // deze knop moet voorkomen.
+      let contactId = null;
+      let hergebruikt = false;
+      if (nieuw.email) {
+        const { data: gevonden } = await supabase.from('contacts')
+          .select('id, email, first_name, last_name, phone, title, company_name, company_id, country, marketing_content_opt_in')
+          .ilike('email', nieuw.email).limit(5);
+        // ilike leest % en _ als jokertekens. Een adres met zo'n teken erin zou
+        // dus iemand anders kunnen opleveren, en aan het verkeerde contact
+        // koppelen is erger dan een dubbele rij. Daarom hier nog een keer
+        // letterlijk vergelijken.
+        const rij = (gevonden || []).find(c => normMail(c.email) === nieuw.email) || null;
+        if (rij) {
+          contactId = rij.id;
+          hergebruikt = true;
+          const bij = aanvullingenVoorContact(rij, nieuw);
+          if (Object.keys(bij).length) {
+            await supabase.from('contacts')
+              .update({ ...bij, updated_at: new Date().toISOString() }).eq('id', rij.id);
+          }
+        }
+      }
+
+      if (!contactId) {
+        const { data: gemaakt, error: insErr } = await supabase.from('contacts')
+          .insert(nieuw).select('id').single();
+        if (insErr) throw insErr;
+        contactId = gemaakt.id;
+      }
+
+      const { error: updErr } = await supabase.from('marketing_leads')
+        .update({ contact_id: contactId, updated_at: new Date().toISOString() })
+        .eq('id', lead.id);
+      if (updErr) throw updErr;
+
+      if (hergebruikt) {
+        alert(`${nieuw.email} stond al in de contacten. Die rij is aangevuld; er is geen tweede contact aangemaakt.`);
+      }
+      await load();
+    } catch (e) {
+      alert('Toevoegen aan contacten mislukt: ' + (e?.message || e));
     } finally {
       setBusyId(null);
     }
@@ -508,6 +593,7 @@ export default function MarketingLeads() {
           campagnesPerAanmelding={campagnesPerAanmelding}
           bevestigingPerMail={bevestigingPerMail}
           onZetTelefoon={zetTelefoon} onZetAntwoord={zetAntwoord} zetBezig={zetBezig}
+          onVoegContactToe={voegContactToe}
           expanded={expanded} activity={activity} busyId={busyId}
           onToggle={toggleExpand} onPromote={promote} onArchive={archive}
           onReactivate={reactivate}
@@ -527,7 +613,8 @@ export default function MarketingLeads() {
 function AanmeldingenBlok({
   blok, statusFilter, leadById, bronPerLead, viaPerLead, telPerLead,
   campagnesPerAanmelding, bevestigingPerMail, onZetTelefoon, onZetAntwoord, zetBezig,
-  expanded, activity, busyId, onToggle, onPromote, onArchive, onReactivate, th, td,
+  expanded, activity, busyId, onToggle, onPromote, onArchive, onReactivate,
+  onVoegContactToe, th, td,
 }) {
   // De campagnechip hoort bij de eventtabellen. Bij een afspraak uit outreach
   // staat de campagne al in de kolom Aanmelding, en bij waitlist en scorecard
@@ -590,6 +677,7 @@ function AanmeldingenBlok({
                   onPromote={() => onPromote(lead)}
                   onArchive={() => onArchive(lead)}
                   onReactivate={() => onReactivate(lead)}
+                  onVoegContactToe={() => onVoegContactToe(lead)}
                   td={td}
                 />
               );
@@ -689,7 +777,7 @@ function TelefoonCel({ lead, telefoon, onZet, td }) {
   );
 }
 
-function LeadRow({ lead, bron, datumActueel, via, campagnes, kolomAantal, telefoon, onZetTelefoon, bevestiging, onZetAntwoord, zetBezig, expanded, activityRows, busy, onToggle, onPromote, onArchive, onReactivate, td }) {
+function LeadRow({ lead, bron, datumActueel, via, campagnes, kolomAantal, telefoon, onZetTelefoon, bevestiging, onZetAntwoord, zetBezig, expanded, activityRows, busy, onToggle, onPromote, onArchive, onReactivate, onVoegContactToe, td }) {
   return (
     <>
       <tr onClick={onToggle} style={{ cursor: 'pointer' }}>
@@ -789,6 +877,21 @@ function LeadRow({ lead, bron, datumActueel, via, campagnes, kolomAantal, telefo
               <button className="btn-primary tiny" disabled={busy} onClick={onPromote}>
                 Promoveer
               </button>{' '}
+              {/* Toevoegen aan de contacten maakt GEEN sales lead. Staat het
+                  contact er al, dan is de knop een merkteken en niet opnieuw
+                  een knop: twee keer klikken zou een dubbel contact opleveren,
+                  en dat is precies wat deze knop moet voorkomen. */}
+              {lead.contact_id ? (
+                <span className="chip" style={{ fontSize: 11, color: 'var(--text-3)' }}
+                  title="Deze persoon staat in de contactendatabase">
+                  contact toegevoegd
+                </span>
+              ) : (
+                <button className="btn-ghost tiny" disabled={busy} onClick={onVoegContactToe}
+                  title="Zet deze persoon in de contactendatabase, zonder een sales lead aan te maken">
+                  Voeg contact toe
+                </button>
+              )}{' '}
               <button className="btn-ghost tiny" disabled={busy} onClick={onArchive}>
                 Archiveer
               </button>

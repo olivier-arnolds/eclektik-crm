@@ -19,9 +19,31 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.149.1';
+export const CURRENT_VERSION = '1.150.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.150.0',
+    date: '2026-11-05T08:44:53Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Knop "Voeg contact toe" in de Leads-tab',
+    summary:
+      'Promoveren maakt een sales lead, en dat is de belofte dat er een deal in zit. Niet elke aanmelding is dat. Deze knop zet iemand in de contactendatabase zonder een rij in de funnel.',
+    changes: [
+      'Nieuwe knop naast Promoveer en Archiveer. Hij maakt een rij in contacts met naam, e-mail, telefoon, functie, bedrijf en land, bron "Website - marketing lead" en jou als eigenaar. Er komt GEEN rij in leads.',
+      'De opt-in voor marketingmail volgt consentMarketing uit het aanmeldformulier, dus wat de deelnemer zelf heeft aangevinkt. Alles wat niet duidelijk ja is, is nee.',
+      'Staat het e-mailadres al in de contacten, dan wordt er geen tweede rij gemaakt maar gekoppeld aan het bestaande contact. Alleen lege velden worden aangevuld; wat er al staat blijft staan, want dat is door een mens gezet. De opt-in mag wel van uit naar aan, nooit andersom.',
+      'Het bedrijf wordt alleen gekoppeld bij een exacte naam. Sage en Sage Global Services zijn verschillende klanten, en aan het verkeerde account hangen is erger dan geen account.',
+      'Nieuwe kolom marketing_leads.contact_id legt vast welk contact erbij hoort. Is die gevuld, dan toont de rij "contact toegevoegd" in plaats van de knop, zodat twee keer klikken geen dubbel contact geeft.',
+      'De lead blijft op active staan: toevoegen aan de contacten zegt niets over de funnel, en promoveren kan daarna nog steeds.',
+    ],
+    files: [
+      'src/lib/contact-van-lead.js', 'src/lib/contact-van-lead.test.js',
+      'src/bd/marketing-leads.jsx', 'sql/schema_marketing_leads_contact_id_2026-11-05.sql',
+    ],
+    rollback: 'git revert naar v1.149.1. De kolom contact_id mag blijven staan; hij is leeg zonder deze knop.',
+  },
   {
     version: '1.149.1',
     date: '2026-11-05T08:19:36Z',
