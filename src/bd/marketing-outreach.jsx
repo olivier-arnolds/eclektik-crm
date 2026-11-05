@@ -13,6 +13,7 @@ import {
 } from './outreach-match';
 import { outreachTextToHtml, subjectForStep } from '../lib/outreach-html';
 import { signatureFor } from '../lib/signatures.js';
+import { dagcapVanaf } from '../lib/verzenddag.js';
 
 // Outreach-tab onder Marketing. Ontwerp: docs/outreach-handover.md addendum §9.
 //
@@ -173,7 +174,7 @@ export default function MarketingOutreach() {
   const [campaign, setCampaign] = useState(null);
   const [rows, setRows] = useState([]);
   const [sync, setSync] = useState(null);         // outreach_sync_state-rij
-  const [sentInfo, setSentInfo] = useState({ count: 0, firstAt: null, last24h: 0, last7d: 0 });
+  const [sentInfo, setSentInfo] = useState({ count: 0, firstAt: null, vandaag: 0, last7d: 0 });
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState(null);
 
@@ -276,12 +277,13 @@ export default function MarketingOutreach() {
         .eq('campaign_id', camp.id).eq('direction', 'outbound');
 
       // Verbruik van de caps, zodat je zonder dry-run ziet hoeveel ruimte er nog
-      // is. Rollende vensters, precies zoals het verzendendpoint ze telt.
+      // is. Precies zoals het verzendendpoint telt: de dag vanaf middernacht
+      // Amsterdamse tijd, de week over een rollend venster.
       const nu = Date.now();
       const [{ count: c24 }, { count: c7 }] = await Promise.all([
         supabase.from('outreach_message').select('id', { count: 'exact', head: true })
           .eq('campaign_id', camp.id).eq('direction', 'outbound')
-          .gte('sent_or_received_at', new Date(nu - 86400000).toISOString()),
+          .gte('sent_or_received_at', dagcapVanaf(new Date(nu))),
         supabase.from('outreach_message').select('id', { count: 'exact', head: true })
           .eq('campaign_id', camp.id).eq('direction', 'outbound')
           .gte('sent_or_received_at', new Date(nu - 7 * 86400000).toISOString()),
@@ -289,7 +291,7 @@ export default function MarketingOutreach() {
       setSentInfo({
         count: count || 0,
         firstAt: firstOut?.[0]?.sent_or_received_at || null,
-        last24h: c24 || 0,
+        vandaag: c24 || 0,
         last7d: c7 || 0,
       });
 
@@ -906,9 +908,10 @@ export default function MarketingOutreach() {
   // opvolgbericht en geen inbox om te scannen. De tab verzwijgt wat niet bestaat
   // in plaats van lege of misleidende vakjes te tonen.
   const isLinkedIn = campaign.channel === 'linkedin';
-  // Rollende vensters, net als aan de verzendkant: 'vandaag' is de afgelopen 24
-  // uur, niet de kalenderdag.
-  const dagRuimte = Math.max(0, (campaign.daily_cap || 0) - sentInfo.last24h);
+  // De dag loopt van middernacht tot middernacht, Amsterdamse tijd, net als aan
+  // de verzendkant. De week is nog wel een rollend venster: die cap is er voor
+  // LinkedIn, dat zelf per rollende week rekent.
+  const dagRuimte = Math.max(0, (campaign.daily_cap || 0) - sentInfo.vandaag);
   const weekRuimte = campaign.weekly_cap
     ? Math.max(0, campaign.weekly_cap - sentInfo.last7d)
     : null;
@@ -1237,8 +1240,8 @@ export default function MarketingOutreach() {
             border: '0.5px solid var(--sep)',
             color: dagRuimte > 0 ? 'var(--text-2)' : '#b45309',
           }}>
-            vandaag {sentInfo.last24h} van {campaign.daily_cap}
-            {dagRuimte > 0 ? ` · nog ${dagRuimte}` : ' · dagcap bereikt'}
+            vandaag {sentInfo.vandaag} van {campaign.daily_cap}
+            {dagRuimte > 0 ? ` · nog ${dagRuimte}` : ' · dagcap bereikt, morgen weer ruimte'}
           </span>
           {campaign.weekly_cap ? (
             <span style={{
@@ -1342,7 +1345,7 @@ export default function MarketingOutreach() {
               <strong>{sendPlan.would_send}</strong> zouden nu uitgaan
               {' '}(bericht 1: {sendPlan.by_step?.['1'] ?? 0}, bericht 2: {sendPlan.by_step?.['2'] ?? 0}).
               {sendPlan.batch_limit ? ` Batch staat op ${sendPlan.batch_limit}.` : ''}
-              {' '}Laatste 24 uur al verstuurd: {sendPlan.sent_last_24h} van dagcap {sendPlan.daily_cap}.
+              {' '}Vandaag al verstuurd: {sendPlan.sent_today ?? sendPlan.sent_last_24h} van dagcap {sendPlan.daily_cap}.
               {sendPlan.weekly_cap
                 ? ` Deze week: ${sendPlan.sent_last_7d} van weekcap ${sendPlan.weekly_cap}.`
                 : ''}

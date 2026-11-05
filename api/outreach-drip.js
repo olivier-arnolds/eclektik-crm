@@ -1,6 +1,7 @@
 import { requireCron } from './_lib/guard.js';
 import { createClient } from '@supabase/supabase-js';
 import { runOutreachBatch } from './_lib/outreach-runner.js';
+import { dagcapVanaf } from '../src/lib/verzenddag.js';
 import {
   planDrip, slotsRemaining, inSendWindow, DRIP_MAX_PER_RUN, DRIP_START_HOUR, DRIP_END_HOUR,
 } from './_lib/outreach-drip-lib.js';
@@ -71,11 +72,13 @@ export default async function handler(req, res) {
       continue;
     }
 
-    const dayAgo = new Date(now.getTime() - 86400000).toISOString();
+    // De dag loopt van middernacht tot middernacht, Amsterdamse tijd; dezelfde
+    // grens als in outreach-runner.js, anders rekent de cron anders dan de knop.
+    const dagStart = dagcapVanaf(now);
     const weekAgo = new Date(now.getTime() - 7 * 86400000).toISOString();
     const [{ count: sentToday }, { count: sentThisWeek }] = await Promise.all([
       supabase.from('outreach_message').select('id', { count: 'exact', head: true })
-        .eq('campaign_id', camp.id).eq('direction', 'outbound').gte('sent_or_received_at', dayAgo),
+        .eq('campaign_id', camp.id).eq('direction', 'outbound').gte('sent_or_received_at', dagStart),
       supabase.from('outreach_message').select('id', { count: 'exact', head: true })
         .eq('campaign_id', camp.id).eq('direction', 'outbound').gte('sent_or_received_at', weekAgo),
     ]);

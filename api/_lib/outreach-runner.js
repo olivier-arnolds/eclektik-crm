@@ -5,6 +5,7 @@ import {
 import { senderNameFor } from '../../src/lib/senders.js';
 import { signatureFor } from '../../src/lib/signatures.js';
 import { addUtmToPlainText, slugify, UTM_BRONNEN } from '../../src/lib/utm.js';
+import { dagcapVanaf } from '../../src/lib/verzenddag.js';
 import { sendLinkedInDM } from './unipile-dm.js';
 
 // Kern van job A: kiest wie er nu een bericht krijgt en verstuurt het.
@@ -122,13 +123,17 @@ export async function runOutreachBatch({
 
   const now = new Date();
 
-  // Dagcap over een rollend etmaal. Strenger dan een kalenderdag en het voorkomt
-  // 120 mails om 23:00 gevolgd door 120 om 01:00.
-  const dayAgo = new Date(now.getTime() - 86400000).toISOString();
+  // Dagcap per kalenderdag, Amsterdamse tijd: alles van voor middernacht is
+  // gisteren. Dit liep over een rollend etmaal, en dat las verkeerd: wie zijn
+  // twaalf gistermiddag verstuurde zag de volgende ochtend nog 'dagcap bereikt'
+  // en kon tot dat tijdstip niets. De stapeling waar het rollende venster tegen
+  // beschermde (twaalf om 23:00 en twaalf om 01:00) kan sowieso niet, want het
+  // verzendvenster loopt van 09:00 tot 17:00. Zie src/lib/verzenddag.js.
+  const dayStart = dagcapVanaf(now);
   const { count: sentToday } = await supabase
     .from('outreach_message').select('id', { count: 'exact', head: true })
     .eq('campaign_id', campaign_id).eq('direction', 'outbound')
-    .gte('sent_or_received_at', dayAgo);
+    .gte('sent_or_received_at', dayStart);
 
   // Weekcap over een rollende week, met dezelfde redenering als de dagcap:
   // strenger dan een kalenderweek, en het voorkomt 150 op zondagavond gevolgd
@@ -165,8 +170,14 @@ export async function runOutreachBatch({
   // mensen in de lijst; met 2 per week zouden er maar 6 van hen voor het event
   // bereikt worden. Met 2 per dag is KPN in een week rond en krijgen er nooit
   // drie op dezelfde dag een bericht van Marco, wat het punt was.
+  //
+  // Dit venster blijft bewust ROLLEND, ook nu de dagcap per kalenderdag telt.
+  // De dagcap is een budget en hoort bij de dag; deze regel is spreiding, en
+  // daarvoor is een rollend etmaal juist beter: met een kalenderdag zouden er om
+  // 16:50 twee naar KPN kunnen en de volgende ochtend om 09:10 nog twee, vier in
+  // zestien uur. Dat is precies wat deze regel moet voorkomen.
   const groupSince = isLinkedIn
-    ? dayAgo
+    ? new Date(now.getTime() - 86400000).toISOString()
     : new Date(now.getTime() - 7 * 86400000).toISOString();
   const { data: recent } = await supabase
     .from('outreach_message').select('to_address,contact_id')
@@ -226,6 +237,9 @@ export async function runOutreachBatch({
   const plan = {
     campaign: camp.name,
     channel: camp.channel || 'email',
+    sent_today: sentToday || 0,
+    // Oude naam, nog gelezen door een eerdere versie van de tab. Telt sinds
+    // v1.149.1 de kalenderdag en niet de laatste 24 uur.
     sent_last_24h: sentToday || 0,
     daily_cap: camp.daily_cap,
     sent_last_7d: sentThisWeek || 0,

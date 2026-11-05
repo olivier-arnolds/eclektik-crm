@@ -19,9 +19,33 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.149.0';
+export const CURRENT_VERSION = '1.149.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.149.1',
+    date: '2026-11-05T08:19:36Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Dagcap telt nu de kalenderdag in plaats van de laatste 24 uur',
+    summary:
+      'Twaalf berichten gisteren om 14:12 betekende vanochtend nog "dagcap bereikt", en pas vanmiddag om 14:12 weer ruimte. De dag loopt nu van middernacht tot middernacht, Amsterdamse tijd.',
+    changes: [
+      'De dagcap telde over een rollend etmaal. Dat voorkwam stapelen rond middernacht, maar het las verkeerd: een nieuwe dag gaf geen nieuwe ruimte, en de teller zei ook nog eens "vandaag".',
+      'De grens ligt nu op middernacht Amsterdamse tijd. Alles van voor middernacht is gisteren, dus een nieuwe dag begint met de volle dagcap.',
+      'Amsterdam en niet UTC, want de server draait op UTC en in de zomer zou een nieuwe dag daar pas om 02:00 beginnen.',
+      'De stapeling waar het rollende venster tegen beschermde kan sowieso niet: er gaat alleen iets uit tussen 09:00 en 17:00 op werkdagen.',
+      'De cron (api/outreach-drip.js) rekende de dag apart uit en gebruikt nu dezelfde grens, anders zou de automaat anders rekenen dan de knop.',
+      'De regel die bepaalt hoeveel berichten er per bedrijf uitgaan blijft wel een rollend etmaal. Dat is spreiding en geen budget: met een kalenderdag zouden er om 16:50 twee naar hetzelfde bedrijf kunnen en de volgende ochtend om 09:10 nog twee.',
+      'De weekcap blijft ook rollend. Die is er voor LinkedIn, en dat platform rekent zelf per rollende week.',
+      'In de tab staat nu "dagcap bereikt, morgen weer ruimte" en de dry-run zegt "Vandaag al verstuurd" in plaats van "Laatste 24 uur".',
+    ],
+    files: [
+      'src/lib/verzenddag.js', 'src/lib/verzenddag.test.js',
+      'api/_lib/outreach-runner.js', 'api/outreach-drip.js', 'src/bd/marketing-outreach.jsx',
+    ],
+    rollback: 'git revert naar v1.149.0.',
+  },
   {
     version: '1.149.0',
     date: '2026-11-05T07:40:26Z',
