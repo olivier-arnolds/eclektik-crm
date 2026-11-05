@@ -19,9 +19,24 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.158.1';
+export const CURRENT_VERSION = '1.158.2';
 
 export const CHANGELOG = [
+  {
+    version: '1.158.2',
+    date: '2026-11-05T12:52:22Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Afspraken uit outreach bevat weer alleen afspraken',
+    summary:
+      'Het blok heette sinds 1.158.0 Afspraken en aanmeldingen uit outreach en bevatte allebei. Dat blok is de lijst van gesprekken die eraan komen; een eventaanmelding is iets anders.',
+    changes: [
+      'De kop heet weer Afspraken uit outreach en het blok bevat alleen activiteiten van het soort outreach_meeting.',
+      'Een aanmelding uit een eventcampagne (outreach_signup) valt in Overig, met het campagnelabel erbij zodat je ziet waar hij vandaan komt.',
+    ],
+    files: ['src/bd/leads-blokken.js', 'src/bd/leads-blokken.test.js'],
+    rollback: 'git revert naar v1.158.1.',
+  },
   {
     version: '1.158.1',
     date: '2026-11-05T12:28:28Z',

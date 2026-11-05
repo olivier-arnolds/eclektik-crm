@@ -61,10 +61,10 @@ export function maakBlokken(activiteiten, zichtbareLeads) {
       const slug = String(a.payload?.eventSlug || '').trim() || 'zonder-slug';
       if (!perSlug.has(slug)) perSlug.set(slug, []);
       perSlug.get(slug).push(a);
-    } else if (a.event === 'outreach_meeting' || a.event === 'outreach_signup') {
-      // Allebei komen ze uit een outreachcampagne. Een afspraak is een gepland
-      // gesprek, een aanmelding is iemand die naar het event komt; de kolom
-      // Aanmelding laat per rij zien welke van de twee het is.
+    } else if (a.event === 'outreach_meeting') {
+      // Alleen geplande gesprekken. Een aanmelding uit een eventcampagne
+      // (outreach_signup) hoort hier niet: dat is geen afspraak, en dit blok
+      // is de lijst van gesprekken die er aankomen. Die valt in Overig.
       afspraken.push(a);
     } else {
       overig.push(a);
@@ -93,7 +93,7 @@ export function maakBlokken(activiteiten, zichtbareLeads) {
     ...eventBlokken,
     {
       sleutel: BLOK_OUTREACH,
-      titel: 'Afspraken en aanmeldingen uit outreach',
+      titel: 'Afspraken uit outreach',
       soort: BLOK_OUTREACH,
       rijen: nieuwstePerLead(afspraken),
       // Hier is niemand zich voor iets komen aanmelden: dit zijn leads die uit
