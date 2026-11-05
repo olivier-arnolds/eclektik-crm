@@ -74,8 +74,16 @@ describe('maakBlokken', () => {
       { id: 'm1', marketing_lead_id: 'lead1', event: 'outreach_meeting', payload: { campaign: 'AIBS' } },
     ], zichtbaar);
     const blok = blokken.find(b => b.soort === BLOK_OUTREACH);
-    expect(blok.titel).toBe('Afspraken uit outreach');
+    expect(blok.titel).toBe('Afspraken en aanmeldingen uit outreach');
     expect(blok.rijen).toHaveLength(1);
+  });
+
+  it('zet een aanmelding uit outreach in hetzelfde blok als een afspraak', () => {
+    const blokken = maakBlokken([
+      { id: 's1', marketing_lead_id: 'lead1', event: 'outreach_signup', payload: { campaign: 'Amsterdam 2026' } },
+      { id: 'm1', marketing_lead_id: 'lead2', event: 'outreach_meeting', payload: { campaign: 'AIBS' } },
+    ], new Set(['lead1', 'lead2']));
+    expect(blokken.find(b => b.soort === BLOK_OUTREACH).rijen).toHaveLength(2);
   });
 
   it('vangt waitlist en scorecard op in Overig, en laat dat blok weg als het leeg is', () => {

@@ -19,9 +19,34 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.157.0';
+export const CURRENT_VERSION = '1.158.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.158.0',
+    date: '2026-11-05T12:17:48Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Aanmelding is nu een echte uitkomst, geen label over afspraak heen',
+    summary:
+      'In 1.157.0 kregen eventcampagnes het woord Aangemeld, maar er werd nog steeds afspraak weggeschreven. In een jaaroverzicht over alle campagnes is dat onleesbaar.',
+    changes: [
+      'outreach_contact.outcome kent nu drie waarden: afspraak, aanmelding en geen_interesse. Een eventcampagne schrijft aanmelding weg, geen afspraak met een ander etiket.',
+      'De keuzelijst biedt per campagne maar een van de twee positieve uitkomsten aan, afhankelijk van outreach_campaign.doel. Je hoeft dus niet bij elke keuze na te denken over een onderscheid dat de campagne al gemaakt heeft.',
+      'De activiteit in Marketing > Leads heet outreach_signup bij een aanmelding en blijft outreach_meeting bij een afspraak. Het blok heet nu Afspraken en aanmeldingen uit outreach en bevat allebei; per rij zie je welke van de twee het is.',
+      'Niets gemigreerd: de drie bestaande afspraken staan in Microsoft Account Executives 2026 en dat is en blijft een afspraakcampagne.',
+      'De weergave leest de waarde nu zelf, zonder de campagne erbij te hoeven halen. Dat was de kern van het bezwaar: een waarde moet buiten zijn context nog kloppen.',
+    ],
+    files: [
+      'sql/schema_outreach_outcome_aanmelding_2026-11-05.sql',
+      'sql/schema_outreach_campaign_doel_2026-11-05.sql',
+      'api/_lib/outreach-outcome-lib.js', 'api/_lib/outreach-outcome-lib.test.js',
+      'api/outreach-outcome.js', 'src/lib/outreach-status.js', 'src/lib/outreach-status.test.js',
+      'src/lib/lead-bron.js', 'src/bd/leads-blokken.js', 'src/bd/leads-blokken.test.js',
+      'src/bd/marketing-outreach.jsx', 'src/bd/marketing-leads.jsx',
+    ],
+    rollback: 'git revert naar v1.157.0. Let op: rijen met outcome = aanmelding passen dan niet meer bij de code, hoewel de database ze wel toestaat.',
+  },
   {
     version: '1.157.0',
     date: '2026-11-05T12:09:00Z',

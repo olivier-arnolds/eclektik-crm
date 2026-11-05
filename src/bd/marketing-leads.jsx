@@ -676,6 +676,7 @@ function AanmeldingenBlok({
                   bron={blok.soort === BLOK_EVENT && datumIsActueel(blok.slug, a.payload)
                     ? null
                     : (a.event === 'event_registered' || a.event === 'outreach_meeting'
+                      || a.event === 'outreach_signup'
                       ? bronLabel(a.event, a.payload)
                       : (lead.first_src || bronPerLead[lead.id] || null))}
                   // Staat er wel een label in een eventblok, dan klopt de

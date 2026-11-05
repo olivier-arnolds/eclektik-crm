@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { validateOutcome, outcomePatch, leadUitContact } from './outreach-outcome-lib.js';
+import {
+  validateOutcome, outcomePatch, leadUitContact, UITKOMSTEN_MET_LEAD,
+} from './outreach-outcome-lib.js';
 
 const ID = '7a3f1c84-2b65-4d0e-9a51-6c8e3f0d4b27';
 
@@ -68,5 +70,28 @@ describe('leadUitContact', () => {
 
   it('geeft null zonder e-mailadres', () => {
     expect(leadUitContact({ first_name: 'Zonder' }, 'x')).toBe(null);
+  });
+});
+
+describe('aanmelding als eigen uitkomst', () => {
+  it('KRITIEK: aanmelding is een geldige uitkomst met een eigen waarde', () => {
+    // Niet 'afspraak' met een ander label: in een jaaroverzicht over alle
+    // campagnes moet het verschil tussen een gesprek en een eventaanmelding
+    // te tellen zijn.
+    expect(validateOutcome({ id: '11111111-1111-1111-1111-111111111111', outcome: 'aanmelding' }))
+      .toEqual({ value: { id: '11111111-1111-1111-1111-111111111111', outcome: 'aanmelding' } });
+  });
+
+  it('een aanmelding zet iemand ook in Leads, een afwijzing niet', () => {
+    expect(UITKOMSTEN_MET_LEAD.has('aanmelding')).toBe(true);
+    expect(UITKOMSTEN_MET_LEAD.has('afspraak')).toBe(true);
+    expect(UITKOMSTEN_MET_LEAD.has('geen_interesse')).toBe(false);
+  });
+
+  it('de activiteit heet signup bij een aanmelding en meeting bij een afspraak', () => {
+    const rij = { email: 'a@b.nl', first_name: 'Ann', last_name: 'Bos' };
+    expect(leadUitContact(rij, 'Amsterdam 2026', 'aanmelding').activity.event).toBe('outreach_signup');
+    expect(leadUitContact(rij, 'AIBS', 'afspraak').activity.event).toBe('outreach_meeting');
+    expect(leadUitContact(rij, 'AIBS').activity.event).toBe('outreach_meeting');
   });
 });

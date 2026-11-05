@@ -16,6 +16,9 @@ import { signatureFor } from '../lib/signatures.js';
 import { dagcapVanaf } from '../lib/verzenddag.js';
 // Gedeeld met de Leads-tab, zodat een status daar niet anders heet dan hier.
 import { STATUS_LABEL, STATUS_COLOR, uitkomstKeuzes } from '../lib/outreach-status.js';
+
+// De twee uitkomsten die 'het is gelukt' betekenen, en dus groen kleuren.
+const POSITIEVE_UITKOMST = new Set(['afspraak', 'aanmelding']);
 import { fetchAllRows } from '../hooks/usePipelineData';
 
 // Outreach-tab onder Marketing. Ontwerp: docs/outreach-handover.md addendum §9.
@@ -1655,10 +1658,10 @@ export default function MarketingOutreach() {
                       style={{
                         font: 'inherit', fontSize: 12, padding: '1px 4px', borderRadius: 4,
                         border: '0.5px solid var(--sep)', cursor: 'pointer',
-                        background: r.outcome === 'afspraak' ? 'rgba(22,163,74,0.14)' : 'transparent',
-                        color: r.outcome === 'afspraak' ? '#15803d'
+                        background: POSITIEVE_UITKOMST.has(r.outcome) ? 'rgba(22,163,74,0.14)' : 'transparent',
+                        color: POSITIEVE_UITKOMST.has(r.outcome) ? '#15803d'
                           : r.outcome === 'geen_interesse' ? 'var(--text-3)' : 'var(--text-2)',
-                        fontWeight: r.outcome === 'afspraak' ? 500 : 400,
+                        fontWeight: POSITIEVE_UITKOMST.has(r.outcome) ? 500 : 400,
                       }}>
                       <option value="">-</option>
                       {/* De woorden hangen aan het doel van de campagne: bij een

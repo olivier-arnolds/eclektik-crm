@@ -71,7 +71,7 @@ export function bronLabel(event, payload) {
   // Iemand die in de outreachlijst op 'afspraak' is gezet. De campagnenaam
   // staat in de payload, want anders leest de kolom Bron alleen 'outreach' en
   // weet je niet uit welke actie diegene kwam.
-  if (event === 'outreach_meeting') {
+  if (event === 'outreach_meeting' || event === 'outreach_signup') {
     const camp = typeof payload?.campaign === 'string' ? payload.campaign.trim() : '';
     return camp ? `Outreach: ${camp}` : 'Outreach';
   }

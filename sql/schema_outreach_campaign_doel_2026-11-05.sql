@@ -8,10 +8,12 @@
 -- verkeerde woord: daar meld je je aan, je plant geen gesprek. Hetzelfde veld,
 -- een andere vraag.
 --
--- Alleen het LABEL verschilt. De opgeslagen waarde in outreach_contact.outcome
--- blijft 'afspraak', zodat er niets gemigreerd hoeft te worden en de
--- validatie in api/_lib/outreach-outcome-lib.js onveranderd blijft. Dit veld
--- zegt dus hoe je die waarde moet lezen, niet wat er staat. De labels staan in
+-- Dit veld bepaalt WELKE uitkomst de campagne aanbiedt, niet alleen hoe hij
+-- heet. Een campagne met doel 'aanmelding' schrijft outcome = 'aanmelding'
+-- weg, een met doel 'afspraak' schrijft 'afspraak'. De eerste opzet legde bij
+-- allebei 'afspraak' vast met alleen een ander label eroverheen; dat leest
+-- prettig in de tab en verkeerd in een jaaroverzicht over alle campagnes.
+-- Zie sql/schema_outreach_outcome_aanmelding_2026-11-05.sql en
 -- uitkomstKeuzes() in src/lib/outreach-status.js, met tests.
 alter table outreach_campaign
   add column if not exists doel text not null default 'afspraak';

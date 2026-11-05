@@ -76,22 +76,26 @@ describe('uitkomstKeuzes', () => {
     expect(uitkomstKeuzes('aanmelding').map(k => k.label)).toEqual(['Aangemeld', 'Geen interesse']);
   });
 
+  it('KRITIEK: de WAARDE verschilt ook, niet alleen het label', () => {
+    // Alleen het label omzetten leest prettig in de tab en verkeerd in een
+    // jaaroverzicht: daar staat dan 'afspraak' bij iemand die zich enkel heeft
+    // aangemeld, en juist dat verschil wil je tellen.
+    expect(uitkomstKeuzes('aanmelding').map(k => k.waarde)).toEqual(['aanmelding', 'geen_interesse']);
+    expect(uitkomstKeuzes('afspraak').map(k => k.waarde)).toEqual(['afspraak', 'geen_interesse']);
+  });
+
   it('een gewone campagne zegt afspraak', () => {
     expect(uitkomstKeuzes('afspraak').map(k => k.label)).toEqual(['Afspraak', 'Geen interesse']);
     expect(uitkomstKeuzes(null).map(k => k.label)).toEqual(['Afspraak', 'Geen interesse']);
   });
 
-  it('de opgeslagen waarde verandert niet mee', () => {
-    // Anders zou er gemigreerd moeten worden en zou de validatie aan de
-    // serverkant een onbekende uitkomst zien.
-    for (const doel of ['aanmelding', 'afspraak', null]) {
-      expect(uitkomstKeuzes(doel).map(k => k.waarde)).toEqual(['afspraak', 'geen_interesse']);
-    }
+  it('weergaveVanProspect leest de waarde zelf, zonder de campagne erbij', () => {
+    expect(weergaveVanProspect({ outcome: 'aanmelding' }).tekst).toBe('aangemeld');
+    expect(weergaveVanProspect({ outcome: 'afspraak' }).tekst).toBe('afspraak');
+    expect(weergaveVanProspect({ outcome: 'geen_interesse' }).tekst).toBe('geen interesse');
   });
 
-  it('weergaveVanProspect volgt hetzelfde doel', () => {
-    expect(weergaveVanProspect({ outcome: 'afspraak', doel: 'aanmelding' }).tekst).toBe('aangemeld');
-    expect(weergaveVanProspect({ outcome: 'afspraak', doel: 'afspraak' }).tekst).toBe('afspraak');
-    expect(weergaveVanProspect({ outcome: 'geen_interesse', doel: 'aanmelding' }).tekst).toBe('geen interesse');
+  it('een aanmelding kleurt groen, net als een afspraak', () => {
+    expect(weergaveVanProspect({ outcome: 'aanmelding' }).kleur).toBe('#15803d');
   });
 });

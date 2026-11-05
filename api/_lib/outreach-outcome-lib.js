@@ -1,8 +1,15 @@
 // Pure logica voor api/outreach-outcome.js: de uitkomst van een outreachcontact
 // met de hand vastleggen vanuit Marketing > Outreach.
 //
+// DRIE UITKOMSTEN, EN HET VERSCHIL MOET IN DE DATABASE STAAN
+//   'afspraak' is een gepland gesprek, 'aanmelding' is iemand die naar het
+//   event komt. Dat als een label over dezelfde waarde leggen leest prettig in
+//   de tab en verkeerd in een jaaroverzicht: daar staat dan 'afspraak' bij
+//   iemand die zich alleen heeft aangemeld. Welke van de twee een campagne
+//   aanbiedt staat in outreach_campaign.doel.
+//
 // WAAROM DIT EEN ENDPOINT IS EN GEEN UPDATE VANUIT DE TAB
-//   Bij 'afspraak' raken we twee tabellen: outreach_contact en marketing_leads
+//   Bij 'afspraak' en 'aanmelding' raken we twee tabellen: outreach_contact en marketing_leads
 //   (plus de activiteit eronder). De Supabase-client in de frontend kent geen
 //   transacties, dus een half gelukte reeks zou een contact op 'afspraak' zetten
 //   zonder dat er iemand in de tab Leads verschijnt. Zie CLAUDE.md §8.
@@ -12,11 +19,15 @@
 //   bedoeld voor stilte, en die is er dan niet meer. Status 'done' is precies
 //   wat de selectie in outreach-send-lib.js overslaat.
 
-export const UITKOMSTEN = new Set(['afspraak', 'geen_interesse']);
+export const UITKOMSTEN = new Set(['afspraak', 'aanmelding', 'geen_interesse']);
+
+// De uitkomsten die iemand in Marketing > Leads zetten. 'geen_interesse' niet:
+// daar valt niets mee te doen.
+export const UITKOMSTEN_MET_LEAD = new Set(['afspraak', 'aanmelding']);
 
 /**
  * @returns {{error}|{value:{id, outcome}}} outcome is 'afspraak',
- *   'geen_interesse' of null. null betekent: keuze terugdraaien.
+ *   'aanmelding', 'geen_interesse' of null. null betekent: keuze terugdraaien.
  */
 export function validateOutcome(body) {
   if (!body || typeof body !== 'object') return { error: 'Missing body' };
@@ -66,7 +77,7 @@ export function outcomePatch({ outcome, door }, now = new Date()) {
  *
  * @returns {null|{fields, activity}} null als er geen e-mailadres is.
  */
-export function leadUitContact(rij, campagneNaam) {
+export function leadUitContact(rij, campagneNaam, outcome = 'afspraak') {
   const email = String(rij?.email || '').trim().toLowerCase();
   if (!email) return null;
   const naam = [rij?.first_name, rij?.last_name].filter(Boolean).join(' ') || null;
@@ -79,7 +90,10 @@ export function leadUitContact(rij, campagneNaam) {
       src: 'outreach',
     },
     activity: {
-      event: 'outreach_meeting',
+      // Een aanmelding is geen afspraak, ook niet in de activiteitenlijst. De
+      // Leads-tab groepeert hierop, dus dit bepaalt onder welk kopje iemand
+      // terechtkomt.
+      event: outcome === 'aanmelding' ? 'outreach_signup' : 'outreach_meeting',
       src: 'outreach',
       payload: {
         campaign: campagneNaam || null,

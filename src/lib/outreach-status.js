@@ -59,43 +59,43 @@ export function statusKort(status) {
 //   beschrijft wat eruit kwam ('afspraak'). Als iemand de uitkomst heeft
 //   ingevuld is dat het antwoord op de vraag die je stelt als je naar de lijst
 //   kijkt, en dan is 'geantwoord' alleen nog ruis.
-// HET LABEL HANGT AAN HET DOEL VAN DE CAMPAGNE
-//   Bij een campagne die naar een event uitnodigt is 'afspraak' het verkeerde
-//   woord: daar meld je je aan, je plant geen gesprek. De opgeslagen waarde
-//   blijft wel 'afspraak', zodat er niets te migreren valt en de validatie aan
-//   de serverkant onveranderd blijft. outreach_campaign.doel zegt dus hoe je
-//   die waarde moet lezen, niet wat er staat.
+// DRIE UITKOMSTEN, ELK MET EEN EIGEN WAARDE IN DE DATABASE
+//   Een aanmelding voor een event is iets anders dan een geplande afspraak.
+//   Eerder stond er bij allebei 'afspraak' met alleen een ander label
+//   eroverheen; dat leest prettig in de tab en verkeerd in een jaaroverzicht
+//   over alle campagnes. De waarde zegt nu zelf wat het is, dus hier is geen
+//   campagne meer bij nodig om hem te kunnen lezen.
 export const OUTCOME_KORT = {
   afspraak: 'afspraak',
-  geen_interesse: 'geen interesse',
-};
-
-export const OUTCOME_KORT_AANMELDING = {
-  afspraak: 'aangemeld',
+  aanmelding: 'aangemeld',
   geen_interesse: 'geen interesse',
 };
 
 export const OUTCOME_LABEL = {
   afspraak: 'Afspraak',
+  aanmelding: 'Aangemeld',
   geen_interesse: 'Geen interesse',
 };
 
-export const OUTCOME_LABEL_AANMELDING = {
-  afspraak: 'Aangemeld',
-  geen_interesse: 'Geen interesse',
-};
-
-/** De keuzes voor de uitkomstlijst, in de woorden die bij het doel horen. */
+/**
+ * De keuzes voor de uitkomstlijst van een campagne.
+ *
+ * Welke van de twee positieve uitkomsten je krijgt hangt af van waar de
+ * campagne op mikt (outreach_campaign.doel): een gesprek of een aanmelding.
+ * Beide kanten bieden ze niet allebei aan, want dan zou je bij elke keuze
+ * moeten nadenken over een onderscheid dat de campagne al gemaakt heeft.
+ */
 export function uitkomstKeuzes(doel) {
-  const labels = doel === 'aanmelding' ? OUTCOME_LABEL_AANMELDING : OUTCOME_LABEL;
+  const positief = doel === 'aanmelding' ? 'aanmelding' : 'afspraak';
   return [
-    { waarde: 'afspraak', label: labels.afspraak },
-    { waarde: 'geen_interesse', label: labels.geen_interesse },
+    { waarde: positief, label: OUTCOME_LABEL[positief] },
+    { waarde: 'geen_interesse', label: OUTCOME_LABEL.geen_interesse },
   ];
 }
 
 export const OUTCOME_KLEUR = {
   afspraak: '#15803d',
+  aanmelding: '#15803d',
   geen_interesse: '#6b7280',
 };
 
@@ -103,15 +103,14 @@ export const OUTCOME_KLEUR = {
  * Wat er van een prospect in een lijst getoond wordt: de uitkomst als die er
  * is, anders de status.
  *
- * @param {object} rij  { status, outcome, doel }
+ * @param {object} rij  { status, outcome }
  * @returns {{tekst: string|null, kleur: string, isUitkomst: boolean}}
  */
 export function weergaveVanProspect(rij) {
   const outcome = String(rij?.outcome || '').trim();
   if (outcome) {
-    const kort = rij?.doel === 'aanmelding' ? OUTCOME_KORT_AANMELDING : OUTCOME_KORT;
     return {
-      tekst: kort[outcome] || outcome,
+      tekst: OUTCOME_KORT[outcome] || outcome,
       kleur: OUTCOME_KLEUR[outcome] || '#6b7280',
       isUitkomst: true,
     };
