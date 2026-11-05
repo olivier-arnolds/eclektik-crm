@@ -19,9 +19,26 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.153.3';
+export const CURRENT_VERSION = '1.154.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.154.0',
+    date: '2026-11-05T11:28:39Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Elke dagregel loopt nu van middernacht tot middernacht',
+    summary:
+      'De dagcap telde al per kalenderdag, maar de regel die bepaalt hoeveel berichten er per bedrijf uitgaan stond nog op een rollend etmaal. Daardoor kon een bedrijf de ochtend erna nog geblokkeerd zijn.',
+    changes: [
+      'Bij LinkedIn geldt maximaal twee berichten per bedrijf per dag. Dat venster liep over de laatste 24 uur, dus twee berichten naar KPN om 16:41 hielden die klant de volgende ochtend tot 16:41 dicht.',
+      'Nu loopt dat venster van middernacht tot middernacht, Amsterdamse tijd. Om 09:00 begint een nieuwe dag en is alles weer vrij, net als bij de dagcap.',
+      'De weekregel voor e-mail, maximaal zoveel per domein per week, blijft wel rollend. Dat is geen dagregel, en een kalenderweek zou op maandagochtend alles in een keer vrijgeven.',
+      'Let op: dit raakt niet de twaalfuursregel op de inboxscan. Die staat los van de caps en houdt de opvolging tegen tot er opnieuw gescand is.',
+    ],
+    files: ['api/_lib/outreach-runner.js'],
+    rollback: 'git revert naar v1.153.3.',
+  },
   {
     version: '1.153.3',
     date: '2026-11-05T10:35:42Z',

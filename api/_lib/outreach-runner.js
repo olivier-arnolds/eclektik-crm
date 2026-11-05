@@ -164,20 +164,23 @@ export async function runOutreachBatch({
 
   // Per-bedrijf-regel. Bij e-mail leiden we het bedrijf af uit het adresdomein en
   // tellen we over 7 dagen. Bij LinkedIn bestaat er geen domein, dus tellen we op
-  // de bedrijfsnaam, en dan over een ROLLEND ETMAAL in plaats van een week.
+  // de bedrijfsnaam, en dan per DAG in plaats van per week.
   //
   // Waarom korter: het doel hier is spreiding, niet een weeklimiet. KPN heeft 13
   // mensen in de lijst; met 2 per week zouden er maar 6 van hen voor het event
   // bereikt worden. Met 2 per dag is KPN in een week rond en krijgen er nooit
   // drie op dezelfde dag een bericht van Marco, wat het punt was.
   //
-  // Dit venster blijft bewust ROLLEND, ook nu de dagcap per kalenderdag telt.
-  // De dagcap is een budget en hoort bij de dag; deze regel is spreiding, en
-  // daarvoor is een rollend etmaal juist beter: met een kalenderdag zouden er om
-  // 16:50 twee naar KPN kunnen en de volgende ochtend om 09:10 nog twee, vier in
-  // zestien uur. Dat is precies wat deze regel moet voorkomen.
+  // Ook dit dagvenster loopt van middernacht tot middernacht, Amsterdamse tijd,
+  // net als de dagcap. Het stond op een rollend etmaal, en dat betekende dat
+  // twee berichten naar KPN om 16:41 die klant de hele volgende ochtend nog
+  // blokkeerden. Elke dagregel hoort hetzelfde te werken: om 09:00 begint een
+  // nieuwe dag en is alles weer vrij.
+  //
+  // De weekregel voor e-mail blijft wel rollend. Dat is geen dagregel, en een
+  // kalenderweek zou op maandagochtend alles in een keer vrijgeven.
   const groupSince = isLinkedIn
-    ? new Date(now.getTime() - 86400000).toISOString()
+    ? dagcapVanaf(now)
     : new Date(now.getTime() - 7 * 86400000).toISOString();
   const { data: recent } = await supabase
     .from('outreach_message').select('to_address,contact_id')
