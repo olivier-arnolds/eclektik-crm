@@ -19,9 +19,32 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.150.0';
+export const CURRENT_VERSION = '1.151.0';
 
 export const CHANGELOG = [
+  {
+    version: '1.151.0',
+    date: '2026-11-05T09:15:31Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Outreachstatus in de Leads-tab, keuzelijst naar de uitklapregel',
+    summary:
+      'In de kolom Aanmelding stond een keuzelijst waarmee je vastlegde of iemand komt. Daar staat nu de status uit de outreachcampagne: bericht 1, geantwoord, gebounced.',
+    changes: [
+      'De kolom Aanmelding toont nu per campagne de status van die persoon. Zit iemand in meerdere campagnes, dan staan ze er allemaal: in de mailcampagne al geantwoord en op LinkedIn nog klaarstaan is precies het verschil dat je wilt zien.',
+      'Zit iemand in geen enkele campagne, dan staat er "niet benaderd". Dat is een antwoord, geen leegte: deze persoon kwam organisch binnen.',
+      'Een status die via een naamkoppeling is gevonden krijgt een vraagteken, net als bij de kolom Uit campagne.',
+      'De keuzelijst (nog niets, komt, bevestigd, kan niet) is niet weg maar verhuisd naar de uitklapregel: klik op een rij en hij staat er, met het envelopje en de aantekening gewijzigd. De mail met de knop komt slecht aan, dus met de hand vastleggen moest mogelijk blijven.',
+      'De statuslabels stonden alleen in de Outreach-tab en zijn naar src/lib/outreach-status.js verhuisd, zodat een status in beide schermen hetzelfde heet.',
+      'De knop "Voeg contact toe" heet nu "Add to BD".',
+    ],
+    files: [
+      'src/lib/outreach-status.js', 'src/lib/outreach-status.test.js',
+      'src/bd/marketing-leads.jsx', 'src/bd/marketing-outreach.jsx',
+      'src/bd/outreach-match.js', 'src/bd/outreach-match.test.js',
+    ],
+    rollback: 'git revert naar v1.150.0.',
+  },
   {
     version: '1.150.0',
     date: '2026-11-05T08:44:53Z',

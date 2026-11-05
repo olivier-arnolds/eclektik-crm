@@ -11,6 +11,7 @@ import {
 import { matchAanmeldingCampagnes } from './outreach-match';
 import { contactVanLead, aanvullingenVoorContact, zoekBedrijf, normMail } from '../lib/contact-van-lead';
 import { maakBlokken, BLOK_EVENT } from './leads-blokken';
+import { statusKort, statusKleur } from '../lib/outreach-status';
 import { fmtRelative } from './atoms';
 import { apiFetch } from '../lib/apiFetch';
 
@@ -136,7 +137,7 @@ export default function MarketingLeads() {
           full_name: leadById[a.marketing_lead_id]?.full_name || null,
         }));
         const { data: cts } = await supabase.from('outreach_contact')
-          .select('campaign_id, email, first_name, last_name, outreach_campaign(name)')
+          .select('campaign_id, status, email, first_name, last_name, outreach_campaign(name)')
           .limit(5000);
         if (seq === loadSeq.current) {
           setCampagnesPerAanmelding(matchAanmeldingCampagnes(aanmeldingen, cts || []));
@@ -235,7 +236,7 @@ export default function MarketingLeads() {
   //   src/lib/contact-van-lead.js, met tests.
   const voegContactToe = async (lead) => {
     const ok = window.confirm(
-      `${lead.full_name || lead.email} toevoegen aan de contacten?\n` +
+      `${lead.full_name || lead.email} toevoegen aan BD?\n` +
       'Er komt een rij in de contactendatabase. Er wordt GEEN sales lead aangemaakt.'
     );
     if (!ok) return;
@@ -664,6 +665,10 @@ function AanmeldingenBlok({
                   datumActueel={blok.soort === BLOK_EVENT && datumIsActueel(blok.slug, a.payload)}
                   via={gekomenVia(a.payload) || viaPerLead[lead.id] || null}
                   campagnes={toonCampagne ? (campagnesPerAanmelding.get(a.id) || []) : null}
+                  // De status uit de outreachcampagne. Bij meerdere campagnes
+                  // tonen we ze allemaal: iemand kan in de mailcampagne al
+                  // geantwoord hebben en op LinkedIn nog klaarstaan.
+                  outreachStatussen={campagnesPerAanmelding.get(a.id) || []}
                   kolomAantal={kolommen.length}
                   telefoon={lead.phone || telefoonVan(a.payload) || telPerLead[lead.id] || null}
                   onZetTelefoon={onZetTelefoon}
@@ -777,7 +782,102 @@ function TelefoonCel({ lead, telefoon, onZet, td }) {
   );
 }
 
-function LeadRow({ lead, bron, datumActueel, via, campagnes, kolomAantal, telefoon, onZetTelefoon, bevestiging, onZetAntwoord, zetBezig, expanded, activityRows, busy, onToggle, onPromote, onArchive, onReactivate, onVoegContactToe, td }) {
+// Vastleggen of iemand naar het event komt.
+//
+// EEN KEUZELIJST EN GEEN LABEL
+//   De mail met de knop komt slecht aan, dus mensen mailen rechtstreeks terug
+//   en dat moet hier met de hand vastgelegd kunnen worden.
+//
+//   De keuzelijst staat er ALTIJD, ook zonder uitnodigingsrij. Die stond
+//   vroeger alleen bij wie een uitnodiging had, en daardoor ontbrak hij juist
+//   bij wie zich net via de site had aangemeld. Het endpoint maakt de rij aan
+//   zodra je kiest.
+function BevestigingKeuze({ lead, bevestiging, onZetAntwoord, zetBezig }) {
+  return (
+    <>
+      <select
+        value={bevestiging?.answer || ''}
+        disabled={zetBezig}
+        onChange={(e) => onZetAntwoord(bevestiging?.email || lead.email, e.target.value || null)}
+        title={[
+          bevestiging?.answer_source === 'manual'
+            ? `Met de hand gezet${bevestiging.answer_by ? ` door ${bevestiging.answer_by}` : ''}`
+            : bevestiging?.answer
+              ? 'De deelnemer klikte zelf op de bevestigingspagina'
+              : 'Nog geen antwoord',
+          bevestiging?.confirmation_sent_at
+            ? `Bevestigingsmail verstuurd op ${new Date(bevestiging.confirmation_sent_at).toLocaleString('nl-NL')}`
+            : 'Nog geen bevestigingsmail verstuurd',
+        ].join(' | ')}
+        style={{
+          fontSize: 11, fontFamily: 'inherit', padding: '1px 4px',
+          borderRadius: 4, border: '0.5px solid var(--sep)', cursor: 'pointer',
+          background: 'var(--bg-1)', opacity: zetBezig ? 0.5 : 1,
+          fontWeight: bevestiging?.answer ? 500 : 400,
+          color: bevestiging?.answer === 'confirmed' ? '#15803d'
+            : bevestiging?.answer === 'yes' ? '#15803d'
+              : bevestiging?.answer === 'no' ? '#b91c1c' : 'var(--text-3)',
+        }}>
+        <option value="">nog niets</option>
+        <option value="yes">komt</option>
+        <option value="confirmed">bevestigd</option>
+        <option value="no">kan niet</option>
+      </select>
+      {/* Een envelopje zodra de bevestiging echt weg is. Zonder dit zie je aan
+          'bevestigd' niet of de mail ook gestuurd is, en dat is precies waar je
+          bij twijfel naar zoekt. */}
+      {bevestiging?.confirmation_sent_at && (
+        <span style={{ fontSize: 10, color: 'var(--text-3)' }}
+          title={`Bevestigingsmail verstuurd op ${new Date(bevestiging.confirmation_sent_at).toLocaleString('nl-NL')}`}>
+          ✉
+        </span>
+      )}
+      {bevestiging?.answer_count > 1 && (
+        <span title={`${bevestiging.answer_count} keer geantwoord, dit is het laatste`}
+          style={{ fontSize: 9, color: '#b45309' }}>gewijzigd</span>
+      )}
+    </>
+  );
+}
+
+// De status van deze persoon in de outreachcampagnes waar hij in zit.
+//
+// ALLE CAMPAGNES, NIET EEN
+//   Iemand kan in de mailcampagne al geantwoord hebben en op LinkedIn nog
+//   klaarstaan. Eén status tonen zou de verkeerde kunnen zijn, en juist het
+//   verschil tussen die twee is de informatie.
+//
+//   Geen campagne betekent niet 'geen status' maar 'niet benaderd': deze
+//   persoon kwam organisch binnen. Dat is een antwoord, dus zeggen we het.
+function OutreachStatusChips({ statussen }) {
+  if (!statussen?.length) {
+    return (
+      <span style={{ marginLeft: 6, fontSize: 11, color: 'var(--text-3)' }}
+        title="Deze persoon zit in geen enkele outreachcampagne">
+        niet benaderd
+      </span>
+    );
+  }
+  return (
+    <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 4, marginLeft: 6 }}>
+      {statussen.map(c => {
+        const kort = statusKort(c.status);
+        if (!kort) return null;
+        return (
+          <span key={c.campaignId} className="chip"
+            style={{ fontSize: 11, color: statusKleur(c.status), fontWeight: 500 }}
+            title={`${c.campaign || 'campagne'}: ${kort}${c.method === 'naam'
+              ? '. Gekoppeld op naam, niet op adres, dus waarschijnlijk maar niet zeker dezelfde persoon.'
+              : ''}`}>
+            {kort}{c.method === 'naam' ? '?' : ''}
+          </span>
+        );
+      })}
+    </span>
+  );
+}
+
+function LeadRow({ lead, bron, datumActueel, via, campagnes, outreachStatussen, kolomAantal, telefoon, onZetTelefoon, bevestiging, onZetAntwoord, zetBezig, expanded, activityRows, busy, onToggle, onPromote, onArchive, onReactivate, onVoegContactToe, td }) {
   return (
     <>
       <tr onClick={onToggle} style={{ cursor: 'pointer' }}>
@@ -811,63 +911,10 @@ function LeadRow({ lead, bron, datumActueel, via, campagnes, kolomAantal, telefo
                 : { fontSize: 11 }}>{bron}</span>
             )
             : <span style={{ color: 'var(--text-3)' }}>-</span>}
-          {(
-              <>
-                {/* Een keuzelijst en geen label: de knopmail komt slecht aan,
-                    dus de antwoorden komen per mail binnen en moeten hier met
-                    de hand vastgelegd worden.
-
-                    De keuzelijst staat er ALTIJD, ook zonder uitnodigingsrij.
-                    Die stond vroeger alleen bij wie een uitnodiging had, en
-                    daardoor ontbrak hij juist bij wie zich net via de site had
-                    aangemeld. Het endpoint maakt de rij aan zodra je kiest. */}
-                <select
-                  value={bevestiging?.answer || ''}
-                  disabled={zetBezig}
-                  onClick={e => e.stopPropagation()}
-                  onChange={(e) => {
-                    e.stopPropagation();
-                    onZetAntwoord(bevestiging?.email || lead.email, e.target.value || null);
-                  }}
-                  title={[
-                    bevestiging?.answer_source === 'manual'
-                      ? `Met de hand gezet${bevestiging.answer_by ? ` door ${bevestiging.answer_by}` : ''}`
-                      : bevestiging?.answer
-                        ? 'De deelnemer klikte zelf op de bevestigingspagina'
-                        : 'Nog geen antwoord',
-                    bevestiging?.confirmation_sent_at
-                      ? `Bevestigingsmail verstuurd op ${new Date(bevestiging.confirmation_sent_at).toLocaleString('nl-NL')}`
-                      : 'Nog geen bevestigingsmail verstuurd',
-                  ].join(' | ')}
-                  style={{
-                    marginLeft: 6, fontSize: 11, fontFamily: 'inherit', padding: '1px 4px',
-                    borderRadius: 4, border: '0.5px solid var(--sep)', cursor: 'pointer',
-                    background: 'var(--bg-1)', opacity: zetBezig ? 0.5 : 1,
-                    fontWeight: bevestiging?.answer ? 500 : 400,
-                    color: bevestiging?.answer === 'confirmed' ? '#15803d'
-                      : bevestiging?.answer === 'yes' ? '#15803d'
-                        : bevestiging?.answer === 'no' ? '#b91c1c' : 'var(--text-3)',
-                  }}>
-                  <option value="">nog niets</option>
-                  <option value="yes">komt</option>
-                  <option value="confirmed">bevestigd</option>
-                  <option value="no">kan niet</option>
-                </select>
-                {/* Een envelopje zodra de bevestiging echt weg is. Zonder dit
-                    zie je aan 'bevestigd' niet of de mail ook gestuurd is, en
-                    dat is precies waar je bij twijfel naar zoekt. */}
-                {bevestiging?.confirmation_sent_at && (
-                  <span style={{ marginLeft: 4, fontSize: 10, color: 'var(--text-3)' }}
-                    title={`Bevestigingsmail verstuurd op ${new Date(bevestiging.confirmation_sent_at).toLocaleString('nl-NL')}`}>
-                    ✉
-                  </span>
-                )}
-                {bevestiging?.answer_count > 1 && (
-                  <span title={`${bevestiging.answer_count} keer geantwoord, dit is het laatste`}
-                    style={{ marginLeft: 4, fontSize: 9, color: '#b45309' }}>gewijzigd</span>
-                )}
-              </>
-            )}
+          {/* De status uit de outreachcampagne. Hier stond de keuzelijst
+              waarmee je vastlegde of iemand komt; die is naar de uitklapregel
+              verhuisd, zodat deze kolom één ding zegt in plaats van twee. */}
+          <OutreachStatusChips statussen={outreachStatussen} />
         </td>
         <td style={td}>{lead.last_activity_at ? fmtRelative(lead.last_activity_at) : '-'}</td>
         <td style={td}><span className="chip" style={{ fontSize: 11 }}>{lead.status}</span></td>
@@ -884,12 +931,12 @@ function LeadRow({ lead, bron, datumActueel, via, campagnes, kolomAantal, telefo
               {lead.contact_id ? (
                 <span className="chip" style={{ fontSize: 11, color: 'var(--text-3)' }}
                   title="Deze persoon staat in de contactendatabase">
-                  contact toegevoegd
+                  toegevoegd aan BD
                 </span>
               ) : (
                 <button className="btn-ghost tiny" disabled={busy} onClick={onVoegContactToe}
                   title="Zet deze persoon in de contactendatabase, zonder een sales lead aan te maken">
-                  Voeg contact toe
+                  Add to BD
                 </button>
               )}{' '}
               <button className="btn-ghost tiny" disabled={busy} onClick={onArchive}>
@@ -907,6 +954,16 @@ function LeadRow({ lead, bron, datumActueel, via, campagnes, kolomAantal, telefo
       {expanded && (
         <tr>
           <td style={{ ...td, background: 'var(--bg-subtle, rgba(0,0,0,0.03))' }} colSpan={kolomAantal}>
+            {/* Komt deze persoon naar het event? Stond in de kolom Aanmelding,
+                maar daar staat nu de outreachstatus. Vastleggen moet wel
+                mogelijk blijven: de mail met de knop komt slecht aan, dus veel
+                antwoorden komen per mail binnen en worden hier met de hand
+                gezet. */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 12, fontWeight: 600 }}>Komt naar het event?</span>
+              <BevestigingKeuze lead={lead} bevestiging={bevestiging}
+                onZetAntwoord={onZetAntwoord} zetBezig={zetBezig} />
+            </div>
             {!activityRows ? 'Laden…' : activityRows.length === 0 ? 'Geen activiteit.' : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 {activityRows.map(a => (

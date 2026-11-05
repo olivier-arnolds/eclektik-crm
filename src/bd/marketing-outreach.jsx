@@ -14,6 +14,8 @@ import {
 import { outreachTextToHtml, subjectForStep } from '../lib/outreach-html';
 import { signatureFor } from '../lib/signatures.js';
 import { dagcapVanaf } from '../lib/verzenddag.js';
+// Gedeeld met de Leads-tab, zodat een status daar niet anders heet dan hier.
+import { STATUS_LABEL, STATUS_COLOR } from '../lib/outreach-status.js';
 
 // Outreach-tab onder Marketing. Ontwerp: docs/outreach-handover.md addendum §9.
 //
@@ -36,16 +38,6 @@ import { dagcapVanaf } from '../lib/verzenddag.js';
 const STALE_HOURS = 12;
 const CLASSIFY_BATCH = 25;
 
-const STATUS_LABEL = {
-  queued: 'Klaar om te sturen', msg1_sent: 'Bericht 1 verstuurd', msg2_sent: 'Bericht 2 verstuurd',
-  replied: 'Heeft geantwoord', bounced: 'Gebounced', ooo: 'Afwezig', referred: 'Doorverwezen',
-  opted_out: 'Afgemeld', paused: 'Gepauzeerd', done: 'Afgerond',
-};
-const STATUS_COLOR = {
-  queued: '#2563eb', msg1_sent: '#d97706', msg2_sent: '#d97706', replied: '#16a34a',
-  bounced: '#dc2626', ooo: '#7c3aed', referred: '#0891b2', opted_out: '#6b7280',
-  paused: '#6b7280', done: '#16a34a',
-};
 
 const CONV_LABEL = {
   [CONV_GEEN]: 'geen',

@@ -559,7 +559,7 @@ describe('klikOordeel', () => {
 
 describe('matchAanmeldingCampagnes', () => {
   const contacts = [
-    { campaign_id: 'c1', campaign: 'Microsoft AIBS 2026', email: 'bart@vanleeuwen.nl', first_name: 'Bart', last_name: 'Looije' },
+    { campaign_id: 'c1', campaign: 'Microsoft AIBS 2026', email: 'bart@vanleeuwen.nl', first_name: 'Bart', last_name: 'Looije', status: 'msg1_sent' },
     { campaign_id: 'c2', campaign: 'Amsterdam 2026', email: null, first_name: 'Esther', last_name: 'van Lunteren' },
     { campaign_id: 'c3', campaign: 'LinkedIn najaar', email: null, first_name: 'Bart', last_name: 'Looije' },
   ];
@@ -567,7 +567,7 @@ describe('matchAanmeldingCampagnes', () => {
   it('koppelt op e-mailadres, hoofdletters maken niet uit', () => {
     const m = matchAanmeldingCampagnes([{ id: 'a', email: 'Bart@VanLeeuwen.nl' }], contacts);
     expect(m.get('a')).toEqual([
-      { campaignId: 'c1', campaign: 'Microsoft AIBS 2026', method: 'email' },
+      { campaignId: 'c1', campaign: 'Microsoft AIBS 2026', method: 'email', status: 'msg1_sent' },
     ]);
   });
 
@@ -575,7 +575,7 @@ describe('matchAanmeldingCampagnes', () => {
     const m = matchAanmeldingCampagnes(
       [{ id: 'b', email: 'esther@eigenbedrijf.nl', full_name: 'Esther van Lunteren' }], contacts);
     expect(m.get('b')).toEqual([
-      { campaignId: 'c2', campaign: 'Amsterdam 2026', method: 'naam' },
+      { campaignId: 'c2', campaign: 'Amsterdam 2026', method: 'naam', status: null },
     ]);
   });
 
@@ -592,6 +592,11 @@ describe('matchAanmeldingCampagnes', () => {
     const m = matchAanmeldingCampagnes(
       [{ id: 'd', email: 'bart@vanleeuwen.nl', full_name: 'Bart Looije' }], contacts);
     expect(m.get('d').find(r => r.campaignId === 'c1').method).toBe('email');
+  });
+
+  it('neemt de status van de prospect mee', () => {
+    const m = matchAanmeldingCampagnes([{ id: 'h', email: 'bart@vanleeuwen.nl' }], contacts);
+    expect(m.get('h')[0].status).toBe('msg1_sent');
   });
 
   it('leest de campagnenaam ook uit een genest outreach_campaign-object', () => {
