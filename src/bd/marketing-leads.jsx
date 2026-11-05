@@ -687,7 +687,10 @@ function AanmeldingenBlok({
                   // De status uit de outreachcampagne. Bij meerdere campagnes
                   // tonen we ze allemaal: iemand kan in de mailcampagne al
                   // geantwoord hebben en op LinkedIn nog klaarstaan.
-                  outreachStatussen={campagnesPerAanmelding.get(a.id) || []}
+                  // In een eventblok staat de status al bij de campagnechip,
+                  // dus daar niet nog een keer. In de andere blokken is er
+                  // geen campagnekolom en hoort hij hier.
+                  outreachStatussen={toonCampagne ? [] : (campagnesPerAanmelding.get(a.id) || [])}
                   kolomAantal={kolommen.length}
                   telefoon={lead.phone || telefoonVan(a.payload) || telPerLead[lead.id] || null}
                   onZetTelefoon={onZetTelefoon}
@@ -726,14 +729,30 @@ function CampagneChips({ campagnes }) {
   }
   return (
     <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 4 }}>
-      {campagnes.map(c => (
-        <span key={c.campaignId} className="chip" style={{ fontSize: 11 }}
-          title={c.method === 'email'
-            ? 'Gekoppeld op e-mailadres'
-            : 'Gekoppeld op naam, niet op adres. Waarschijnlijk dezelfde persoon, zeker is het niet.'}>
-          {c.campaign || 'campagne'}{c.method === 'naam' ? '?' : ''}
-        </span>
-      ))}
+      {campagnes.map(c => {
+        // Naam en status in ÉÉN chip. Ze stonden in twee kolommen: 'Amsterdam
+        // 2026' hier en 'bericht 2' bij de aanmelding, terwijl het één feit is
+        // en je ze zelf moest koppelen. Bij twee campagnes werd dat raden welk
+        // bericht bij welke campagne hoorde.
+        const { tekst, kleur, isUitkomst } = weergaveVanProspect(c);
+        return (
+          <span key={c.campaignId} className="chip" style={{ fontSize: 11 }}
+            title={[
+              c.method === 'email'
+                ? 'Gekoppeld op e-mailadres'
+                : 'Gekoppeld op naam, niet op adres. Waarschijnlijk dezelfde persoon, zeker is het niet.',
+              isUitkomst ? 'Met de hand vastgelegde uitkomst' : null,
+            ].filter(Boolean).join(' | ')}>
+            {c.campaign || 'campagne'}{c.method === 'naam' ? '?' : ''}
+            {tekst ? (
+              <>
+                <span style={{ color: 'var(--text-3)' }}> · </span>
+                <span style={{ color: kleur, fontWeight: 500 }}>{tekst}</span>
+              </>
+            ) : null}
+          </span>
+        );
+      })}
     </span>
   );
 }

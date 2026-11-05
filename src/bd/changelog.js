@@ -19,9 +19,26 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.153.1';
+export const CURRENT_VERSION = '1.153.2';
 
 export const CHANGELOG = [
+  {
+    version: '1.153.2',
+    date: '2026-11-05T10:32:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Campagne en status staan weer bij elkaar',
+    summary:
+      'De campagnenaam stond in de kolom Uit campagne en de status ernaast bij Aanmelding. Twee helften van hetzelfde feit, die je zelf moest koppelen.',
+    changes: [
+      'In de eventblokken staat de status nu in dezelfde chip als de campagne: "Amsterdam 2026 · bericht 2".',
+      'Dat loste ook een gokspel op: Esther van Lunteren zit in twee campagnes en had twee namen in de ene kolom en twee statussen in de andere, zonder dat zichtbaar was welke bij welke hoorde.',
+      'De kolom Aanmelding houdt alleen nog het antwoord over of iemand komt, en een afwijkende eventdatum.',
+      'In de blokken zonder campagnekolom, Afspraken uit outreach en Overig, staat de status nog gewoon bij de aanmelding.',
+    ],
+    files: ['src/bd/marketing-leads.jsx'],
+    rollback: 'git revert naar v1.153.1.',
+  },
   {
     version: '1.153.1',
     date: '2026-11-05T09:55:35Z',
