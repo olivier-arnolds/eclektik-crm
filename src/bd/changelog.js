@@ -19,9 +19,24 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.159.0';
+export const CURRENT_VERSION = '1.159.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.159.1',
+    date: '2026-11-05T13:05:35Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Restblok Overig weg uit de Leads-tab',
+    summary:
+      'Het blok ving waitlist en scorecard op, maar die mensen staan ook in het eventoverzicht. Het herhaalde dus alleen wat er al stond.',
+    changes: [
+      'De Leads-tab heeft nog twee soorten blokken: een per event, en Afspraken uit outreach.',
+      'Let op: een nieuw soort activiteit verdwijnt hiermee stilzwijgend uit deze tab. Zo een hoort een eigen plek te krijgen in plaats van een restbak, en dat staat als waarschuwing in de code.',
+    ],
+    files: ['src/bd/leads-blokken.js', 'src/bd/leads-blokken.test.js'],
+    rollback: 'git revert naar v1.159.0.',
+  },
   {
     version: '1.159.0',
     date: '2026-11-05T13:00:14Z',

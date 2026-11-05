@@ -10,7 +10,6 @@ import { EVENTS, eventLabel } from '../lib/lead-bron';
 
 export const BLOK_EVENT = 'event';
 export const BLOK_OUTREACH = 'outreach';
-export const BLOK_OVERIG = 'overig';
 
 /**
  * Houdt per lead alleen de nieuwste activiteit over.
@@ -54,7 +53,6 @@ export function maakBlokken(activiteiten, zichtbareLeads) {
 
   const perSlug = new Map();
   const afspraken = [];
-  const overig = [];
   for (const a of (activiteiten || [])) {
     if (!zichtbaar(a?.marketing_lead_id)) continue;
     if (a.event === 'event_registered') {
@@ -66,9 +64,12 @@ export function maakBlokken(activiteiten, zichtbareLeads) {
       // aankomen. Een aanmelding in een eventcampagne levert geen activiteit
       // op: die zet je met de hand omdat je de aanmelding al binnen hebt.
       afspraken.push(a);
-    } else {
-      overig.push(a);
     }
+    // Al het andere komt niet in beeld. Er stond een restblok 'Overig' voor
+    // waitlist en scorecard, maar die mensen staan ook in het eventoverzicht,
+    // dus het blok herhaalde alleen wat er al stond. LET OP: een nieuw soort
+    // activiteit verdwijnt hiermee stilzwijgend uit deze tab; die hoort dan
+    // een eigen plek te krijgen in plaats van een restbak.
   }
 
   // Elk event dat we kennen krijgt een blok, ook zonder aanmeldingen: nul is
@@ -100,14 +101,5 @@ export function maakBlokken(activiteiten, zichtbareLeads) {
       // een gesprek zijn gekomen.
       eenheid: ['lead', 'leads'],
     },
-    {
-      sleutel: BLOK_OVERIG,
-      titel: 'Overig',
-      soort: BLOK_OVERIG,
-      rijen: nieuwstePerLead(overig),
-      eenheid: ['lead', 'leads'],
-    },
-    // Waitlist en scorecard: een leeg restblok zegt niets en gaat weg. Bij een
-    // event zegt nul aanmeldingen juist wel iets, dus dat blok blijft staan.
-  ].filter(b => !(b.soort === BLOK_OVERIG && b.rijen.length === 0));
+  ];
 }

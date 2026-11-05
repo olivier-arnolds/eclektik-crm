@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { maakBlokken, nieuwstePerLead, BLOK_EVENT, BLOK_OUTREACH, BLOK_OVERIG } from './leads-blokken.js';
+import { maakBlokken, nieuwstePerLead, BLOK_EVENT, BLOK_OUTREACH } from './leads-blokken.js';
 
 const reg = (id, lead, slug, occurred_at, eventDate = '2026-11-17') => ({
   id, marketing_lead_id: lead, event: 'event_registered', occurred_at,
@@ -79,26 +79,23 @@ describe('maakBlokken', () => {
   });
 
   it('KRITIEK: alleen activiteiten van het soort outreach_meeting', () => {
-    // Dit blok is de lijst van gesprekken die eraan komen. Een aanmelding in
-    // een eventcampagne levert geen activiteit op, dus hier hoort niets anders
-    // in te belanden.
+    // Dit blok is de lijst van gesprekken die eraan komen.
     const blokken = maakBlokken([
       { id: 'w1', marketing_lead_id: 'lead1', event: 'waitlist_joined', payload: {} },
       { id: 'm1', marketing_lead_id: 'lead2', event: 'outreach_meeting', payload: { campaign: 'AIBS' } },
     ], new Set(['lead1', 'lead2']));
     expect(blokken.find(b => b.soort === BLOK_OUTREACH).rijen.map(r => r.id)).toEqual(['m1']);
-    expect(blokken.find(b => b.soort === BLOK_OVERIG).rijen.map(r => r.id)).toEqual(['w1']);
   });
 
-  it('vangt waitlist en scorecard op in Overig, en laat dat blok weg als het leeg is', () => {
-    const metOverig = maakBlokken([
+  it('KRITIEK: waitlist en scorecard komen niet meer in beeld', () => {
+    // Er stond een restblok Overig voor, maar die mensen staan ook in het
+    // eventoverzicht, dus het herhaalde alleen wat er al stond.
+    const blokken = maakBlokken([
       { id: 'w1', marketing_lead_id: 'lead1', event: 'waitlist_joined', payload: {} },
       { id: 's1', marketing_lead_id: 'lead2', event: 'scorecard_completed', payload: {} },
     ], zichtbaar);
-    expect(metOverig.find(b => b.soort === BLOK_OVERIG).rijen).toHaveLength(2);
-
-    const zonder = maakBlokken([], zichtbaar);
-    expect(zonder.find(b => b.soort === BLOK_OVERIG)).toBeUndefined();
+    expect(blokken.every(b => b.rijen.length === 0)).toBe(true);
+    expect(blokken.map(b => b.soort)).not.toContain('overig');
   });
 
   it('houdt een leeg eventblok wel staan, want nul is daar een antwoord', () => {
@@ -147,10 +144,10 @@ describe('de eenheid in de kop', () => {
     expect(blokken.find(b => b.soort === BLOK_OUTREACH).eenheid).toEqual(['lead', 'leads']);
   });
 
-  it('Overig telt ook leads, want daar meldt niemand zich voor iets aan', () => {
+  it('er is geen restblok meer', () => {
     const blokken = maakBlokken([
       { id: 'w1', marketing_lead_id: 'lead1', event: 'waitlist_joined', payload: {} },
     ], zichtbaar);
-    expect(blokken.find(b => b.soort === BLOK_OVERIG).eenheid).toEqual(['lead', 'leads']);
+    expect(blokken.map(b => b.titel)).not.toContain('Overig');
   });
 });
