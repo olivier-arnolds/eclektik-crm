@@ -905,14 +905,11 @@ function BevestigingLabel({ bevestiging }) {
 //   Geen campagne betekent niet 'geen status' maar 'niet benaderd': deze
 //   persoon kwam organisch binnen. Dat is een antwoord, dus zeggen we het.
 function OutreachStatusChips({ statussen }) {
-  if (!statussen?.length) {
-    return (
-      <span style={{ marginLeft: 6, fontSize: 11, color: 'var(--text-3)' }}
-        title="Deze persoon zit in geen enkele outreachcampagne">
-        niet benaderd
-      </span>
-    );
-  }
+  // Zit iemand in geen enkele campagne, dan staat er niets. 'Niet benaderd'
+  // stond eerst op bijna elke rij, want de meeste aanmelders komen organisch
+  // binnen, en dan is het geen informatie maar ruis. Een lege cel zegt
+  // hetzelfde zonder de lijst vol te zetten.
+  if (!statussen?.length) return null;
   return (
     <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 4, marginLeft: 6 }}>
       {statussen.map(c => {

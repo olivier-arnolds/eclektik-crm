@@ -19,9 +19,24 @@
 //   • Return to latest:       git checkout main
 // ─────────────────────────────────────────────────────────────────────────
 
-export const CURRENT_VERSION = '1.153.0';
+export const CURRENT_VERSION = '1.153.1';
 
 export const CHANGELOG = [
+  {
+    version: '1.153.1',
+    date: '2026-11-05T09:55:35Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Geen "niet benaderd" meer achter elke aanmelding',
+    summary:
+      'Het stond op bijna elke rij, want de meeste aanmelders komen organisch binnen. Dan is het geen informatie maar ruis.',
+    changes: [
+      'Zit iemand in geen enkele outreachcampagne, dan blijft de cel leeg. Een lege cel zegt hetzelfde zonder de lijst vol te zetten.',
+      'De statuschips blijven staan bij wie wel in een campagne zit.',
+    ],
+    files: ['src/bd/marketing-leads.jsx'],
+    rollback: 'git revert naar v1.153.0.',
+  },
   {
     version: '1.153.0',
     date: '2026-11-05T09:46:03Z',
