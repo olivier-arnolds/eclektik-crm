@@ -23,6 +23,21 @@ export const CURRENT_VERSION = '1.159.1';
 
 export const CHANGELOG = [
   {
+    version: '1.160.2',
+    date: '2026-11-08T21:18:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Campagnelabel weg bij Afspraken uit outreach',
+    summary:
+      "Op elke rij stond 'Outreach: <campagne>', terwijl de kop al zegt dat het om afspraken uit outreach gaat.",
+    changes: [
+      'De kolom Uitkomst toont alleen nog de uitkomst zelf; de campagnenaam staat in de tooltip erbij.',
+      'In de eventblokken blijft het label staan voor een aanmelding die op een andere datum staat dan het event.',
+    ],
+    files: ['src/bd/marketing-leads.jsx'],
+    rollback: 'git revert naar v1.160.1.',
+  },
+  {
     version: '1.160.1',
     date: '2026-11-08T21:07:11Z',
     author: 'Olivier Arnolds (via Claude)',

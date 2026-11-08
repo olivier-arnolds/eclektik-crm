@@ -711,12 +711,15 @@ function AanmeldingenBlok({
                   // label 'Event 17 nov' op elke rij herhaalt alleen wat je
                   // net gelezen hebt. Alleen als een aanmelding op een ANDERE
                   // datum staat zegt het nog iets, en dan valt hij op tussen
-                  // de rijen die niets tonen. Buiten de eventblokken blijft
-                  // het label staan: daar zegt geen kop waar iemand vandaan
-                  // komt.
-                  bron={blok.soort === BLOK_EVENT && datumIsActueel(blok.slug, a.payload)
+                  // de rijen die niets tonen. In het outreachblok hetzelfde
+                  // verhaal: de kop zegt al dat het om afspraken uit outreach
+                  // gaat, en de campagnenaam zit in de tooltip van de uitkomst.
+                  // 'Outreach: Microsoft Account Executives 2026' op elke rij
+                  // herhaalde alleen de kop.
+                  bron={blok.soort !== BLOK_EVENT
+                    || datumIsActueel(blok.slug, a.payload)
                     ? null
-                    : (a.event === 'event_registered' || a.event === 'outreach_meeting'
+                    : (a.event === 'event_registered'
                       ? bronLabel(a.event, a.payload)
                       : (lead.first_src || bronPerLead[lead.id] || null))}
                   // Staat er wel een label in een eventblok, dan klopt de
@@ -975,7 +978,7 @@ function OutreachStatusChips({ statussen }) {
   // hetzelfde zonder de lijst vol te zetten.
   if (!statussen?.length) return null;
   return (
-    <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 4, marginLeft: 6 }}>
+    <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: 4 }}>
       {statussen.map(c => {
         // De uitkomst wint van de status: wie op afspraak staat hoeft niet te
         // lezen dat hij ook geantwoord heeft.
@@ -1048,7 +1051,7 @@ function LeadRow({ lead, bron, datumWijktAf, via, campagnes, outreachStatussen, 
               aanmelding draagt een ander adres dan de prospect). Een leeg vakje
               zou dat verzwijgen. */}
           {!toonBevestiging && !outreachStatussen?.length && (
-            <span style={{ fontSize: 11, color: 'var(--text-3)', marginLeft: 6 }}
+            <span style={{ fontSize: 11, color: 'var(--text-3)' }}
               title="Geen koppeling met een outreachprospect gevonden; de uitkomst staat alleen in de Outreach-tab">
               onbekend
             </span>
