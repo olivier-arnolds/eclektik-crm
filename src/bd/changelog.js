@@ -23,6 +23,22 @@ export const CURRENT_VERSION = '1.159.1';
 
 export const CHANGELOG = [
   {
+    version: '1.160.1',
+    date: '2026-11-08T21:07:11Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Afspraken uit outreach toont de uitkomst, niet de eventkeuzelijst',
+    summary:
+      'In dat blok stond de keuzelijst komt / bevestigd / kan niet, terwijl er geen event is om een stoel voor te bevestigen.',
+    changes: [
+      'De kolom heet daar nu Uitkomst en laat zien wat er in de outreachcampagne is vastgelegd: afspraak, aangemeld of geen interesse.',
+      'Lukt de koppeling met de campagne niet, dan staat er onbekend in plaats van een leeg vakje.',
+      'In de eventblokken verandert er niets: daar blijft de keuzelijst staan.',
+    ],
+    files: ['src/bd/marketing-leads.jsx'],
+    rollback: 'git revert naar v1.160.0.',
+  },
+  {
     version: '1.160.0',
     date: '2026-11-05T14:18:29Z',
     author: 'Olivier Arnolds (via Claude)',

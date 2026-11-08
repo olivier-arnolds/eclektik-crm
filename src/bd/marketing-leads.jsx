@@ -663,9 +663,13 @@ function AanmeldingenBlok({
   // staat de campagne al in de kolom Aanmelding, en bij waitlist en scorecard
   // is er geen aanmelding om aan te koppelen.
   const toonCampagne = blok.soort === BLOK_EVENT;
+  // De keuzelijst komt/bevestigd/kan niet gaat over een stoel op een event. In
+  // het outreachblok is er geen event, alleen een afspraak, en daar stond die
+  // lijst dus een vraag te stellen die nergens over ging. Daar laat de kolom
+  // de uitkomst uit de campagne zien en heet hij ook zo.
   const kolommen = ['Naam', 'E-mail', 'Bedrijf', 'Rol', 'Telefoon', 'Zegt via',
     ...(toonCampagne ? ['Uit campagne'] : []),
-    'Aanmelding', 'Laatste activiteit', 'Status', ''];
+    toonCampagne ? 'Aanmelding' : 'Uitkomst', 'Laatste activiteit', 'Status', ''];
 
   return (
     <div style={{ marginBottom: 26 }}>
@@ -731,7 +735,10 @@ function AanmeldingenBlok({
                   kolomAantal={kolommen.length}
                   telefoon={lead.phone || telefoonVan(a.payload) || telPerLead[lead.id] || null}
                   onZetTelefoon={onZetTelefoon}
-                  bevestiging={bevestigingPerMail[sleutel] || null}
+                  // De eventbevestiging hoort alleen in een eventblok. Bij een
+                  // afspraak uit outreach is er geen stoel te bevestigen.
+                  bevestiging={toonCampagne ? (bevestigingPerMail[sleutel] || null) : null}
+                  toonBevestiging={toonCampagne}
                   onZetAntwoord={onZetAntwoord}
                   zetBezig={zetBezig === sleutel}
                   expanded={expanded === lead.id}
@@ -989,7 +996,7 @@ function OutreachStatusChips({ statussen }) {
   );
 }
 
-function LeadRow({ lead, bron, datumWijktAf, via, campagnes, outreachStatussen, kolomAantal, telefoon, onZetTelefoon, bevestiging, onZetAntwoord, zetBezig, expanded, activityRows, busy, onToggle, onPromote, onArchive, onReactivate, onVoegContactToe, td }) {
+function LeadRow({ lead, bron, datumWijktAf, via, campagnes, outreachStatussen, kolomAantal, telefoon, onZetTelefoon, bevestiging, toonBevestiging, onZetAntwoord, zetBezig, expanded, activityRows, busy, onToggle, onPromote, onArchive, onReactivate, onVoegContactToe, td }) {
   return (
     <>
       <tr onClick={onToggle} style={{ cursor: 'pointer' }}>
@@ -1028,10 +1035,24 @@ function LeadRow({ lead, bron, datumWijktAf, via, campagnes, outreachStatussen, 
               plek: dit is de kolom waar je ernaar kijkt, dus een klik extra om
               het te kunnen zetten is er een te veel. De outreachstatus staat
               bij de campagnechip, dus hier botsen ze niet meer. */}
-          <BevestigingKeuze lead={lead} bevestiging={bevestiging}
-            onZetAntwoord={onZetAntwoord} zetBezig={zetBezig} />
-          {/* De status uit de outreachcampagne. */}
+          {toonBevestiging && (
+            <BevestigingKeuze lead={lead} bevestiging={bevestiging}
+              onZetAntwoord={onZetAntwoord} zetBezig={zetBezig} />
+          )}
+          {/* De status uit de outreachcampagne. In het outreachblok is dit het
+              enige dat hier staat, en dan is het de uitkomst: afspraak,
+              aangemeld of geen interesse. */}
           <OutreachStatusChips statussen={outreachStatussen} />
+          {/* In het outreachblok hoort hier altijd een uitkomst te staan. Staat
+              er niets, dan is de koppeling met de campagne niet gelukt (de
+              aanmelding draagt een ander adres dan de prospect). Een leeg vakje
+              zou dat verzwijgen. */}
+          {!toonBevestiging && !outreachStatussen?.length && (
+            <span style={{ fontSize: 11, color: 'var(--text-3)', marginLeft: 6 }}
+              title="Geen koppeling met een outreachprospect gevonden; de uitkomst staat alleen in de Outreach-tab">
+              onbekend
+            </span>
+          )}
         </td>
         <td style={td}>{lead.last_activity_at ? fmtRelative(lead.last_activity_at) : '-'}</td>
         <td style={td}><span className="chip" style={{ fontSize: 11 }}>{lead.status}</span></td>
