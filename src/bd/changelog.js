@@ -23,6 +23,32 @@ export const CURRENT_VERSION = '1.159.1';
 
 export const CHANGELOG = [
   {
+    version: '1.161.0',
+    date: '2026-11-12T20:00:17Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'DMARC-rapporten leesbaar in Admin',
+    summary:
+      'Nieuwe tab E-mailreputatie: sleep de rapportbestanden erin en zie wie er namens eclectik.co mailt en wat er faalt.',
+    changes: [
+      'Leest XML, .gz en .zip, en kijkt naar de inhoud in plaats van naar de bestandsnaam.',
+      'Bovenaan het oordeel in een zin, daaronder apart wat faalt, want daar moet je iets mee.',
+      'Herkent de eigen verzendwegen (Microsoft 365, Barracuda, Resend) bij naam; een onbekende bron blijft bij zijn IP-adres staan.',
+      'Hetzelfde rapport twee keer inlezen wordt geweigerd, anders tel je dezelfde mail dubbel.',
+      'Nog handmatig uploaden: automatisch ophalen vraagt om een postvak op dmarc@eclectik.co, en dat bestaat nog niet.',
+    ],
+    files: [
+      'src/bd/dmarc-panel.jsx',
+      'src/bd/admin-view.jsx',
+      'src/lib/dmarc-parse.js',
+      'src/lib/dmarc-parse.test.js',
+      'src/lib/dmarc-overzicht.js',
+      'src/lib/dmarc-overzicht.test.js',
+      'sql/schema_dmarc_rapporten_2026-11-12.sql',
+    ],
+    rollback: 'git revert naar v1.160.2; de twee tabellen mogen blijven staan.',
+  },
+  {
     version: '1.160.2',
     date: '2026-11-08T21:18:00Z',
     author: 'Olivier Arnolds (via Claude)',

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../supabase';
 import { useAuth } from '../lib/auth';
 import { apiFetch } from '../lib/apiFetch';
+import DmarcPanel from './dmarc-panel';
 
 // Admin view — two tabs: recurring jobs and feature-request inbox.
 // Visible only to users on the admin email list (gated in topbar).
@@ -17,9 +18,13 @@ export default function AdminView() {
         <button className={tab === 'feedback' ? 'btn-primary tiny' : 'btn-ghost tiny'} onClick={() => setTab('feedback')}>
           Feedback inbox
         </button>
+        <button className={tab === 'dmarc' ? 'btn-primary tiny' : 'btn-ghost tiny'} onClick={() => setTab('dmarc')}>
+          E-mailreputatie
+        </button>
       </div>
       {tab === 'jobs' && <JobsPanel />}
       {tab === 'feedback' && <FeedbackInbox />}
+      {tab === 'dmarc' && <DmarcPanel />}
     </div>
   );
 }
