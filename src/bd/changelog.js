@@ -23,6 +23,27 @@ export const CURRENT_VERSION = '1.159.1';
 
 export const CHANGELOG = [
   {
+    version: '1.162.1',
+    date: '2026-11-13T10:44:16Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Een Graph-storing zegt nu wat er aan de hand is',
+    summary:
+      'De inboxscan meldde alleen "UnknownError" tijdens een wereldwijde storing bij Microsoft, zonder enige aanwijzing dat het buiten de CRM lag.',
+    changes: [
+      'De melding draagt nu de HTTP-status, de request-id die Microsoft vraagt bij een storingsmelding, en bij een lege UnknownError de regel dat het aan hun kant ligt.',
+      'Een hapering wordt opgevangen: bij 429 of 5xx tot drie pogingen, met de wachttijd die Microsoft zelf meegeeft in Retry-After.',
+      'De twee leeslussen in graph.js hadden allebei hun eigen kopie van deze afhandeling; die is nu gedeeld.',
+      'De storing zelf lost dit niet op. Het scheelt alleen dat je niet meer in je eigen code gaat zoeken.',
+    ],
+    files: [
+      'src/lib/graph-fouten.js',
+      'src/lib/graph-fouten.test.js',
+      'src/lib/graph.js',
+    ],
+    rollback: 'git revert naar v1.162.0.',
+  },
+  {
     version: '1.162.0',
     date: '2026-11-13T09:44:07Z',
     author: 'Olivier Arnolds (via Claude)',

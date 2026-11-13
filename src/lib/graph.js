@@ -1,8 +1,55 @@
+import { magOpnieuw, wachttijd, graphFout } from './graph-fouten.js';
+
 const GRAPH_BASE = 'https://graph.microsoft.com/v1.0';
 
 // Local timezone for calendar events — Graph returns times in this zone
 // when we send the Prefer header, avoiding UTC-shift bugs.
 const LOCAL_TZ = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Amsterdam';
+
+const MAX_POGINGEN = 3;
+
+/**
+ * Eén leesaanroep naar Graph, met opnieuw proberen en een bruikbare fout.
+ *
+ * WAAROM DIT BESTAAT (13 november 2026)
+ *   De inboxscan viel om met "Scan mislukt: UnknownError". Dat was een
+ *   wereldwijde storing bij Microsoft, maar dat stond nergens: geen
+ *   HTTP-status, geen request-id, geen aanwijzing dat het buiten ons lag. De
+ *   gebruiker ging dus in onze code zoeken.
+ *
+ *   Twee dingen opgelost. Een hapering van een paar seconden wordt nu
+ *   opgevangen in plaats van doorgegeven, en als het echt misgaat zegt de
+ *   melding waar je moet kijken. De regels staan in graph-fouten.js, met tests.
+ *
+ * Gedeeld door de leeslussen die eerst allebei hun eigen kopie hadden.
+ */
+async function graphLees(url, token) {
+  let poging = 0;
+  for (;;) {
+    poging++;
+    const resp = await fetch(GRAPH_BASE + url, { headers: { Authorization: 'Bearer ' + token } });
+    if (resp.status === 401) {
+      localStorage.removeItem('graph_token');
+      throw new Error('Token expired');
+    }
+    const data = await resp.json().catch(() => ({}));
+    if (resp.ok) return data;
+
+    if (magOpnieuw(resp.status, poging, MAX_POGINGEN)) {
+      const ms = wachttijd(poging, resp.headers.get('retry-after'));
+      console.warn(`[graph] ${resp.status} op ${url.slice(0, 60)}, poging ${poging} van `
+        + `${MAX_POGINGEN}, wacht ${ms} ms`);
+      await new Promise(r => setTimeout(r, ms));
+      continue;
+    }
+
+    // De request-id is wat Microsoft vraagt zodra je een storing meldt.
+    const { toegangGeweigerd, tekst } = graphFout(
+      resp.status, data, resp.headers.get('request-id'),
+    );
+    throw new Error(toegangGeweigerd ? `GEEN_TOEGANG: ${tekst}` : tekst);
+  }
+}
 
 export async function graphGet(endpoint, extraHeaders) {
   const token = localStorage.getItem('graph_token');
@@ -194,20 +241,7 @@ export async function getMailboxMessagesSince(mailbox, sinceISO, limit = 800) {
   const all = [];
   let safety = 0;
   while (url && all.length < limit && safety < 10) {
-    const resp = await fetch(GRAPH_BASE + url, { headers: { Authorization: 'Bearer ' + token } });
-    if (resp.status === 401) {
-      localStorage.removeItem('graph_token');
-      throw new Error('Token expired');
-    }
-    const data = await resp.json().catch(() => ({}));
-    if (!resp.ok) {
-      const code = data?.error?.code || `HTTP ${resp.status}`;
-      const msg = data?.error?.message || '';
-      if (resp.status === 403 || /ErrorAccessDenied|AccessDenied/i.test(code)) {
-        throw new Error(`GEEN_TOEGANG: ${code}${msg ? ` - ${msg}` : ''}`);
-      }
-      throw new Error(`${code}${msg ? ` - ${msg}` : ''}`);
-    }
+    const data = await graphLees(url, token);
     if (!Array.isArray(data.value)) break;
     all.push(...data.value);
     const next = data['@odata.nextLink'];
@@ -304,20 +338,7 @@ export async function getMailboxFolderEmails(mailbox, folderName = 'Inbox', limi
   const all = [];
   let safety = 0;
   while (url && all.length < limit && safety < 10) {
-    const resp = await fetch(GRAPH_BASE + url, { headers: { Authorization: 'Bearer ' + token } });
-    if (resp.status === 401) {
-      localStorage.removeItem('graph_token');
-      throw new Error('Token expired');
-    }
-    const data = await resp.json().catch(() => ({}));
-    if (!resp.ok) {
-      const code = data?.error?.code || `HTTP ${resp.status}`;
-      const msg = data?.error?.message || '';
-      if (resp.status === 403 || /ErrorAccessDenied|AccessDenied/i.test(code)) {
-        throw new Error(`GEEN_TOEGANG: ${code}${msg ? ` - ${msg}` : ''}`);
-      }
-      throw new Error(`${code}${msg ? ` - ${msg}` : ''}`);
-    }
+    const data = await graphLees(url, token);
     if (!Array.isArray(data.value)) break;
     all.push(...data.value);
     const next = data['@odata.nextLink'];
