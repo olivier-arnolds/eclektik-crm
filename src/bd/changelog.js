@@ -23,6 +23,28 @@ export const CURRENT_VERSION = '1.159.1';
 
 export const CHANGELOG = [
   {
+    version: '1.162.0',
+    date: '2026-11-13T09:44:07Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Prospect met de hand hervatten, en de datum zelf zetten',
+    summary:
+      'In de kolom Volgende actie staat nu een datumveld, en wie vastzit na een afwezigheidsbericht krijgt een knop hervat.',
+    changes: [
+      'De datum is bewerkbaar: staat de terugkeerdag in het afwezigheidsbericht, dan neem je die over.',
+      'Hervat zet iemand terug op msg1_sent met die datum, zodat bericht 2 weer meedoet. Een aparte knop, want dat is een beslissing en geen bijwerking van het typen van een datum.',
+      'Nooit voor wie zich afmeldde, bouncete of al een vastgelegde uitkomst heeft.',
+      'Ook niet voor wie bericht 2 al kreeg. Op de echte data waren dat 25 mensen die anders een tweede keer dezelfde mail hadden gekregen.',
+      'Het antwoord zelf blijft in de geschiedenis staan; alleen de datum heft de blokkade op.',
+    ],
+    files: [
+      'src/lib/outreach-hervatten.js',
+      'src/lib/outreach-hervatten.test.js',
+      'src/bd/marketing-outreach.jsx',
+    ],
+    rollback: 'git revert naar v1.161.0.',
+  },
+  {
     version: '1.161.0',
     date: '2026-11-12T20:00:17Z',
     author: 'Olivier Arnolds (via Claude)',

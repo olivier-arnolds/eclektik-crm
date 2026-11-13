@@ -14,6 +14,9 @@ import {
 import { outreachTextToHtml, subjectForStep } from '../lib/outreach-html';
 import { signatureFor } from '../lib/signatures.js';
 import { dagcapVanaf } from '../lib/verzenddag.js';
+import {
+  redenGeenBericht2, magHervatten, momentNaarDatum, hervatPatch, datumPatch,
+} from '../lib/outreach-hervatten.js';
 // Gedeeld met de Leads-tab, zodat een status daar niet anders heet dan hier.
 import { STATUS_LABEL, STATUS_COLOR, uitkomstKeuzes } from '../lib/outreach-status.js';
 
@@ -213,6 +216,9 @@ export default function MarketingOutreach() {
   const [reminderBezigId, setReminderBezigId] = useState(null);
   const [uitkomstBezigId, setUitkomstBezigId] = useState(null);
   const [uitkomstErr, setUitkomstErr] = useState(null);
+  // De datum voor de volgende stap en het hervatten; zie schrijfPlan hieronder.
+  const [planBezigId, setPlanBezigId] = useState(null);
+  const [planFout, setPlanFout] = useState(null);
   // Een melding die GEEN fout is: de uitkomst is opgeslagen, alleen de lead
   // viel weg. Rood zou hier liegen over wat er gebeurd is.
   const [uitkomstMelding, setUitkomstMelding] = useState(null);
@@ -404,7 +410,7 @@ export default function MarketingOutreach() {
   const bezigRef = useRef(false);
   bezigRef.current = Boolean(
     scanning || liBezig || sending || herstelBezig || busyStatus
-    || reminderBulkBezig || reminderBezigId || uitkomstBezigId
+    || reminderBulkBezig || reminderBezigId || uitkomstBezigId || planBezigId
     // Een open detailpaneel of een verzendplan in beeld is iets waar je naar
     // kijkt; dat laten we met rust tot je het zelf sluit.
     || openContact || sendPlan || sendResult || scanResult || liScanDroog || liScanEcht,
@@ -814,6 +820,38 @@ export default function MarketingOutreach() {
       setUitkomstBezigId(null);
     }
   };
+
+  // De datum voor de volgende stap verzetten, en iemand die vastzit weer in de
+  // rij zetten voor bericht 2.
+  //
+  // WAAROM DIT MET DE HAND MOET KUNNEN
+  //   Een afwezigheidsbericht dat de classificatie niet zeker wist, laat de
+  //   prospect achter in een 'hold': antwoord binnen, geen vervolgdatum, en de
+  //   verzender slaat hem over tot een mens kijkt. Die mens kon er niets mee.
+  //   En wie het afwezigheidsbericht als een echt antwoord las, belandde op
+  //   'replied' en bleef daar staan.
+  //
+  //   De datum uit het bericht zelf ("ik ben terug op 24 november") is beter
+  //   dan welke automaat dan ook. Vandaar een veld en geen knop met een vaste
+  //   termijn erin.
+  //
+  // Eén tabel, dus rechtstreeks via de client; de regels staan in
+  // src/lib/outreach-hervatten.js met tests.
+  const schrijfPlan = async (r, resultaat) => {
+    if (resultaat.fout) { setPlanFout(resultaat.fout); return; }
+    setPlanBezigId(r.id);
+    setPlanFout(null);
+    const { error } = await supabase.from('outreach_contact')
+      .update(resultaat.patch).eq('id', r.id);
+    setPlanBezigId(null);
+    if (error) { setPlanFout('Opslaan mislukt: ' + error.message); return; }
+    // Meteen in beeld, anders lijkt de keuze niet aangekomen tot de volgende
+    // verversing.
+    setRows(prev => prev.map(x => (x.id === r.id ? { ...x, ...resultaat.patch } : x)));
+  };
+
+  const verzetDatum = (r, datum) => schrijfPlan(r, datumPatch(datum));
+  const hervat = (r, datum) => schrijfPlan(r, hervatPatch(r, datum));
 
   // Hetzelfde veld, maar voor precies wat de lijst nu toont. Wie al een tekst
   // heeft slaan we over: die is al aangezet, en overschrijven zou een met de
@@ -1500,6 +1538,12 @@ export default function MarketingOutreach() {
         </span>
       </div>
 
+      {planFout && (
+        <div style={{ fontSize: 12, color: '#dc2626', marginBottom: 6 }}>
+          {planFout}{' '}
+          <button className="btn-ghost tiny" onClick={() => setPlanFout(null)}>sluiten</button>
+        </div>
+      )}
       {uitkomstErr && (
         <div style={{ fontSize: 12, color: '#dc2626', marginBottom: 6 }}>{uitkomstErr}</div>
       )}
@@ -1695,8 +1739,14 @@ export default function MarketingOutreach() {
                       ))}
                     </select>
                   </td>
-                  <td style={{ padding: '6px 10px', color: 'var(--text-3)', whiteSpace: 'nowrap' }}>
-                    {r.next_action_at ? String(r.next_action_at).slice(0, 10) : '-'}
+                  {/* De datum is bewerkbaar en niet alleen een weergave: bij een
+                      afwezigheidsbericht staat de terugkeerdag in de mail, en
+                      die wil je kunnen overnemen. De keuzelijst stopt de klik,
+                      want een klik op de regel opent de mails. */}
+                  <td style={{ padding: '6px 10px', color: 'var(--text-3)', whiteSpace: 'nowrap' }}
+                    onClick={(e) => e.stopPropagation()}>
+                    <PlanCel rij={r} bezig={planBezigId === r.id}
+                      onVerzet={(d) => verzetDatum(r, d)} onHervat={(d) => hervat(r, d)} />
                   </td>
                   <td style={{ padding: '6px 10px', color: 'var(--text-3)', maxWidth: 320 }}>
                     {r.last_reply_summary || r.paused_reason || ''}
@@ -1743,6 +1793,74 @@ export default function MarketingOutreach() {
         )}
       </div>
     </div>
+  );
+}
+
+// De cel 'volgende actie': de datum verzetten, en wie vastzit weer meedoen.
+//
+// TWEE HANDELINGEN DIE NIET HETZELFDE ZIJN
+//   Een datum verzetten raakt de status niet. Hervatten zet iemand terug op
+//   msg1_sent, zodat bericht 2 weer in aanmerking komt. Dat tweede is een
+//   echte beslissing, dus het is een aparte knop en geen bijwerking van het
+//   typen van een datum. Wie zich heeft afgemeld of een vastgelegde uitkomst
+//   heeft, krijgt die knop niet: zie redenGeenBericht2.
+function PlanCel({ rij, bezig, onVerzet, onHervat }) {
+  const [open, setOpen] = useState(false);
+  const [datum, setDatum] = useState('');
+  const reden = redenGeenBericht2(rij);
+  const kanHervatten = magHervatten(rij);
+
+  // Een voorstel dat de gebruiker meteen kan overschrijven: morgen. De echte
+  // datum staat in het afwezigheidsbericht, en die kent alleen de lezer.
+  const morgen = () => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().slice(0, 10);
+  };
+
+  if (open) {
+    return (
+      <span style={{ display: 'inline-flex', gap: 4, alignItems: 'center' }}>
+        <input type="date" value={datum} autoFocus disabled={bezig}
+          onChange={(e) => setDatum(e.target.value)}
+          style={{ font: 'inherit', fontSize: 11, padding: '1px 3px', borderRadius: 4, border: '0.5px solid var(--sep)' }} />
+        <button className="btn-primary tiny" disabled={bezig || !datum}
+          onClick={() => { onHervat(datum); setOpen(false); }}
+          title="Zet deze persoon weer in de rij voor bericht 2, vanaf deze datum">
+          ok
+        </button>
+        <button className="btn-ghost tiny" disabled={bezig}
+          onClick={() => setOpen(false)}>x</button>
+      </span>
+    );
+  }
+
+  return (
+    <span style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
+      <input type="date" value={momentNaarDatum(rij.next_action_at)} disabled={bezig}
+        onChange={(e) => onVerzet(e.target.value)}
+        title={rij.next_action_at
+          ? 'De dag waarop het volgende bericht mag. Pas hem aan als de afzender een terugkeerdatum noemde.'
+          : 'Nog geen datum. Vul er een in om het volgende bericht op die dag te laten gaan.'}
+        style={{
+          font: 'inherit', fontSize: 11, padding: '1px 3px', borderRadius: 4,
+          border: '0.5px solid var(--sep)', background: 'transparent',
+          color: 'var(--text-3)', opacity: bezig ? 0.5 : 1,
+        }} />
+      {reden && (
+        kanHervatten ? (
+          <button className="btn-ghost tiny" disabled={bezig}
+            onClick={() => { setDatum(morgen()); setOpen(true); }}
+            title={`${reden.tekst}. Klik om deze persoon weer in de rij te zetten voor bericht 2.`}>
+            hervat
+          </button>
+        ) : (
+          <span style={{ fontSize: 10, color: 'var(--text-3)' }} title={reden.tekst}>
+            {reden.tekst.toLowerCase()}
+          </span>
+        )
+      )}
+    </span>
   );
 }
 
