@@ -24,7 +24,7 @@ describe('confirmationMail', () => {
     expect(ams.body).toContain('Tuesday 17 November 2026');
     expect(ams.body).toContain('Amsterdam');
     expect(ams.body).not.toContain('Zürich');
-    expect(zur.body).toContain('Tuesday 1 December 2026');
+    expect(zur.body).toContain('Thursday 28 January 2027');
     expect(zur.body).toContain('Zürich');
     expect(zur.body).not.toContain('Amsterdam');
   });

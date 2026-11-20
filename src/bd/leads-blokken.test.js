@@ -31,7 +31,7 @@ describe('maakBlokken', () => {
       reg('a1', 'lead2', 'amsterdam-2026', '2026-10-20T10:00:00Z'),
     ], zichtbaar);
     const events = blokken.filter(b => b.soort === BLOK_EVENT);
-    expect(events.map(b => b.titel)).toEqual(['Amsterdam 17 nov', 'Zürich 1 dec']);
+    expect(events.map(b => b.titel)).toEqual(['Amsterdam 17 nov', 'Zürich 28 jan']);
   });
 
   it('KRITIEK: dezelfde persoon mag in meerdere eventblokken staan', () => {

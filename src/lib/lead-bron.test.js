@@ -86,7 +86,7 @@ describe('telHref', () => {
 describe('eventLabel', () => {
   it('maakt van een slug een leesbaar kopje met datum', () => {
     expect(eventLabel('amsterdam-2026')).toBe('Amsterdam 17 nov');
-    expect(eventLabel('zurich-2026')).toBe('Zürich 1 dec');
+    expect(eventLabel('zurich-2026')).toBe('Zürich 28 jan');
   });
 
   it('valt terug op de slug zelf bij een event dat we niet kennen', () => {
@@ -98,7 +98,7 @@ describe('eventLabel', () => {
 
 describe('eventInfo', () => {
   it('geeft naam en datum terug', () => {
-    expect(eventInfo('zurich-2026')).toEqual({ naam: 'Zürich', datum: '2026-12-01' });
+    expect(eventInfo('zurich-2026')).toEqual({ naam: 'Zürich', datum: '2027-01-28' });
   });
 
   it('geeft null bij een onbekende of lege slug', () => {
@@ -111,7 +111,7 @@ describe('datumIsActueel', () => {
   // Amsterdam, waardoor Zürich nooit groen kon kleuren.
   it('vergelijkt per event, niet tegen één vaste datum', () => {
     expect(datumIsActueel('amsterdam-2026', { eventDate: '2026-11-17' })).toBe(true);
-    expect(datumIsActueel('zurich-2026', { eventDate: '2026-12-01' })).toBe(true);
+    expect(datumIsActueel('zurich-2026', { eventDate: '2027-01-28' })).toBe(true);
     expect(datumIsActueel('zurich-2026', { eventDate: '2026-11-17' })).toBe(false);
   });
 

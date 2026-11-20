@@ -23,6 +23,26 @@ export const CURRENT_VERSION = '1.159.1';
 
 export const CHANGELOG = [
   {
+    version: '1.162.2',
+    date: '2026-11-20T12:52:46Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Zurich staat nu op 28 januari',
+    summary:
+      'De roundtable in Zurich is verschoven van 1 december naar donderdag 28 januari 2027. De bevestigingsmail en het label in de tab Leads droegen nog de oude datum.',
+    changes: [
+      'De bevestigingsmail noemt nu donderdag 28 januari 2027. Tijd, zaal en adres staan er nog zoals ze waren; controleer die bij Microsoft voordat je weer bevestigingen verstuurt.',
+      'Het blok in de tab Leads heet nu Zurich 28 jan.',
+      'Aanmeldingen van voor de verschuiving dragen 1 december in hun payload en kleuren daardoor als afwijkend. Dat is de bedoeling: het is precies de lijst mensen die de nieuwe datum nog moet horen.',
+      'Op de website moet de datum ook om, anders komen nieuwe aanmeldingen opnieuw met 1 december binnen.',
+    ],
+    files: [
+      'api/_lib/event-confirmation-mails.js',
+      'src/lib/lead-bron.js',
+    ],
+    rollback: 'git revert naar v1.162.1.',
+  },
+  {
     version: '1.162.1',
     date: '2026-11-13T10:44:16Z',
     author: 'Olivier Arnolds (via Claude)',

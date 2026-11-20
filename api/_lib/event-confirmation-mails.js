@@ -35,13 +35,13 @@ Olivier Arnolds
 Eclectik`,
   },
   'zurich-2026': {
-    subject: 'Your seat is confirmed, 1 December in Zurich',
+    subject: 'Your seat is confirmed, 28 January in Zurich',
     body: `Hi {{first_name}},
 
-Your seat is confirmed. Good to have you with us on 1 December.
+Your seat is confirmed. Good to have you with us on 28 January.
 
 Event: Roundtable: AI and agents reshaping the workplace
-Date: Tuesday 1 December 2026
+Date: Thursday 28 January 2027
 Time: 14:30 to 17:00 CET, arrival and networking from 14:00, apéro afterwards
 Location: Microsoft office, The Circle 02, 8058 Zürich
 Rooms: Eiger and Dufourspitze

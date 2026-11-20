@@ -23,7 +23,7 @@
 //   dragen de datum van toen nog in hun payload. De slug verschuift niet.
 export const EVENTS = {
   'amsterdam-2026': { naam: 'Amsterdam', datum: '2026-11-17' },
-  'zurich-2026': { naam: 'Zürich', datum: '2026-12-01' },
+  'zurich-2026': { naam: 'Zürich', datum: '2027-01-28' },
 };
 
 /** Het event bij een slug, of null bij een slug die we niet kennen. */
