@@ -29,6 +29,18 @@ describe('confirmationMail', () => {
     expect(zur.body).not.toContain('Amsterdam');
   });
 
+  it('ondertekent per event met wie er daadwerkelijk staat', () => {
+    // Olivier is bij Amsterdam zelf aanwezig en in januari in Zurich niet.
+    // Een gast die bij aankomst naar hem vraagt omdat de mail zo ondertekend
+    // was, is precies het soort kleine teleurstelling waar je niet mee wilt
+    // beginnen.
+    const ams = confirmationMail('amsterdam-2026', 'A');
+    const zur = confirmationMail('zurich-2026', 'A');
+    expect(ams.body.trimEnd().endsWith('Olivier Arnolds\nEclectik')).toBe(true);
+    expect(zur.body.trimEnd().endsWith('The Eclectik team')).toBe(true);
+    expect(zur.body).not.toContain('Olivier');
+  });
+
   it('laat geen onvervangen sjabloonhaakjes achter', () => {
     for (const slug of eventsMetMail()) {
       expect(confirmationMail(slug, 'X').body).not.toContain('{{');

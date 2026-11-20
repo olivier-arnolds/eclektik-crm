@@ -9,9 +9,17 @@
 //   van allebei.
 //
 // DE ONDERTEKENING STAAT IN DE TEKST
-//   Geen merkhandtekening eronder: de tekst eindigt al met Olivier Arnolds en
-//   Eclectik. Het navy blok eronder zou dat herhalen en van een persoonlijke
-//   mail een mailing maken.
+//   Geen merkhandtekening eronder: de tekst eindigt zelf al met een afzender.
+//   Het navy blok eronder zou dat herhalen en van een persoonlijke mail een
+//   mailing maken.
+//
+//   WIE ER ONDER STAAT VERSCHILT PER EVENT, EN DAT IS EXPRES
+//   Amsterdam is ondertekend met Olivier Arnolds, want hij staat daar zelf.
+//   Zurich is ondertekend met The Eclectik team, want in januari gaat hij niet
+//   mee. Een gast die bij aankomst naar Olivier vraagt omdat de mail zo
+//   ondertekend was, is precies het soort kleine teleurstelling waar een
+//   bijeenkomst mee begint. De mail vertrekt wel van zijn adres, zodat een
+//   antwoord nog steeds bij een mens aankomt.
 
 export const EVENT_MAILS = {
   'amsterdam-2026': {
@@ -54,8 +62,7 @@ and we can offer the seat to someone else.
 
 See you in Zürich,
 
-Olivier Arnolds
-Eclectik`,
+The Eclectik team`,
   },
 };
 

@@ -23,6 +23,26 @@ export const CURRENT_VERSION = '1.159.1';
 
 export const CHANGELOG = [
   {
+    version: '1.162.3',
+    date: '2026-11-20T12:56:28Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Zurich wordt ondertekend door het team',
+    summary:
+      'Olivier is in januari niet in Zurich, dus de bevestigingsmail voor dat event eindigt nu met The Eclectik team in plaats van met zijn naam.',
+    changes: [
+      'Amsterdam blijft ondertekend met Olivier Arnolds, want daar staat hij zelf.',
+      'De mail vertrekt nog steeds van olivier@eclectik.co, zodat een antwoord bij een mens aankomt.',
+      'Een test houdt het nu per event vast. Een gast die bij aankomst naar Olivier vraagt omdat de mail zo ondertekend was, is precies het soort kleine teleurstelling waar je niet mee wilt beginnen.',
+      'Nog niet gedaan: adres en eventpagina van Zurich. Die gaan naar het PwC Experience Center, maar het exacte adres en de nieuwe URL staan nog niet vast.',
+    ],
+    files: [
+      'api/_lib/event-confirmation-mails.js',
+      'api/_lib/event-confirmation-mails.test.js',
+    ],
+    rollback: 'git revert naar v1.162.2.',
+  },
+  {
     version: '1.162.2',
     date: '2026-11-20T12:52:46Z',
     author: 'Olivier Arnolds (via Claude)',
