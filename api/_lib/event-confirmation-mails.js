@@ -3,10 +3,9 @@
 //
 // WAAROM PER EVENT EN NIET EEN SJABLOON MET VARIABELEN
 //   De twee mails verschillen in meer dan datum en plaats: de ene noemt een
-//   parkeergarage en een receptie, de andere twee zaalnamen, een link naar de
-//   programmapagina en een apéro. Een sjabloon met tien variabelen zou die
-//   verschillen moeten platslaan, en dan wordt elke mail de slechtste versie
-//   van allebei.
+//   parkeergarage en een receptie, de andere een link naar de programmapagina
+//   en een apéro. Een sjabloon met tien variabelen zou die verschillen moeten
+//   platslaan, en dan wordt elke mail de slechtste versie van allebei.
 //
 // DE ONDERTEKENING STAAT IN DE TEKST
 //   Geen merkhandtekening eronder: de tekst eindigt zelf al met een afzender.
@@ -50,12 +49,11 @@ Your seat is confirmed. Good to have you with us on 28 January.
 
 Event: Roundtable: AI and agents reshaping the workplace
 Date: Thursday 28 January 2027
-Time: 14:30 to 17:00 CET, arrival and networking from 14:00, apéro afterwards
-Location: Microsoft office, The Circle 02, 8058 Zürich
-Rooms: Eiger and Dufourspitze
+Time: 14:30 to 17:00 CET, arrival from 14:00, apéro afterwards
+Location: PwC's Experience Center, Birchstrasse 160, 8050 Zürich
 
 The full programme and the speakers are on the event page:
-https://www.eclectik.co/events/zurich-2026
+https://www.eclectik.co/events/zurich-2027
 
 We keep the group small, so if something changes on your side, let us know
 and we can offer the seat to someone else.

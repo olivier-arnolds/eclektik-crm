@@ -41,6 +41,17 @@ describe('confirmationMail', () => {
     expect(zur.body).not.toContain('Olivier');
   });
 
+  it('noemt voor Zurich de PwC-locatie en de eventpagina van 2027', () => {
+    // De roundtable verhuisde van het Microsoft-kantoor naar PwC en de pagina
+    // kreeg een nieuw pad. De slug bleef zurich-2026, want daarop koppelen de
+    // website en de CRM elkaars rijen; die verschuift niet mee met een datum.
+    const zur = confirmationMail('zurich-2026', 'A');
+    expect(zur.body).toContain("PwC's Experience Center, Birchstrasse 160, 8050 Z\u00fcrich");
+    expect(zur.body).toContain('https://www.eclectik.co/events/zurich-2027');
+    expect(zur.body).not.toContain('Microsoft');
+    expect(zur.body).not.toContain('Eiger');
+  });
+
   it('laat geen onvervangen sjabloonhaakjes achter', () => {
     for (const slug of eventsMetMail()) {
       expect(confirmationMail(slug, 'X').body).not.toContain('{{');

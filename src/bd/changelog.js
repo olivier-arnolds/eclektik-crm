@@ -23,6 +23,27 @@ export const CURRENT_VERSION = '1.159.1';
 
 export const CHANGELOG = [
   {
+    version: '1.163.0',
+    date: '2026-11-20T12:58:11Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Zurich: PwC Experience Center en de nieuwe eventpagina',
+    summary:
+      'De roundtable verhuisde van het Microsoft-kantoor naar PwC en de programmapagina kreeg een nieuw pad. De bevestigingsmail stuurde mensen nog naar het oude gebouw.',
+    changes: [
+      'Locatie is nu PwC\'s Experience Center, Birchstrasse 160, 8050 Zurich. De zaalnamen Eiger en Dufourspitze zijn weg: die waren van Microsoft.',
+      'De link wijst naar /events/zurich-2027. De oude link stuurt door, maar in een mail hoort de echte te staan.',
+      'Inloop staat nu op 14:00 en het programma op 14:30 tot 17:00, gelijk aan de pagina.',
+      'De slug blijft zurich-2026. Daarop koppelen de website en de CRM elkaars rijen, en de site stuurt die nog steeds zo mee; alleen het pad van de pagina is veranderd.',
+      'Gegevens overgenomen van de eventpagina zelf, die door PwC is goedgekeurd. Een test houdt locatie en link nu vast.',
+    ],
+    files: [
+      'api/_lib/event-confirmation-mails.js',
+      'api/_lib/event-confirmation-mails.test.js',
+    ],
+    rollback: 'git revert naar v1.162.3.',
+  },
+  {
     version: '1.162.3',
     date: '2026-11-20T12:56:28Z',
     author: 'Olivier Arnolds (via Claude)',
