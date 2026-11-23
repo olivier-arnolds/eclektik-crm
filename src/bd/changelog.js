@@ -23,6 +23,27 @@ export const CURRENT_VERSION = '1.159.1';
 
 export const CHANGELOG = [
   {
+    version: '1.163.1',
+    date: '2026-11-23T09:29:17Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'fix',
+    title: 'Dubbel dealnummer blokkeerde de promotie van een lead',
+    summary:
+      'Een lead van qualify naar develop slepen gaf "duplicate key value violates unique constraint opportunities_deal_no_key". D-0206 stond op twee deals tegelijk.',
+    changes: [
+      'De promotie neemt het dealnummer van de lead mee. De LHH-lead had D-0206 en dat nummer stond ook op een opportunity, dus brak de promotie af. De constraint deed zijn werk.',
+      'Oorzaak: op 20 november zijn twee opportunities buiten de app om ingevoegd met een zelf uitgerekend nummer. Die berekening keek alleen naar de opportunities en niet naar de leads, waar D-0206 al stond.',
+      'Daardoor bleef de gedeelde teller ook achter op de data. De eerstvolgende nieuwe deal, van wie dan ook, zou opnieuw zijn vastgelopen. Dat was nog niemand tegengekomen.',
+      'De opportunity van University of Staffordshire heeft nu D-0208. Die en niet de lead, want de lead had zijn nummer wel uit de teller gekregen.',
+      'De trigger slaat voortaan een bezet nummer over. Een met de hand ingevuld nummer is niet te verbieden, dus vangt de trigger de gevolgen op.',
+      'Alleen database, geen code. Zie sql/data_deal_no_dubbel_2026-11-23.sql.',
+    ],
+    files: [
+      'sql/data_deal_no_dubbel_2026-11-23.sql',
+    ],
+    rollback: 'git revert naar v1.163.0. De databasewijziging draai je terug met het commando onderin het SQL-bestand.',
+  },
+  {
     version: '1.163.0',
     date: '2026-11-20T12:58:11Z',
     author: 'Olivier Arnolds (via Claude)',
