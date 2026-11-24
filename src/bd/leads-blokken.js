@@ -82,6 +82,9 @@ export function maakBlokken(activiteiten, zichtbareLeads) {
       titel: eventLabel(slug),
       soort: BLOK_EVENT,
       slug,
+      // De datum van het event, of null bij een slug die we niet kennen.
+      // Hiermee bepaalt leads-campagnes.js of het blok onder Afgelopen valt.
+      datum: EVENTS[slug]?.datum || null,
       rijen: nieuwstePerLead(perSlug.get(slug) || []),
       // Een eventblok telt aanmeldingen: dezelfde persoon kan zich voor twee
       // events aanmelden en telt dan in allebei de koppen mee.
@@ -96,6 +99,8 @@ export function maakBlokken(activiteiten, zichtbareLeads) {
       sleutel: BLOK_OUTREACH,
       titel: 'Afspraken uit outreach',
       soort: BLOK_OUTREACH,
+      // Geen einddatum: outreach loopt door en valt nooit onder Afgelopen.
+      datum: null,
       rijen: nieuwstePerLead(afspraken),
       // Hier is niemand zich voor iets komen aanmelden: dit zijn leads die uit
       // een gesprek zijn gekomen.

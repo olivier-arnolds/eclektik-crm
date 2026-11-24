@@ -23,6 +23,32 @@ export const CURRENT_VERSION = '1.159.1';
 
 export const CHANGELOG = [
   {
+    version: '1.164.0',
+    date: '2026-11-24T14:35:42Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Leads: afgelopen campagnes wegklappen',
+    summary:
+      'Bovenaan de Leads-tab staan nu de knoppen Actief, Afgelopen en Alles. Standaard zie je alleen wat nog loopt, en elk blok klapt in als je op de titel klikt.',
+    changes: [
+      'Een campagne is afgelopen als zijn datum voorbij is. Voor een event is dat de datum in EVENTS, voor de customer session het laatste gekozen slot. Op de dag zelf telt hij nog als actief.',
+      'Afspraken uit outreach hebben geen einddatum en blijven altijd onder Actief. Een event dat de app niet kent ook: liever te vaak in beeld dan ongemerkt weg.',
+      'Op dit moment: onder Actief Zürich 28 jan en Afspraken uit outreach, onder Afgelopen Amsterdam 17 nov en de customer session.',
+      'Klik op de titel van een blok om het in of uit te klappen. De telling blijft naast de titel staan. Een afgelopen blok krijgt onder Alles een label afgelopen.',
+      'De keuze en de ingeklapte blokken worden per browser onthouden, dus de tab opent weer zoals je hem achterliet.',
+      'Het statusfilter heeft het label Leadstatus gekregen. Zijn knop active gaat over de lead, Actief erboven over de campagne.',
+      'De regels staan in src/bd/leads-campagnes.js, met tests. maakBlokken geeft elk blok nu ook zijn datum mee.',
+    ],
+    files: [
+      'src/bd/leads-campagnes.js',
+      'src/bd/leads-campagnes.test.js',
+      'src/bd/leads-blokken.js',
+      'src/bd/leads-blokken.test.js',
+      'src/bd/marketing-leads.jsx',
+    ],
+    gitTag: 'v1.164.0',
+  },
+  {
     version: '1.163.1',
     date: '2026-11-23T09:29:17Z',
     author: 'Olivier Arnolds (via Claude)',

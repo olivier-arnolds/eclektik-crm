@@ -11,9 +11,13 @@ import {
 import { matchAanmeldingCampagnes } from './outreach-match';
 import { contactVanLead, aanvullingenVoorContact, zoekBedrijf, normMail } from '../lib/contact-van-lead';
 import { maakBlokken, BLOK_EVENT } from './leads-blokken';
+import {
+  CAMPAGNE_FILTERS, SESSIE_SLEUTEL, vandaagISO, laatsteSessieDatum,
+  isAfgelopen, toonCampagne, telCampagnes, wisselIngeklapt,
+} from './leads-campagnes';
 import { weergaveVanProspect } from '../lib/outreach-status';
 import { fetchAllRows } from '../hooks/usePipelineData';
-import { fmtRelative } from './atoms';
+import { fmtRelative, useLocal } from './atoms';
 import { apiFetch } from '../lib/apiFetch';
 
 const STATUS_FILTERS = ['active', 'converted', 'archived', 'all'];
@@ -401,6 +405,20 @@ export default function MarketingLeads() {
   const blokken = useMemo(
     () => maakBlokken(activiteiten, leadById), [activiteiten, leadById]);
 
+  // Actief of afgelopen, en wat er ingeklapt is. De regels staan in
+  // leads-campagnes.js. Allebei in localStorage, zodat de tab er bij de
+  // volgende keer openen weer zo uitziet als je hem achterliet.
+  const [campagneFilter, setCampagneFilter] = useLocal('bd_leads_campagnes', 'actief');
+  const [ingeklapt, setIngeklapt] = useLocal('bd_leads_ingeklapt', []);
+  const isIngeklapt = (sleutel) => Array.isArray(ingeklapt) && ingeklapt.includes(sleutel);
+  const wissel = (sleutel) => setIngeklapt(lijst => wisselIngeklapt(lijst, sleutel));
+  const vandaag = vandaagISO();
+  const sessieAfgelopen = isAfgelopen(laatsteSessieDatum(sessie), vandaag);
+  const blokkenMetStand = blokken.map(b => ({ ...b, afgelopen: isAfgelopen(b.datum, vandaag) }));
+  const zichtbareBlokken = blokkenMetStand.filter(b => toonCampagne(campagneFilter, b.afgelopen));
+  const toonSessie = toonCampagne(campagneFilter, sessieAfgelopen);
+  const campagneTelling = telCampagnes([sessieAfgelopen, ...blokkenMetStand.map(b => b.afgelopen)]);
+
   // Het antwoord met de hand zetten. Nodig omdat de mail met de knop slecht
   // aankomt: mensen mailen rechtstreeks terug en dat moet vastgelegd kunnen
   // worden. Gaat via een endpoint, want event_confirm_invites staat op RLS
@@ -532,13 +550,29 @@ export default function MarketingLeads() {
         </div>
       )}
 
+      {/* Welke campagnes in beeld zijn. Bovenaan, want het geldt voor elk blok
+          hieronder, ook voor de customer session. Een campagne is afgelopen
+          als zijn datum voorbij is; zie leads-campagnes.js. */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 16 }}>
+        <span style={{ fontSize: 11, color: 'var(--text-3)', marginRight: 4 }}>Campagnes</span>
+        {CAMPAGNE_FILTERS.map(f => (
+          <button key={f.id}
+            className={campagneFilter === f.id
+              || (f.id === 'actief' && !CAMPAGNE_FILTERS.some(x => x.id === campagneFilter))
+              ? 'btn-primary tiny' : 'btn-ghost tiny'}
+            onClick={() => setCampagneFilter(f.id)}>
+            {f.label} ({campagneTelling[f.id]})
+          </button>
+        ))}
+      </div>
+
       {/* Reacties op de uitnodiging voor de user session. Bewust een eigen blok
           met een eigen kop: het zijn geen website-aanmeldingen en ze horen niet
           tussen de eventaanmeldingen te verdwijnen. */}
+      {toonSessie && (
       <div style={{ marginBottom: 22 }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 8 }}>
-          <span style={{ fontSize: 13, fontWeight: 600 }}>Customer session</span>
-          <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
+        <BlokKop titel="Customer session" afgelopen={sessieAfgelopen}
+          ingeklapt={isIngeklapt(SESSIE_SLEUTEL)} onWissel={() => wissel(SESSIE_SLEUTEL)}>
             {sessieJa.length} ja &middot; {sessieNee.length} nee &middot; {sessieStil.length} nog
             geen antwoord, van {sessie.length} uitgenodigd
             {sessieRuis.length > 0 && (
@@ -552,9 +586,8 @@ export default function MarketingLeads() {
                 {sessieHalf.length} klikte ja zonder te bevestigen
               </span></>
             )}
-          </span>
-        </div>
-        {sessieJa.length === 0 ? (
+        </BlokKop>
+        {!isIngeklapt(SESSIE_SLEUTEL) && (sessieJa.length === 0 ? (
           <div style={{ fontSize: 12, color: 'var(--text-3)', border: '0.5px dashed var(--sep)', borderRadius: 6, padding: '10px 12px' }}>
             {sessie.length === 0
               ? 'Nog geen reacties. Ze verschijnen hier zodra iemand op Ja klikt en dat op de landingspagina bevestigt.'
@@ -607,13 +640,17 @@ export default function MarketingLeads() {
               </tbody>
             </table>
           </div>
-        )}
+        ))}
       </div>
+      )}
 
       {/* Het statusfilter hoort één keer bovenaan en werkt over alle blokken.
           Per blok een eigen stel knoppen zou vier keer dezelfde vraag stellen
           en de blokken uit de pas kunnen laten lopen. */}
-      <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 16 }}>
+        {/* Een eigen label, want 'active' hier gaat over de lead en niet over
+            de campagne in de rij hierboven. */}
+        <span style={{ fontSize: 11, color: 'var(--text-3)', marginRight: 4 }}>Leadstatus</span>
         {STATUS_FILTERS.map(s => (
           <button key={s}
             className={statusFilter === s ? 'btn-primary tiny' : 'btn-ghost tiny'}
@@ -629,8 +666,13 @@ export default function MarketingLeads() {
         <div style={{ fontSize: 13, color: 'var(--text-dim, #888)' }}>
           Geen marketing leads{statusFilter !== 'all' ? ` met status "${statusFilter}"` : ''}.
         </div>
-      ) : blokken.map(blok => (
+      ) : zichtbareBlokken.length === 0 ? (
+        <div style={{ fontSize: 13, color: 'var(--text-dim, #888)' }}>
+          {campagneFilter === 'afgelopen' ? 'Geen afgelopen campagnes.' : 'Geen actieve campagnes.'}
+        </div>
+      ) : zichtbareBlokken.map(blok => (
         <AanmeldingenBlok key={blok.sleutel} blok={blok} statusFilter={statusFilter}
+          ingeklapt={isIngeklapt(blok.sleutel)} onWissel={() => wissel(blok.sleutel)}
           leadById={leadById}
           bronPerLead={bronPerLead} viaPerLead={viaPerLead} telPerLead={telPerLead}
           campagnesPerAanmelding={campagnesPerAanmelding}
@@ -654,7 +696,7 @@ export default function MarketingLeads() {
 //   events aanmeldt telt in allebei mee. 'leads' zou dan een optelsom
 //   suggereren die niet klopt.
 function AanmeldingenBlok({
-  blok, statusFilter, leadById, bronPerLead, viaPerLead, telPerLead,
+  blok, statusFilter, ingeklapt, onWissel, leadById, bronPerLead, viaPerLead, telPerLead,
   campagnesPerAanmelding, bevestigingPerMail, onZetTelefoon, onZetAntwoord, zetBezig,
   expanded, activity, busyId, onToggle, onPromote, onArchive, onReactivate,
   onVoegContactToe, th, td,
@@ -673,15 +715,13 @@ function AanmeldingenBlok({
 
   return (
     <div style={{ marginBottom: 26 }}>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 8 }}>
-        <span style={{ fontSize: 13, fontWeight: 600 }}>{blok.titel}</span>
-        <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
-          {blok.rijen.length}{' '}
-          {(blok.eenheid || ['aanmelding', 'aanmeldingen'])[blok.rijen.length === 1 ? 0 : 1]}
-        </span>
-      </div>
+      <BlokKop titel={blok.titel} afgelopen={blok.afgelopen}
+        ingeklapt={ingeklapt} onWissel={onWissel}>
+        {blok.rijen.length}{' '}
+        {(blok.eenheid || ['aanmelding', 'aanmeldingen'])[blok.rijen.length === 1 ? 0 : 1]}
+      </BlokKop>
 
-      {blok.rijen.length === 0 ? (
+      {ingeklapt ? null : blok.rijen.length === 0 ? (
         <div style={{
           fontSize: 12, color: 'var(--text-3)', border: '0.5px dashed var(--sep)',
           borderRadius: 6, padding: '10px 12px',
@@ -759,6 +799,35 @@ function AanmeldingenBlok({
           </tbody>
         </table>
       )}
+    </div>
+  );
+}
+
+// De kop van een blok, en meteen de knop om het in te klappen.
+//
+// DE HELE TITEL IS DE KNOP
+//   Een los pijltje is een klein doel. De titel zelf is waar je naar kijkt als
+//   je een blok weg wilt hebben, dus daar klik je ook. De telling blijft naast
+//   de knop staan, zodat je ook ingeklapt ziet hoeveel er in zit.
+function BlokKop({ titel, afgelopen, ingeklapt, onWissel, children }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: ingeklapt ? 0 : 8 }}>
+      <button type="button" onClick={onWissel} aria-expanded={!ingeklapt}
+        title={ingeklapt ? 'Uitklappen' : 'Inklappen'}
+        style={{
+          display: 'inline-flex', alignItems: 'baseline', gap: 6, background: 'none',
+          border: 0, padding: 0, cursor: 'pointer', font: 'inherit', color: 'inherit',
+        }}>
+        <span aria-hidden="true" style={{
+          display: 'inline-block', width: 10, fontSize: 11, color: 'var(--text-3)',
+          transform: ingeklapt ? 'none' : 'rotate(90deg)', transition: 'transform 120ms',
+        }}>▸</span>
+        <span style={{ fontSize: 13, fontWeight: 600 }}>{titel}</span>
+      </button>
+      {afgelopen && (
+        <span className="chip" style={{ fontSize: 10, color: 'var(--text-3)' }}>afgelopen</span>
+      )}
+      <span style={{ fontSize: 11, color: 'var(--text-3)' }}>{children}</span>
     </div>
   );
 }

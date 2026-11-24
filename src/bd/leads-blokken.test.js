@@ -151,3 +151,18 @@ describe('de eenheid in de kop', () => {
     expect(blokken.map(b => b.titel)).not.toContain('Overig');
   });
 });
+
+describe('maakBlokken: de datum voor Actief en Afgelopen', () => {
+  it('geeft een eventblok de datum van het event, en outreach geen datum', () => {
+    const blokken = maakBlokken([], new Set());
+    const perSleutel = Object.fromEntries(blokken.map(b => [b.sleutel, b.datum]));
+    expect(perSleutel['amsterdam-2026']).toBe('2026-11-17');
+    expect(perSleutel['zurich-2026']).toBe('2027-01-28');
+    expect(perSleutel[BLOK_OUTREACH]).toBeNull();
+  });
+
+  it('een onbekende slug heeft geen datum', () => {
+    const blokken = maakBlokken([reg('q1', 'lead1', 'paris-2027', '2026-11-01T10:00:00Z')], new Set(['lead1']));
+    expect(blokken.find(b => b.sleutel === 'paris-2027').datum).toBeNull();
+  });
+});
