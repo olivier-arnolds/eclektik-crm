@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { maakBlokken, nieuwstePerLead, BLOK_EVENT, BLOK_OUTREACH } from './leads-blokken.js';
+import {
+  maakBlokken, nieuwstePerLead, bmaiAanvraag, BLOK_EVENT, BLOK_OUTREACH, BLOK_BMAI,
+} from './leads-blokken.js';
 
 const reg = (id, lead, slug, occurred_at, eventDate = '2026-11-17') => ({
   id, marketing_lead_id: lead, event: 'event_registered', occurred_at,
@@ -164,5 +166,72 @@ describe('maakBlokken: de datum voor Actief en Afgelopen', () => {
   it('een onbekende slug heeft geen datum', () => {
     const blokken = maakBlokken([reg('q1', 'lead1', 'paris-2027', '2026-11-01T10:00:00Z')], new Set(['lead1']));
     expect(blokken.find(b => b.sleutel === 'paris-2027').datum).toBeNull();
+  });
+});
+
+describe('maakBlokken: het BMAI-blok', () => {
+  const act = (id, lead, event, occurred_at, payload = {}) => ({
+    id, marketing_lead_id: lead, event, occurred_at, payload,
+  });
+
+  it('KRITIEK: aanvragen en posterdownloads van /bmai komen in beeld', () => {
+    // Ze vielen eerder stil door de restbak, terwijl de site ze wel opsloeg.
+    const blokken = maakBlokken([
+      act('p1', 'lead1', 'bmai_poster_download', '2026-11-24T10:00:00Z', { consentMarketing: true }),
+      act('e1', 'lead2', 'bmai_enquiry', '2026-11-23T10:00:00Z', { interest: 'partner' }),
+    ], new Set(['lead1', 'lead2']));
+    const blok = blokken.find(b => b.soort === BLOK_BMAI);
+    expect(blok.sleutel).toBe(BLOK_BMAI);
+    expect(blok.titel).toBe('BMAI');
+    expect(blok.datum).toBeNull();
+    expect(blok.rijen.map(r => r.id)).toEqual(['p1', 'e1']);
+  });
+
+  it('houdt per lead de nieuwste over', () => {
+    const blokken = maakBlokken([
+      act('e1', 'lead1', 'bmai_enquiry', '2026-11-25T10:00:00Z', { interest: 'app' }),
+      act('p1', 'lead1', 'bmai_poster_download', '2026-11-24T10:00:00Z'),
+    ], new Set(['lead1']));
+    expect(blokken.find(b => b.soort === BLOK_BMAI).rijen.map(r => r.id)).toEqual(['e1']);
+  });
+
+  it('volgt het statusfilter, net als de andere blokken', () => {
+    const blokken = maakBlokken([
+      act('p1', 'lead9', 'bmai_poster_download', '2026-11-24T10:00:00Z'),
+    ], new Set(['lead1']));
+    expect(blokken.find(b => b.soort === BLOK_BMAI).rijen).toEqual([]);
+  });
+
+  it('een BMAI-signaal komt niet in een event- of outreachblok', () => {
+    const blokken = maakBlokken([
+      act('p1', 'lead1', 'bmai_poster_download', '2026-11-24T10:00:00Z'),
+    ], new Set(['lead1']));
+    const elders = blokken.filter(b => b.soort !== BLOK_BMAI).flatMap(b => b.rijen);
+    expect(elders).toEqual([]);
+  });
+});
+
+describe('bmaiAanvraag', () => {
+  it('een posterdownload heet Poster en draagt de opt-in', () => {
+    expect(bmaiAanvraag('bmai_poster_download', { consentMarketing: true }))
+      .toEqual({ label: 'Poster', optIn: true });
+  });
+
+  it('een aanvraag noemt de interesse', () => {
+    expect(bmaiAanvraag('bmai_enquiry', { interest: 'organisation' }).label).toBe('Vraag: eigen organisatie');
+    expect(bmaiAanvraag('bmai_enquiry', { interest: 'partner' }).label).toBe('Vraag: partner');
+    expect(bmaiAanvraag('bmai_enquiry', { interest: 'app' }).label).toBe('Vraag: Canvas-app');
+    expect(bmaiAanvraag('bmai_enquiry', { interest: 'boek' }).label).toBe('Vraag');
+  });
+
+  it('KRITIEK: zonder overtuigend ja is er geen opt-in', () => {
+    expect(bmaiAanvraag('bmai_enquiry', { consentMarketing: false }).optIn).toBe(false);
+    expect(bmaiAanvraag('bmai_enquiry', {}).optIn).toBe(false);
+    expect(bmaiAanvraag('bmai_enquiry', null).optIn).toBe(false);
+  });
+
+  it('is null voor elk ander signaal', () => {
+    expect(bmaiAanvraag('event_registered', {})).toBeNull();
+    expect(bmaiAanvraag('waitlist_joined', {})).toBeNull();
   });
 });

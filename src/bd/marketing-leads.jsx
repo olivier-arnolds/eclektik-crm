@@ -10,7 +10,7 @@ import {
 } from '../lib/lead-bron';
 import { matchAanmeldingCampagnes } from './outreach-match';
 import { contactVanLead, aanvullingenVoorContact, zoekBedrijf, normMail } from '../lib/contact-van-lead';
-import { maakBlokken, BLOK_EVENT } from './leads-blokken';
+import { maakBlokken, bmaiAanvraag, BLOK_EVENT, BLOK_BMAI } from './leads-blokken';
 import {
   CAMPAGNE_FILTERS, SESSIE_SLEUTEL, vandaagISO, laatsteSessieDatum,
   isAfgelopen, toonCampagne, telCampagnes, wisselIngeklapt,
@@ -705,13 +705,17 @@ function AanmeldingenBlok({
   // staat de campagne al in de kolom Aanmelding, en bij waitlist en scorecard
   // is er geen aanmelding om aan te koppelen.
   const toonCampagne = blok.soort === BLOK_EVENT;
+  // In het BMAI-blok zegt de kolom wat iemand op /bmai deed: de poster
+  // gehaald of een vraag gesteld, met of zonder opt-in voor marketingmail.
+  const isBmai = blok.soort === BLOK_BMAI;
   // De keuzelijst komt/bevestigd/kan niet gaat over een stoel op een event. In
   // het outreachblok is er geen event, alleen een afspraak, en daar stond die
   // lijst dus een vraag te stellen die nergens over ging. Daar laat de kolom
   // de uitkomst uit de campagne zien en heet hij ook zo.
   const kolommen = ['Naam', 'E-mail', 'Bedrijf', 'Rol', 'Telefoon', 'Zegt via',
     ...(toonCampagne ? ['Uit campagne'] : []),
-    toonCampagne ? 'Aanmelding' : 'Uitkomst', 'Laatste activiteit', 'Status', ''];
+    toonCampagne ? 'Aanmelding' : (isBmai ? 'Aanvraag' : 'Uitkomst'),
+    'Laatste activiteit', 'Status', ''];
 
   return (
     <div style={{ marginBottom: 26 }}>
@@ -774,7 +778,9 @@ function AanmeldingenBlok({
                   // In een eventblok staat de status al bij de campagnechip,
                   // dus daar niet nog een keer. In de andere blokken is er
                   // geen campagnekolom en hoort hij hier.
-                  outreachStatussen={toonCampagne ? [] : (campagnesPerAanmelding.get(a.id) || [])}
+                  // In het BMAI-blok ook niet: daar is niemand benaderd.
+                  outreachStatussen={toonCampagne || isBmai ? [] : (campagnesPerAanmelding.get(a.id) || [])}
+                  bmai={isBmai ? bmaiAanvraag(a.event, a.payload) : null}
                   kolomAantal={kolommen.length}
                   telefoon={lead.phone || telefoonVan(a.payload) || telPerLead[lead.id] || null}
                   onZetTelefoon={onZetTelefoon}
@@ -1068,7 +1074,7 @@ function OutreachStatusChips({ statussen }) {
   );
 }
 
-function LeadRow({ lead, bron, datumWijktAf, via, campagnes, outreachStatussen, kolomAantal, telefoon, onZetTelefoon, bevestiging, toonBevestiging, onZetAntwoord, zetBezig, expanded, activityRows, busy, onToggle, onPromote, onArchive, onReactivate, onVoegContactToe, td }) {
+function LeadRow({ lead, bron, datumWijktAf, via, campagnes, outreachStatussen, bmai, kolomAantal, telefoon, onZetTelefoon, bevestiging, toonBevestiging, onZetAntwoord, zetBezig, expanded, activityRows, busy, onToggle, onPromote, onArchive, onReactivate, onVoegContactToe, td }) {
   return (
     <>
       <tr onClick={onToggle} style={{ cursor: 'pointer' }}>
@@ -1115,11 +1121,24 @@ function LeadRow({ lead, bron, datumWijktAf, via, campagnes, outreachStatussen, 
               enige dat hier staat, en dan is het de uitkomst: afspraak,
               aangemeld of geen interesse. */}
           <OutreachStatusChips statussen={outreachStatussen} />
+          {/* Wat iemand op /bmai deed. 'geen opt-in' staat er expliciet bij:
+              antwoorden mag, in een mailing zetten niet. */}
+          {bmai && (
+            <>
+              <span className="chip" style={{ fontSize: 11 }}>{bmai.label}</span>
+              {!bmai.optIn && (
+                <span style={{ fontSize: 11, color: 'var(--text-3)', marginLeft: 6 }}
+                  title="Geen toestemming voor marketingmail. Antwoorden op de vraag mag wel.">
+                  geen opt-in
+                </span>
+              )}
+            </>
+          )}
           {/* In het outreachblok hoort hier altijd een uitkomst te staan. Staat
               er niets, dan is de koppeling met de campagne niet gelukt (de
               aanmelding draagt een ander adres dan de prospect). Een leeg vakje
               zou dat verzwijgen. */}
-          {!toonBevestiging && !outreachStatussen?.length && (
+          {!toonBevestiging && !bmai && !outreachStatussen?.length && (
             <span style={{ fontSize: 11, color: 'var(--text-3)' }}
               title="Geen koppeling met een outreachprospect gevonden; de uitkomst staat alleen in de Outreach-tab">
               onbekend

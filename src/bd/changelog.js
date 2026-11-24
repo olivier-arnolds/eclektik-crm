@@ -23,6 +23,29 @@ export const CURRENT_VERSION = '1.159.1';
 
 export const CHANGELOG = [
   {
+    version: '1.165.0',
+    date: '2026-11-24T15:07:30Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Leads: BMAI-blok voor aanvragen en posterdownloads',
+    summary:
+      'Aanvragen en posterdownloads van eclectik.co/bmai staan nu in een eigen blok BMAI in de Leads-tab. Ze kwamen al in de database, maar de tab liet ze niet zien.',
+    changes: [
+      'De site stuurt twee signalen: bmai_enquiry voor het contactformulier onderaan /bmai, en bmai_poster_download voor het formulier van de A3-poster. maakBlokken liet alles behalve eventaanmeldingen en outreachafspraken weg, dus deze vielen stil door. Er was nog geen enkele binnengekomen, dus er is niets gemist.',
+      'De kolom Aanvraag zegt wat iemand deed: Poster, of Vraag met de interesse erbij (eigen organisatie, partner, Canvas-app).',
+      'Zonder toestemming voor marketingmail staat er geen opt-in naast. Bij de poster is die toestemming verplicht, bij een vraag een keuze. Antwoorden mag dan wel, in een mailing zetten niet.',
+      'Eén rij per lead, de nieuwste. Wie de poster haalt en daarna een vraag stelt, staat er met zijn vraag; de download staat in de activiteit als je de rij openklapt.',
+      'Het blok heeft geen einddatum en staat dus altijd onder Actief. Het volgt het statusfilter en klapt in zoals de andere blokken.',
+      'De opt-in wordt gelezen met magMarketing, dezelfde regel als bij Add to BD.',
+    ],
+    files: [
+      'src/bd/leads-blokken.js',
+      'src/bd/leads-blokken.test.js',
+      'src/bd/marketing-leads.jsx',
+    ],
+    gitTag: 'v1.165.0',
+  },
+  {
     version: '1.164.0',
     date: '2026-11-24T14:35:42Z',
     author: 'Olivier Arnolds (via Claude)',
