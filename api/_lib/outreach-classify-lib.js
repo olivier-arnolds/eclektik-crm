@@ -21,6 +21,8 @@ Regels:
 - Expliciet afwijzen of geen interesse is "declined".
 - "Stuur het naar X" of doorverwijzen naar een collega is "referral"; vul dan referral_name en indien bekend referral_email.
 - Een automatisch antwoord zonder mens erachter is "ooo"; vul ooo_until als er een terugkeerdatum in staat.
+- BELANGRIJK: classification en de doorverwijsvelden staan los van elkaar. Noemt een afwezigheidsbericht een vervanger ("neem in mijn afwezigheid contact op met X"), dan blijft classification "ooo" EN vul je referral_name en referral_email in. Kies niet tussen die twee.
+- Vul referral_name en referral_email alleen met iemand naar wie je verwezen wordt. Niet de afzender zelf, en niet een algemeen adres als info@ of een adres uit een handtekening of disclaimer.
 - Een systeemmelding over niet-bezorgen is "bounce".
 - Twijfel je, of gaat het over iets anders, dan "other" met een lage confidence.
 - confidence is je eigen zekerheid; wees streng, want bij lage confidence stopt het systeem de opvolging en laat het een mens kijken.`;

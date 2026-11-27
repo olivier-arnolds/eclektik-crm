@@ -25,6 +25,28 @@ describe('parseClassification - schone JSON', () => {
     expect(r.referral_email).toBe('sanne@ing.com');
   });
 
+  it('KRITIEK: een afwezigheid mag tegelijk een doorverwijzing dragen', () => {
+    // Dit was de duurste fout in deze keten. Een antwoord krijgt een label, en
+    // bij "ik ben weg tot 8 december, neem contact op met mijn collega" won
+    // 'ooo'. De naam van die collega verdween dan. Op de bestaande 80
+    // afwezigheidsberichten noemden er 43 iemand anders.
+    const r = parseClassification(ok({
+      classification: 'ooo', confidence: 0.95, ooo_until: '2026-12-08',
+      referral_name: 'Sanne de Vries', referral_email: 'sanne@klant.nl',
+    }));
+    expect(r.classification).toBe('ooo');
+    expect(r.ooo_until).toBe('2026-12-08');
+    expect(r.referral_name).toBe('Sanne de Vries');
+    expect(r.referral_email).toBe('sanne@klant.nl');
+  });
+
+  it('noemt de doorverwijsregel in de prompt, zodat het model niet hoeft te kiezen', () => {
+    // De parser kon dit altijd al. Het model deed het niet, omdat de prompt het
+    // niet vroeg. Daarom staat deze test op de prompt en niet op de parser.
+    expect(SYSTEM).toMatch(/classification en de doorverwijsvelden staan los van elkaar/i);
+    expect(SYSTEM).toMatch(/blijft classification "ooo" EN vul je referral_name/);
+  });
+
   it('leest een ooo met terugkeerdatum', () => {
     const r = parseClassification(ok({ classification: 'ooo', confidence: 0.97, ooo_until: '2026-10-01' }));
     expect(r.classification).toBe('ooo');

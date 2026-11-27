@@ -29,6 +29,10 @@ const MAX_CANDIDATES = 25;
 
 
 
+// Redenen die een scan zelf schrijft. Alleen deze mogen door een volgende scan
+// worden weggehaald: een reden die een mens heeft ingetypt blijft staan.
+const SCAN_REDEN = /^(check handmatig:|doorverwijzing:|mail bouncede)/;
+
 export default async function handler(req, res) {
   const authedUser = await requireUser(req, res);
   if (!authedUser) return;
@@ -116,6 +120,11 @@ export default async function handler(req, res) {
       sent_or_received_at: c.receivedAt || null,
       classification: cls?.classification || null,
       classification_confidence: cls ? cls.confidence : null,
+      // Los van de classificatie opgeslagen, want een afwezigheidsbericht mag
+      // tegelijk een collega noemen. Die twee stonden elkaar in de weg: een
+      // antwoord kreeg een label en de doorverwijzing viel eruit.
+      referral_name: cls?.referral_name || null,
+      referral_email: cls?.referral_email || null,
       match_method: c.matchMethod || null,
       bounced_at: c.isBounce ? (c.receivedAt || new Date().toISOString()) : null,
     });
@@ -160,17 +169,34 @@ export default async function handler(req, res) {
       last_reply_summary: kort(c.bodyFull || c.bodyPreview, 500),
       updated_at: new Date().toISOString(),
     };
-    if (cls?.classification === 'bounce') upd.paused_reason = 'mail bouncede';
+    // De terugkeerdatum als los feit op het contact. Niet als status: de status
+    // bepaalt WELK bericht iemand krijgt, en 'afwezig' zou hem uit de reeks
+    // tillen. Zie de toelichting bij de migratie outreach_referral_en_ooo_bewaren.
+    if (cls?.classification === 'ooo' && cls?.ooo_until) upd.ooo_until = cls.ooo_until;
+
+    // EEN REDEN, IN EEN KEER SAMENGESTELD
+    //   Dit waren drie losse toekenningen onder elkaar, en de laatste won. Toen
+    //   de doorverwijzing erbij kwam viel die daardoor weg zodra het model ook
+    //   maar een beetje twijfelde, precies in het geval waarin je hem het hardst
+    //   nodig hebt. Vandaar een reden die alles meeneemt wat er te melden is.
+    const redenen = [];
+    if (cls?.referral_name || cls?.referral_email) {
+      redenen.push(`doorverwijzing: ${cls.referral_name || cls.referral_email}`);
+    }
+    if (cls?.classification === 'bounce') redenen.push('mail bouncede');
     // Zie de toelichting in outreach-linkedin-scan.js: een laag percentage is
     // twijfel van het model, geen classificatie is een storing. Dat moet je uit
     // elkaar kunnen houden bij het nalopen.
     if (next.needs_review) {
-      upd.paused_reason = cls?.classification
+      redenen.push(cls?.classification
         ? `check handmatig: ${cls.classification} (${Math.round((cls.confidence || 0) * 100)}%)`
-        : 'check handmatig: classificatie mislukt, geen leesbaar antwoord van het model';
-    } else if (String(cur?.paused_reason || '').startsWith('check handmatig:')) {
-      // Beoordeling niet meer nodig, dus het vlaggetje weg. Alleen wat een scan
-      // zelf schreef; een door een mens ingetypte reden blijft staan.
+        : 'check handmatig: classificatie mislukt, geen leesbaar antwoord van het model');
+    }
+    if (redenen.length) {
+      upd.paused_reason = redenen.join(' | ');
+    } else if (SCAN_REDEN.test(String(cur?.paused_reason || ''))) {
+      // Niets meer te melden, dus het vlaggetje weg. Alleen wat een scan zelf
+      // schreef; een door een mens ingetypte reden blijft staan.
       upd.paused_reason = null;
     }
 
