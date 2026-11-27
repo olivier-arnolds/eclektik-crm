@@ -23,6 +23,31 @@ export const CURRENT_VERSION = '1.159.1';
 
 export const CHANGELOG = [
   {
+    version: '1.168.0',
+    date: '2026-11-27T21:15:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Per doorverwijzing kiezen wat ermee gebeurt',
+    summary:
+      'Boven de lijst in Outreach staat nu een blok Doorverwijzingen. Per stuk kies je: oppakken, later bij de oorspronkelijke contactpersoon, of niets doen. Pas na een keuze verdwijnt de regel.',
+    changes: [
+      'Oppakken zet de collega als nieuwe prospect in dezelfde campagne, klaar om te sturen.',
+      'Het bericht hergebruikt bericht 1 van de oorspronkelijke prospect, want die collega werkt bij hetzelfde bedrijf en het onderzoekswerk bij dat account klopt dus nog. Alleen de aanhef gaat eruit en er komt een regel bij die uitlegt hoe we bij hem komen.',
+      'Die regel is eerlijk: bij een afwezigheidsbericht staat er niet dat de collega je doorverwees, want dat deed hij niet. Een automaat noemde zijn naam. Bij een echte doorverwijzing staat het wel gewoon zo.',
+      'Je ziet de tekst voordat je kiest, en kunt hem bijwerken. Hier gaat een koude mail uit naar iemand die ons nooit iets vroeg; dat is te zwaar om achter een knop te verstoppen.',
+      'Een doorverwijzing die al opgepakt is kan niet opnieuw, en een collega die al in de campagne staat wordt geweigerd. Allebei zouden dezelfde persoon twee keer bericht 1 sturen.',
+      'Het besluit staat op het antwoord zelf, niet op het contact: iemand kan twee keer afwezig zijn met een andere vervanger erin. Dat gebeurde ook echt.',
+    ],
+    files: [
+      'api/outreach-referral.js',
+      'src/lib/outreach-doorverwijzing.js',
+      'src/lib/outreach-doorverwijzing.test.js',
+      'src/bd/marketing-outreach.jsx',
+    ],
+    gitTag: 'v1.168.0',
+    rollback: 'git revert naar v1.167.0.',
+  },
+  {
     version: '1.167.0',
     date: '2026-11-27T16:55:00Z',
     author: 'Olivier Arnolds (via Claude)',

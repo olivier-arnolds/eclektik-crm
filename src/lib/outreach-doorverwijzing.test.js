@@ -108,3 +108,14 @@ describe('magBesluiten', () => {
     }
   });
 });
+
+describe('voornaamUit (api/outreach-referral.js)', () => {
+  it('haalt een voornaam uit een adres als er geen naam is', async () => {
+    const { voornaamUit } = await import('../../api/outreach-referral.js');
+    expect(voornaamUit('Anne den Hertog', null)).toBe('Anne');
+    expect(voornaamUit('', 'tamara.meskes@csu.nl')).toBe('Tamara');
+    expect(voornaamUit('', 'kaone.kopi@fnbbotswana.co.bw')).toBe('Kaone');
+    // Niets bruikbaars: liever leeg dan 'Hi Info,'.
+    expect(voornaamUit('', '')).toBe('');
+  });
+});

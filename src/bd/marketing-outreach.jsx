@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '../supabase';
 import { apiFetch } from '../lib/apiFetch';
+import { bouwDoorverwijsBericht } from '../lib/outreach-doorverwijzing.js';
 import { useAuth } from '../lib/auth';
 import { getFolderEmails, getMailboxFolderEmails, getMailboxMessagesSince, getMessageBody, findMessageByInternetId } from '../lib/graph';
 import { kiesBerichttekst } from '../lib/mail-body';
@@ -173,6 +174,9 @@ export default function MarketingOutreach() {
   const [campaign, setCampaign] = useState(null);
   const [rows, setRows] = useState([]);
   const [sync, setSync] = useState(null);         // outreach_sync_state-rij
+  // Openstaande doorverwijzingen uit binnengekomen antwoorden: de werklijst
+  // waar per stuk een besluit op hoort.
+  const [verwijzingen, setVerwijzingen] = useState([]);
   const [sentInfo, setSentInfo] = useState({ count: 0, firstAt: null, vandaag: 0, last7d: 0 });
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState(null);
@@ -270,6 +274,16 @@ export default function MarketingOutreach() {
         .order('outreach_prio', { ascending: true, nullsFirst: false })
         .order('id', { ascending: true }));
       setRows(cts);
+
+      // Doorverwijzingen die nog een besluit nodig hebben. Alleen 'open': de rest
+      // is beoordeeld en hoort niet meer in de werklijst.
+      const { data: dv } = await supabase
+        .from('outreach_message')
+        .select('id,contact_id,referral_name,referral_email,classification,sent_or_received_at,from_address')
+        .eq('campaign_id', camp.id)
+        .eq('referral_status', 'open')
+        .order('sent_or_received_at', { ascending: false });
+      setVerwijzingen(dv || []);
 
       // Scantijd PER CAMPAGNE. Een gedeelde sleutel zou fataal zijn: een scan met
       // campagne A geselecteerd matcht alleen tegen A's contacten, maar zou dan
@@ -1558,6 +1572,13 @@ export default function MarketingOutreach() {
         </div>
       )}
 
+      <DoorverwijzingenPanel
+        verwijzingen={verwijzingen}
+        rows={rows}
+        onKlaar={(id) => setVerwijzingen(prev => prev.filter(v => v.id !== id))}
+        onVernieuw={() => load({ stil: true })}
+      />
+
       {/* Lijst */}
       <div style={{ border: '0.5px solid var(--sep)', borderRadius: 8, overflow: 'hidden' }}>
         <div style={{ maxHeight: 560, overflow: 'auto' }}>
@@ -2514,6 +2535,177 @@ function ContactMailsModal({ contact, campaign, rows = [], registratie = null, o
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ── Doorverwijzingen ─────────────────────────────────────────────────────────
+// De werklijst van collega's die in een antwoord genoemd zijn, met per stuk een
+// besluit. Pas als dat besluit er is verdwijnt de regel.
+//
+// WAAROM DE TEKST VOORAF TE ZIEN IS
+//   'Opgepakt' betekent dat er een koude mail uitgaat naar iemand die ons nooit
+//   iets gevraagd heeft; zijn naam stond in het afwezigheidsbericht van een
+//   collega. Dat is te zwaar om achter een knop te verstoppen. Je ziet hier dus
+//   eerst wat er verstuurd zou worden, kunt het bijwerken, en pas dan gaat het
+//   de campagne in.
+function DoorverwijzingenPanel({ verwijzingen = [], rows = [], onKlaar, onVernieuw }) {
+  const [open, setOpen] = useState(null);     // id van de regel die uitgeklapt staat
+  const [concept, setConcept] = useState('');
+  const [adres, setAdres] = useState('');
+  const [bezig, setBezig] = useState(null);
+  const [fout, setFout] = useState(null);
+
+  const contactById = useMemo(() => {
+    const m = new Map();
+    for (const r of rows) m.set(r.id, r);
+    return m;
+  }, [rows]);
+
+  if (!verwijzingen.length) return null;
+
+  // msg1_body zit niet in de lijstquery: die tekst is lang en de Amsterdam-
+  // campagne heeft 1813 rijen, dus dat zou elke keer megabytes kosten voor iets
+  // wat je zelden opent. Hier wordt hij per geval opgehaald.
+  const klapUit = async (v) => {
+    setFout(null);
+    if (open === v.id) { setOpen(null); return; }
+    setOpen(v.id);
+    setAdres(v.referral_email || '');
+    setConcept('');
+    setBezig(v.id);
+    try {
+      const origineel = contactById.get(v.contact_id) || {};
+      const { data, error } = await supabase
+        .from('outreach_contact').select('msg1_body').eq('id', v.contact_id).single();
+      if (error) throw error;
+      const verwijzer = [origineel.first_name, origineel.last_name].filter(Boolean).join(' ').trim();
+      const voornaam = String(v.referral_name || '').trim().split(/\s+/)[0] || '';
+      // De preview gebruikt dezelfde functie als het endpoint, zodat wat je ziet
+      // ook werkelijk verstuurd wordt.
+      const gebouwd = bouwDoorverwijsBericht({
+        origineelBody: data?.msg1_body,
+        voornaam: voornaam || 'there',
+        verwijzer,
+        bron: v.classification,
+      });
+      if (gebouwd.fout) throw new Error(gebouwd.fout);
+      setConcept(gebouwd.body);
+    } catch (e) {
+      setFout(`Concept maken mislukt: ${e.message}`);
+      setOpen(null);
+    } finally {
+      setBezig(null);
+    }
+  };
+
+  const besluit = async (v, status) => {
+    setBezig(v.id); setFout(null);
+    try {
+      const resp = await apiFetch('/api/outreach-referral', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messageId: v.id,
+          status,
+          ...(status === 'opgepakt' ? { email: adres, naam: v.referral_name, body: concept } : {}),
+        }),
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error(data?.error || `Mislukt (${resp.status})`);
+      setOpen(null);
+      onKlaar?.(v.id);
+      // Bij 'opgepakt' staat er een nieuwe prospect in de lijst; die moet je
+      // meteen kunnen zien, anders lijkt er niets gebeurd te zijn.
+      if (status === 'opgepakt') onVernieuw?.();
+    } catch (e) {
+      setFout(e.message);
+    } finally {
+      setBezig(null);
+    }
+  };
+
+  return (
+    <div style={{
+      border: '0.5px solid var(--sep)', borderRadius: 8, padding: 10, marginBottom: 10,
+      background: 'var(--fill-1)',
+    }}>
+      <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6 }}>
+        Doorverwijzingen ({verwijzingen.length})
+      </div>
+      <div style={{ fontSize: 11, color: 'var(--text-3)', marginBottom: 8 }}>
+        Iemand noemde een collega in zijn antwoord. Kies per doorverwijzing wat er gebeurt.
+      </div>
+      {fout && <div style={{ fontSize: 12, color: '#dc2626', marginBottom: 6 }}>{fout}</div>}
+
+      {verwijzingen.map(v => {
+        const origineel = contactById.get(v.contact_id) || {};
+        const uitgeklapt = open === v.id;
+        return (
+          <div key={v.id} style={{
+            borderTop: '0.5px solid var(--sep)', padding: '6px 0', fontSize: 12,
+          }}>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+              <span style={{ fontWeight: 600 }}>
+                {v.referral_name || v.referral_email}
+              </span>
+              <span style={{ color: 'var(--text-3)' }}>
+                via {[origineel.first_name, origineel.last_name].filter(Boolean).join(' ') || v.from_address}
+                {origineel.company ? ` (${origineel.company})` : ''}
+              </span>
+              {v.classification === 'ooo' && (
+                <span style={{ color: 'var(--text-3)', fontSize: 11 }}>uit een afwezigheidsbericht</span>
+              )}
+              <span style={{ flex: 1 }} />
+              <button className="btn-ghost tiny" disabled={bezig === v.id}
+                onClick={() => klapUit(v)}>
+                {uitgeklapt ? 'sluiten' : 'oppakken'}
+              </button>
+              <button className="btn-ghost tiny" disabled={bezig === v.id}
+                onClick={() => besluit(v, 'later')}>
+                later bij {origineel.first_name || 'de contactpersoon'}
+              </button>
+              <button className="btn-ghost tiny" disabled={bezig === v.id}
+                onClick={() => besluit(v, 'laten')}>
+                niets doen
+              </button>
+            </div>
+
+            {uitgeklapt && (
+              <div style={{ marginTop: 6, paddingLeft: 4 }}>
+                <input
+                  value={adres}
+                  onChange={e => setAdres(e.target.value)}
+                  placeholder="e-mailadres van de collega"
+                  style={{
+                    width: 320, fontSize: 12, padding: '3px 6px', marginBottom: 6,
+                    border: '0.5px solid var(--sep)', borderRadius: 4,
+                  }}
+                />
+                <textarea
+                  value={concept}
+                  onChange={e => setConcept(e.target.value)}
+                  rows={10}
+                  style={{
+                    width: '100%', fontSize: 12, fontFamily: 'inherit', padding: 6,
+                    border: '0.5px solid var(--sep)', borderRadius: 4, lineHeight: 1.5,
+                  }}
+                />
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 6 }}>
+                  <button className="btn-primary tiny"
+                    disabled={bezig === v.id || !adres.trim() || !concept.trim()}
+                    onClick={() => besluit(v, 'opgepakt')}>
+                    {bezig === v.id ? 'bezig' : 'in de campagne zetten'}
+                  </button>
+                  <span style={{ fontSize: 11, color: 'var(--text-3)' }}>
+                    Komt als nieuwe prospect in deze campagne, klaar om te sturen.
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
