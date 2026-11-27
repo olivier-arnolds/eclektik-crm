@@ -63,6 +63,14 @@ export function outreachTextToHtml(text, { unsubscribeUrl, signatureHtml } = {})
 // Hier zodat de preview in de tab hetzelfde onderwerp toont als wat er uitgaat.
 export function subjectForStep(c, step) {
   if (step === 1) return c?.msg1_subject || null;
+  // Bericht 3 heeft een EIGEN onderwerp, en dat is geen slordigheid.
+  //
+  // Bericht 2 is een opvolging in dezelfde draad, dus daar hoort 'Re:' voor.
+  // Een derde mail met opnieuw 'Re:' op hetzelfde onderwerp leest als
+  // aandringen, terwijl die juist iets nieuws brengt. Staat er geen eigen
+  // onderwerp, dan valt hij terug op het gedrag van bericht 2: dan is het nog
+  // altijd beter een opvolging te zijn dan niets.
+  if (step === 3 && c?.msg3_subject) return c.msg3_subject;
   const base = c?.msg2_subject || c?.msg1_subject || null;
   if (!base) return null;
   return /^re:\s/i.test(base) ? base : `Re: ${base}`;

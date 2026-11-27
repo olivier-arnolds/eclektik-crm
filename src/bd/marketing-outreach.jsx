@@ -72,7 +72,7 @@ const HERINNERING_COLOR = {
 const CONTACT_COLS =
   'id,email,first_name,last_name,title,company,status,priority_tier,priority_label,outreach_prio,is_reserve,' +
   'next_action_at,paused_reason,last_reply_summary,contact_id,company_id,last_inbound_at,answered_at,linkedin_url,' +
-  'location,msg2_body,outcome';
+  'location,msg2_body,msg3_body,outcome';
 
 const AWAITING = '__awaiting__';
 const REGISTERED = '__registered__';
@@ -1969,7 +1969,7 @@ function ContactMailsModal({ contact, campaign, rows = [], registratie = null, o
       try {
         const { data: d, error: e1 } = await supabase
           .from('outreach_contact')
-          .select('msg1_subject,msg1_body,msg2_subject,msg2_body,unsubscribe_token,paused_reason,last_reply_summary,status,linkedin_chat_id')
+          .select('msg1_subject,msg1_body,msg2_subject,msg2_body,msg3_subject,msg3_body,unsubscribe_token,paused_reason,last_reply_summary,status,linkedin_chat_id')
           .eq('id', current.id).single();
         if (e1) throw e1;
         const { data: h, error: e2 } = await supabase
@@ -2071,10 +2071,19 @@ function ContactMailsModal({ contact, campaign, rows = [], registratie = null, o
     ? signatureFor(campaign.sender_mailbox)
     : '';
 
+  // Onderwerp en tekst via dezelfde functies als de verzender, zodat de preview
+  // toont wat er werkelijk uitgaat. Bericht 3 heeft een eigen onderwerp; valt
+  // dat weg, dan rekent subjectForStep het terug naar een 'Re:'.
   const subject = tab === 1
     ? (detail?.msg1_subject || null)
-    : subjectForStep({ msg1_subject: detail?.msg1_subject, msg2_subject: detail?.msg2_subject }, 2);
-  const body = tab === 1 ? detail?.msg1_body : detail?.msg2_body;
+    : subjectForStep({
+      msg1_subject: detail?.msg1_subject,
+      msg2_subject: detail?.msg2_subject,
+      msg3_subject: detail?.msg3_subject,
+    }, tab);
+  const body = tab === 1 ? detail?.msg1_body
+    : tab === 3 ? detail?.msg3_body
+      : detail?.msg2_body;
   const html = body
     ? outreachTextToHtml(body, { unsubscribeUrl: unsubUrl, signatureHtml: handtekening })
     : null;
@@ -2300,7 +2309,9 @@ function ContactMailsModal({ contact, campaign, rows = [], registratie = null, o
                     was daar verborgen. Nu verschijnt hij zodra deze persoon een
                     klaargezette herinnering heeft. Een gevulde msg2_body is de
                     aan-stand, dus dit toont precies wie er iets krijgt. */}
-                {(isLinkedIn && !String(detail?.msg2_body || '').trim() ? [1] : [1, 2]).map(n => {
+                {(isLinkedIn && !String(detail?.msg2_body || '').trim()
+                  ? [1]
+                  : String(detail?.msg3_body || '').trim() ? [1, 2, 3] : [1, 2]).map(n => {
                   const s = sentStep(n);
                   return (
                     <button key={n} type="button" className={tab === n ? 'btn-primary tiny' : 'btn-ghost tiny'}

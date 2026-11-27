@@ -154,7 +154,7 @@ export async function runOutreachBatch({
     //
     // De .or() hieronder laat een lege next_action_at bewust door: dat is de
     // goedkope voorselectie. Welke daarvan echt mogen, beslist selectSendable.
-    .select('id,email,email_domain,company,status,next_action_at,last_inbound_at,priority_tier,outreach_prio,unsubscribe_token,msg1_subject,msg1_body,msg2_subject,msg2_body,linkedin_url,linkedin_provider_id')
+    .select('id,email,email_domain,company,status,next_action_at,last_inbound_at,priority_tier,outreach_prio,unsubscribe_token,msg1_subject,msg1_body,msg2_subject,msg2_body,msg3_subject,msg3_body,linkedin_url,linkedin_provider_id')
     .eq('campaign_id', campaign_id)
     .eq('is_reserve', false)
     .in('status', ['queued', 'msg1_sent'])

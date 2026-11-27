@@ -35,12 +35,21 @@ export function companyKey(name) {
 }
 
 export function bodyForStep(c, step) {
-  return step === 1 ? (c?.msg1_body || null) : (c?.msg2_body || null);
+  if (step === 1) return c?.msg1_body || null;
+  if (step === 3) return c?.msg3_body || null;
+  return c?.msg2_body || null;
 }
 
+// WAAR STAAT DEZE PROSPECT IN DE REEKS, EN WELK BERICHT IS DUS AAN DE BEURT
+//
+// Een campagne zonder derde bericht loopt hier niet op vast: msg2_sent levert
+// wel stap 3 op, maar bodyForStep geeft dan niets terug en de selectie slaat de
+// prospect over met de reden 'tekst ontbreekt'. Er gaat dus nooit een lege mail
+// uit; het staat alleen in de overgeslagen-redenen.
 export function stepForStatus(status) {
   if (status === 'queued') return 1;
   if (status === 'msg1_sent') return 2;
+  if (status === 'msg2_sent') return 3;
   return null;
 }
 
@@ -166,12 +175,13 @@ export function selectSendable(candidates, opts = {}) {
     // verschil dat ertoe doet is of er een mens kijkt: de knop in de tab mag
     // het als je er expliciet om vraagt, de cron alleen als de campagne er
     // apart voor aangezet is.
-    if (isLinkedIn && step === 2 && !allowLinkedInStep2) {
+    if (isLinkedIn && step >= 2 && !allowLinkedInStep2) {
       bump('geen opvolgbericht via LinkedIn'); continue;
     }
 
-    // Bericht 2 heeft twee extra remmen.
-    if (step === 2) {
+    // Elke opvolging heeft twee extra remmen, bericht 3 net zo goed als 2: ook
+    // dan wil je niet schrijven naar iemand die inmiddels geantwoord heeft.
+    if (step >= 2) {
       if (pastHardStop) { bump('harde stopdatum voorbij'); continue; }
       if (scanStale) { bump('inboxscan verouderd'); continue; }
     }
@@ -218,12 +228,23 @@ export function statusAfterSend(step, { now = new Date(), delayMinDays = 5, dela
   // verstuurde herinnering op msg1_sent staan, en stepForStatus('msg1_sent')
   // is 2. Daarmee stond dezelfde persoon bij de volgende ronde weer klaar voor
   // precies het bericht dat hij net had gekregen.
-  if (step === 1 && channel === 'linkedin') return { status: 'msg1_sent', next_action_at: null };
-  if (step === 1) {
+  // VIA LINKEDIN NOOIT EEN VERVOLGDATUM, BIJ GEEN ENKELE STAP
+  //
+  // Een vervolgdatum laat de prospect over een week vanzelf weer in de selectie
+  // opduiken. Via LinkedIn gaat een herinnering met de hand de deur uit, dus
+  // dan staat diezelfde persoon er elke ronde weer bij terwijl er niets mag.
+  // De status zet hem wel een plek verder, anders krijgt hij bij de volgende
+  // ronde precies het bericht dat hij net gekregen heeft.
+  if (channel === 'linkedin') {
+    const stand = step === 1 ? 'msg1_sent' : step === 2 ? 'msg2_sent' : 'msg3_sent';
+    return { status: stand, next_action_at: null };
+  }
+  if (step === 3) return { status: 'msg3_sent', next_action_at: null };
+  if (step === 1 || step === 2) {
     const span = Math.max(0, delayMaxDays - delayMinDays);
     const days = delayMinDays + Math.floor(Math.random() * (span + 1));
     return {
-      status: 'msg1_sent',
+      status: step === 1 ? 'msg1_sent' : 'msg2_sent',
       next_action_at: new Date(now.getTime() + days * 86400000).toISOString(),
     };
   }

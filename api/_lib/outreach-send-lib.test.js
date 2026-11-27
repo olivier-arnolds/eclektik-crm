@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
-  subjectForStep, stepForStatus, selectSendable, statusAfterSend, STALE_HOURS,
+  subjectForStep, stepForStatus, selectSendable, statusAfterSend, STALE_HOURS, bodyForStep,
 } from './outreach-send-lib.js';
 import { linkifyBareUrls, outreachTextToHtml } from '../../src/lib/outreach-html.js';
 
@@ -285,8 +285,38 @@ describe('statusAfterSend', () => {
     expect(days).toBeLessThanOrEqual(7);
   });
 
-  it('stap 2 is het eind van de reeks', () => {
-    expect(statusAfterSend(2, { now: NOW })).toEqual({ status: 'msg2_sent', next_action_at: null });
+  it('stap 2 plant nu bericht 3 in plaats van de reeks te sluiten', () => {
+    // Sinds er een derde bericht bestaat is bericht 2 niet meer het einde.
+    // De prospect gaat naar msg2_sent EN krijgt een vervolgdatum, want anders
+    // leest de selectie de lege datum als 'ga je gang' en gaat bericht 3 er
+    // meteen achteraan.
+    const r = statusAfterSend(2, { now: NOW });
+    expect(r.status).toBe('msg2_sent');
+    const days = (new Date(r.next_action_at) - NOW) / 86400000;
+    expect(days).toBeGreaterThanOrEqual(5);
+    expect(days).toBeLessThanOrEqual(7);
+  });
+
+  it('stap 3 is het eind van de reeks', () => {
+    expect(statusAfterSend(3, { now: NOW })).toEqual({ status: 'msg3_sent', next_action_at: null });
+  });
+
+  it('KRITIEK: een campagne zonder bericht 3 stuurt niets leegs', () => {
+    // stepForStatus zegt bij msg2_sent 'stap 3', ook als die tekst er niet is.
+    // De rem zit in de selectie: geen tekst, dan geen mail.
+    expect(stepForStatus('msg2_sent')).toBe(3);
+    expect(bodyForStep({ msg1_body: 'a', msg2_body: 'b' }, 3)).toBeNull();
+    const r = selectSendable([c({ status: 'msg2_sent' })],
+      { now: NOW, dailyCap: 10, sentToday: 0, lastScanISO: FRESH });
+    expect(r.batch).toHaveLength(0);
+    expect(r.skipped['tekst ontbreekt']).toBe(1);
+  });
+
+  it('bericht 3 gaat uit met zijn eigen onderwerp, zonder Re:', () => {
+    const c = { msg1_subject: 'Copilot at Serco', msg3_subject: 'What the ROI number looked like' };
+    expect(subjectForStep(c, 3)).toBe('What the ROI number looked like');
+    // En zonder eigen onderwerp valt hij terug op de opvolging.
+    expect(subjectForStep({ msg1_subject: 'Copilot at Serco' }, 3)).toBe('Re: Copilot at Serco');
   });
 });
 

@@ -139,3 +139,43 @@ describe('datumPatch', () => {
     expect(datumPatch('2-12-2026', nu).fout).toBe('Geen geldige datum');
   });
 });
+
+
+describe('hervatten met een derde bericht in de campagne', () => {
+  it('KRITIEK: wie bericht 2 had houdt die plek, en krijgt dus bericht 3', () => {
+    // Dit zette iedereen terug op msg1_sent. Met bericht 3 erbij zou een klik
+    // op hervat iemand bericht 2 een TWEEDE keer sturen.
+    const r = hervatPatch({ status: 'msg2_sent', msg3_body: 'derde' }, '2026-12-01');
+    expect(r.patch.status).toBe('msg2_sent');
+  });
+
+  it('wie nog op bericht 1 stond gaat gewoon door naar bericht 2', () => {
+    const r = hervatPatch({ status: 'replied' }, '2026-12-01');
+    expect(r.patch.status).toBe('msg1_sent');
+  });
+
+  it('zonder derde bericht is bericht 2 het einde, met wel', () => {
+    // Zonder bericht 3: een harde muur, geen knop.
+    const zonder = redenGeenBericht2({ status: 'msg2_sent' });
+    expect(zonder.herstelbaar).toBe(false);
+    expect(zonder.tekst).toMatch(/geen bericht 3/);
+
+    // Met bericht 3 en niets aan de hand staat hij gewoon in de rij: null, en
+    // dus ook geen knop. Dat is geen blokkade maar de normale gang.
+    expect(redenGeenBericht2({ status: 'msg2_sent', msg3_body: 'derde' })).toBeNull();
+
+    // Met bericht 3 en een antwoord zonder vervolgdatum is het wel de hold, en
+    // daar hoort de knop juist wel.
+    const hold = redenGeenBericht2({
+      status: 'msg2_sent', msg3_body: 'derde', last_inbound_at: '2026-11-20T10:00:00Z',
+    });
+    expect(hold.code).toBe('hold');
+    expect(hold.herstelbaar).toBe(true);
+  });
+
+  it('na bericht 3 valt er niets meer te hervatten', () => {
+    expect(magHervatten({ status: 'msg3_sent', msg3_body: 'derde' })).toBe(false);
+    expect(hervatPatch({ status: 'msg3_sent', msg3_body: 'derde' }, '2026-12-01').fout)
+      .toBeTruthy();
+  });
+});

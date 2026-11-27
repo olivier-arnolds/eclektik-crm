@@ -9,12 +9,14 @@
 
 export const STATUS_LABEL = {
   queued: 'Klaar om te sturen', msg1_sent: 'Bericht 1 verstuurd', msg2_sent: 'Bericht 2 verstuurd',
+  msg3_sent: 'Bericht 3 verstuurd',
   replied: 'Heeft geantwoord', bounced: 'Gebounced', ooo: 'Afwezig', referred: 'Doorverwezen',
   opted_out: 'Afgemeld', paused: 'Gepauzeerd', done: 'Afgerond',
 };
 
 export const STATUS_COLOR = {
-  queued: '#2563eb', msg1_sent: '#d97706', msg2_sent: '#d97706', replied: '#16a34a',
+  queued: '#2563eb', msg1_sent: '#d97706', msg2_sent: '#d97706', msg3_sent: '#d97706',
+  replied: '#16a34a',
   bounced: '#dc2626', ooo: '#7c3aed', referred: '#0891b2', opted_out: '#6b7280',
   paused: '#6b7280', done: '#16a34a',
 };
@@ -42,6 +44,7 @@ export function statusKleur(status) {
  */
 export const STATUS_KORT = {
   queued: 'nog niet gestuurd', msg1_sent: 'bericht 1', msg2_sent: 'bericht 2',
+  msg3_sent: 'bericht 3',
   replied: 'geantwoord', bounced: 'gebounced', ooo: 'afwezig', referred: 'doorverwezen',
   opted_out: 'afgemeld', paused: 'gepauzeerd', done: 'afgerond',
 };

@@ -40,14 +40,21 @@ export function redenGeenBericht2(rij) {
   if (rij?.outcome) {
     return { code: 'uitkomst', tekst: 'Uitkomst vastgelegd', herstelbaar: false };
   }
-  // KRITIEK: bericht 2 is al verstuurd, dus er is niets meer te hervatten.
+  // KRITIEK: niets meer te hervatten als de reeks op is.
   //
   // Dit stond hieronder niet en dat was fout. Zo iemand heeft vaak wel een
   // antwoord binnen zonder vervolgdatum, en viel daardoor in de hold hieronder.
   // Op de echte data waren dat 25 mensen die allemaal een hervat-knop zouden
   // krijgen, en één klik zou hun bericht 2 een TWEEDE keer sturen.
-  if (status === 'msg2_sent') {
-    return { code: 'msg2_sent', tekst: 'Bericht 2 is al verstuurd', herstelbaar: false };
+  //
+  // Sinds bericht 3 bestaat is 'bericht 2 verstuurd' niet meer per definitie
+  // het einde: heeft deze campagne een derde bericht, dan is er wel degelijk
+  // iets te hervatten. Zonder derde bericht blijft het einde het einde.
+  if (status === 'msg3_sent') {
+    return { code: 'msg3_sent', tekst: 'Alle berichten zijn verstuurd', herstelbaar: false };
+  }
+  if (status === 'msg2_sent' && !rij?.msg3_body) {
+    return { code: 'msg2_sent', tekst: 'Bericht 2 is al verstuurd, er is geen bericht 3', herstelbaar: false };
   }
   if (status === 'replied' || status === 'referred' || status === 'paused') {
     const tekst = status === 'replied' ? 'Heeft geantwoord'
@@ -110,9 +117,17 @@ export function hervatPatch(rij, datum, now = new Date()) {
   }
   const moment = datumNaarMoment(datum);
   if (!moment) return { fout: 'Geen geldige datum' };
+  // TERUGZETTEN OP DE PLEK WAAR HIJ STOND, NIET OP DE EERSTE
+  //
+  // Dit zette iedereen op msg1_sent, want dat was de enige plek waar nog een
+  // bericht achter zat. Met bericht 3 erbij zou dat iemand die bericht 2 al
+  // had gehad dat bericht een tweede keer sturen, precies de fout die hierboven
+  // beschreven staat. Wie al op msg2_sent stond blijft daar dus staan en krijgt
+  // bericht 3.
+  const doel = String(rij?.status || '') === 'msg2_sent' ? 'msg2_sent' : 'msg1_sent';
   return {
     patch: {
-      status: 'msg1_sent',
+      status: doel,
       next_action_at: moment,
       paused_reason: null,
       updated_at: now.toISOString(),

@@ -23,6 +23,36 @@ export const CURRENT_VERSION = '1.159.1';
 
 export const CHANGELOG = [
   {
+    version: '1.167.0',
+    date: '2026-11-27T16:55:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Een derde bericht in een outreachreeks',
+    summary:
+      'De reeks kende twee berichten. De campagne Microsoft Account Executives 2026 was daar helemaal doorheen: 22 mensen hadden allebei gehad en niets laten horen. Die krijgen nu een laatste bericht met nieuws in plaats van een herinnering.',
+    changes: [
+      'Nieuwe velden msg3_subject en msg3_body op het contact, en een stand msg3_sent in de reeks.',
+      'Bericht 3 krijgt een EIGEN onderwerp en niet opnieuw Re:. Een derde mail in dezelfde draad leest als aandringen, terwijl deze juist iets nieuws brengt.',
+      'Bericht 2 sluit de reeks niet meer af maar plant bericht 3 in, met dezelfde wachttijd van 5 tot 7 dagen.',
+      'KRITIEK bij hervatten: wie bericht 2 al had houdt nu die plek en krijgt bericht 3. Dat zette iedereen terug op bericht 1, wat met deze wijziging bericht 2 een tweede keer zou sturen.',
+      'Bericht 3 valt onder dezelfde remmen als bericht 2: niets gaat uit als de inboxscan ouder is dan twaalf uur, of na de harde stopdatum.',
+      'Via LinkedIn komt er bij geen enkele stap meer een vervolgdatum. Een datum liet de prospect elke ronde opnieuw opduiken terwijl er niets mocht.',
+      'Een campagne zonder derde bericht merkt hier niets van: zonder tekst slaat de selectie de prospect over en gaat er nooit een lege mail uit.',
+      'De tekst voor de 22 AEs staat klaar en noemt per persoon het eigen account. Zie sql/data_ae_bericht3_2026-11-27.sql; controleer de claim Fortune Global 500 voordat je laat lopen.',
+    ],
+    files: [
+      'api/_lib/outreach-send-lib.js',
+      'api/_lib/outreach-runner.js',
+      'src/lib/outreach-html.js',
+      'src/lib/outreach-hervatten.js',
+      'src/lib/outreach-status.js',
+      'src/bd/marketing-outreach.jsx',
+      'sql/data_ae_bericht3_2026-11-27.sql',
+    ],
+    gitTag: 'v1.167.0',
+    rollback: 'git revert naar v1.166.0. De teksten haal je weg met het commando onderin het SQL-bestand.',
+  },
+  {
     version: '1.166.0',
     date: '2026-11-27T16:37:41Z',
     author: 'Olivier Arnolds (via Claude)',
