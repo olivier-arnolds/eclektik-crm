@@ -23,6 +23,32 @@ export const CURRENT_VERSION = '1.159.1';
 
 export const CHANGELOG = [
   {
+    version: '1.166.0',
+    date: '2026-11-27T16:37:41Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'Doorverwijzingen uit afwezigheidsberichten gaan niet meer verloren',
+    summary:
+      'Een afwezigheidsbericht dat een collega noemt leverde tot nu toe niets op. De naam werd wel uitgelezen en daarna weggegooid. Dat is gerepareerd, en de 85 bestaande antwoorden zijn alsnog nagelopen.',
+    changes: [
+      'De classificatie haalde referral_name en referral_email al uit elk antwoord, maar geen enkele kolom sloeg ze op. Nu wel, op outreach_message.',
+      'Een antwoord kreeg bovendien maar een label. Bij "ik ben tot 8 december weg, neem contact op met mijn collega X" won ooo en verdween de naam. Classificatie en doorverwijzing staan nu los van elkaar.',
+      'De reden voor handwerk wordt in een keer samengesteld in plaats van drie keer overschreven. Daardoor viel een doorverwijzing weg zodra het model ook maar een beetje twijfelde, precies waar je hem het hardst nodig hebt.',
+      'Nieuw veld ooo_until op het contact. Bewust naast de status en niet erin: de status bepaalt welk bericht iemand krijgt, dus een status afwezig zou die persoon uit de reeks tillen.',
+      'De 85 bestaande antwoorden zijn nagelopen: 29 doorverwijzingen gevonden, 21 met e-mailadres, verdeeld over 26 prospects. Die staan nu gemarkeerd als doorverwijzing.',
+      'Algemene postbussen (hr@, info@) zijn overgeslagen, want daar zit geen persoon achter om te benaderen.',
+      'De gevonden namen en adressen staan alleen in de database. Het zijn gegevens van mensen buiten Eclectik, en een git-geschiedenis is daar de verkeerde plek voor.',
+    ],
+    files: [
+      'api/_lib/outreach-classify-lib.js',
+      'api/_lib/outreach-classify-lib.test.js',
+      'api/outreach-classify.js',
+      'sql/data_outreach_doorverwijzingen_oogst_2026-11-27.sql',
+    ],
+    gitTag: 'v1.166.0',
+    rollback: 'git revert naar v1.165.0. De gegevens draai je terug met het commando onderin het SQL-bestand.',
+  },
+  {
     version: '1.165.0',
     date: '2026-11-24T15:07:30Z',
     author: 'Olivier Arnolds (via Claude)',
