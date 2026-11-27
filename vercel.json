@@ -34,6 +34,10 @@
       "schedule": "*/15 * * * *"
     },
     {
+      "path": "/api/outreach-inbox-cron",
+      "schedule": "0 7-18 * * 1-5"
+    },
+    {
       "path": "/api/linkedin-invite-drip",
       "schedule": "0 7-16 * * 1-5"
     },

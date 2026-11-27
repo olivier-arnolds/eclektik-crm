@@ -23,6 +23,31 @@ export const CURRENT_VERSION = '1.159.1';
 
 export const CHANGELOG = [
   {
+    version: '1.169.0',
+    date: '2026-11-27T22:10:00Z',
+    author: 'Olivier Arnolds (via Claude)',
+    type: 'feature',
+    title: 'De inboxscan kan nu zonder browser draaien',
+    summary:
+      'Bericht 2 en 3 gaan alleen uit als de inboxscan jonger is dan twaalf uur, en die draaide alleen als iemand de CRM openzette. Daardoor stonden campagnes stil zonder foutmelding. Er is nu een cron die het werk overneemt.',
+    changes: [
+      'Nieuwe cron api/outreach-inbox-cron.js, elk uur op werkdagen tussen 7 en 18 uur. Leest de mailbox van elke actieve e-mailcampagne, matcht antwoorden, classificeert ze en werkt de status bij.',
+      'De classificatielus is uit api/outreach-classify.js gehaald naar _lib/outreach-classify-apply.js, zodat de cron en de scan in de browser dezelfde code gebruiken. Dat endpoint ging van 218 naar 53 regels.',
+      'De scantijd wordt pas weggeschreven als alle antwoorden beoordeeld zijn. Andersom zou er staan dat de inbox net bekeken is terwijl de helft nog open stond, en dan gaat er een opvolgmail naar iemand die al nee zei.',
+      'STAAT NOG UIT. De cron heeft Graph-rechten op naam van de applicatie nodig (Mail.Read als application permission, met admin consent). Zonder die sleutels meldt hij dat netjes en doet hij niets.',
+      'LET OP bij het instellen: een application permission geeft standaard toegang tot elke mailbox in de tenant. Beperk dat met een Application Access Policy tot de afzendermailboxen. De stappen staan bovenin api/_lib/graph-app.js.',
+    ],
+    files: [
+      'api/outreach-inbox-cron.js',
+      'api/_lib/graph-app.js',
+      'api/_lib/outreach-classify-apply.js',
+      'api/outreach-classify.js',
+      'vercel.json',
+    ],
+    gitTag: 'v1.169.0',
+    rollback: 'git revert naar v1.168.0.',
+  },
+  {
     version: '1.168.0',
     date: '2026-11-27T21:15:00Z',
     author: 'Olivier Arnolds (via Claude)',
